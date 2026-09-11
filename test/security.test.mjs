@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -20,6 +20,27 @@ async function fixture(t) {
   await writeFile(path.join(archive, 'README.md'), '# clean\n');
   await writeFile(path.join(archive, 'FILE-ALLOWLIST.txt'), 'FILE-ALLOWLIST.txt\nREADME.md\n');
   return { source, archive, allowlist: path.join(source, 'FILE-ALLOWLIST.txt') };
+}
+
+function encodedCredentialForms() {
+  const key = ['api', '_key'].join('');
+  const value = ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('');
+  const material = `${key}=${value}`;
+  const unicode = (text) => [...text].map((character) => `${String.fromCharCode(92)}u${character.charCodeAt(0).toString(16).padStart(4, '0')}`).join('');
+  const utf16be = Buffer.from(material, 'utf16le');
+  utf16be.swap16();
+  const ordinaryBase64 = Buffer.from(material).toString('base64');
+  return [
+    { name: 'plain', bytes: Buffer.from(material), encoded: false },
+    { name: 'html', bytes: Buffer.from([...material].map((character) => `&#${character.charCodeAt(0)};`).join('')), encoded: true },
+    { name: 'json', bytes: Buffer.from(`{"${unicode(key)}":"${unicode(value)}"}`), encoded: true },
+    { name: 'utf16le', bytes: Buffer.from(material, 'utf16le'), encoded: true },
+    { name: 'utf16be', bytes: utf16be, encoded: true },
+    { name: 'percent', bytes: Buffer.from([...material].map((character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')), encoded: true },
+    { name: 'base64', bytes: Buffer.from(ordinaryBase64), encoded: true },
+    { name: 'base64url', bytes: Buffer.from(Buffer.from(material).toString('base64url')), encoded: true },
+    { name: 'wrapped-base64', bytes: Buffer.from(ordinaryBase64.match(/.{1,8}/g).join('\n')), encoded: true },
+  ];
 }
 
 test('scanner enumerates source, archive, and declared diff paths without echoing content', async (t) => {
@@ -121,4 +142,50 @@ test('scanner checks every shipped source byte and detects a credential planted 
       return true;
     },
   );
+});
+
+test('scanner detects each documented encoded credential form in source, archive, and diff then returns green after restoration', async (t) => {
+  const subject = await fixture(t);
+  const member = 'encoded.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  for (const form of encodedCredentialForms()) {
+    await writeFile(path.join(subject.source, member), form.bytes);
+    await writeFile(path.join(subject.archive, member), form.bytes);
+    const report = await scanPackage({
+      sourceRoot: subject.source,
+      archiveRoot: subject.archive,
+      allowlistPath: subject.allowlist,
+      diffEntries: [{ path: member, before: form.bytes }],
+    });
+    const expectedRule = `${form.encoded ? 'ENCODED_' : ''}CREDENTIAL_MATERIAL`;
+    for (const section of [report.source, report.archive, report.diff]) {
+      assert.equal(section.findings.some((finding) => finding.path === member && finding.rule === expectedRule), true, form.name);
+    }
+    assert.equal(JSON.stringify(report).includes('SYNTHETIC-ONLY-VALUE'), false);
+    await writeFile(path.join(subject.source, member), '# clean\n');
+    await writeFile(path.join(subject.archive, member), '# clean\n');
+    const restored = await scanPackage({
+      sourceRoot: subject.source,
+      archiveRoot: subject.archive,
+      allowlistPath: subject.allowlist,
+      diffEntries: [{ path: member, before: '# clean\n' }],
+    });
+    assert.equal(restored.clean, true, `${form.name} restoration`);
+  }
+});
+
+test('public documentation has valid relative links and explains personalized verify drift', async () => {
+  for (const document of ['ATTRIBUTION.md', 'README.md', 'UPGRADING.md']) {
+    const documentPath = path.join(packageRoot, document);
+    const text = await readFile(documentPath, 'utf8');
+    for (const match of text.matchAll(/\[[^\]]+\]\(([^)#]+)(?:#[^)]+)?\)/g)) {
+      if (/^[a-z]+:/i.test(match[1])) continue;
+      assert.equal((await lstat(path.resolve(path.dirname(documentPath), match[1]))).isFile(), true, `${document} -> ${match[1]}`);
+    }
+  }
+  const upgrading = await readFile(path.join(packageRoot, 'UPGRADING.md'), 'utf8');
+  const readme = await readFile(path.join(packageRoot, 'README.md'), 'utf8');
+  assert.match(upgrading, /intentionally make baseline `verify` non-green/i);
+  assert.match(upgrading, /not proof of damage/i);
+  assert.match(readme, /Personalizing a managed record intentionally creates baseline drift/i);
 });

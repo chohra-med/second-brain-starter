@@ -44,7 +44,7 @@ Earlier direct-clone workspaces have no `.second-brain` installed-state record. 
 2. Create a separate empty target directory and initialize it from the v1.1.0 source root.
 3. Compare the old working copy with the new target. Manually transfer only the records you intend to keep: facts, decisions, roadmap, progress, daily notes, and any deliberately customized procedures.
 4. Resolve any root `AGENTS.md` or `CLAUDE.md` instructions manually. Preserve project-specific rules outside the initializer's compatible managed block.
-5. Run `verify` against the new target, open its installed `Home.md`, and complete one first-loop item before retiring the old working copy.
+5. Run `verify` against the new target, then review every named managed path. Copied personalized managed records intentionally make baseline `verify` non-green; that expected drift is not proof of damage and does not adopt or overwrite your records. Open the installed `Home.md` and complete one first-loop item before retiring the old working copy.
 
 Plain Markdown remains readable in any text editor; current Obsidian desktop compatibility has not been verified.
 

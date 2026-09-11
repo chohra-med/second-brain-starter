@@ -85,6 +85,8 @@ node ./bin/second-brain.mjs verify --target "$PROJECT"
 
 Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files.
 
+Personalizing a managed record intentionally creates baseline drift, so `verify` will name that path and exit nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
+
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest; non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](UPGRADING.md) before upgrading.
 
 Every applied transaction prints a receipt ID and stores its receipt inside the target's `.second-brain` state. To undo only that receipt's writes:
