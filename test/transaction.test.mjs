@@ -66,6 +66,15 @@ async function loaderFixture() {
   return { ...subject, loader };
 }
 
+async function replaceLoaderSource(subject, text) {
+  const loader = Buffer.from(`<!-- second-brain:loader:start -->\n${text}\n<!-- second-brain:loader:end -->\n`);
+  await writeFile(path.join(subject.sourceRoot, 'template', 'AGENTS.md'), loader);
+  const entry = subject.manifest.entries.find((item) => item.destination === 'AGENTS.md');
+  entry.sha256 = sha256(loader);
+  subject.manifestBytes = Buffer.from(JSON.stringify(subject.manifest));
+  subject.loader = loader;
+}
+
 test('requires the current complete plan digest and writes receipt/state only after managed bytes', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
@@ -163,6 +172,55 @@ test('approved owner changes require a single allowlisted owner, exact hashes, d
   assert.equal(await readFile(path.join(subject.target, 'workflows', 'owner.md'), 'utf8'), 'before\n');
 });
 
+test('approved owner approval cannot be replayed in another canonical project and rejects symlinked ancestors', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const otherTarget = path.join(subject.root, 'other-target');
+  await mkdir(path.join(subject.target, 'workflows'), { recursive: true });
+  await mkdir(path.join(otherTarget, 'workflows'), { recursive: true });
+  const original = Buffer.from('before\n');
+  const proposed = Buffer.from('after\n');
+  for (const target of [subject.target, otherTarget]) await writeFile(path.join(target, 'workflows', 'owner.md'), original);
+  const shared = {
+    owner: 'workflows/owner.md', allowedOwners: ['workflows/owner.md'], preimageSha256: sha256(original),
+    postimage: proposed, postimageSha256: sha256(proposed), evidenceDigest: sha256(Buffer.from('evidence')),
+  };
+  const first = await planApprovedChange({ ...shared, targetPath: subject.target });
+  const second = await planApprovedChange({ ...shared, targetPath: otherTarget });
+  assert.notEqual(first.digest, second.digest);
+  await rejects('PLAN_DIGEST_MISMATCH', () => applyApprovedChange({ ...shared, targetPath: otherTarget, approvedDigest: first.digest }));
+  assert.equal(await readFile(path.join(otherTarget, 'workflows', 'owner.md'), 'utf8'), 'before\n');
+
+  const outside = path.join(subject.root, 'outside');
+  await mkdir(outside);
+  await writeFile(path.join(outside, 'owner.md'), original);
+  await symlink(outside, path.join(subject.target, 'linked'));
+  await rejects('SYMLINK_PATH', () => planApprovedChange({ ...shared, targetPath: subject.target, owner: 'linked/owner.md', allowedOwners: ['linked/owner.md'] }));
+  assert.equal(await readFile(path.join(outside, 'owner.md'), 'utf8'), 'before\n');
+});
+
+test('approved-change rollback rechecks a replacement symlink ancestor before reading outside target', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await mkdir(path.join(subject.target, 'workflows'), { recursive: true });
+  const original = Buffer.from('before\n');
+  const proposed = Buffer.from('after\n');
+  await writeFile(path.join(subject.target, 'workflows', 'owner.md'), original);
+  const common = {
+    targetPath: subject.target, owner: 'workflows/owner.md', allowedOwners: ['workflows/owner.md'], preimageSha256: sha256(original),
+    postimage: proposed, postimageSha256: sha256(proposed), evidenceDigest: sha256(Buffer.from('evidence')),
+  };
+  const plan = await planApprovedChange(common);
+  const applied = await applyApprovedChange({ ...common, approvedDigest: plan.digest });
+  const outside = path.join(subject.root, 'outside');
+  await mkdir(outside);
+  await writeFile(path.join(outside, 'owner.md'), 'outside sentinel\n');
+  await rm(path.join(subject.target, 'workflows'), { recursive: true, force: true });
+  await symlink(outside, path.join(subject.target, 'workflows'));
+  await rejects('SYMLINK_PATH', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
+  assert.equal(await readFile(path.join(outside, 'owner.md'), 'utf8'), 'outside sentinel\n');
+});
+
 test('a symlink inserted after planning is rejected without writing an outside sentinel', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
@@ -200,19 +258,36 @@ test('nonempty unmanaged loaders and malformed markers fail closed without a rec
 test('compatible loader block update preserves surrounding bytes and receipt rollback restores the full preimage', async (t) => {
   const subject = await loaderFixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
-  const original = Buffer.from('prefix\r\n<!-- second-brain:loader:start -->\r\nold loader\r\n<!-- second-brain:loader:end -->\r\nsuffix\r\n');
+  const initial = await planInstall({ ...subject, targetPath: subject.target });
+  await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: initial.digest });
+  const original = Buffer.from('prefix\r\n<!-- second-brain:loader:start -->\nnew loader\n<!-- second-brain:loader:end -->\r\nsuffix\r\n');
   await writeFile(path.join(subject.target, 'AGENTS.md'), original);
-  const plan = await planInstall({ ...subject, targetPath: subject.target });
+  await replaceLoaderSource(subject, 'updated loader');
+  const plan = await planInstall({ ...subject, targetPath: subject.target, operation: 'upgrade' });
   const loaderEntry = plan.entries.find((entry) => entry.destination === 'AGENTS.md');
   assert.equal(loaderEntry.status, 'MANAGED-UPDATE');
-  const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
+  const applied = await applyInstall({ ...subject, targetPath: subject.target, operation: 'upgrade', approvedDigest: plan.digest });
   const updated = await readFile(path.join(subject.target, 'AGENTS.md'));
   assert.equal(updated.subarray(0, Buffer.from('prefix\r\n').length).equals(Buffer.from('prefix\r\n')), true);
   assert.equal(updated.subarray(updated.length - Buffer.from('\r\nsuffix\r\n').length).equals(Buffer.from('\r\nsuffix\r\n')), true);
-  assert.equal(updated.includes(Buffer.from('new loader')), true);
-  assert.equal(updated.includes(Buffer.from('old loader')), false);
+  assert.equal(updated.includes(Buffer.from('updated loader')), true);
+  assert.equal(updated.includes(Buffer.from('new loader')), false);
   await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
   assert.equal((await readFile(path.join(subject.target, 'AGENTS.md'))).equals(original), true);
+});
+
+test('an edited managed loader block is contradictory and fails closed even with valid markers', async (t) => {
+  const subject = await loaderFixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const initial = await planInstall({ ...subject, targetPath: subject.target });
+  await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: initial.digest });
+  const edited = '<!-- second-brain:loader:start -->\n# Local restriction: never load this route\n<!-- second-brain:loader:end -->\n';
+  await writeFile(path.join(subject.target, 'AGENTS.md'), edited);
+  await replaceLoaderSource(subject, 'updated loader');
+  const upgrade = await planInstall({ ...subject, targetPath: subject.target, operation: 'upgrade' });
+  assert.equal(upgrade.entries.find((entry) => entry.destination === 'AGENTS.md').status, 'CONFLICT');
+  await rejects('PLAN_CONFLICT', () => applyInstall({ ...subject, targetPath: subject.target, operation: 'upgrade', approvedDigest: upgrade.digest }));
+  assert.equal(await readFile(path.join(subject.target, 'AGENTS.md'), 'utf8'), edited);
 });
 
 test('loader change after approval invalidates the digest and a loader symlink is rejected', async (t) => {
