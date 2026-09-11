@@ -3,14 +3,15 @@ import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/pr
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { assertCleanPackage, PackageScanError, scanDiffEntries, scanPackage } from '../lib/package-scan.mjs';
 
-const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-security-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  const source = path.join(root, 'source');
+  const source = path.join(root, 'source with spaces');
   const archive = path.join(root, 'archive');
   await mkdir(source);
   await mkdir(archive);
