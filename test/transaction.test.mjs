@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   InstallPlanError,
   applyApprovedChange,
@@ -164,11 +165,17 @@ test('approved owner changes require a single allowlisted owner, exact hashes, d
   await rejects('UNDECLARED_OWNER', () => planApprovedChange({ ...common, owner: 'outside.md' }));
   await rejects('AMBIGUOUS_OWNER', () => planApprovedChange({ ...common, allowedOwners: ['workflows/owner.md', 'workflows/owner.md'] }));
   await rejects('SECRET_BEARING_CONTENT', () => planApprovedChange({ ...common, postimage: 'API_KEY=not-a-secret', postimageSha256: sha256(Buffer.from('API_KEY=not-a-secret')) }));
+  const passwordAssignment = ['pass', 'word=', 'SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('');
+  await rejects('SECRET_BEARING_CONTENT', () => planApprovedChange({ ...common, postimage: passwordAssignment, postimageSha256: sha256(Buffer.from(passwordAssignment)) }));
   await writeFile(path.join(subject.target, 'workflows', 'owner.md'), 'changed\n');
   await rejects('STALE_PREIMAGE', () => planApprovedChange(common));
   await writeFile(path.join(subject.target, 'workflows', 'owner.md'), original);
   const applied = await applyApprovedChange({ ...common, approvedDigest: planned.digest });
   assert.equal(await readFile(path.join(subject.target, 'workflows', 'owner.md'), 'utf8'), 'after\n');
+  const receipt = await readFile(path.join(subject.target, applied.receiptPath), 'utf8');
+  assert.equal(receipt.includes(subject.target), false);
+  assert.equal(receipt.includes(homedir()), false);
+  assert.match(receipt, /"targetIdentitySha256":"[a-f0-9]{64}"/);
   await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
   assert.equal(await readFile(path.join(subject.target, 'workflows', 'owner.md'), 'utf8'), 'before\n');
 });
@@ -220,6 +227,45 @@ test('approved-change rollback rechecks a replacement symlink ancestor before re
   await symlink(outside, path.join(subject.target, 'workflows'));
   await rejects('SYMLINK_PATH', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
   assert.equal(await readFile(path.join(outside, 'owner.md'), 'utf8'), 'outside sentinel\n');
+});
+
+test('approved changes share install target rejection and preflight the complete transaction namespace', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await mkdir(path.join(subject.target, 'workflows'), { recursive: true });
+  const original = Buffer.from('before\n');
+  const proposed = Buffer.from('after\n');
+  await writeFile(path.join(subject.target, 'workflows', 'owner.md'), original);
+  const common = {
+    owner: 'workflows/owner.md', allowedOwners: ['workflows/owner.md'], preimageSha256: sha256(original),
+    postimage: proposed, postimageSha256: sha256(proposed), evidenceDigest: sha256(Buffer.from('evidence')),
+  };
+  const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+  for (const targetPath of [path.parse(subject.target).root, homedir(), projectRoot, `${subject.target}/../target`]) {
+    await rejects(targetPath.includes('..') ? 'TARGET_TRAVERSAL' : 'UNSAFE_TARGET', () => planApprovedChange({ ...common, targetPath }));
+  }
+
+  for (const namespace of ['installed-state.json', 'receipts', 'backups']) {
+    const second = await fixture();
+    t.after(() => rm(second.root, { recursive: true, force: true }));
+    await mkdir(path.join(second.target, 'workflows'), { recursive: true });
+    await writeFile(path.join(second.target, 'workflows', 'owner.md'), original);
+    await mkdir(path.join(second.target, '.second-brain'), { recursive: true });
+    await symlink(path.join(second.target, 'missing'), path.join(second.target, '.second-brain', namespace));
+    await rejects('SYMLINK_PATH', () => planApprovedChange({ ...common, targetPath: second.target }));
+    assert.equal(await readFile(path.join(second.target, 'workflows', 'owner.md'), 'utf8'), 'before\n');
+  }
+});
+
+test('receipt rollback rejects a symlinked namespace before receipt ingestion', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const plan = await planInstall({ ...subject, targetPath: subject.target });
+  const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
+  const backups = path.join(subject.target, '.second-brain', 'backups');
+  await rm(backups, { recursive: true, force: true });
+  await symlink(path.join(subject.target, 'missing-backups'), backups);
+  await rejects('SYMLINK_PATH', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
 });
 
 test('a symlink inserted after planning is rejected without writing an outside sentinel', async (t) => {
