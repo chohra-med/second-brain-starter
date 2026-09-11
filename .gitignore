@@ -1,0 +1,17 @@
+# Secrets and local credentials. Check every file before sharing a copy.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*
+*secret*
+
+# Local editor and operating-system state.
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/workspace*.json
+.DS_Store
+Thumbs.db
+
+# These exclusions are convenience, not a privacy guarantee. Do not blanket-ignore project Markdown.
