@@ -1,4 +1,5 @@
 .github/workflows/test.yml
+.gitattributes
 .gitignore
 ATTRIBUTION.md
 CHANGELOG.md
@@ -43,6 +44,7 @@ test/cli.test.mjs
 test/fixtures/unmanaged-loader-crlf.md
 test/helpers/consumer-cli.mjs
 test/installer.test.mjs
+test/line-endings.test.mjs
 test/plan.test.mjs
 test/security.test.mjs
 test/transaction.test.mjs
