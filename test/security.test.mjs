@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { assertCleanPackage, PackageScanError, scanDiffEntries, scanPackage } from '../lib/package-scan.mjs';
+
+const packageRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-security-'));
@@ -89,4 +91,33 @@ test('scanner marks unsafe archive members and sensitive diff bytes by exact pat
 
   const diff = scanDiffEntries([{ path: 'docs/change.md', after: ['pass', 'word=synthetic-value'].join('') }]);
   assert.deepEqual(diff.findings, [{ path: 'docs/change.md', rule: 'CREDENTIAL_MATERIAL' }]);
+});
+
+test('scanner checks every shipped source byte and detects a credential planted in the shipped CRLF fixture', async (t) => {
+  const clean = await assertCleanPackage({
+    sourceRoot: packageRoot,
+    allowlistPath: path.join(packageRoot, 'FILE-ALLOWLIST.txt'),
+  });
+  assert.equal(clean.clean, true);
+
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-security-crlf-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const source = path.join(root, 'source');
+  await cp(packageRoot, source, { recursive: true, filter: (candidate) => !candidate.includes(`${path.sep}.git`) });
+  const fixture = path.join(source, 'test', 'fixtures', 'unmanaged-loader-crlf.md');
+  const original = await readFile(fixture);
+  const planted = Buffer.concat([
+    original,
+    Buffer.from(['\r\n', 'Authori', 'zation: ', 'Bearer ', 'CRLF-SYNTHETIC-ONLY'].join('')),
+  ]);
+  await writeFile(fixture, planted);
+  await assert.rejects(
+    () => assertCleanPackage({ sourceRoot: source, allowlistPath: path.join(source, 'FILE-ALLOWLIST.txt') }),
+    (error) => {
+      assert.ok(error instanceof PackageScanError);
+      assert.deepEqual(error.report.findings, [{ path: 'test/fixtures/unmanaged-loader-crlf.md', rule: 'AUTHORIZATION_MATERIAL' }]);
+      assert.equal(JSON.stringify(error.report).includes('CRLF-SYNTHETIC-ONLY'), false);
+      return true;
+    },
+  );
 });

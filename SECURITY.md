@@ -2,7 +2,7 @@
 
 The public package is intended to contain only the files in `FILE-ALLOWLIST.txt`. The source and candidate archive scanner enumerates every regular package member, compares it to that allowlist, and reports relative paths plus rule identifiers. It never prints matched file content or credential values.
 
-The scanner rejects unallowlisted files, symlink and non-regular members, private-path markers, authorization material, token-shaped JWTs, private keys, credential assignments, personal absolute paths, and encoded versions of those markers. It also scans declared before/after diff bytes when they are supplied by the build or review tooling. Test members are enumerated and allowlist-checked, but their bytes are not content-scanned because the tests intentionally contain synthetic hostile examples. The extracted consumer candidate is scanned as its own tree.
+The scanner rejects unallowlisted files, symlink and non-regular members, private-path markers, authorization material, token-shaped JWTs, private keys, credential assignments, personal absolute paths, and encoded versions of those markers. It scans every shipped regular-file byte, including tests and fixtures, and scans declared before/after diff bytes when they are supplied by the build or review tooling. One harmless test assertion is removed only by its exact path and exact synthetic text before matching; it is not a general test-directory exception. The extracted consumer candidate is scanned as its own tree.
 
 Run the scanner from a trusted local checkout or extracted candidate. It is a source and archive hygiene check, not a claim that a filename or scanner can secure an AI client, erase data from a copied workspace, or prove an external service's behavior.
 
