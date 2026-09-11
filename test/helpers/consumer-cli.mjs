@@ -2,11 +2,12 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 const execFile = promisify(execFileCallback);
 
-export const sourceRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
+export const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 export async function consumerRoot(prefix = 'second-brain-consumer-') {
   return mkdtemp(path.join(tmpdir(), prefix));
