@@ -30,7 +30,8 @@ The initializer needs Node.js `>=22`, an existing target directory, and an absol
 From the extracted or cloned starter root, set `PROJECT` to the absolute directory you want to prepare. On macOS/Linux shells:
 
 ```sh
-PROJECT="$(pwd)/../my-project"
+SOURCE_ROOT="$(pwd -P)"
+PROJECT="$(dirname "$SOURCE_ROOT")/my project"
 mkdir -p "$PROJECT"
 node ./bin/second-brain.mjs init --target "$PROJECT"
 ```
