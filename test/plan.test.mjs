@@ -50,7 +50,7 @@ test('plans creates, identical entries, managed updates, conflicts, and deprecat
     ['00-Meta/FACTS.md', 'MANAGED-UPDATE'], ['Home.md', 'IDENTICAL'], ['retired.md', 'DEPRECATED'],
   ]);
   assert.equal(planned.entries[0].undo.action, 'restore-preimage');
-  assert.equal(planned.entries[2].undo.action, 'restore-deprecated-file');
+  assert.equal(planned.entries[2].undo.action, 'none');
   assert.equal(await readFile(path.join(subject.target, 'retired.md'), 'utf8'), '# Retired\n');
 });
 
