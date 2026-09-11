@@ -2,7 +2,7 @@
 
 A free, plain Markdown starter for one active project. Plain Markdown and manual local-file use are supported in a text editor or with a local-file-capable AI assistant that you explicitly point at these files. Current Obsidian desktop compatibility has not been verified, so test a copied workspace before relying on it. Nothing here installs itself, discovers files for you, or grants an assistant access.
 
-**Release status:** `v1.0.0` is the published public release. `v1.0.1` is an unreleased source repair. The public source repository is `chohra-med/second-brain-starter`; this README does not announce a `v1.0.1` release.
+**Version and releases:** `v1.0.0` is the first published public release. [VERSION](VERSION) identifies the version of these source bytes. The public source repository is `chohra-med/second-brain-starter`; use its Releases page to determine which tagged archives are published.
 
 ## License and boundaries
 
@@ -21,7 +21,7 @@ For a published release, choose one route:
 - **Git:** clone the repository to a location you control. Git is optional for using the starter and useful only when you want to pull later updates.
 - **ZIP:** download a release ZIP, extract it, and keep the extracted folder as your untouched base copy.
 
-For the unreleased `v1.0.1` source repair, do not treat this folder as a release download. Keep its structure intact. Before entering your own facts, duplicate the folder and work in the duplicate. Your base copy is your recovery point.
+If you are using a source checkout rather than a release ZIP, keep its structure intact. Before entering your own facts, duplicate the folder and work in the duplicate. Your base copy is your recovery point.
 
 ### 2. Set up one project
 
@@ -56,4 +56,4 @@ To remove the starter, first keep any Markdown files you want to retain. Then de
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). `v1.0.1` remains unreleased; use the public repository's current contribution route for proposed source changes.
+See [CONTRIBUTING.md](CONTRIBUTING.md) and use the public repository's current contribution route for proposed source changes.

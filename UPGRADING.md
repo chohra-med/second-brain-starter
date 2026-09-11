@@ -4,7 +4,7 @@
 
 1. Read [CHANGELOG.md](CHANGELOG.md) and confirm the version in [VERSION](VERSION).
 2. Duplicate your personalized workspace and label the copy with the date.
-3. Get a fresh copy of a published update through Git or its ZIP release when one is available. `v1.0.1` is unreleased source and is not an update download.
+3. Get a fresh copy through Git or a published ZIP release. Confirm the version in the copy's [VERSION](VERSION) file before applying any update.
 
 ## Apply an update
 

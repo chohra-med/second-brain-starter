@@ -1,6 +1,6 @@
 # Contributing
 
-The public source repository is `chohra-med/second-brain-starter`. `v1.0.1` is an unreleased source repair, not a published release. Use the repository's current contribution route and include the affected file, the observed problem, a reproducible example, and the safer wording or change you propose.
+The public source repository is `chohra-med/second-brain-starter`. Use the repository's current contribution route and include the affected file, the observed problem, a reproducible example, and the safer wording or change you propose.
 
 This starter is MIT-licensed under [LICENSE](LICENSE). Contributions intended for the starter must be compatible with those terms and retain required attribution. Do not add copied course material, proprietary templates, or code without clear permission and attribution.
 
