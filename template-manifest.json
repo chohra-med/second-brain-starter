@@ -30,6 +30,24 @@
   },
   "entries": [
     {
+      "source": "template/00-Meta/AGENTS.md",
+      "destination": "00-Meta/AGENTS.md",
+      "sha256": "cd9e6377720500cbe97636d50b88bd4c50cd6df89ad39935fa29adda01bb962b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/AGENTS.md",
+      "destination": "AGENTS.md",
+      "sha256": "40cdab52a9164abd32f79f7e26084f9a1a06bb31e8fdc7400e7232ce23d14895",
+      "mergeKind": "managed-block"
+    },
+    {
+      "source": "template/CLAUDE.md",
+      "destination": "CLAUDE.md",
+      "sha256": "06063205acffca1134e1ec5a69e7a53afc1864316c6f880dd0f90421ec8e7927",
+      "mergeKind": "managed-block"
+    },
+    {
       "source": "template/Home.md",
       "destination": "Home.md",
       "sha256": "eae66944f620d031016d1e98f26d79a50e2514fd334654be48eea46ecbb51e27",
@@ -123,6 +141,66 @@
       "source": "template/05-Daily/daily-template.md",
       "destination": "05-Daily/daily-template.md",
       "sha256": "e9e55985e3bc07b5026488e6a302c374c80c5687eaadf71b3b58dc0811b3a6ff",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-capture/SKILL.md",
+      "destination": ".agents/skills/second-brain-capture/SKILL.md",
+      "sha256": "d889b6caca6df9ae03f40af271916480089ede3a66610230e8798ef42e906245",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-close/SKILL.md",
+      "destination": ".agents/skills/second-brain-close/SKILL.md",
+      "sha256": "4bdaf34482d89938c9a29ba54de67d776ba25328c96447ec39565561e51b9bf9",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-context/SKILL.md",
+      "destination": ".agents/skills/second-brain-context/SKILL.md",
+      "sha256": "c33372036f6912fe8bbb42a42639788352923c94518c24c12fe7abd1ea41d0fb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-learning/SKILL.md",
+      "destination": ".agents/skills/second-brain-learning/SKILL.md",
+      "sha256": "e38e85d3e6ee0b66a979a0b83248934d45db916bba6fd3863a6914dcf9dd6fd7",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-review/SKILL.md",
+      "destination": ".agents/skills/second-brain-review/SKILL.md",
+      "sha256": "04226c1d25518e88060a326770cf2ed93dce3d58957200c7541c79e781112849",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-capture/SKILL.md",
+      "destination": ".claude/skills/second-brain-capture/SKILL.md",
+      "sha256": "d889b6caca6df9ae03f40af271916480089ede3a66610230e8798ef42e906245",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-close/SKILL.md",
+      "destination": ".claude/skills/second-brain-close/SKILL.md",
+      "sha256": "4bdaf34482d89938c9a29ba54de67d776ba25328c96447ec39565561e51b9bf9",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-context/SKILL.md",
+      "destination": ".claude/skills/second-brain-context/SKILL.md",
+      "sha256": "c33372036f6912fe8bbb42a42639788352923c94518c24c12fe7abd1ea41d0fb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-learning/SKILL.md",
+      "destination": ".claude/skills/second-brain-learning/SKILL.md",
+      "sha256": "e38e85d3e6ee0b66a979a0b83248934d45db916bba6fd3863a6914dcf9dd6fd7",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/second-brain-review/SKILL.md",
+      "destination": ".claude/skills/second-brain-review/SKILL.md",
+      "sha256": "04226c1d25518e88060a326770cf2ed93dce3d58957200c7541c79e781112849",
       "mergeKind": "managed-file"
     }
   ]
