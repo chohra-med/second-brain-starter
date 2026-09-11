@@ -48,7 +48,9 @@ test('plans creates, identical entries, managed updates, conflicts, and deprecat
     publicDependency: null,
     manifestSha256: sha256(subject.manifestBytes),
     planDigest: '0'.repeat(64),
-    transactionId: 'tx-deadbeef',
+    transactionId: 'tx-00000000-0000-4000-8000-000000000000',
+    operation: 'init',
+    writeSetDigest: '0'.repeat(64),
     managedPaths: {
       '00-Meta/FACTS.md': { installedSha256: sha256(Buffer.from('# Old facts\n')), templateSha256: sha256(Buffer.from('# Old facts\n')), mergeKind: 'managed-file' },
       'retired.md': { installedSha256: sha256(Buffer.from('# Retired\n')), templateSha256: sha256(Buffer.from('# Retired\n')), mergeKind: 'managed-file' },

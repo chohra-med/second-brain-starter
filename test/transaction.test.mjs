@@ -83,6 +83,8 @@ function encodedCredentialForms() {
   const utf16be = Buffer.from(material, 'utf16le');
   utf16be.swap16();
   const ordinaryBase64 = Buffer.from(material).toString('base64');
+  const ordinaryBase64Url = Buffer.from(material).toString('base64url');
+  const chunks = (value, separator) => value.match(/.{1,8}/g).join(separator);
   return [
     Buffer.from(material),
     Buffer.from([...material].map((character) => `&#${character.charCodeAt(0)};`).join('')),
@@ -91,8 +93,11 @@ function encodedCredentialForms() {
     utf16be,
     Buffer.from([...material].map((character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')),
     Buffer.from(ordinaryBase64),
-    Buffer.from(Buffer.from(material).toString('base64url')),
-    Buffer.from(ordinaryBase64.match(/.{1,8}/g).join('\n')),
+    Buffer.from(ordinaryBase64Url),
+    ...[' ', '\t', '\n', '\r\n', ' \t\r\n'].flatMap((separator) => [
+      Buffer.from(chunks(ordinaryBase64, separator)),
+      Buffer.from(chunks(ordinaryBase64Url, separator)),
+    ]),
   ];
 }
 
@@ -243,11 +248,62 @@ test('corrupted install receipts reject before rollback mutation', async (t) => 
   await rejectCorruption((receipt) => {
     receipt.operation = 'upgrade';
   });
+  await rejectCorruption((receipt) => {
+    receipt.writes.push({
+      destination: 'Home.md',
+      preimageSha256: null,
+      postimageSha256: sha256(Buffer.from('# Home\n')),
+      backupPath: null,
+    });
+  });
+  await rejectCorruption((receipt) => {
+    receipt.writes = receipt.writes.filter((write) => write.destination !== '00-Meta/Rules.md');
+  });
+  await rejectCorruption((receipt) => {
+    const stateWrite = receipt.writes.pop();
+    receipt.writes.reverse();
+    receipt.writes.push(stateWrite);
+  });
+  await rejectCorruption((receipt) => {
+    const write = receipt.writes.find((entry) => entry.destination === 'Home.md');
+    write.preimageSha256 = '0'.repeat(64);
+    write.backupPath = `.second-brain/backups/${receipt.receiptId}/Home.md`;
+  });
+  await rejectCorruption((receipt) => {
+    const write = receipt.writes.find((entry) => entry.destination === 'Home.md');
+    write.backupPath = '.second-brain/backups/tx-00000000-0000-4000-8000-000000000000/Home.md';
+  });
 
   await writeFile(path.join(subject.target, 'Home.md'), '# later user edit\n');
   const beforeLatePostimage = await treeInventory(subject.target);
   await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
   assert.deepEqual(await treeInventory(subject.target), beforeLatePostimage);
+});
+
+test('a receipt cannot borrow an identical managed path that this transaction did not write', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await writeFile(path.join(subject.target, 'Home.md'), '# Home\n');
+  const plan = await planInstall({ ...subject, targetPath: subject.target });
+  assert.equal(plan.entries.find((entry) => entry.destination === 'Home.md').status, 'IDENTICAL');
+  const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
+  const receiptPath = path.join(subject.target, applied.receiptPath);
+  const original = await readFile(receiptPath, 'utf8');
+  const receipt = JSON.parse(original);
+  assert.equal(receipt.writes.some((write) => write.destination === 'Home.md'), false);
+  receipt.writes.splice(-1, 0, {
+    destination: 'Home.md',
+    preimageSha256: null,
+    postimageSha256: sha256(Buffer.from('# Home\n')),
+    backupPath: null,
+  });
+  await writeFile(receiptPath, JSON.stringify(receipt));
+  const before = await treeInventory(subject.target);
+  await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
+  assert.deepEqual(await treeInventory(subject.target), before);
+  await writeFile(receiptPath, original);
+  await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
+  assert.equal(await readFile(path.join(subject.target, 'Home.md'), 'utf8'), '# Home\n');
 });
 
 test('approved-change receipts bind their owner, target, allowlist, one write, and own backup subtree', async (t) => {
@@ -283,7 +339,12 @@ test('approved-change receipts bind their owner, target, allowlist, one write, a
 
   await rejectCorruption((receipt) => { receipt.owner = 'workflows/other.md'; });
   await rejectCorruption((receipt) => { receipt.allowedOwners = []; });
+  await rejectCorruption((receipt) => { receipt.allowedOwners = ['workflows/owner.md', 'workflows/other.md']; });
   await rejectCorruption((receipt) => { receipt.targetIdentitySha256 = '0'.repeat(64); });
+  await rejectCorruption((receipt) => { receipt.planDigest = '0'.repeat(64); });
+  await rejectCorruption((receipt) => { receipt.evidenceDigest = '0'.repeat(64); });
+  await rejectCorruption((receipt) => { receipt.writes[0].preimageSha256 = '0'.repeat(64); });
+  await rejectCorruption((receipt) => { receipt.writes[0].postimageSha256 = '0'.repeat(64); });
   await rejectCorruption((receipt) => { receipt.writes.push({ ...receipt.writes[0] }); });
 
   await writeFile(path.join(subject.target, 'workflows', 'other.md'), 'other before\n');
@@ -304,6 +365,29 @@ test('approved-change receipts bind their owner, target, allowlist, one write, a
   const beforeCrossBackup = await treeInventory(subject.target);
   await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
   assert.deepEqual(await treeInventory(subject.target), beforeCrossBackup);
+});
+
+test('installed state requires the exact current engine schema and transaction identity', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const plan = await planInstall({ ...subject, targetPath: subject.target });
+  await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
+  const statePath = path.join(subject.target, '.second-brain', 'installed-state.json');
+  const original = await readFile(statePath, 'utf8');
+
+  async function rejectState(mutate) {
+    const state = JSON.parse(original);
+    mutate(state);
+    await writeFile(statePath, JSON.stringify(state));
+    await rejects('INVALID_STATE', () => planInstall({ ...subject, targetPath: subject.target }));
+    await writeFile(statePath, original);
+  }
+
+  await rejectState((state) => { delete state.operation; });
+  await rejectState((state) => { state.transactionId = 'tx-deadbeef'; });
+  await rejectState((state) => { state.unexpected = true; });
+  await rejectState((state) => { state.managedPaths['Home.md'].unexpected = true; });
+  await planInstall({ ...subject, targetPath: subject.target });
 });
 
 test('transaction namespace regular files and symlinks reject before a transaction creates managed paths', async (t) => {

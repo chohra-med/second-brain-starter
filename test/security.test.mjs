@@ -30,6 +30,8 @@ function encodedCredentialForms() {
   const utf16be = Buffer.from(material, 'utf16le');
   utf16be.swap16();
   const ordinaryBase64 = Buffer.from(material).toString('base64');
+  const ordinaryBase64Url = Buffer.from(material).toString('base64url');
+  const chunks = (value, separator) => value.match(/.{1,8}/g).join(separator);
   return [
     { name: 'plain', bytes: Buffer.from(material), encoded: false },
     { name: 'html', bytes: Buffer.from([...material].map((character) => `&#${character.charCodeAt(0)};`).join('')), encoded: true },
@@ -38,8 +40,17 @@ function encodedCredentialForms() {
     { name: 'utf16be', bytes: utf16be, encoded: true },
     { name: 'percent', bytes: Buffer.from([...material].map((character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')), encoded: true },
     { name: 'base64', bytes: Buffer.from(ordinaryBase64), encoded: true },
-    { name: 'base64url', bytes: Buffer.from(Buffer.from(material).toString('base64url')), encoded: true },
-    { name: 'wrapped-base64', bytes: Buffer.from(ordinaryBase64.match(/.{1,8}/g).join('\n')), encoded: true },
+    { name: 'base64url', bytes: Buffer.from(ordinaryBase64Url), encoded: true },
+    ...[
+      ['space', ' '],
+      ['tab', '\t'],
+      ['newline', '\n'],
+      ['crlf', '\r\n'],
+      ['mixed-whitespace', ' \t\r\n'],
+    ].flatMap(([name, separator]) => [
+      { name: `wrapped-base64-${name}`, bytes: Buffer.from(chunks(ordinaryBase64, separator)), encoded: true },
+      { name: `wrapped-base64url-${name}`, bytes: Buffer.from(chunks(ordinaryBase64Url, separator)), encoded: true },
+    ]),
   ];
 }
 
