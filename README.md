@@ -1,8 +1,8 @@
 # Second Brain Starter
 
-A free, plain Markdown starter for one active project. It works in current Obsidian desktop, a text editor, or a local-file-capable AI assistant that you explicitly point at these files. Nothing here installs itself, discovers files for you, or grants an assistant access.
+A free, plain Markdown starter for one active project. Plain Markdown and manual local-file use are supported in a text editor or with a local-file-capable AI assistant that you explicitly point at these files. Current Obsidian desktop compatibility has not been verified, so test a copied workspace before relying on it. Nothing here installs itself, discovers files for you, or grants an assistant access.
 
-**Release status:** `v1.0.0` is a local release candidate. The future public GitHub candidate is `chohra-med/second-brain-starter`; it does not exist yet and this README is not a link or a release announcement.
+**Release status:** `v1.0.0` is the published public release. `v1.0.1` is an unreleased source repair. The public source repository is `chohra-med/second-brain-starter`; this README does not announce a `v1.0.1` release.
 
 ## License and boundaries
 
@@ -16,19 +16,19 @@ Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTI
 
 ### 1. Get a copy
 
-When the candidate repository is available, choose one route:
+For a published release, choose one route:
 
 - **Git:** clone the repository to a location you control. Git is optional for using the starter and useful only when you want to pull later updates.
 - **ZIP:** download a release ZIP, extract it, and keep the extracted folder as your untouched base copy.
 
-Until then, copy this local candidate folder somewhere you control. Keep its structure intact. Before entering your own facts, duplicate the folder and work in the duplicate. Your base copy is your recovery point.
+For the unreleased `v1.0.1` source repair, do not treat this folder as a release download. Keep its structure intact. Before entering your own facts, duplicate the folder and work in the duplicate. Your base copy is your recovery point.
 
 ### 2. Set up one project
 
 1. Open [Home.md](Home.md).
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
 3. Replace bracketed examples in [facts](01-Projects/Selected-Project/FACTS.md), [roadmap](01-Projects/Selected-Project/roadmap.md), [progress](01-Projects/Selected-Project/progress.md), and [project decisions](01-Projects/Selected-Project/Decisions.md).
-4. In Obsidian desktop, open your copied folder as a vault. A text editor is also enough.
+4. A text editor is enough. You may test a copied folder as an Obsidian vault, but current Obsidian desktop compatibility is not verified.
 5. For an AI session, paste the manual route from [00-Meta/AGENTS.md](00-Meta/AGENTS.md) and name the selected project folder. Use an assistant that can read local files only when you explicitly give it that access.
 
 ### 3. Run the free first loop
@@ -56,4 +56,4 @@ To remove the starter, first keep any Markdown files you want to retain. Then de
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). The candidate has no public repository or issue tracker yet, so keep suggestions beside your own copy until a public route is actually announced.
+See [CONTRIBUTING.md](CONTRIBUTING.md). `v1.0.1` remains unreleased; use the public repository's current contribution route for proposed source changes.

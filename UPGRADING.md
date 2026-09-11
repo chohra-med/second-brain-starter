@@ -4,7 +4,7 @@
 
 1. Read [CHANGELOG.md](CHANGELOG.md) and confirm the version in [VERSION](VERSION).
 2. Duplicate your personalized workspace and label the copy with the date.
-3. Get a fresh copy of the update through Git or a ZIP release when one is available.
+3. Get a fresh copy of a published update through Git or its ZIP release when one is available. `v1.0.1` is unreleased source and is not an update download.
 
 ## Apply an update
 
@@ -16,6 +16,6 @@
 
 ## Recover from an interrupted update
 
-Stop editing the affected workspace. Return to the dated copy made before the update, then repeat the update one file at a time. Plain Markdown remains readable in any text editor, even if Obsidian is unavailable.
+Stop editing the affected workspace. Return to the dated copy made before the update, then repeat the update one file at a time. Plain Markdown remains readable in any text editor; current Obsidian desktop compatibility has not been verified.
 
 There are no automatic migrations or automatic overwrites in this starter.
