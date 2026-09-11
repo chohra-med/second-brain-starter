@@ -92,6 +92,22 @@ test('binds approval to the canonical target identity, not just identical empty-
   await assert.rejects(readFile(path.join(secondTarget, 'Home.md')));
 });
 
+test('rejects literal target traversal before plan normalization without creating a state or receipt', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const rejectedTarget = `${subject.root}/safe-parent/../rejected-target`;
+  await rejects('TARGET_TRAVERSAL', () => planInstall({ ...subject, targetPath: rejectedTarget }));
+  await assert.rejects(readFile(path.join(subject.root, 'rejected-target', 'Home.md')));
+  await assert.rejects(readFile(path.join(subject.root, 'rejected-target', '.second-brain', 'installed-state.json')));
+  await assert.rejects(readFile(path.join(subject.root, 'rejected-target', '.second-brain', 'receipts', 'any.json')));
+
+  const spacedTarget = path.join(subject.root, 'valid target with spaces');
+  await mkdir(spacedTarget);
+  const plan = await planInstall({ ...subject, targetPath: spacedTarget });
+  assert.equal(plan.target, await realpath(spacedTarget));
+  assert.deepEqual(plan.entries.map((entry) => entry.status), ['CREATE', 'CREATE']);
+});
+
 test('rejects source symlinks, target traversal, duplicate destinations, and dangling state symlinks', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
