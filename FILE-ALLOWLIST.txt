@@ -7,10 +7,12 @@ FILE-ALLOWLIST.txt
 LICENSE
 PRIVACY.md
 README.md
+SECURITY.md
 UPGRADING.md
 VERSION
 bin/second-brain.mjs
 lib/installer.mjs
+lib/package-scan.mjs
 package.json
 template-manifest.json
 template/00-Meta/AGENTS.md
@@ -42,5 +44,6 @@ test/fixtures/unmanaged-loader-crlf.md
 test/helpers/consumer-cli.mjs
 test/installer.test.mjs
 test/plan.test.mjs
+test/security.test.mjs
 test/transaction.test.mjs
 test/upgrade.test.mjs
