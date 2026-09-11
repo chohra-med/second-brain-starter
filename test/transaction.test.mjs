@@ -280,6 +280,49 @@ test('corrupted install receipts reject before rollback mutation', async (t) => 
   assert.deepEqual(await treeInventory(subject.target), beforeLatePostimage);
 });
 
+test('installed-state receipt identity, backup, order, omission, and duplication are bound before rollback mutation', async (t) => {
+  const cases = [
+    ['null state preimage and backup', (receipt) => {
+      const write = receipt.writes.at(-1);
+      write.preimageSha256 = null;
+      write.backupPath = null;
+    }],
+    ['altered state preimage', (receipt) => { receipt.writes.at(-1).preimageSha256 = '0'.repeat(64); }],
+    ['replaced state backup bytes', (receipt) => { receipt.__replaceStateBackup = true; }],
+    ['malformed state backup path', (receipt) => { receipt.writes.at(-1).backupPath = '../outside'; }],
+    ['state write reorder', (receipt) => {
+      const state = receipt.writes.pop();
+      receipt.writes.unshift(state);
+    }],
+    ['state write omission', (receipt) => { receipt.writes.pop(); }],
+    ['state write duplication', (receipt) => { receipt.writes.push({ ...receipt.writes.at(-1) }); }],
+  ];
+  for (const [name, mutate] of cases) {
+    const subject = await fixture();
+    const initialPlan = await planInstall({ ...subject, targetPath: subject.target });
+    await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: initialPlan.digest });
+    const changed = Buffer.from('# Home v2\n');
+    await writeFile(path.join(subject.sourceRoot, 'template', 'Home.md'), changed);
+    subject.manifest.entries.find((entry) => entry.destination === 'Home.md').sha256 = sha256(changed);
+    subject.manifestBytes = Buffer.from(JSON.stringify(subject.manifest));
+    const plan = await planInstall({ ...subject, targetPath: subject.target, operation: 'upgrade' });
+    const applied = await applyInstall({ ...subject, targetPath: subject.target, operation: 'upgrade', approvedDigest: plan.digest });
+    const receiptPath = path.join(subject.target, applied.receiptPath);
+    const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+    mutate(receipt);
+    if (receipt.__replaceStateBackup) {
+      delete receipt.__replaceStateBackup;
+      const backupPath = path.join(subject.target, receipt.writes.at(-1).backupPath);
+      await writeFile(backupPath, 'replaced backup bytes\n');
+    }
+    await writeFile(receiptPath, JSON.stringify(receipt));
+    const before = await treeInventory(subject.target);
+    await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }), name);
+    assert.deepEqual(await treeInventory(subject.target), before, name);
+    await rm(subject.root, { recursive: true, force: true });
+  }
+});
+
 test('a receipt cannot borrow an identical managed path that this transaction did not write', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));

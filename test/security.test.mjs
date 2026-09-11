@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { assertCleanPackage, PackageScanError, scanDiffEntries, scanPackage } from '../lib/package-scan.mjs';
+import { assertCleanPackage, PackageScanError, scanDiffEntries, scanPackage, sensitiveContentRules } from '../lib/package-scan.mjs';
+import { planApprovedChange, sha256 } from '../lib/installer.mjs';
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -53,6 +54,44 @@ function encodedCredentialForms() {
     ]),
   ];
 }
+
+test('scanner detects Base64 and Base64URL credential runs at widths 1-16 across every whitespace separator and prose context', async (t) => {
+  const subject = await fixture(t);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const owner = path.join(subject.source, 'approved.md');
+  await writeFile(owner, 'before\n');
+  const separators = [' ', '\t', '\n', '\r\n', ' \t\r\n'];
+  for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) {
+      for (const separator of separators) {
+        const wrapped = encoded.match(new RegExp(`.{1,${width}}`, 'g')).join(separator);
+        const surrounded = Buffer.from(`prefix prose ${wrapped} suffix prose`);
+        assert.ok(sensitiveContentRules(surrounded).some((rule) => rule.includes('CREDENTIAL')), `${encoding} width ${width} ${JSON.stringify(separator)}`);
+        const report = await scanPackage({
+          sourceRoot: subject.source,
+          archiveRoot: subject.archive,
+          allowlistPath: subject.allowlist,
+          diffEntries: [{ path: 'before.md', before: surrounded, after: surrounded }],
+        });
+        assert.ok(report.findings.some((finding) => finding.rule.includes('CREDENTIAL')), `shared scan ${encoding} width ${width}`);
+        const postimageSha256 = sha256(surrounded);
+        await assert.rejects(
+          () => planApprovedChange({
+            targetPath: subject.source,
+            owner: 'approved.md',
+            allowedOwners: ['approved.md'],
+            preimageSha256: sha256(Buffer.from('before\n')),
+            postimage: surrounded,
+            postimageSha256,
+            evidenceDigest: '1'.repeat(64),
+          }),
+          (error) => error?.code === 'SECRET_BEARING_CONTENT',
+        );
+      }
+    }
+  }
+});
 
 test('scanner enumerates source, archive, and declared diff paths without echoing content', async (t) => {
   const subject = await fixture(t);
