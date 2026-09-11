@@ -4,10 +4,11 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const execFile = promisify(execFileCallback);
-const sourceRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bin = path.join(sourceRoot, 'bin', 'second-brain.mjs');
 
 async function cli(args, options = {}) {
