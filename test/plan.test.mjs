@@ -17,6 +17,7 @@ async function fixture() {
   await writeFile(path.join(sourceRoot, 'template', '00-Meta', 'FACTS.md'), facts);
   const manifest = {
     schemaVersion: 1,
+    metadata: { templateVersion: '1.1.0' },
     entries: [
       { source: 'template/Home.md', destination: 'Home.md', sha256: sha256(home), mergeKind: 'managed-file' },
       { source: 'template/00-Meta/FACTS.md', destination: '00-Meta/FACTS.md', sha256: sha256(facts), mergeKind: 'managed-file' },
@@ -40,10 +41,19 @@ test('plans creates, identical entries, managed updates, conflicts, and deprecat
   await writeFile(path.join(subject.target, 'Home.md'), '# Home\n');
   await writeFile(path.join(subject.target, '00-Meta', 'FACTS.md'), '# Old facts\n');
   await mkdir(path.join(subject.target, '.second-brain'));
-  await writeFile(path.join(subject.target, '.second-brain', 'installed-state.json'), JSON.stringify({ managedPaths: {
-    '00-Meta/FACTS.md': { installedSha256: sha256(Buffer.from('# Old facts\n')), mergeKind: 'managed-file' },
-    'retired.md': { installedSha256: sha256(Buffer.from('# Retired\n')), mergeKind: 'managed-file' },
-  } }));
+  await writeFile(path.join(subject.target, '.second-brain', 'installed-state.json'), JSON.stringify({
+    schemaVersion: 1,
+    edition: 'free',
+    templateVersion: '1.1.0',
+    publicDependency: null,
+    manifestSha256: sha256(subject.manifestBytes),
+    planDigest: '0'.repeat(64),
+    transactionId: 'tx-deadbeef',
+    managedPaths: {
+      '00-Meta/FACTS.md': { installedSha256: sha256(Buffer.from('# Old facts\n')), templateSha256: sha256(Buffer.from('# Old facts\n')), mergeKind: 'managed-file' },
+      'retired.md': { installedSha256: sha256(Buffer.from('# Retired\n')), templateSha256: sha256(Buffer.from('# Retired\n')), mergeKind: 'managed-file' },
+    },
+  }));
   await writeFile(path.join(subject.target, 'retired.md'), '# Retired\n');
   const planned = await planInstall({ ...subject, targetPath: subject.target });
   assert.deepEqual(planned.entries.map(({ destination, status }) => [destination, status]), [

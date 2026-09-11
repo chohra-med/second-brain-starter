@@ -25,6 +25,7 @@ async function fixture() {
   await writeFile(path.join(sourceRoot, 'template', '00-Meta', 'Rules.md'), rules);
   const manifest = {
     schemaVersion: 1,
+    metadata: { templateVersion: '1.1.0' },
     entries: [
       { source: 'template/Home.md', destination: 'Home.md', sha256: sha256(home), mergeKind: 'managed-file' },
       { source: 'template/00-Meta/Rules.md', destination: '00-Meta/Rules.md', sha256: sha256(rules), mergeKind: 'managed-file' },

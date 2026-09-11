@@ -36,7 +36,7 @@ async function manifestFor(sourceRoot, destinations = managedPaths) {
     const bytes = await readFile(path.join(sourceRoot, ...source.split('/')));
     entries.push({ source, destination, sha256: sha256(bytes), mergeKind: 'managed-file' });
   }
-  const manifest = { schemaVersion: 1, entries };
+  const manifest = { schemaVersion: 1, metadata: { templateVersion: '1.1.0' }, entries };
   return { manifest, manifestBytes: Buffer.from(JSON.stringify(manifest)) };
 }
 
@@ -139,6 +139,35 @@ test('verify reports every missing or corrupt managed path and rejects a danglin
   const stateLink = await verifyInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target });
   assert.equal(stateLink.ok, false);
   assert.equal(stateLink.issues.some((issue) => issue.code === 'SYMLINK_PATH' && issue.path === '.second-brain/installed-state.json'), true);
+});
+
+test('verify rejects unsupported state identity and separately reports a newer source manifest', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const sourceA = await install(subject);
+  const statePath = path.join(subject.target, '.second-brain', 'installed-state.json');
+  const originalState = JSON.parse(await readFile(statePath, 'utf8'));
+
+  await writeFile(statePath, `${JSON.stringify({ ...originalState, schemaVersion: 99 })}\n`);
+  const unsupported = await verifyInstall({ ...sourceA, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(unsupported.ok, false);
+  assert.equal(unsupported.issues.some((issue) => issue.code === 'INVALID_STATE' && issue.path === '.second-brain/installed-state.json'), true);
+
+  await writeFile(statePath, `${JSON.stringify({ ...originalState, templateVersion: null })}\n`);
+  const missingIdentity = await verifyInstall({ ...sourceA, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(missingIdentity.ok, false);
+  assert.equal(missingIdentity.issues.some((issue) => issue.code === 'INVALID_STATE' && issue.message.includes('templateVersion')), true);
+
+  await writeFile(statePath, `${JSON.stringify(originalState)}\n`);
+  await writeFile(path.join(subject.sourceRoot, 'template', 'Home.md'), 'B Home.md\n');
+  const sourceB = await manifestFor(subject.sourceRoot);
+  sourceB.manifest.metadata.templateVersion = '1.1.1';
+  sourceB.manifestBytes = Buffer.from(JSON.stringify(sourceB.manifest));
+  const mismatch = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(mismatch.ok, false);
+  assert.equal(mismatch.issues.some((issue) => issue.code === 'SOURCE_MANIFEST_MISMATCH'), true);
+  assert.equal(mismatch.entries.every((entry) => entry.status === 'VERIFIED'), true);
+  assert.equal(mismatch.entries.some((entry) => entry.status === 'CORRUPT'), false);
 });
 
 test('an upgrade receipt restores only receipt-owned preimages and refuses later user edits', async (t) => {
