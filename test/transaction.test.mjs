@@ -52,6 +52,20 @@ async function inventory(root) {
   return result;
 }
 
+async function loaderFixture() {
+  const subject = await fixture();
+  const loader = Buffer.from('<!-- second-brain:loader:start -->\nnew loader\n<!-- second-brain:loader:end -->\n');
+  await writeFile(path.join(subject.sourceRoot, 'template', 'AGENTS.md'), loader);
+  subject.manifest.entries.push({
+    source: 'template/AGENTS.md',
+    destination: 'AGENTS.md',
+    sha256: sha256(loader),
+    mergeKind: 'managed-block',
+  });
+  subject.manifestBytes = Buffer.from(JSON.stringify(subject.manifest));
+  return { ...subject, loader };
+}
+
 test('requires the current complete plan digest and writes receipt/state only after managed bytes', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
@@ -160,4 +174,55 @@ test('a symlink inserted after planning is rejected without writing an outside s
   await symlink(outside, path.join(subject.target, '00-Meta'));
   await rejects('SYMLINK_PATH', () => applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest }));
   assert.equal(await readFile(sentinel, 'utf8'), 'unchanged');
+});
+
+test('nonempty unmanaged loaders and malformed markers fail closed without a receipt', async (t) => {
+  const subject = await loaderFixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await writeFile(path.join(subject.target, 'AGENTS.md'), '# Existing project rules\n');
+  const unmanaged = await planInstall({ ...subject, targetPath: subject.target });
+  assert.equal(unmanaged.entries.find((entry) => entry.destination === 'AGENTS.md').status, 'CONFLICT');
+  await rejects('PLAN_CONFLICT', () => applyInstall({ ...subject, targetPath: subject.target, approvedDigest: unmanaged.digest }));
+  assert.equal(await readFile(path.join(subject.target, 'AGENTS.md'), 'utf8'), '# Existing project rules\n');
+
+  for (const malformed of [
+    '<!-- second-brain:loader:start -->\nmissing end\n',
+    '<!-- second-brain:loader:start -->\na\n<!-- second-brain:loader:start -->\nb\n<!-- second-brain:loader:end -->\n',
+  ]) {
+    await writeFile(path.join(subject.target, 'AGENTS.md'), malformed);
+    const plan = await planInstall({ ...subject, targetPath: subject.target });
+    assert.equal(plan.entries.find((entry) => entry.destination === 'AGENTS.md').status, 'CONFLICT');
+    await rejects('PLAN_CONFLICT', () => applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest }));
+    assert.equal(await readFile(path.join(subject.target, 'AGENTS.md'), 'utf8'), malformed);
+  }
+});
+
+test('compatible loader block update preserves surrounding bytes and receipt rollback restores the full preimage', async (t) => {
+  const subject = await loaderFixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const original = Buffer.from('prefix\r\n<!-- second-brain:loader:start -->\r\nold loader\r\n<!-- second-brain:loader:end -->\r\nsuffix\r\n');
+  await writeFile(path.join(subject.target, 'AGENTS.md'), original);
+  const plan = await planInstall({ ...subject, targetPath: subject.target });
+  const loaderEntry = plan.entries.find((entry) => entry.destination === 'AGENTS.md');
+  assert.equal(loaderEntry.status, 'MANAGED-UPDATE');
+  const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
+  const updated = await readFile(path.join(subject.target, 'AGENTS.md'));
+  assert.equal(updated.subarray(0, Buffer.from('prefix\r\n').length).equals(Buffer.from('prefix\r\n')), true);
+  assert.equal(updated.subarray(updated.length - Buffer.from('\r\nsuffix\r\n').length).equals(Buffer.from('\r\nsuffix\r\n')), true);
+  assert.equal(updated.includes(Buffer.from('new loader')), true);
+  assert.equal(updated.includes(Buffer.from('old loader')), false);
+  await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
+  assert.equal((await readFile(path.join(subject.target, 'AGENTS.md'))).equals(original), true);
+});
+
+test('loader change after approval invalidates the digest and a loader symlink is rejected', async (t) => {
+  const subject = await loaderFixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await writeFile(path.join(subject.target, 'AGENTS.md'), '<!-- second-brain:loader:start -->\nold\n<!-- second-brain:loader:end -->\n');
+  const approved = await planInstall({ ...subject, targetPath: subject.target });
+  await writeFile(path.join(subject.target, 'AGENTS.md'), '<!-- second-brain:loader:start -->\nconcurrent edit\n<!-- second-brain:loader:end -->\n');
+  await rejects('PLAN_DIGEST_MISMATCH', () => applyInstall({ ...subject, targetPath: subject.target, approvedDigest: approved.digest }));
+  await rm(path.join(subject.target, 'AGENTS.md'));
+  await symlink(path.join(subject.target, 'missing-loader.md'), path.join(subject.target, 'AGENTS.md'));
+  await rejects('SYMLINK_PATH', () => planInstall({ ...subject, targetPath: subject.target }));
 });
