@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "edition": "free",
+    "templateVersion": "1.1.0",
+    "stateNamespace": ".second-brain",
+    "contract": {
+      "entry": {
+        "source": "Repository-relative regular file beneath template/.",
+        "destination": "Project-relative regular file path with no absolute or traversal segments.",
+        "sha256": "Lowercase SHA-256 of the source bytes.",
+        "mergeKind": "managed-file for a whole file governed by three-way upgrade rules; managed-block is reserved for the bounded root loader surfaces added by their owning task."
+      },
+      "installedState": {
+        "edition": "free or paid.",
+        "templateVersion": "Version of the installed manifest.",
+        "publicDependency": "Pinned public source identity for paid installations; null for free installations.",
+        "managedPaths": "Per-destination installed hash, template hash, merge kind, and ownership needed for three-way upgrade.",
+        "receiptIds": "Transaction receipt identifiers, without home paths or secrets."
+      },
+      "receipt": {
+        "receiptId": "Distinct transaction identifier.",
+        "planDigest": "Exact approved plan digest.",
+        "edition": "Edition that wrote the receipt.",
+        "manifestIdentity": "Manifest version and content hash used by the transaction.",
+        "writes": "Only paths and preimage/postimage hashes touched by this transaction.",
+        "rollback": "Receipt-scoped undo information for this transaction only."
+      }
+    }
+  },
+  "entries": [
+    {
+      "source": "template/Home.md",
+      "destination": "Home.md",
+      "sha256": "eae66944f620d031016d1e98f26d79a50e2514fd334654be48eea46ecbb51e27",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/00-Meta/Daily-Task-Plan.md",
+      "destination": "00-Meta/Daily-Task-Plan.md",
+      "sha256": "c0f70137cad4ba8708a92b5eb7c2ad4c339b752bbecb2baf794252fb2f11461d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/00-Meta/Decisions.md",
+      "destination": "00-Meta/Decisions.md",
+      "sha256": "83db4aeb81e7864162d050a6b82a69e47c8fc42d43cb882677c4d21e8831629d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/01-Projects/Selected-Project/FACTS.md",
+      "destination": "01-Projects/Selected-Project/FACTS.md",
+      "sha256": "df4c9133ba75cfbd0782ec45e36a227d791e8c329feec84b153a7b3d0f9f01c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/01-Projects/Selected-Project/Decisions.md",
+      "destination": "01-Projects/Selected-Project/Decisions.md",
+      "sha256": "f397bc98e27713a24f8c73c17fa66e64d995024281bd4885d8808de83897eb53",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/01-Projects/Selected-Project/progress.md",
+      "destination": "01-Projects/Selected-Project/progress.md",
+      "sha256": "16574176a2f02bef9d55d4630d07029a0a1fd326634b398b98ca377c93b35a52",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/01-Projects/Selected-Project/roadmap.md",
+      "destination": "01-Projects/Selected-Project/roadmap.md",
+      "sha256": "6b73f3ce101431cf5690a608b0d8edc906218236d37fce39930aa18fb6718da9",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/02-Areas/Areas.md",
+      "destination": "02-Areas/Areas.md",
+      "sha256": "29b5b4ef79abe4979f692342785a4806ed4e334722ec239d7c18b17a2fc80113",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/PARA-CODE.md",
+      "destination": "03-Resources/PARA-CODE.md",
+      "sha256": "4dfdaa0b09562b37567374bd23b5b9184bba7d61f7bbbee7dae522c416d76c24",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/capture.md",
+      "destination": "03-Resources/Procedures/capture.md",
+      "sha256": "d309e7f4a1cc584a96715cfee66614d7233eddbe0e958072b94a103fdcf20881",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/close.md",
+      "destination": "03-Resources/Procedures/close.md",
+      "sha256": "116a3db85ec695c1536a89ae2eb0eceab977f2d81659861fa54fff574ff34238",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/context.md",
+      "destination": "03-Resources/Procedures/context.md",
+      "sha256": "9451340e103ac9dd33c55554803e151f4ba5e9a5ba1cd736cf92e0b0e2a06fcd",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/learning-and-scaling.md",
+      "destination": "03-Resources/Procedures/learning-and-scaling.md",
+      "sha256": "529e7e1606f35bf871c4e98c2a7b88b30f15ece14da5f31967ccff167d9af723",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/review.md",
+      "destination": "03-Resources/Procedures/review.md",
+      "sha256": "87d1b5777d265d26acb24b4f816a676f2e035eae1ea94889eee3defdfccf4163",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/04-Archives/Projects/Archive-Guide.md",
+      "destination": "04-Archives/Projects/Archive-Guide.md",
+      "sha256": "7c5dd21a5985a0d8647e254539a97577f6dddbea557023bfa1281d442326ad4d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/05-Daily/daily-template.md",
+      "destination": "05-Daily/daily-template.md",
+      "sha256": "e9e55985e3bc07b5026488e6a302c374c80c5687eaadf71b3b58dc0811b3a6ff",
+      "mergeKind": "managed-file"
+    }
+  ]
+}
