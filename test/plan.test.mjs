@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, realpath, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { InstallPlanError, planInstall, sha256 } from '../lib/installer.mjs';
+import { InstallPlanError, applyInstall, planInstall, sha256 } from '../lib/installer.mjs';
 
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-plan-'));
@@ -62,6 +62,24 @@ test('changes to named target bytes change the consent digest', async (t) => {
   const second = await planInstall({ ...subject, targetPath: subject.target });
   assert.notEqual(first.digest, second.digest);
   assert.equal(second.entries.find((entry) => entry.destination === 'Home.md').status, 'CONFLICT');
+});
+
+test('binds approval to the canonical target identity, not just identical empty-target operations', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const secondTarget = path.join(subject.root, 'second-target');
+  const futureTarget = path.join(subject.root, 'future-target');
+  await mkdir(secondTarget);
+  const firstPlan = await planInstall({ ...subject, targetPath: subject.target });
+  const secondPlan = await planInstall({ ...subject, targetPath: secondTarget });
+  const futurePlan = await planInstall({ ...subject, targetPath: futureTarget });
+  assert.equal(firstPlan.target, await realpath(subject.target));
+  assert.equal(secondPlan.target, await realpath(secondTarget));
+  assert.equal(futurePlan.target, path.join(await realpath(subject.root), 'future-target'));
+  assert.notEqual(firstPlan.digest, secondPlan.digest);
+  assert.notEqual(firstPlan.digest, futurePlan.digest);
+  await rejects('PLAN_DIGEST_MISMATCH', () => applyInstall({ ...subject, targetPath: secondTarget, approvedDigest: firstPlan.digest }));
+  await assert.rejects(readFile(path.join(secondTarget, 'Home.md')));
 });
 
 test('rejects source symlinks, target traversal, duplicate destinations, and dangling state symlinks', async (t) => {
