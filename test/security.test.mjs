@@ -179,6 +179,22 @@ test('scanner reconstructs generated UTF-8-prefixed credentials without flatteni
   assert.equal(cases, 480);
 });
 
+test('scanner retains chunks after repeated mixed ambiguous lexical prefixes', () => {
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const chunks = encoded.match(/.{1,8}/g);
+  const prefixes = [
+    'alpha-beta-gamma-delta-',
+    'identifier_one_two_three_',
+    'path/segment/branch/',
+    'C++-template/operator+',
+  ];
+  for (const prefix of prefixes) {
+    const wrapped = `${prefix}${chunks[0]} ${chunks.slice(1).join(' ')}`;
+    assert.ok(sensitiveContentRules(Buffer.from(wrapped)).some((rule) => rule.includes('CREDENTIAL')), prefix);
+  }
+});
+
 test('generated UTF-8-prefixed width-2 and width-3 credentials reject across shared surfaces and do not write', async (t) => {
   const subject = await fixture(t);
   const member = 'generated-prefix.md';
