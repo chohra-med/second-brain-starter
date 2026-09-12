@@ -262,6 +262,64 @@ test('scanner requires the final chunk when a long lexical suffix is attached', 
   assert.equal(cases, 288);
 });
 
+test('scanner detects complete unwrapped credentials fused inside long lexical runs', () => {
+  const materials = [
+    [['api', '_key='].join(''), '12345678'].join(''),
+    [['sec', 'ret='].join(''), '123456789'].join(''),
+    [['access', '_token='].join(''), '12345678901234567890123456789012'].join(''),
+    [['pass', 'word='].join(''), '12345678'].join(''),
+  ];
+  const contexts = [1, 17, 128, 1024];
+  const placements = ['prefix', 'suffix', 'paired'];
+  let cases = 0;
+  for (const material of materials) for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (const length of contexts) {
+      const context = `${'alpha'.repeat(Math.ceil(length / 5))}`.slice(0, length);
+      for (const placement of placements) {
+        const fused = placement === 'prefix' ? `${context}${encoded}` : placement === 'suffix' ? `${encoded}${context}` : `${context}${encoded}${context}`;
+        assert.ok(sensitiveContentRules(Buffer.from(fused)).some((rule) => rule.includes('CREDENTIAL')), `${encoding} ${material.slice(0, 4)} ${length} ${placement}`);
+        cases += 1;
+      }
+    }
+  }
+  assert.equal(cases, 96);
+});
+
+test('scanner rejects an unwrapped fused credential across shared scans without writing', async (t) => {
+  const subject = await fixture(t);
+  const member = 'unwrapped-fused.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  const material = [['api', '_key='].join(''), '12345678901234567890123456789012'].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const planted = Buffer.from(`${'ordinary'.repeat(16)}${encoded}${'suffix'.repeat(16)}`);
+  await writeFile(path.join(subject.source, member), planted);
+  await writeFile(path.join(subject.archive, member), planted);
+  const report = await scanPackage({ sourceRoot: subject.source, archiveRoot: subject.archive, allowlistPath: subject.allowlist, diffEntries: [{ path: member, before: planted, after: planted }] });
+  for (const section of [report.source, report.archive, report.diff]) assert.equal(section.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+  await assert.rejects(() => planApprovedChange({ targetPath: subject.source, owner: member, allowedOwners: [member], preimageSha256: sha256(Buffer.from('before\n')), postimage: planted, postimageSha256: sha256(planted), evidenceDigest: '1'.repeat(64) }), (error) => error?.code === 'SECRET_BEARING_CONTENT');
+  assert.deepEqual(await readFile(path.join(subject.source, member)), planted);
+});
+
+test('scanner keeps overlapping unwrapped windows bounded through 1 MB and late hostile input', () => {
+  const material = [['secret=', '12345678901234567890123456789012'].join('')];
+  const encoded = Buffer.from(material[0]).toString('base64url');
+  const sizes = [1024, 10240, 102400, 1048576];
+  const timings = [];
+  for (const size of sizes) {
+    const safe = Buffer.from('s'.repeat(size));
+    const start = performance.now();
+    assert.deepEqual(sensitiveContentRules(safe), []);
+    const safeMs = performance.now() - start;
+    const hostile = Buffer.concat([safe, Buffer.from(encoded)]);
+    const hostileStart = performance.now();
+    assert.ok(sensitiveContentRules(hostile).some((rule) => rule.includes('CREDENTIAL')));
+    const hostileMs = performance.now() - hostileStart;
+    timings.push({ size, safeMs: Math.round(safeMs), hostileMs: Math.round(hostileMs) });
+  }
+  assert.ok(timings.every(({ safeMs, hostileMs }) => safeMs < 5000 && hostileMs < 5000), JSON.stringify(timings));
+});
+
 test('generated UTF-8-prefixed width-2 and width-3 credentials reject across shared surfaces and do not write', async (t) => {
   const subject = await fixture(t);
   const member = 'generated-prefix.md';
