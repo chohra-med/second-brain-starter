@@ -286,6 +286,26 @@ test('scanner detects complete unwrapped credentials fused inside long lexical r
   assert.equal(cases, 96);
 });
 
+test('scanner detects case-variant unwrapped credentials fused inside long lexical runs', () => {
+  const materials = [
+    [['API', '_KEY='].join(''), '12345678'].join(''),
+    [['SeCr', 'Et='].join(''), '12345678'].join(''),
+    [['ACCESS', '_ToKeN='].join(''), '12345678'].join(''),
+    [['Pass', 'WORD='].join(''), '12345678'].join(''),
+  ];
+  let cases = 0;
+  for (const material of materials) for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (const placement of ['prefix', 'suffix', 'paired']) {
+      const context = 'ordinary'.repeat(16);
+      const fused = placement === 'prefix' ? `${context}${encoded}` : placement === 'suffix' ? `${encoded}${context}` : `${context}${encoded}${context}`;
+      assert.ok(sensitiveContentRules(Buffer.from(fused)).some((rule) => rule.includes('CREDENTIAL')), `${encoding} ${placement}`);
+      cases += 1;
+    }
+  }
+  assert.equal(cases, 24);
+});
+
 test('scanner rejects an unwrapped fused credential across shared scans without writing', async (t) => {
   const subject = await fixture(t);
   const member = 'unwrapped-fused.md';
