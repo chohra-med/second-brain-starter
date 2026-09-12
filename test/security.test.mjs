@@ -306,6 +306,49 @@ test('scanner detects case-variant unwrapped credentials fused inside long lexic
   assert.equal(cases, 24);
 });
 
+test('scanner detects phase-shifted assignments inside fused Base64 runs', () => {
+  const spellings = ['api-key', 'api_key', 'apikey', 'secret', 'access-token', 'access_token', 'password'];
+  const utf8Contexts = ['é', '€', '漢'];
+  const outerLengths = [1, 17, 128, 1024];
+  const valueLengths = [8, 9, 32, 128];
+  const caseVariant = (value, variant) => {
+    if (variant === 0) return value.toLowerCase();
+    if (variant === 1) return value.toUpperCase();
+    return [...value].map((character, index) => index % 2 === 0 ? character.toUpperCase() : character.toLowerCase()).join('');
+  };
+  let cases = 0;
+  for (const spelling of spellings) for (const encoding of ['base64', 'base64url']) {
+    for (const placement of ['prefix', 'paired']) for (const outerLength of outerLengths) {
+      for (let variant = 0; variant < 3; variant += 1) {
+        const utf8 = utf8Contexts[(cases + variant) % utf8Contexts.length];
+        const key = caseVariant(spelling, variant);
+        const delimiter = (cases + variant) % 2 === 0 ? '=' : ':';
+        const quote = ['', "'", '"'][(cases + variant) % 3];
+        const spacing = ['', ' ', '  '][(cases + outerLength) % 3];
+        const value = 'v'.repeat(valueLengths[(cases + variant) % valueLengths.length]);
+        const material = `${utf8} ${key}${spacing}${delimiter}${spacing}${quote}${value}${quote} ${utf8}`;
+        const encoded = Buffer.from(material).toString(encoding);
+        const context = 'a'.repeat(outerLength);
+        const fused = placement === 'prefix' ? `${context}${encoded}` : `${context}${encoded}${context}`;
+        assert.ok(sensitiveContentRules(Buffer.from(fused)).some((rule) => rule.includes('CREDENTIAL')), `${spelling} ${encoding} ${placement} ${outerLength} ${variant}`);
+        cases += 1;
+      }
+    }
+  }
+  assert.equal(cases, 336);
+
+  const encoded = Buffer.from(`€ ${['api', 'key'].join('-')}=${'1'.repeat(8)}`).toString('base64url');
+  for (let phase = 0; phase < 4; phase += 1) {
+    const fused = `${'a'.repeat(phase)}${encoded}`;
+    assert.ok(sensitiveContentRules(Buffer.from(fused)).some((rule) => rule.includes('CREDENTIAL')), `textual phase ${phase}`);
+  }
+
+  for (const encoding of ['base64', 'base64url']) {
+    const safe = Buffer.from('ordinary documentation value with no assignment').toString(encoding);
+    assert.deepEqual(sensitiveContentRules(Buffer.from(`a${safe}${'a'.repeat(1024)}`)), []);
+  }
+});
+
 test('scanner rejects an unwrapped fused credential across shared scans without writing', async (t) => {
   const subject = await fixture(t);
   const member = 'unwrapped-fused.md';
