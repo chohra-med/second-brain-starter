@@ -117,6 +117,52 @@ test('scanner detects punctuation-attached Base64 and Base64URL chunks at widths
   }
 });
 
+test('scanner retains wrapped chunks beside ordinary lexical text and ambiguous edge punctuation', () => {
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const separators = [' ', '\t', '\n', '\r\n', ' \t\r\n'];
+  const ordinaryWords = ['word', 'route', 'notes'];
+  const contexts = [
+    ['word(', ')word'], ['word[', ']word'], ['word{', '}word'], ['word<', '>word'],
+    ['(', ')word'], ['word(', ')'], ['word"', '"word'], ["word'", "'word"], ['word`', '`word'],
+    ['word,', ',word'], ['word.', '.word'], ['word:', ':word'], ['word;', ';word'],
+    ['word*', '*word'], ['word#', '#word'], ['word~', '~word'], ['word/', '/word'],
+    ['word+', '+word'], ['word-', '-word'], ['word_', '_word'],
+  ];
+  for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) {
+      const chunks = encoded.match(new RegExp(`.{1,${width}}`, 'g'));
+      for (const separator of separators) {
+        for (const [prefix, suffix] of contexts) {
+          for (const word of ordinaryWords.slice(0, 1)) {
+            const left = prefix.replace('word', word);
+            const right = suffix.replace('word', word);
+            const wrapped = `${left}${chunks[0]}${separator}${chunks.slice(1, -1).join(separator)}${separator}${chunks.at(-1)}${right}`;
+            assert.ok(sensitiveContentRules(Buffer.from(wrapped)).some((rule) => rule.includes('CREDENTIAL')), `${encoding} width ${width} ${JSON.stringify(separator)} ${prefix}/${suffix}`);
+          }
+        }
+      }
+    }
+  }
+});
+
+test('scanner rejects ordinary-adjacent and ambiguous-edge material across shared scans and approved writes', async (t) => {
+  const subject = await fixture(t);
+  const member = 'lexical-adjacency.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const chunks = encoded.match(/.{1,8}/g);
+  const planted = Buffer.from(`word(${chunks[0]} ${chunks.slice(1, -1).join(' ')} ${chunks.at(-1)})word`);
+  await writeFile(path.join(subject.source, member), planted);
+  await writeFile(path.join(subject.archive, member), planted);
+  const report = await scanPackage({ sourceRoot: subject.source, archiveRoot: subject.archive, allowlistPath: subject.allowlist, diffEntries: [{ path: member, before: planted, after: planted }] });
+  for (const section of [report.source, report.archive, report.diff]) assert.equal(section.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+  await assert.rejects(() => planApprovedChange({ targetPath: subject.source, owner: member, allowedOwners: [member], preimageSha256: sha256(Buffer.from('before\n')), postimage: planted, postimageSha256: sha256(planted), evidenceDigest: '1'.repeat(64) }), (error) => error?.code === 'SECRET_BEARING_CONTENT');
+  const edgeCases = ['-', '_', '/'].map((edge) => Buffer.from(`${edge}${chunks[0]} ${chunks.slice(1).join(' ')}`));
+  for (const edgeCase of edgeCases) assert.ok(sensitiveContentRules(edgeCase).some((rule) => rule.includes('CREDENTIAL')));
+});
+
 test('scanner rejects a representative punctuation-attached credential on every shared scan surface and approved change', async (t) => {
   const subject = await fixture(t);
   const member = 'attached.md';
