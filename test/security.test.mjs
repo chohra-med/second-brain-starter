@@ -93,6 +93,80 @@ test('scanner detects Base64 and Base64URL credential runs at widths 1-16 across
   }
 });
 
+test('scanner detects punctuation-attached Base64 and Base64URL chunks at widths 1-16', async () => {
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const separators = [' ', '\t', '\n', '\r\n', ' \t\r\n'];
+  const attachedPunctuation = ['(', ')', '"', "'", ',', '.'];
+  for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) {
+      for (const separator of separators) {
+        const chunks = encoded.match(new RegExp(`.{1,${width}}`, 'g'));
+        for (const punctuation of attachedPunctuation) {
+          const prefixAttached = `${punctuation}${chunks[0]}${separator}${chunks.slice(1).join(separator)}`;
+          const suffixAttached = `${chunks.slice(0, -1).join(separator)}${separator}${chunks.at(-1)}${punctuation}`;
+          for (const wrapped of [prefixAttached, suffixAttached]) {
+            assert.ok(
+              sensitiveContentRules(Buffer.from(`prefix prose ${wrapped} suffix prose`)).some((rule) => rule.includes('CREDENTIAL')),
+              `${encoding} width ${width} ${JSON.stringify(separator)} ${punctuation}`,
+            );
+          }
+        }
+      }
+    }
+  }
+});
+
+test('scanner rejects a representative punctuation-attached credential on every shared scan surface and approved change', async (t) => {
+  const subject = await fixture(t);
+  const member = 'attached.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const chunks = encoded.match(/.{1,8}/g);
+  const planted = Buffer.from(`prefix (${chunks[0]} ${chunks.slice(1, -1).join(' ')} ${chunks.at(-1)}. suffix`);
+  await writeFile(path.join(subject.source, member), planted);
+  await writeFile(path.join(subject.archive, member), planted);
+  const report = await scanPackage({
+    sourceRoot: subject.source,
+    archiveRoot: subject.archive,
+    allowlistPath: subject.allowlist,
+    diffEntries: [{ path: member, before: planted, after: planted }],
+  });
+  for (const section of [report.source, report.archive, report.diff]) {
+    assert.equal(section.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+  }
+  const postimageSha256 = sha256(planted);
+  await assert.rejects(
+    () => planApprovedChange({
+      targetPath: subject.source,
+      owner: member,
+      allowedOwners: [member],
+      preimageSha256: sha256(Buffer.from('before\n')),
+      postimage: planted,
+      postimageSha256,
+      evidenceDigest: '1'.repeat(64),
+    }),
+    (error) => error?.code === 'SECRET_BEARING_CONTENT',
+  );
+});
+
+test('scanner keeps benign prose, technical tokens, safe encoding, and bounded large input clean', () => {
+  const safeEncoded = Buffer.from('ordinary documentation only').toString('base64');
+  const inputs = [
+    'Natural prose about an API key-shaped phrase without a value.',
+    'Base64-like technical token QWxhZGRpbjpvcGVuIHNlc2FtZQ== is documentation.',
+    `encoded safe prose: ${safeEncoded}`,
+    `${'safe prose '.repeat(20000)}END`,
+  ];
+  for (const input of inputs) assert.deepEqual(sensitiveContentRules(Buffer.from(input)), []);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const chunks = encoded.match(/.{1,8}/g);
+  const afterLargeBenignPrefix = `${'safe '.repeat(2000)}(${chunks[0]} ${chunks.slice(1).join(' ')})`;
+  assert.ok(sensitiveContentRules(Buffer.from(afterLargeBenignPrefix)).includes('CREDENTIAL_MATERIAL'));
+});
+
 test('scanner enumerates source, archive, and declared diff paths without echoing content', async (t) => {
   const subject = await fixture(t);
   const report = await assertCleanPackage({
