@@ -163,6 +163,43 @@ test('scanner rejects ordinary-adjacent and ambiguous-edge material across share
   for (const edgeCase of edgeCases) assert.ok(sensitiveContentRules(edgeCase).some((rule) => rule.includes('CREDENTIAL')));
 });
 
+test('scanner reconstructs generated UTF-8-prefixed credentials without flattening lexical alternatives', () => {
+  const prefixes = ['é', '€', '漢'];
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const separators = [' ', '\t', '\n', '\r\n', ' \t\r\n'];
+  let cases = 0;
+  for (const prefix of prefixes) for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(`${prefix}${material}`).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) for (const separator of separators) {
+      const wrapped = encoded.match(new RegExp(`.{1,${width}}`, 'g')).join(separator);
+      assert.ok(sensitiveContentRules(Buffer.from(wrapped)).some((rule) => rule.includes('CREDENTIAL')), `${encoding} width ${width} ${JSON.stringify(separator)}`);
+      cases += 1;
+    }
+  }
+  assert.equal(cases, 480);
+});
+
+test('generated UTF-8-prefixed width-2 and width-3 credentials reject across shared surfaces and do not write', async (t) => {
+  const subject = await fixture(t);
+  const member = 'generated-prefix.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  let finalWrapped;
+  for (const width of [2, 3]) {
+    const encoded = Buffer.from(`€${material}`).toString('base64');
+    const wrapped = Buffer.from(encoded.match(new RegExp(`.{1,${width}}`, 'g')).join(' '));
+    finalWrapped = wrapped;
+    await writeFile(path.join(subject.source, member), wrapped);
+    await writeFile(path.join(subject.archive, member), wrapped);
+    const report = await scanPackage({ sourceRoot: subject.source, archiveRoot: subject.archive, allowlistPath: subject.allowlist, diffEntries: [{ path: member, before: wrapped, after: wrapped }] });
+    assert.equal(report.source.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+    assert.equal(report.archive.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+    assert.equal(report.diff.findings.filter((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL').length >= 2, true);
+    await assert.rejects(() => planApprovedChange({ targetPath: subject.source, owner: member, allowedOwners: [member], preimageSha256: sha256(Buffer.from('# clean\n')), postimage: wrapped, postimageSha256: sha256(wrapped), evidenceDigest: '1'.repeat(64) }), (error) => error?.code === 'SECRET_BEARING_CONTENT');
+  }
+  assert.deepEqual(await readFile(path.join(subject.source, member)), finalWrapped);
+});
+
 test('scanner rejects a representative punctuation-attached credential on every shared scan surface and approved change', async (t) => {
   const subject = await fixture(t);
   const member = 'attached.md';
@@ -211,6 +248,18 @@ test('scanner keeps benign prose, technical tokens, safe encoding, and bounded l
   const chunks = encoded.match(/.{1,8}/g);
   const afterLargeBenignPrefix = `${'safe '.repeat(2000)}(${chunks[0]} ${chunks.slice(1).join(' ')})`;
   assert.ok(sensitiveContentRules(Buffer.from(afterLargeBenignPrefix)).includes('CREDENTIAL_MATERIAL'));
+});
+
+test('scanner detects late hostile content at bounded benign input sizes', () => {
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(`é${material}`).toString('base64url');
+  const wrapped = encoded.match(/.{1,3}/g).join(' ');
+  for (const size of [1024, 10240, 102400]) {
+    const input = Buffer.from(`${'safe prose '.repeat(Math.ceil(size / 11))} ${wrapped}`.slice(-size - wrapped.length));
+    const started = Date.now();
+    assert.ok(sensitiveContentRules(input).some((rule) => rule.includes('CREDENTIAL')));
+    assert.ok(Date.now() - started < 10000, `bounded scan ${size}`);
+  }
 });
 
 test('scanner enumerates source, archive, and declared diff paths without echoing content', async (t) => {
