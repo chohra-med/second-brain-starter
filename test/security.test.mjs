@@ -239,6 +239,29 @@ test('long lexical prefix rejects across shared scans and approved change withou
   assert.deepEqual(await readFile(path.join(subject.source, member)), planted);
 });
 
+test('scanner requires the final chunk when a long lexical suffix is attached', () => {
+  const materials = [
+    [['api', '_key='].join(''), '12345678'].join(''),
+    [['sec', 'ret='].join(''), '12345678'].join(''),
+    [['pass', 'word='].join(''), '12345678'].join(''),
+  ];
+  const lengths = [17, 32, 128];
+  let cases = 0;
+  for (const material of materials) for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) {
+      const chunks = encoded.match(new RegExp(`.{1,${width}}`, 'g'));
+      for (const length of lengths) {
+        const suffix = `${'alpha-beta_'.repeat(Math.ceil(length / 11))}`.slice(0, length);
+        const wrapped = `${chunks.slice(0, -1).join(' ')} ${chunks.at(-1)}${suffix}`;
+        assert.ok(sensitiveContentRules(Buffer.from(wrapped)).some((rule) => rule.includes('CREDENTIAL')), `${material} ${encoding} width ${width} length ${length}`);
+        cases += 1;
+      }
+    }
+  }
+  assert.equal(cases, 288);
+});
+
 test('generated UTF-8-prefixed width-2 and width-3 credentials reject across shared surfaces and do not write', async (t) => {
   const subject = await fixture(t);
   const member = 'generated-prefix.md';
