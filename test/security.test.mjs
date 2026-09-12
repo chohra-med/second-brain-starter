@@ -195,6 +195,50 @@ test('scanner retains chunks after repeated mixed ambiguous lexical prefixes', (
   }
 });
 
+test('scanner preserves long lexical runs as source positions around wrapped credentials', () => {
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const separators = [' ', '\t', '\n', '\r\n', ' \t\r\n'];
+  const lengths = [17, 32, 128];
+  const contexts = (length) => {
+    const alpha = 'a'.repeat(length);
+    const mixed = `${'alpha-beta_'.repeat(Math.ceil(length / 11))}`.slice(0, length);
+    return [alpha, mixed];
+  };
+  let cases = 0;
+  for (const encoding of ['base64', 'base64url']) {
+    const encoded = Buffer.from(material).toString(encoding);
+    for (let width = 1; width <= 16; width += 1) {
+      const chunks = encoded.match(new RegExp(`.{1,${width}}`, 'g'));
+      for (const separator of separators) for (const length of lengths) for (const prefix of contexts(length)) {
+        const prefixCase = `${prefix}${chunks[0]}${separator}${chunks.slice(1).join(separator)}`;
+        const suffixCase = `${chunks.slice(0, -1).join(separator)}${separator}${chunks.at(-1)}${prefix}`;
+        const pairedCase = `${prefix}${chunks[0]}${separator}${chunks.slice(1, -1).join(separator)}${separator}${chunks.at(-1)}${prefix}`;
+        for (const value of [prefixCase, suffixCase, pairedCase]) {
+          assert.ok(sensitiveContentRules(Buffer.from(value)).some((rule) => rule.includes('CREDENTIAL')), `${encoding} width ${width} length ${length} ${JSON.stringify(separator)}`);
+          cases += 1;
+        }
+      }
+    }
+  }
+  assert.equal(cases, 2880);
+});
+
+test('long lexical prefix rejects across shared scans and approved change without writing', async (t) => {
+  const subject = await fixture(t);
+  const member = 'long-prefix.md';
+  await writeFile(subject.allowlist, `FILE-ALLOWLIST.txt\nREADME.md\n${member}\n`);
+  const material = [['api', '_key='].join(''), ['SYNTHETIC', '-', 'ONLY', '-', 'VALUE'].join('')].join('');
+  const encoded = Buffer.from(material).toString('base64url');
+  const chunks = encoded.match(/.{1,8}/g);
+  const planted = Buffer.from(`${'alpha-beta_'.repeat(3)}${chunks[0]} ${chunks.slice(1).join(' ')}`);
+  await writeFile(path.join(subject.source, member), planted);
+  await writeFile(path.join(subject.archive, member), planted);
+  const report = await scanPackage({ sourceRoot: subject.source, archiveRoot: subject.archive, allowlistPath: subject.allowlist, diffEntries: [{ path: member, before: planted, after: planted }] });
+  for (const section of [report.source, report.archive, report.diff]) assert.equal(section.findings.some((finding) => finding.path === member && finding.rule === 'ENCODED_CREDENTIAL_MATERIAL'), true);
+  await assert.rejects(() => planApprovedChange({ targetPath: subject.source, owner: member, allowedOwners: [member], preimageSha256: sha256(Buffer.from('before\n')), postimage: planted, postimageSha256: sha256(planted), evidenceDigest: '1'.repeat(64) }), (error) => error?.code === 'SECRET_BEARING_CONTENT');
+  assert.deepEqual(await readFile(path.join(subject.source, member)), planted);
+});
+
 test('generated UTF-8-prefixed width-2 and width-3 credentials reject across shared surfaces and do not write', async (t) => {
   const subject = await fixture(t);
   const member = 'generated-prefix.md';
