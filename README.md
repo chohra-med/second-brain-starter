@@ -58,9 +58,9 @@ The target may already contain your project files. Differing managed files remai
 
 ### 3. Start one project
 
-1. Open the installed `Home.md` in your target. The source template is [template/Home.md](template/Home.md); it is not the workspace you will edit.
+1. Open the installed `Home.md` in your target. It is the dashboard for the project you will run. The source template is [template/Home.md](template/Home.md); it is not the workspace you will edit.
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
-3. Replace bracketed examples in your installed `01-Projects/Selected-Project/FACTS.md`, `roadmap.md`, `progress.md`, and `Decisions.md`.
+3. Follow Home's Start here route: replace bracketed examples in your installed `01-Projects/Selected-Project/FACTS.md`, `roadmap.md`, and `Decisions.md`, then choose one outcome in `00-Meta/Daily-Task-Plan.md`. Add dated Done, Verified, Open, and Next entries to `progress.md` as work happens.
 4. The initializer writes compatible root loader and skill files for supported-client discovery: five skills to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
 5. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
@@ -68,10 +68,11 @@ The target may already contain your project files. Differing managed files remai
 
 The following links are source-template examples. After initialization, use the same relative paths inside your target:
 
-1. **Capture:** add one real incoming task to the selected project's [roadmap](template/01-Projects/Selected-Project/roadmap.md) with an owner, `Open` status, evidence for done, and one next action. Follow [capture](template/03-Resources/Procedures/capture.md).
+1. **Focus:** choose one outcome in the installed `00-Meta/Daily-Task-Plan.md`.
 2. **Context:** read the project route and return the compact context note from [context](template/03-Resources/Procedures/context.md).
-3. **Do and close:** complete the next action. Record what changed and its evidence in [progress](template/01-Projects/Selected-Project/progress.md), then use [close](template/03-Resources/Procedures/close.md). A task is not `Verified` until its stated evidence exists.
-4. **Review:** before a handoff or weekly, use [review](template/03-Resources/Procedures/review.md). Repair any mismatch between a `Done` claim and its required evidence, then name one `Next` action.
+3. **Do:** complete the next action from the selected project's [roadmap](template/01-Projects/Selected-Project/roadmap.md). When new work arrives, follow [capture](template/03-Resources/Procedures/capture.md) to record it with an owner, `Open` status, evidence for done, and one next action.
+4. **Close:** record what changed and its evidence in [progress](template/01-Projects/Selected-Project/progress.md), then use [close](template/03-Resources/Procedures/close.md). A task is not `Verified` until its stated evidence exists.
+5. **Review:** before a handoff or weekly, use [review](template/03-Resources/Procedures/review.md). Repair any mismatch between a `Done` claim and its required evidence, then name one `Next` action.
 
 PARA gives records a home and CODE gives work a direction. Read [PARA + CODE](template/03-Resources/PARA-CODE.md) when you need the definitions.
 

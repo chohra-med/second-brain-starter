@@ -50,7 +50,7 @@
     {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "eae66944f620d031016d1e98f26d79a50e2514fd334654be48eea46ecbb51e27",
+      "sha256": "6e2fa278e5c5feee3b4a54905de5702fb1f0330754d34a9b5565593f65b38c97",
       "mergeKind": "managed-file"
     },
     {
