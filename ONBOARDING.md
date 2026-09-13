@@ -20,7 +20,7 @@ Repeat the exact selected path and ask the user to confirm it before reading or 
 
 Before touching the selected project, read its applicable instructions in this order when present: `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, and `README.md`. Follow those project rules for any later project work. If they conflict with this contract, stop and explain the conflict before proceeding.
 
-Only inspect the selected project and files required for this setup. Do not open secrets, credentials, environment files, hidden directories, or unrelated files.
+Only inspect the selected project and files required for this setup. A declared instruction path such as `.memory/` may be read when the project's rules require it. Do not browse unrelated hidden directories or open secrets, credentials, environment files, or unrelated files.
 
 ## 4. Check the required runtime
 
