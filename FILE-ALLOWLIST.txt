@@ -1,11 +1,16 @@
 .github/workflows/test.yml
 .gitattributes
 .gitignore
+.agents/skills/second-brain-onboarding/SKILL.md
+.claude/skills/second-brain-onboarding/SKILL.md
+AGENTS.md
 ATTRIBUTION.md
+CLAUDE.md
 CHANGELOG.md
 CONTRIBUTING.md
 FILE-ALLOWLIST.txt
 LICENSE
+ONBOARDING.md
 PRIVACY.md
 README.md
 SECURITY.md
@@ -45,6 +50,7 @@ test/fixtures/unmanaged-loader-crlf.md
 test/helpers/consumer-cli.mjs
 test/installer.test.mjs
 test/line-endings.test.mjs
+test/onboarding.test.mjs
 test/plan.test.mjs
 test/security.test.mjs
 test/transaction.test.mjs
