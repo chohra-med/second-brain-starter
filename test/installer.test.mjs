@@ -4,14 +4,27 @@ import path from 'node:path';
 import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
-const markdownLinkPattern = /\[[^\]]+\]\(([^)]+\.md)\)/g;
+const inlineLinkPattern = /\[[^\]]+\]\(([^)]+)\)/g;
+const referenceDefinitionPattern = /^\[([^\]]+)\]:\s*(\S+)/gm;
+const referenceLinkPattern = /\[([^\]]+)\]\[([^\]]*)\]/g;
 
 async function validateDashboardLinks(markdown, root) {
-  const destinations = [...markdown.matchAll(markdownLinkPattern)].map((match) => match[1]);
-  assert.ok(destinations.length > 0, 'Home.md must contain Markdown links');
+  const definitions = new Map([...markdown.matchAll(referenceDefinitionPattern)].map((match) => [match[1].toLowerCase(), match[2]]));
+  const rawDestinations = [...markdown.matchAll(inlineLinkPattern)].map((match) => match[1]);
+  for (const match of markdown.matchAll(referenceLinkPattern)) {
+    const label = (match[2] || match[1]).toLowerCase();
+    assert.ok(definitions.has(label), `Dashboard reference link has no destination: ${label}`);
+    rawDestinations.push(definitions.get(label));
+  }
+  assert.ok(rawDestinations.length > 0, 'Home.md must contain Markdown links');
   const canonicalRoot = await realpath(root);
+  const destinations = [];
 
-  for (const destination of destinations) {
+  for (const rawDestination of rawDestinations) {
+    if (rawDestination.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(rawDestination)) continue;
+    const destination = rawDestination.split(/[?#]/, 1)[0];
+    assert.match(destination, /\.md$/i, `Dashboard local link is not Markdown: ${rawDestination}`);
+    destinations.push(destination);
     const resolved = path.resolve(root, destination);
     const relative = path.relative(root, resolved);
     assert.ok(relative && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative), `Dashboard link escapes its root: ${destination}`);
@@ -110,6 +123,18 @@ test('installed Home is a complete operating dashboard with valid contained link
 
   await assert.rejects(
     validateDashboardLinks(`${home}\n[Broken](03-Resources/missing.md)\n`, target),
+    /Dashboard link is not a regular file: 03-Resources\/missing\.md/,
+  );
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Broken section](03-Resources/missing.md#section)\n`, target),
+    /Dashboard link is not a regular file: 03-Resources\/missing\.md/,
+  );
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Wrong type](03-Resources/missing.txt)\n`, target),
+    /Dashboard local link is not Markdown: 03-Resources\/missing\.txt/,
+  );
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Broken reference][missing]\n\n[missing]: 03-Resources/missing.md\n`, target),
     /Dashboard link is not a regular file: 03-Resources\/missing\.md/,
   );
   await assert.rejects(
