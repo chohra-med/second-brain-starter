@@ -1,0 +1,2 @@
+# Distribution bytes must match template-manifest.json on every checkout OS.
+* text=auto eol=lf
