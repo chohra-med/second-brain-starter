@@ -1,8 +1,29 @@
 import assert from 'node:assert/strict';
-import { cp, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, realpath, stat, symlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
+
+const markdownLinkPattern = /\[[^\]]+\]\(([^)]+\.md)\)/g;
+
+async function validateDashboardLinks(markdown, root) {
+  const destinations = [...markdown.matchAll(markdownLinkPattern)].map((match) => match[1]);
+  assert.ok(destinations.length > 0, 'Home.md must contain Markdown links');
+  const canonicalRoot = await realpath(root);
+
+  for (const destination of destinations) {
+    const resolved = path.resolve(root, destination);
+    const relative = path.relative(root, resolved);
+    assert.ok(relative && !relative.startsWith(`..${path.sep}`) && relative !== '..' && !path.isAbsolute(relative), `Dashboard link escapes its root: ${destination}`);
+    const actual = await realpath(resolved).catch(() => null);
+    const actualRelative = actual ? path.relative(canonicalRoot, actual) : null;
+    assert.ok(!actual || (actualRelative && !actualRelative.startsWith(`..${path.sep}`) && actualRelative !== '..' && !path.isAbsolute(actualRelative)), `Dashboard link resolves outside its root: ${destination}`);
+    const destinationStat = actual ? await stat(actual) : null;
+    assert.ok(destinationStat?.isFile(), `Dashboard link is not a regular file: ${destination}`);
+  }
+
+  return destinations;
+}
 
 test('consumer installs into a directory with spaces, verifies, no-ops, and rolls back only its receipt', async (t) => {
   const root = await consumerRoot();
@@ -39,6 +60,85 @@ test('consumer installs into a directory with spaces, verifies, no-ops, and roll
   assert.match(rolledBack.stdout, /ROLLED_BACK\tHome\.md/);
   await assert.rejects(readFile(path.join(target, 'Home.md')));
   assert.equal(await readFile(path.join(target, 'keep.md'), 'utf8'), 'consumer-owned\n');
+});
+
+test('installed Home is a complete operating dashboard with valid contained links and exact drift detection', async (t) => {
+  const root = await consumerRoot('second-brain-dashboard-');
+  cleanup(t, root);
+  const target = path.join(root, 'Dashboard Project');
+  await mkdir(target);
+
+  const planned = await runCli(['init', '--target', target]);
+  const digest = planDigest(planned.stdout);
+  assert.ok(digest, planned.stdout);
+  const applied = await runCli(['init', '--target', target, '--apply', digest]);
+  assert.equal(applied.code, undefined, applied.stdout);
+
+  const homePath = path.join(target, 'Home.md');
+  const home = await readFile(homePath, 'utf8');
+  const orderedMarkers = ['## Start here', '## One project', '## Daily loop', '**Focus:**', '**Context:**', '**Do:**', '**Close:**', '**Review:**', '## Operating route', '## Organise and retain'];
+  let previousIndex = -1;
+  for (const marker of orderedMarkers) {
+    const markerIndex = home.indexOf(marker);
+    assert.ok(markerIndex > previousIndex, `Dashboard marker missing or out of order: ${marker}`);
+    previousIndex = markerIndex;
+  }
+
+  const expectedDestinations = [
+    '00-Meta/AGENTS.md',
+    '00-Meta/Daily-Task-Plan.md',
+    '00-Meta/Decisions.md',
+    '01-Projects/Selected-Project/FACTS.md',
+    '01-Projects/Selected-Project/roadmap.md',
+    '01-Projects/Selected-Project/Decisions.md',
+    '01-Projects/Selected-Project/progress.md',
+    '02-Areas/Areas.md',
+    '03-Resources/PARA-CODE.md',
+    '03-Resources/Procedures/context.md',
+    '03-Resources/Procedures/capture.md',
+    '03-Resources/Procedures/close.md',
+    '03-Resources/Procedures/review.md',
+    '03-Resources/Procedures/learning-and-scaling.md',
+    '04-Archives/Projects/Archive-Guide.md',
+    '05-Daily/daily-template.md',
+  ];
+  const installedDestinations = await validateDashboardLinks(home, target);
+  const templateHome = await readFile(path.join(sourceRoot, 'template', 'Home.md'), 'utf8');
+  const templateDestinations = await validateDashboardLinks(templateHome, path.join(sourceRoot, 'template'));
+  assert.deepEqual([...new Set(installedDestinations)].sort(), expectedDestinations.sort());
+  assert.deepEqual([...new Set(templateDestinations)].sort(), expectedDestinations.sort());
+
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Broken](03-Resources/missing.md)\n`, target),
+    /Dashboard link is not a regular file: 03-Resources\/missing\.md/,
+  );
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Escape](..\/outside.md)\n`, target),
+    /Dashboard link escapes its root: \.\.\/outside\.md/,
+  );
+  if (process.platform !== 'win32') {
+    const outsidePath = path.join(root, 'outside.md');
+    const linkedPath = path.join(target, '03-Resources', 'outside.md');
+    await writeFile(outsidePath, 'outside\n');
+    await symlink(outsidePath, linkedPath);
+    await assert.rejects(
+      validateDashboardLinks(`${home}\n[Symlink escape](03-Resources/outside.md)\n`, target),
+      /Dashboard link resolves outside its root: 03-Resources\/outside\.md/,
+    );
+  }
+
+  const clean = await runCli(['verify', '--target', target]);
+  assert.equal(clean.code, undefined, clean.stdout);
+  assert.match(clean.stdout, /Verification: OK/);
+  await writeFile(homePath, `${home}\nconsumer edit\n`);
+  const drifted = await runCli(['verify', '--target', target]);
+  assert.equal(drifted.code, 1, drifted.stdout);
+  assert.match(drifted.stdout, /^CORRUPT\tHome\.md\tManaged destination hash mismatch: Home\.md$/m);
+  assert.match(drifted.stdout, /Verification: FAILED/);
+  await writeFile(homePath, home);
+  const restored = await runCli(['verify', '--target', target]);
+  assert.equal(restored.code, undefined, restored.stdout);
+  assert.match(restored.stdout, /Verification: OK/);
 });
 
 test('consumer rejects unmanaged CRLF loaders and existing collisions without changing selected files', async (t) => {
