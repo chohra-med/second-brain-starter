@@ -11,10 +11,20 @@ const referenceLinkPattern = /\[([^\]]+)\]\[([^\]]*)\]/g;
 async function validateDashboardLinks(markdown, root) {
   const definitions = new Map([...markdown.matchAll(referenceDefinitionPattern)].map((match) => [match[1].toLowerCase(), match[2]]));
   const rawDestinations = [...markdown.matchAll(inlineLinkPattern)].map((match) => match[1]);
+  const usedDefinitions = new Set();
   for (const match of markdown.matchAll(referenceLinkPattern)) {
     const label = (match[2] || match[1]).toLowerCase();
     assert.ok(definitions.has(label), `Dashboard reference link has no destination: ${label}`);
     rawDestinations.push(definitions.get(label));
+    usedDefinitions.add(label);
+  }
+  const markdownWithoutDefinitions = markdown.replace(referenceDefinitionPattern, '');
+  for (const [label, destination] of definitions) {
+    if (usedDefinitions.has(label)) continue;
+    const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`\\[${escapedLabel}\\](?!\\s*[[(])`, 'i').test(markdownWithoutDefinitions)) {
+      rawDestinations.push(destination);
+    }
   }
   assert.ok(rawDestinations.length > 0, 'Home.md must contain Markdown links');
   const canonicalRoot = await realpath(root);
@@ -136,6 +146,10 @@ test('installed Home is a complete operating dashboard with valid contained link
   await assert.rejects(
     validateDashboardLinks(`${home}\n[Broken reference][missing]\n\n[missing]: 03-Resources/missing.md\n`, target),
     /Dashboard link is not a regular file: 03-Resources\/missing\.md/,
+  );
+  await assert.rejects(
+    validateDashboardLinks(`${home}\n[Escaping shortcut]\n\n[Escaping shortcut]: ..\/outside.md\n`, target),
+    /Dashboard link escapes its root: \.\.\/outside\.md/,
   );
   await assert.rejects(
     validateDashboardLinks(`${home}\n[Escape](..\/outside.md)\n`, target),
