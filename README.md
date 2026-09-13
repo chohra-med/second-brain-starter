@@ -96,7 +96,7 @@ node ./bin/second-brain.mjs verify --target "$PROJECT"
 
 Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files. Editable seed records are expected to change after setup; once the v1.1.0 seed policy is installed, verification reports those existing contained records as `PERSONALIZED` and still succeeds. Missing, unsafe, or escaping seed paths still fail.
 
-Personalizing a managed record remains baseline drift, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
+Personalizing a managed record intentionally creates baseline drift, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest; non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](UPGRADING.md) before upgrading.
 

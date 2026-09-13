@@ -14,6 +14,14 @@ const managedPaths = [
   '05-Daily/Today.md',
 ];
 
+const seedFilePaths = new Set([
+  '01-Projects/Selected-Project/FACTS.md',
+  '01-Projects/Selected-Project/Decisions.md',
+  '01-Projects/Selected-Project/roadmap.md',
+  '01-Projects/Selected-Project/progress.md',
+  '05-Daily/Today.md',
+]);
+
 async function fixture() {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-upgrade-'));
   const sourceRoot = path.join(root, 'source');
@@ -29,23 +37,83 @@ async function fixture() {
   return { root, sourceRoot, target, initial };
 }
 
-async function manifestFor(sourceRoot, destinations = managedPaths) {
+async function manifestFor(sourceRoot, destinations = managedPaths, seedPaths = new Set()) {
   const entries = [];
   for (const destination of destinations) {
     const source = `template/${destination}`;
     const bytes = await readFile(path.join(sourceRoot, ...source.split('/')));
-    entries.push({ source, destination, sha256: sha256(bytes), mergeKind: 'managed-file' });
+    entries.push({ source, destination, sha256: sha256(bytes), mergeKind: seedPaths.has(destination) ? 'seed-file' : 'managed-file' });
   }
   const manifest = { schemaVersion: 1, metadata: { templateVersion: '1.1.0' }, entries };
   return { manifest, manifestBytes: Buffer.from(JSON.stringify(manifest)) };
 }
 
 async function install(subject, options = {}) {
-  const source = await manifestFor(subject.sourceRoot, options.destinations);
+  const source = await manifestFor(subject.sourceRoot, options.destinations, options.seedPaths);
   const plan = await planInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target, ...options });
   const result = await applyInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target, approvedDigest: plan.digest, ...options });
   return { ...source, plan, result };
 }
+
+test('seed files remain user-owned across verify and upgrade while managed files remain exact', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const sourceA = await install(subject, { seedPaths: seedFilePaths });
+  const seed = '01-Projects/Selected-Project/FACTS.md';
+  const seedPath = path.join(subject.target, ...seed.split('/'));
+  const homePath = path.join(subject.target, 'Home.md');
+  const personalizedBytes = Buffer.from('# Personal facts\n');
+  await writeFile(seedPath, personalizedBytes);
+
+  const personalized = await verifyInstall({ ...sourceA, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(personalized.ok, true);
+  assert.equal(personalized.entries.find((entry) => entry.destination === seed).status, 'PERSONALIZED');
+
+  await writeFile(homePath, '# Personal home\n');
+  const managedDrift = await verifyInstall({ ...sourceA, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(managedDrift.ok, false);
+  assert.deepEqual(managedDrift.issues.filter((issue) => issue.code === 'CORRUPT').map((issue) => issue.path), ['Home.md']);
+  await writeFile(homePath, subject.initial['Home.md']);
+
+  await writeFile(path.join(subject.sourceRoot, 'template', ...seed.split('/')), '# New facts template\n');
+  await writeFile(path.join(subject.sourceRoot, 'template', 'Home.md'), '# New home template\n');
+  const sourceB = await manifestFor(subject.sourceRoot, managedPaths, seedFilePaths);
+  const plan = await planInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade' });
+  assert.equal(plan.entries.find((entry) => entry.destination === seed).status, 'PERSONALIZED');
+  assert.equal(plan.entries.find((entry) => entry.destination === 'Home.md').status, 'MANAGED-UPDATE');
+  await applyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade', approvedDigest: plan.digest });
+  assert.deepEqual(await readFile(seedPath), personalizedBytes);
+  assert.equal(await readFile(homePath, 'utf8'), '# New home template\n');
+  const upgraded = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(upgraded.ok, true);
+  assert.equal(upgraded.entries.find((entry) => entry.destination === seed).status, 'PERSONALIZED');
+
+  await unlink(seedPath);
+  const missing = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(missing.ok, false);
+  assert.deepEqual(missing.issues.filter((issue) => issue.code === 'MISSING').map((issue) => issue.path), [seed]);
+  await mkdir(seedPath);
+  const directory = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.equal(directory.ok, false);
+  assert.deepEqual(directory.issues.filter((issue) => issue.code === 'NON_REGULAR_FILE').map((issue) => issue.path), [seed]);
+  await rm(seedPath, { recursive: true });
+  await writeFile(seedPath, personalizedBytes);
+
+  if (process.platform !== 'win32') {
+    const outside = path.join(subject.root, 'outside.md');
+    await writeFile(outside, 'outside\n');
+    await unlink(seedPath);
+    await symlink(outside, seedPath);
+    const escapingLink = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+    assert.equal(escapingLink.ok, false);
+    assert.deepEqual(escapingLink.issues.filter((issue) => issue.code === 'SYMLINK_PATH').map((issue) => issue.path), [seed]);
+    await unlink(seedPath);
+    await symlink(path.join(subject.root, 'missing.md'), seedPath);
+    const danglingLink = await verifyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+    assert.equal(danglingLink.ok, false);
+    assert.deepEqual(danglingLink.issues.filter((issue) => issue.code === 'SYMLINK_PATH').map((issue) => issue.path), [seed]);
+  }
+});
 
 async function rejects(code, action) {
   await assert.rejects(action, (error) => error instanceof InstallPlanError && error.code === code);

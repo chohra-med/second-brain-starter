@@ -9,7 +9,7 @@
         "source": "Repository-relative regular file beneath template/.",
         "destination": "Project-relative regular file path with no absolute or traversal segments.",
         "sha256": "Lowercase SHA-256 of the source bytes.",
-        "mergeKind": "managed-file for a whole file governed by three-way upgrade rules; managed-block is reserved for the bounded root loader surfaces added by their owning task."
+        "mergeKind": "managed-file for a protected whole file; managed-block for bounded root loaders; seed-file for a record that becomes user-owned after safe creation."
       },
       "installedState": {
         "edition": "free or paid.",
@@ -57,43 +57,43 @@
       "source": "template/00-Meta/Daily-Task-Plan.md",
       "destination": "00-Meta/Daily-Task-Plan.md",
       "sha256": "c0f70137cad4ba8708a92b5eb7c2ad4c339b752bbecb2baf794252fb2f11461d",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/00-Meta/Decisions.md",
       "destination": "00-Meta/Decisions.md",
       "sha256": "83db4aeb81e7864162d050a6b82a69e47c8fc42d43cb882677c4d21e8831629d",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/01-Projects/Selected-Project/FACTS.md",
       "destination": "01-Projects/Selected-Project/FACTS.md",
       "sha256": "df4c9133ba75cfbd0782ec45e36a227d791e8c329feec84b153a7b3d0f9f01c6",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/01-Projects/Selected-Project/Decisions.md",
       "destination": "01-Projects/Selected-Project/Decisions.md",
       "sha256": "f397bc98e27713a24f8c73c17fa66e64d995024281bd4885d8808de83897eb53",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/01-Projects/Selected-Project/progress.md",
       "destination": "01-Projects/Selected-Project/progress.md",
       "sha256": "16574176a2f02bef9d55d4630d07029a0a1fd326634b398b98ca377c93b35a52",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/01-Projects/Selected-Project/roadmap.md",
       "destination": "01-Projects/Selected-Project/roadmap.md",
       "sha256": "6b73f3ce101431cf5690a608b0d8edc906218236d37fce39930aa18fb6718da9",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/02-Areas/Areas.md",
       "destination": "02-Areas/Areas.md",
       "sha256": "29b5b4ef79abe4979f692342785a4806ed4e334722ec239d7c18b17a2fc80113",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/03-Resources/PARA-CODE.md",
@@ -141,7 +141,7 @@
       "source": "template/05-Daily/daily-template.md",
       "destination": "05-Daily/daily-template.md",
       "sha256": "e9e55985e3bc07b5026488e6a302c374c80c5687eaadf71b3b58dc0811b3a6ff",
-      "mergeKind": "managed-file"
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/shared-skills/second-brain-capture/SKILL.md",

@@ -22,7 +22,7 @@ The upgrader compares the previous installed template digest, the current target
 - `CONFLICT` requires manual resolution and prevents application.
 - `DEPRECATED` identifies a formerly managed path that needs an explicit decision.
 
-Your facts, decisions, roadmap, progress, and daily notes are still your records. Once the v1.1.0 seed policy is installed, an existing safe seed record is reported as `PERSONALIZED` and preserved through upgrade. Do not treat the initializer as a blanket overwrite. There is no V1 `--force` option.
+Your facts, decisions, roadmap, progress, and daily notes are still your records. Once the v1.1.0 seed policy is installed, an existing safe seed record is reported as `PERSONALIZED` and preserved through upgrade. That status is not proof of damage. Do not treat the initializer as a blanket overwrite. There is no V1 `--force` option.
 
 After an applied upgrade, run:
 
