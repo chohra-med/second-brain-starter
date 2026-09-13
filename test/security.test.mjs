@@ -318,7 +318,7 @@ test('scanner detects phase-shifted assignments inside fused Base64 runs', () =>
   };
   let cases = 0;
   for (const spelling of spellings) for (const encoding of ['base64', 'base64url']) {
-    for (const placement of ['prefix', 'paired']) for (const outerLength of outerLengths) {
+    for (const placement of ['prefix', 'suffix', 'paired']) for (const outerLength of outerLengths) {
       for (let variant = 0; variant < 3; variant += 1) {
         const utf8 = utf8Contexts[(cases + variant) % utf8Contexts.length];
         const key = caseVariant(spelling, variant);
@@ -329,13 +329,13 @@ test('scanner detects phase-shifted assignments inside fused Base64 runs', () =>
         const material = `${utf8} ${key}${spacing}${delimiter}${spacing}${quote}${value}${quote} ${utf8}`;
         const encoded = Buffer.from(material).toString(encoding);
         const context = 'a'.repeat(outerLength);
-        const fused = placement === 'prefix' ? `${context}${encoded}` : `${context}${encoded}${context}`;
+        const fused = placement === 'prefix' ? `${context}${encoded}` : placement === 'suffix' ? `${encoded}${context}` : `${context}${encoded}${context}`;
         assert.ok(sensitiveContentRules(Buffer.from(fused)).some((rule) => rule.includes('CREDENTIAL')), `${spelling} ${encoding} ${placement} ${outerLength} ${variant}`);
         cases += 1;
       }
     }
   }
-  assert.equal(cases, 336);
+  assert.equal(cases, 504);
 
   const encoded = Buffer.from(`€ ${['api', 'key'].join('-')}=${'1'.repeat(8)}`).toString('base64url');
   for (let phase = 0; phase < 4; phase += 1) {
