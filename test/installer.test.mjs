@@ -4,6 +4,17 @@ import path from 'node:path';
 import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
+const expectedSeedDestinations = [
+  '00-Meta/Daily-Task-Plan.md',
+  '00-Meta/Decisions.md',
+  '01-Projects/Selected-Project/FACTS.md',
+  '01-Projects/Selected-Project/Decisions.md',
+  '01-Projects/Selected-Project/progress.md',
+  '01-Projects/Selected-Project/roadmap.md',
+  '02-Areas/Areas.md',
+  '05-Daily/daily-template.md',
+];
+
 const inlineLinkPattern = /\[[^\]]+\]\(([^)]+)\)/g;
 const referenceDefinitionPattern = /^\[([^\]]+)\]:\s*(\S+)/gm;
 const referenceLinkPattern = /\[([^\]]+)\]\[([^\]]*)\]/g;
@@ -47,6 +58,15 @@ async function validateDashboardLinks(markdown, root) {
 
   return destinations;
 }
+
+test('the public manifest classifies every editable record as a seed file', async () => {
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  const seedDestinations = manifest.entries.filter((entry) => entry.mergeKind === 'seed-file').map((entry) => entry.destination).sort();
+  assert.deepEqual(seedDestinations, [...expectedSeedDestinations].sort());
+  for (const entry of manifest.entries.filter((entry) => !expectedSeedDestinations.includes(entry.destination))) {
+    assert.notEqual(entry.mergeKind, 'seed-file', `Unexpected editable seed: ${entry.destination}`);
+  }
+});
 
 test('consumer installs into a directory with spaces, verifies, no-ops, and rolls back only its receipt', async (t) => {
   const root = await consumerRoot();
@@ -205,7 +225,7 @@ test('consumer rejects unmanaged CRLF loaders and existing collisions without ch
   assert.equal(await readFile(path.join(target, 'Home.md'), 'utf8'), 'my existing home\r\n');
 });
 
-test('consumer upgrade exposes a personalized managed file as a conflict and leaves it untouched', async (t) => {
+test('consumer upgrade preserves a personalized seed while updating managed files', async (t) => {
   const root = await consumerRoot();
   cleanup(t, root);
   const checkout = path.join(root, 'starter copy');
@@ -231,11 +251,16 @@ test('consumer upgrade exposes a personalized managed file as a conflict and lea
 
   const upgradePlan = await runCli(['upgrade', '--target', target], { checkout });
   assert.equal(upgradePlan.code, undefined, upgradePlan.stdout);
-  assert.match(upgradePlan.stdout, /^CONFLICT\t01-Projects\/Selected-Project\/FACTS\.md\tundo=none$/m);
+  assert.match(upgradePlan.stdout, /^PERSONALIZED\t01-Projects\/Selected-Project\/FACTS\.md\tundo=none$/m);
+  assert.match(upgradePlan.stdout, /^MANAGED-UPDATE\tHome\.md\tundo=restore-preimage$/m);
   const upgradeDigest = planDigest(upgradePlan.stdout);
   assert.ok(upgradeDigest, upgradePlan.stdout);
-  const rejected = await runCli(['upgrade', '--target', target, '--apply', upgradeDigest], { checkout });
-  assert.equal(rejected.code, 1, rejected.stdout);
-  assert.match(rejected.stdout, /PLAN_CONFLICT/);
+  const applied = await runCli(['upgrade', '--target', target, '--apply', upgradeDigest], { checkout });
+  assert.equal(applied.code, undefined, applied.stdout);
   assert.equal(await readFile(personalizedPath, 'utf8'), '# Personal facts\n');
+  assert.deepEqual(await readFile(path.join(target, 'Home.md')), updatedHome);
+  const verified = await runCli(['verify', '--target', target], { checkout });
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /^PERSONALIZED\t01-Projects\/Selected-Project\/FACTS\.md$/m);
+  assert.match(verified.stdout, /Verification: OK/);
 });

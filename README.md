@@ -12,7 +12,17 @@ This is the free Second Brain foundation. It contains PARA, CODE, the one-projec
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-## Get started
+## Get started with an AI coding client
+
+Clone this repository or extract a release ZIP, then open that copied folder in Claude Code or Codex with local-file access you intend to grant. Type:
+
+> Set this up for me
+
+The copied repository's onboarding route asks for one project folder, reads that project's rules before touching it, checks the required Node runtime, shows the complete initializer plan, waits for your approval, applies the exact plan, verifies it, and points you to the installed `Home.md` dashboard. It can run the local initializer after your approval, but your client still controls permission prompts.
+
+This is static repository guidance, not evidence that any named client has discovered it. Ordinary Claude chat or Cowork is not advertised as local Code execution.
+
+## Manual and recovery setup
 
 ### 1. Get a source copy
 
@@ -84,9 +94,9 @@ Run verification from the source root against the installed target:
 node ./bin/second-brain.mjs verify --target "$PROJECT"
 ```
 
-Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files.
+Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files. Editable seed records are expected to change after setup; once the v1.1.0 seed policy is installed, verification reports those existing contained records as `PERSONALIZED` and still succeeds. Missing, unsafe, or escaping seed paths still fail.
 
-Personalizing a managed record intentionally creates baseline drift, so `verify` will name that path and exit nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
+Personalizing a managed record intentionally creates baseline drift, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest; non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](UPGRADING.md) before upgrading.
 
