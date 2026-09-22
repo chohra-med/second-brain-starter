@@ -1,26 +1,88 @@
+<div align="center">
+
 # Second Brain Starter
 
-A free, plain-Markdown Second Brain foundation for one active project. It gives that project a PARA + CODE structure, a bounded operating route, five project-local skills, and a safe initializer. You can also read and use the Markdown manually in a text editor.
+**Give one project a memory your AI can continue.**
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes: `v1.1.0`. `v1.0.0` is the first published public release. A source version does not say that an archive is published: use the repository's Releases page to identify released tags and their archives.
+A free, plain-Markdown foundation for keeping facts, decisions, progress and next work available across Claude Code or Codex sessions.
 
-## License and boundaries
+[![license](https://img.shields.io/github/license/chohra-med/second-brain-starter.svg)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/chohra-med/second-brain-starter.svg?style=social)](https://github.com/chohra-med/second-brain-starter/stargazers)
 
-This starter is licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense, and sell copies under those terms. Keep the copyright and license notices with substantial copies.
+Created by [**Malik Chohra**](https://getwireai.com?utm_source=github&utm_medium=readme&utm_campaign=creator) · [Code Meet AI newsletter](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=newsletter)
 
-This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures, and the local initializer below. It does not include a private application, native file discovery, a mobile-only workflow, a cloud-only assistant without local file access, a support call, installation service, or an outcome guarantee.
+From [Code Meet AI](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=project) and [CasaInnov](https://casainnov.com?utm_source=github&utm_medium=readme&utm_campaign=project)
 
-Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
+</div>
 
-## Get started with an AI coding client
+---
 
-Clone this repository or extract a release ZIP, then open that copied folder in Claude Code or Codex with local-file access you intend to grant. Type:
+> **Need the learning layer too?** Start free here. Builder OS is the optional paid version, with prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog. Details are published through [Code Meet AI](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=builder-os).
+
+## Start in one sentence
+
+Clone the repository:
+
+```sh
+git clone https://github.com/chohra-med/second-brain-starter.git
+cd second-brain-starter
+```
+
+Open that folder in Claude Code, Codex CLI or the Codex app, then type:
 
 > Set this up for me
 
-The copied repository's onboarding route asks for one project folder, reads that project's rules before touching it, checks the required Node runtime, shows the complete initializer plan, waits for your approval, applies the exact plan, verifies it, and points you to the installed `Home.md` dashboard. It can run the local initializer after your approval, but your client still controls permission prompts.
+The assistant asks you to select one project, reads that project's rules, checks the required Node runtime and shows the full setup plan. Nothing is written until you approve that exact plan. After installation, it verifies the result and sends you to `Home.md`.
 
-This is static repository guidance, not evidence that any named client has discovered it. Ordinary Claude chat or Cowork is not advertised as local Code execution.
+Ordinary web chat cannot perform this local setup. Your client and operating system still control file access and permission prompts.
+
+## Your first useful result
+
+The starter gives one project:
+
+- one official home for current facts, decisions, roadmap and progress;
+- a `Home.md` dashboard that points to the next useful action;
+- five local skills for context, capture, close, review and learning;
+- a safe initializer with plan approval, verification, receipts and rollback;
+- plain Markdown files you can inspect without a private application.
+
+Start with one project. Turning the whole laptop into a knowledge empire on day one is how tasteful digital archaeology begins.
+
+## The first loop
+
+```text
+Focus -> Context -> Do -> Close -> Review
+```
+
+1. Choose one outcome in `00-Meta/Daily-Task-Plan.md`.
+2. Load the selected project's current facts and decisions.
+3. Complete the next action and keep evidence.
+4. Record what changed in `progress.md`.
+5. Review open work, stale facts and the next action.
+
+PARA gives each record a home. CODE moves information from capture to finished work. Read [PARA + CODE](template/03-Resources/PARA-CODE.md) for the short definitions.
+
+## Free foundation and Builder OS
+
+| Second Brain Starter | Builder OS |
+|---|---|
+| Public MIT foundation for one selected project | Paid operating layer for builders |
+| Home dashboard and five shared skills | Extended dashboards, skills and adapters |
+| Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
+| Learning procedure | Controlled learning ratchet with human approval and changelog history |
+| Community source updates | Paid product updates and private repository access |
+
+Use the free starter first. Builder OS is optional when you want the prepared learning and operating layer.
+
+## License and boundaries
+
+This starter is licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies under those terms. Keep the copyright and license notices with substantial copies.
+
+This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures and the local initializer below. It does not include Builder OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
+
+Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
+
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.1.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Manual and recovery setup
 
