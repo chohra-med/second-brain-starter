@@ -11,13 +11,13 @@ A free, plain-Markdown foundation for keeping facts, decisions, progress and nex
 
 Created by [**Malik Chohra**](https://getwireai.com?utm_source=github&utm_medium=readme&utm_campaign=creator) · [Code Meet AI newsletter](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=newsletter)
 
-From [Code Meet AI](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=project) and [CasaInnov](https://casainnov.com?utm_source=github&utm_medium=readme&utm_campaign=project)
+Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=sponsor) and [CasaInnov](https://casainnov.com?utm_source=github&utm_medium=readme&utm_campaign=sponsor)
 
 </div>
 
 ---
 
-> **Need the learning layer too?** Start free here. Builder OS is the optional paid version, with prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog. Details are published through [Code Meet AI](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=builder-os).
+> **Need the learning layer too?** Start free here. **[Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=builder-ai-os)** is the optional paid version. It adds prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog.
 
 ## Start in one sentence
 
@@ -62,9 +62,9 @@ Focus -> Context -> Do -> Close -> Review
 
 PARA gives each record a home. CODE moves information from capture to finished work. Read [PARA + CODE](template/03-Resources/PARA-CODE.md) for the short definitions.
 
-## Free foundation and Builder OS
+## Free foundation and Builder AI OS
 
-| Second Brain Starter | Builder OS |
+| Second Brain Starter | Builder AI OS |
 |---|---|
 | Public MIT foundation for one selected project | Paid operating layer for builders |
 | Home dashboard and five shared skills | Extended dashboards, skills and adapters |
@@ -72,13 +72,13 @@ PARA gives each record a home. CODE moves information from capture to finished w
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
 | Community source updates | Paid product updates and private repository access |
 
-Use the free starter first. Builder OS is optional when you want the prepared learning and operating layer.
+Use the free starter first. [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=builder-ai-os-comparison) is optional when you want the prepared learning and operating layer.
 
 ## License and boundaries
 
 This starter is licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies under those terms. Keep the copyright and license notices with substantial copies.
 
-This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures and the local initializer below. It does not include Builder OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
+This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures and the local initializer below. It does not include Builder AI OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
