@@ -116,7 +116,7 @@
     {
       "source": "template/03-Resources/Procedures/context.md",
       "destination": "03-Resources/Procedures/context.md",
-      "sha256": "9451340e103ac9dd33c55554803e151f4ba5e9a5ba1cd736cf92e0b0e2a06fcd",
+      "sha256": "7e8ec2e62ff9dd4b5801b636a22442e91a095b714bf770082c6c946b8bc0f5ac",
       "mergeKind": "managed-file"
     },
     {

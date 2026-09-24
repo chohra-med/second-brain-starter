@@ -59,6 +59,52 @@ async function validateDashboardLinks(markdown, root) {
   return destinations;
 }
 
+function assertIcmContract(markdown) {
+  for (const field of ['Owner', 'Context', 'Effects', 'Evidence', 'Continuity', 'Learning']) {
+    assert.match(markdown, new RegExp(`^- ${field}: .+$`, 'm'), `ICM contract is missing ${field}`);
+  }
+  assert.match(markdown, /only files the task needs/i, 'ICM context must be bounded');
+  assert.match(markdown, /recovery path/i, 'ICM continuity must name recovery');
+  assert.match(markdown, /failure case/i, 'ICM evidence must be falsifiable');
+}
+
+test('the ICM contract installs exactly, stays bounded, and rejects missing inputs or evidence', async (t) => {
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  const entry = manifest.entries.find((candidate) => candidate.destination === '03-Resources/Procedures/context.md');
+  assert.ok(entry, 'context procedure must be in the install manifest');
+  const source = await readFile(path.join(sourceRoot, entry.source));
+  assert.equal((await import('node:crypto')).createHash('sha256').update(source).digest('hex'), entry.sha256);
+  const contract = source.toString('utf8');
+  assertIcmContract(contract);
+
+  const route = await readFile(path.join(sourceRoot, 'template/shared-skills/second-brain-context/SKILL.md'), 'utf8');
+  assert.match(route, /03-Resources\/Procedures\/context\.md/);
+
+  const root = await consumerRoot('second-brain-icm-');
+  cleanup(t, root);
+  const target = path.join(root, 'Project Space');
+  await mkdir(target);
+  const planned = await runCli(['init', '--target', target]);
+  const digest = planDigest(planned.stdout);
+  assert.ok(digest, planned.stdout);
+  const applied = await runCli(['init', '--target', target, '--apply', digest]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const installed = await readFile(path.join(target, entry.destination));
+  assert.deepEqual(installed, source);
+  assertIcmContract(installed.toString('utf8'));
+  const installedRoute = await readFile(path.join(target, '.agents/skills/second-brain-context/SKILL.md'), 'utf8');
+  assert.equal(installedRoute, route);
+  const learningSource = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/learning-and-scaling.md'));
+  const learningTarget = await readFile(path.join(target, '03-Resources/Procedures/learning-and-scaling.md'));
+  assert.deepEqual(learningTarget, learningSource);
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+
+  assert.throws(() => assertIcmContract(contract.replace(/^- Context:.*\n/m, '')), /ICM contract is missing Context/);
+  assert.throws(() => assertIcmContract(contract.replace(/^- Evidence:.*\n/m, '')), /ICM contract is missing Evidence/);
+});
+
 test('the public manifest classifies every editable record as a seed file', async () => {
   const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
   const seedDestinations = manifest.entries.filter((entry) => entry.mergeKind === 'seed-file').map((entry) => entry.destination).sort();
