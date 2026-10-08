@@ -460,9 +460,12 @@ test('scanner detects late hostile content at bounded benign input sizes', () =>
   const wrapped = encoded.match(/.{1,3}/g).join(' ');
   for (const size of [1024, 10240, 102400]) {
     const input = Buffer.from(`${'safe prose '.repeat(Math.ceil(size / 11))} ${wrapped}`.slice(-size - wrapped.length));
-    const started = Date.now();
+    // CPU time (user + system) of this process, not wall time: under test-file parallelism a
+    // slow runner stretches the wall clock without the scanner doing more work. Same 10 s bound.
+    const started = process.cpuUsage();
     assert.ok(sensitiveContentRules(input).some((rule) => rule.includes('CREDENTIAL')));
-    assert.ok(Date.now() - started < 10000, `bounded scan ${size}`);
+    const used = process.cpuUsage(started);
+    assert.ok((used.user + used.system) / 1000 < 10000, `bounded scan ${size}`);
   }
 });
 

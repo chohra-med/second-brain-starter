@@ -98,27 +98,32 @@
     {
       "path": "bin/loop.sh",
       "bytes": 2097,
-      "sha256": "2d00990a70b6ff58f5d49959de804ca1f0d69168bc2e1f5ccb46e16fe696b7f4"
+      "sha256": "2d00990a70b6ff58f5d49959de804ca1f0d69168bc2e1f5ccb46e16fe696b7f4",
+      "executable": true
     },
     {
       "path": "bin/sh-gen-agents.sh",
       "bytes": 25883,
-      "sha256": "3d5f340f3f484f4494718454f8ddddd0c71a47881aafc59e32f630afffa96bfc"
+      "sha256": "3d5f340f3f484f4494718454f8ddddd0c71a47881aafc59e32f630afffa96bfc",
+      "executable": true
     },
     {
       "path": "bin/sh-index.sh",
       "bytes": 35311,
-      "sha256": "f0b481bae33245b6419f04e31579d2f2fb14667aefc8af64be2bf867bea58c7a"
+      "sha256": "f0b481bae33245b6419f04e31579d2f2fb14667aefc8af64be2bf867bea58c7a",
+      "executable": true
     },
     {
       "path": "bin/sh-init.sh",
       "bytes": 332,
-      "sha256": "4baeeb29b433cad9814f0f0b7a0d046896dd8c6e7670d7ddb2c31bb3ca80b730"
+      "sha256": "4baeeb29b433cad9814f0f0b7a0d046896dd8c6e7670d7ddb2c31bb3ca80b730",
+      "executable": true
     },
     {
       "path": "bin/sh-install.sh",
       "bytes": 12394,
-      "sha256": "0ffa97db5fedabae68bbb6c9efbf8afa8896ee74939b4a746d26da8b8a2791b9"
+      "sha256": "0ffa97db5fedabae68bbb6c9efbf8afa8896ee74939b4a746d26da8b8a2791b9",
+      "executable": true
     },
     {
       "path": "bin/sh-make-skills.sh",
@@ -128,7 +133,8 @@
     {
       "path": "bin/spec-harness",
       "bytes": 3413,
-      "sha256": "a5ec9ff0fe0445c03ee50036dc35cfe6acf78ab70902fae61ac7b1bc6ae29919"
+      "sha256": "a5ec9ff0fe0445c03ee50036dc35cfe6acf78ab70902fae61ac7b1bc6ae29919",
+      "executable": true
     },
     {
       "path": "commands/audit.md",
@@ -493,17 +499,20 @@
     {
       "path": "tests/index-fixtures.sh",
       "bytes": 25185,
-      "sha256": "071c6ea5ea2b92d3f4c701b87b1dd955a61774d3a0227244448867f07007bd1a"
+      "sha256": "071c6ea5ea2b92d3f4c701b87b1dd955a61774d3a0227244448867f07007bd1a",
+      "executable": true
     },
     {
       "path": "tests/install-manifest-contract.sh",
       "bytes": 10987,
-      "sha256": "89d042020d82e1cfba4cfee99b123c357b132d1094316652203e87838c709f4d"
+      "sha256": "89d042020d82e1cfba4cfee99b123c357b132d1094316652203e87838c709f4d",
+      "executable": true
     },
     {
       "path": "tests/installed-init-contract.sh",
       "bytes": 4124,
-      "sha256": "88056456a0cab853b440ba9715626790e5c08528667b70f354d98d874eb07010"
+      "sha256": "88056456a0cab853b440ba9715626790e5c08528667b70f354d98d874eb07010",
+      "executable": true
     },
     {
       "path": "tests/installer-fixtures.sh",
@@ -513,7 +522,8 @@
     {
       "path": "tests/portable-skills-contract.sh",
       "bytes": 12495,
-      "sha256": "fff8f8c3fc69428bd06f12375efd0b20dec6c2fffd12fe995f95d0a0b49a2fc8"
+      "sha256": "fff8f8c3fc69428bd06f12375efd0b20dec6c2fffd12fe995f95d0a0b49a2fc8",
+      "executable": true
     },
     {
       "path": "tests/sdd-fixtures.sh",
@@ -523,7 +533,8 @@
     {
       "path": "tests/synthesis-contract.sh",
       "bytes": 27355,
-      "sha256": "2968cdff7f4f32a6c2082dfb66b9b4b2416f292208d35bc2cd7d440ee574db96"
+      "sha256": "2968cdff7f4f32a6c2082dfb66b9b4b2416f292208d35bc2cd7d440ee574db96",
+      "executable": true
     }
   ]
 }
