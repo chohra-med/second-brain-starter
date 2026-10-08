@@ -17,6 +17,8 @@ Read in this order when the files exist:
 
 `Selected-Project` is the seeded project and stands for the project you are working in: for another project, read the same four records in its folder under `01-Projects/`. Its code stays where it is. This route never scans for repositories; the person names each one. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
 
+A repository registered with `connect` is another project. Its folder under `01-Projects/` has a `Connection.md` that records the repository path, the remote if one was readable, the rule files found and the status at connect time. That status is a record, not a live reading: `verify` re-checks it. Read the repository's own rules and memory in the repository before changing its files.
+
 Then state: selected root, selected project, files read, current goal, constraints, next useful action, evidence required for done, and any conflict. If a completed progress entry conflicts with an open roadmap item, name the conflict. Do not call the project ready.
 
 Capture new work with `03-Resources/Procedures/capture.md`. Never invent a fact, decision, or verification result.

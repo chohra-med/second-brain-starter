@@ -12,6 +12,14 @@ Follow [First use](03-Resources/Procedures/first-use.md). Undecided? Try learnin
 
 Follow [Context](03-Resources/Procedures/context.md), then [Close](03-Resources/Procedures/close.md) to save what changed and the next step.
 
+## Connect a repository
+
+A repository you already work in can be registered here. From the starter copy, run `node ./bin/second-brain.mjs connect --target <this folder> --repo <that repository>`. It prints the complete plan and writes nothing until you approve that exact digest.
+
+On a repository with no Spec Harness files (the harness is the set of agent rules and commands that Spec Harness installs), approval stages them there. The files are uncommitted, and your team decides whether they go in by pull request. Then open the repository in your client and run `/sdd init`. The repository stays STAGED until `.claude/agents/.init-synthesis.json` exists.
+
+Each connection gets a folder under `01-Projects/` with its own `README.md` and a `Connection.md` record. Run `node ./bin/second-brain.mjs verify --target <this folder>` from the starter copy to see each connection's current status.
+
 ## Current records
 
 These four link to `Selected-Project`, the seeded project. For another project, use the same four records in its folder under `01-Projects/`.
