@@ -80,6 +80,8 @@ This starter is licensed under the [MIT License](LICENSE). You may use, copy, mo
 
 This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures and the local initializer below. It does not include Builder AI OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
+This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license; it is not used by the starter yet. See [ATTRIBUTION.md](ATTRIBUTION.md).
+
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
 **Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.2.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
