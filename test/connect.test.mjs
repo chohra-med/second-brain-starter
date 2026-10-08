@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 import { InstallPlanError, applyInstall, planInstall, rollbackReceipt, verifyInstall } from '../lib/installer.mjs';
 import {
@@ -14,6 +15,7 @@ import {
   readConnections,
   readHarnessManifest,
   renderHarnessEntry,
+  listPendingConnects,
   validateConnectionName,
 } from '../lib/connect.mjs';
 import { sourceRoot as realSourceRoot } from './helpers/consumer-cli.mjs';
@@ -160,6 +162,104 @@ const connectNow = async (w, extra = {}) => {
 };
 const snap = async (w) => ({ hub: await treeInventory(w.hub), repo: await treeInventory(w.repo) });
 
+const PENDING_PATTERN = /^\.second-brain\/connect-pending\/(tx-[0-9a-f-]{36})\.json$/;
+const pendingIdsIn = (inventory) => Object.keys(inventory).map((key) => key.match(PENDING_PATTERN)?.[1]).filter(Boolean);
+
+// Real hard kills: a child node process runs the engine and kills ITSELF with SIGKILL from
+// inside a hook (Windows has no POSIX signals; process.kill(pid, 'SIGKILL') terminates the
+// process there too, and the child falls back to process.exit(137) if that throws).
+const CONNECT_CHILD = `
+import { readFileSync, writeSync } from 'node:fs';
+const cfg = JSON.parse(process.env.SB_CFG);
+const { applyConnect } = await import(cfg.module);
+const manifestBytes = readFileSync(cfg.manifest);
+let calls = 0;
+await applyConnect({
+  manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: cfg.sourceRoot,
+  targetPath: cfg.hub, repoPath: cfg.repo, name: cfg.name, approvedDigest: cfg.digest,
+  injectBeforeWrite: async (info) => {
+    calls += 1;
+    if (calls !== cfg.kill) return;
+    writeSync(1, 'KILLED ' + JSON.stringify({ root: info.root, destination: info.destination, kind: info.kind }) + '\\n');
+    try { process.kill(process.pid, 'SIGKILL'); } catch { process.exit(137); }
+    await new Promise(() => {});
+  },
+});
+`;
+const ROLLBACK_CHILD = `
+import { writeSync } from 'node:fs';
+const cfg = JSON.parse(process.env.SB_CFG);
+const { rollbackReceipt } = await import(cfg.module);
+await rollbackReceipt({
+  targetPath: cfg.hub, receiptId: cfg.id,
+  onRollbackStep: async ({ step }) => {
+    if (step !== cfg.kill) return;
+    writeSync(1, 'KILLED step ' + step + '\\n');
+    try { process.kill(process.pid, 'SIGKILL'); } catch { process.exit(137); }
+    await new Promise(() => {});
+  },
+});
+`;
+
+async function spawnChild(script, config) {
+  try {
+    const out = await run(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, SB_CFG: JSON.stringify(config) }, windowsHide: true });
+    return { killed: false, stdout: out.stdout };
+  } catch (error) {
+    return { killed: true, signal: error.signal, stdout: error.stdout ?? '', stderr: error.stderr ?? '' };
+  }
+}
+
+async function manifestFile(w) {
+  if (w.sourceRoot === realSourceRoot) return path.join(realSourceRoot, 'template-manifest.json');
+  const file = path.join(w.root, 'manifest.json');
+  await writeFile(file, w.manifestBytes);
+  return file;
+}
+
+const connectModule = pathToFileURL(path.join(realSourceRoot, 'lib', 'connect.mjs')).href;
+const installerModule = pathToFileURL(path.join(realSourceRoot, 'lib', 'installer.mjs')).href;
+
+function assertKilled(child, label) {
+  assert.ok(child.killed, `${label}: the child must have been killed (stderr: ${child.stderr ?? ''})`);
+  assert.ok(child.stdout.includes('KILLED'), `${label}: the child died for another reason: ${child.stderr ?? ''}`);
+  if (process.platform !== 'win32') assert.equal(child.signal, 'SIGKILL', `${label}: expected a real SIGKILL`);
+}
+
+async function killConnect(w, kill, plan, extra = {}) {
+  const child = await spawnChild(CONNECT_CHILD, {
+    module: connectModule, manifest: await manifestFile(w), sourceRoot: w.sourceRoot, hub: w.hub, repo: w.repo, name: extra.name, digest: plan.digest, kill,
+  });
+  assertKilled(child, `kill ${kill}`);
+  return JSON.parse(child.stdout.match(/KILLED (\{.*\})/)?.[1] ?? 'null');
+}
+
+// Kill the apply at hook position `kill`, then prove: the next plan is INTERRUPTED_CONNECT
+// (never LEGACY, never a silent resume), recovery restores BOTH roots byte for byte,
+// recovery is safe to repeat, and a fresh connect then succeeds and rolls back cleanly.
+async function killProbe(w, kill, before, plan, note) {
+  const marker = await killConnect(w, kill, plan);
+  const after = await snap(w);
+  const ids = pendingIdsIn(after.hub);
+  const added = (a, b) => Object.keys(b).filter((key) => a[key] !== b[key] && b[key] !== 'directory');
+  note.push(`kill ${kill} before ${marker.kind} ${marker.destination}: repo files ${added(before.repo, after.repo).length}, hub files ${added(before.hub, after.hub).length}, pending ${ids.length}`);
+  if (marker.kind === 'pending') {
+    assert.deepEqual(after, before, 'killed before the first durable write: nothing exists');
+    assert.equal((await planConnect(args(w))).detection.status, 'NONE');
+    return;
+  }
+  assert.equal(ids.length, 1, `kill ${kill}: exactly one pending record survives`);
+  const error = await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `kill ${kill}:`);
+  assert.ok(error.message.includes(ids[0]) && error.message.includes('rollbackReceipt'), 'names the pending id and the recovery call');
+  await rejects('INTERRUPTED_CONNECT', () => applyConnect({ ...args(w), approvedDigest: plan.digest }), `kill ${kill} apply:`);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+  assert.deepEqual(await snap(w), before, `kill ${kill}: recovery restores both roots byte for byte`);
+  await rejects('MISSING_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] }));
+  const fresh = await connectNow(w);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
+  assert.deepEqual(await snap(w), before, `kill ${kill}: a fresh connect succeeds and rolls back`);
+}
+
 async function extraRepo(w, name) {
   const directory = path.join(w.root, name);
   await mkdir(directory);
@@ -281,7 +381,21 @@ test('detect: NONE, LEGACY (marker or role file) and INITIALISED (receipt) are p
   assert.deepEqual(initialised.evidence, ['.claude/agents/.init-synthesis.json', '.claude/agents/sdd-verifier.md']);
 });
 
-test('detect: a symlink or a directory at a probed path fails closed', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
+test('detect: a file or directory at a probed path fails closed with a named code (every platform)', async (t) => {
+  for (const [label, prepare, code] of [
+    ['.claude is a file', async (repo) => writeFile(path.join(repo, '.claude'), 'x'), 'NON_DIRECTORY'],
+    ['.claude/agents is a file', async (repo) => { await mkdir(path.join(repo, '.claude')); await writeFile(rel(repo, '.claude/agents'), 'x'); }, 'NON_DIRECTORY'],
+    ['marker is a directory', async (repo) => mkdir(path.join(repo, 'SPEC-HARNESS.md')), 'NON_REGULAR_FILE'],
+    ['receipt is a directory', async (repo) => mkdir(rel(repo, '.claude/agents/.init-synthesis.json'), { recursive: true }), 'NON_REGULAR_FILE'],
+  ]) {
+    const repo = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-probe-')));
+    t.after(() => rm(repo, { recursive: true, force: true }));
+    await prepare(repo);
+    await rejects(code, () => detectHarness({ repoReal: repo }), label);
+  }
+});
+
+test('detect: a symlink at a probed path fails closed', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
   const outside = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-outside-')));
   t.after(() => rm(outside, { recursive: true, force: true }));
   for (const [label, prepare, code] of [
@@ -289,8 +403,6 @@ test('detect: a symlink or a directory at a probed path fails closed', { skip: !
     ['marker is a symlink', async (repo) => symlink(outside, path.join(repo, 'SPEC-HARNESS.md')), 'SYMLINK_PATH'],
     ['receipt is a symlink', async (repo) => { await mkdir(rel(repo, '.claude/agents'), { recursive: true }); await symlink(outside, rel(repo, '.claude/agents/.init-synthesis.json')); }, 'SYMLINK_PATH'],
     ['role file is a symlink', async (repo) => { await mkdir(rel(repo, '.claude/agents'), { recursive: true }); await symlink(outside, rel(repo, '.claude/agents/sdd-x.md')); }, 'SYMLINK_PATH'],
-    ['.claude is a file', async (repo) => writeFile(path.join(repo, '.claude'), 'x'), 'NON_DIRECTORY'],
-    ['marker is a directory', async (repo) => mkdir(path.join(repo, 'SPEC-HARNESS.md')), 'NON_REGULAR_FILE'],
   ]) {
     const repo = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-probe-')));
     t.after(() => rm(repo, { recursive: true, force: true }));
@@ -314,7 +426,7 @@ test('remote: parsed from .git/config as a regular file, credentials stripped, a
   assert.equal(await remoteFor(null), 'unknown');
   assert.equal(await remoteFor('[core]\n\tbare = false\n'), 'unknown');
   assert.equal(await remoteFor('[remote "origin"]\n\turl = https://example.invalid/org/repo.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n'), 'https://example.invalid/org/repo.git');
-  assert.equal(await remoteFor('[remote "origin"]\r\n\turl = git@example.invalid:org/repo.git\r\n'), 'git@example.invalid:org/repo.git');
+  assert.equal(await remoteFor('[remote "origin"]\r\n\turl = git@example.invalid:org/repo.git\r\n'), 'example.invalid:org/repo.git');
   const stripped = await remoteFor('[remote "origin"]\n\turl = https://builder:PLACEHOLDER-VALUE@example.invalid/org/repo.git\n');
   assert.equal(stripped, 'https://example.invalid/org/repo.git');
   assert.ok(!stripped.includes('PLACEHOLDER-VALUE'));
@@ -325,6 +437,49 @@ test('remote: parsed from .git/config as a regular file, credentials stripped, a
   await rm(rel(w.repo, '.git'), { recursive: true, force: true });
   await put(w.repo, '.git', 'gitdir: ../elsewhere\n');
   assert.equal((await planConnect(args(w))).remote, 'unknown');
+});
+
+test('remote: no credential, token, query, fragment or user name survives in any record', async (t) => {
+  const token = `SYNTH-${randomUUID()}`;
+  const leaking = [
+    `https://user:${token.slice(0, 5)}@${token.slice(5)}@example.invalid/org/repo.git`,
+    `https://user:${token}@example.invalid/org/repo.git`,
+    `https://example.invalid/org/repo.git?access_token=${token}`,
+    `https://example.invalid/org/repo.git#${token}`,
+    `https://${token}@example.invalid/org/repo.git`,
+    `https://user:${token}@example.invalid:8443/org/repo.git?x=1#y`,
+    `https://user:pa/${token}@example.invalid/org/repo.git`,
+    `https://user:pa?${token}@example.invalid/org/repo.git`,
+    `https://user:pa#${token}@example.invalid/org/repo.git`,
+    `${token}@example.invalid:org/repo.git`,
+    `ssh://${token}:x@example.invalid/org/repo.git`,
+    `user:${token}@example.invalid:org/repo.git`,
+  ];
+  for (const url of leaking) {
+    const w = await world(t);
+    await put(w.repo, '.git/config', `[remote "origin"]\n\turl = ${url}\n`);
+    const plan = await planConnect(args(w));
+    assert.ok(!plan.remote.includes(token) && !plan.remote.includes(token.slice(5)) && !plan.remote.includes('access_token'), `${url} -> ${plan.remote}`);
+    const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+    const everywhere = [
+      await readFile(rel(w.hub, '01-Projects/my-repo/Connection.md'), 'utf8'),
+      await readFile(rel(w.hub, CONNECTIONS), 'utf8'),
+      await readFile(rel(w.hub, result.receiptPath), 'utf8'),
+    ].join('\n');
+    for (const needle of [token, token.slice(5), token.slice(0, 5) + '@', 'access_token']) assert.ok(!everywhere.includes(needle), `${needle} leaked from ${url}`);
+  }
+  // The pending record is written before the first repo write: it must not carry one either.
+  const w = await world(t);
+  await put(w.repo, '.git/config', `[remote "origin"]\n\turl = https://user:${token}@example.invalid/org/repo.git?t=${token}\n`);
+  const plan = await planConnect(args(w));
+  const marker = await killConnect(w, 2, plan);
+  assert.equal(marker.kind, 'directory');
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  assert.ok(!(await readFile(rel(w.hub, `.second-brain/connect-pending/${pendingId}.json`), 'utf8')).includes(token));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  // Clean URLs are still recorded: host and path only, query and fragment dropped, no user name.
+  await put(w.repo, '.git/config', '[remote "origin"]\n\turl = https://example.invalid:8443/org/repo.git?x=1#y\n');
+  assert.equal((await planConnect(args(w))).remote, 'https://example.invalid:8443/org/repo.git');
 });
 
 test('remote: a symlinked .git/config or .git is refused and its target is never read', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
@@ -425,6 +580,29 @@ test('names: forbidden and reserved names are rejected, hostile but legal names 
   assert.equal((await planConnect(args(w))).name, 'my-repo', 'default name is the repo basename');
 });
 
+
+test('names: reserved Windows device names, trailing dots or spaces and case-only twins are refused on every platform', async (t) => {
+  const w = await world(t);
+  const harness = await readHarnessManifest({ sourceRoot: w.sourceRoot });
+  const devices = ['CON', 'PRN', 'AUX', 'NUL', ...Array.from({ length: 9 }, (_, index) => `COM${index + 1}`), ...Array.from({ length: 9 }, (_, index) => `LPT${index + 1}`)];
+  for (const device of devices) {
+    for (const variant of [device, device.toLowerCase(), `${device[0]}${device.slice(1).toLowerCase()}`, `${device}.txt`, `${device.toLowerCase()}.tar.gz`]) {
+      assert.throws(() => validateConnectionName(variant, harness), (error) => error.code === 'INVALID_CONNECTION_NAME', variant);
+    }
+  }
+  for (const bad of ['name.', 'name ', 'name..', 'name. ', ' name']) {
+    assert.throws(() => validateConnectionName(bad, harness), (error) => error.code === 'INVALID_CONNECTION_NAME', JSON.stringify(bad));
+  }
+  for (const fine of ['console', 'com10', 'lpt0', 'nulled', 'auxiliary.txt', 'a.con']) assert.equal(validateConnectionName(fine, harness), fine);
+  // Case-only twins: against a recorded connection and against an existing project folder.
+  const other = await extraRepo(w, 'other-repo');
+  await connectNow(w, { name: 'Client-App' });
+  await rejects('CONNECTION_NAME_TAKEN', () => planConnect(args(w, { repoPath: other, name: 'client-app' })));
+  await rejects('CONNECTION_NAME_TAKEN', () => planConnect(args(w, { repoPath: other, name: 'CLIENT-APP' })));
+  await mkdir(rel(w.hub, '01-Projects/Hand-Made'));
+  await rejects('CONNECTION_NAME_TAKEN', () => planConnect(args(w, { repoPath: other, name: 'hand-made' })));
+});
+
 // ---------------------------------------------------------------------------
 // Phase: plan (digest binding)
 // ---------------------------------------------------------------------------
@@ -508,19 +686,33 @@ test('plan: an existing workspace file under the project folder is a CONFLICT th
   assert.deepEqual(await snap(w), before);
 });
 
-test('plan: hostile paths at destinations fail closed (symlinked directory, file where a directory belongs, directory where a file belongs)', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
+test('plan: files and directories in the wrong place fail closed with a named code (every platform)', async (t) => {
+  const cases = [
+    ['file named specs', async (w) => put(w.repo, 'specs', 'x'), 'NON_DIRECTORY'],
+    ['file named ai_rules', async (w) => put(w.repo, 'ai_rules', 'x'), 'NON_DIRECTORY'],
+    ['directory named AGENTS.md', async (w) => mkdir(rel(w.repo, 'AGENTS.md')), 'NON_REGULAR_FILE'],
+    ['file named 01-Projects in the hub', async (w) => { await rm(rel(w.hub, '01-Projects'), { recursive: true }); await put(w.hub, '01-Projects', 'x'); }, 'NON_DIRECTORY'],
+    ['connections.json is a directory', async (w) => mkdir(rel(w.hub, CONNECTIONS)), 'NON_REGULAR_FILE'],
+    ['file named connect-pending', async (w) => put(w.hub, '.second-brain/connect-pending', 'x'), 'INVALID_NAMESPACE'],
+  ];
+  for (const [label, prepare, code] of cases) {
+    const w = await world(t);
+    await prepare(w);
+    const before = await snap(w);
+    await rejects(code, () => planConnect(args(w)), label);
+    await rejects(code, () => applyConnect({ ...args(w), approvedDigest: '0'.repeat(64) }), label);
+    assert.deepEqual(await snap(w), before, label);
+  }
+});
+
+test('plan: symlinks at destinations fail closed and nothing is written through them', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
   const outside = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-outside-')));
   t.after(() => rm(outside, { recursive: true, force: true }));
   const cases = [
     ['symlinked .claude', async (w) => symlink(outside, rel(w.repo, '.claude')), 'SYMLINK_PATH'],
     ['symlinked destination file', async (w) => symlink(path.join(outside, 'x'), rel(w.repo, 'AGENTS.md')), 'SYMLINK_PATH'],
-    ['file named specs', async (w) => put(w.repo, 'specs', 'x'), 'NON_DIRECTORY'],
-    ['file named ai_rules', async (w) => put(w.repo, 'ai_rules', 'x'), 'NON_DIRECTORY'],
-    ['directory named AGENTS.md', async (w) => mkdir(rel(w.repo, 'AGENTS.md')), 'NON_REGULAR_FILE'],
     ['symlinked project folder in the hub', async (w) => symlink(outside, rel(w.hub, '01-Projects/my-repo')), 'SYMLINK_PATH'],
-    ['file named 01-Projects in the hub', async (w) => { await rm(rel(w.hub, '01-Projects'), { recursive: true }); await put(w.hub, '01-Projects', 'x'); }, 'NON_DIRECTORY'],
     ['dangling connections.json', async (w) => symlink(path.join(outside, 'gone'), rel(w.hub, CONNECTIONS)), 'SYMLINK_PATH'],
-    ['connections.json is a directory', async (w) => mkdir(rel(w.hub, CONNECTIONS)), 'NON_REGULAR_FILE'],
   ];
   for (const [label, prepare, code] of cases) {
     const w = await world(t);
@@ -622,7 +814,7 @@ test('apply: creates exactly the planned set in both roots, never touches instal
   assert.equal(receipt.writes.at(-1).destination, CONNECTIONS);
   assert.deepEqual(receipt.createdDirectories.repo, expectedRepoDirectories(w.harnessFiles, SYNTHETIC_DIRECTORIES));
   assert.ok(receipt.createdDirectories.hub.includes('01-Projects/my-repo'));
-  assert.equal(result.durableWrites, plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 2);
+  assert.equal(result.durableWrites, plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 4);
 });
 
 test('apply: existing installs keep working after a connect (verify and an upgrade plan are unchanged)', async (t) => {
@@ -701,22 +893,28 @@ test('repeated: a symlinked spelling of a connected repo is refused with SYMLINK
   await rejects('SYMLINK_PATH', () => planConnect(args(w, { repoPath: alias })));
 });
 
-test('two repositories connect one after another; rollback is last-in-first-out', async (t) => {
-  const w = await world(t);
-  const baseline = await snap(w);
-  const other = await extraRepo(w, 'second-repo');
-  const otherBefore = await treeInventory(other);
-  const first = await connectNow(w);
-  const second = await connectNow(w, { repoPath: other });
-  assert.deepEqual(Object.keys((await readConnections({ targetPath: w.hub })).connections).sort(), [first.receiptId, second.receiptId].sort());
-  const mid = await snap(w);
-  const error = await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId }));
-  assert.ok(error.message.includes('hub') && error.message.includes(CONNECTIONS));
-  assert.deepEqual(await snap(w), mid, 'nothing removed in either root');
-  await rollbackReceipt({ targetPath: w.hub, receiptId: second.receiptId });
-  assert.deepEqual(await treeInventory(other), otherBefore);
-  await rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId });
-  assert.deepEqual(await snap(w), baseline);
+test('two repositories connect one after another and roll back in either order (R05-3)', async (t) => {
+  for (const order of ['A-first', 'B-first']) {
+    const w = await world(t);
+    const baseline = await snap(w);
+    const other = await extraRepo(w, 'second-repo');
+    const otherBefore = await treeInventory(other);
+    const a = await connectNow(w);
+    const afterA = await snap(w);
+    const b = await connectNow(w, { repoPath: other });
+    const [first, second] = order === 'A-first' ? [a, b] : [b, a];
+    const survivor = order === 'A-first' ? b : a;
+    await rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId });
+    const listed = await readConnections({ targetPath: w.hub });
+    assert.deepEqual(Object.keys(listed.connections), [survivor.receiptId], `${order}: only the other record remains, intact`);
+    assert.equal(JSON.stringify(listed.connections[survivor.receiptId]), JSON.stringify((await readConnections({ targetPath: w.hub })).connections[survivor.receiptId]));
+    const survivorTree = order === 'A-first' ? await treeInventory(other) : await treeInventory(w.repo);
+    assert.ok(Object.keys(survivorTree).length > 5, `${order}: the surviving repo keeps its files`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: second.receiptId });
+    assert.deepEqual(await treeInventory(other), otherBefore);
+    assert.deepEqual(await snap(w), baseline, `${order}: both rolled back to the pre-connect inventory`);
+    assert.ok(afterA.hub[CONNECTIONS]);
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -726,7 +924,7 @@ test('two repositories connect one after another; rollback is last-in-first-out'
 async function interruptionLoop(w, extra = {}) {
   const before = await snap(w);
   const plan = await planConnect(args(w, extra));
-  const expected = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 2;
+  const expected = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
   assert.ok(expected >= 3);
   for (let position = 1; position <= expected; position += 1) {
     await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(w, extra), approvedDigest: plan.digest, injectFailureAfterWrite: position }), `position ${position} of ${expected}:`);
@@ -770,15 +968,15 @@ test('interruption: with a pre-existing preserved file the loop still restores b
   assert.equal(before.repo['RULES.md'], `file:${digestOf('theirs')}`);
 });
 
-test('interruption against the REAL vendored harness: first repo file, first hub file, last repo file and the receipt', async (t) => {
+test('interruption against the REAL vendored harness: pending record, first repo file, last repo file, first hub file, connections, receipt and pending clear', async (t) => {
   const real = await realWorld(t);
   const before = await snap(real);
   const plan = await planConnect(args(real));
   const repoDirs = plan.directories.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
   const repoFiles = plan.entries.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
   const hubDirs = plan.directories.filter((entry) => entry.root === 'hub' && entry.status === 'CREATE').length;
-  const total = repoDirs + repoFiles + hubDirs + 6 + 2;
-  for (const position of [1, repoDirs + 1, repoDirs + repoFiles, repoDirs + repoFiles + hubDirs + 1, total - 1, total]) {
+  const total = repoDirs + repoFiles + hubDirs + 6 + 4;
+  for (const position of [1, 2, repoDirs + 2, repoDirs + repoFiles + 1, repoDirs + repoFiles + hubDirs + 2, total - 2, total - 1, total]) {
     await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(real), approvedDigest: plan.digest, injectFailureAfterWrite: position }));
     assert.deepEqual(await snap(real), before, `position ${position}`);
   }
@@ -858,91 +1056,105 @@ test('EACCES on the first directory creation leaves nothing behind and no receip
 // After a failed rollback the next plan must show what is left: workspace leftovers as
 // CONFLICT, repository leftovers as PRESERVED, or LEGACY (register only, zero repo writes)
 // when a harness marker file survived. Either way a retry cannot overwrite anything.
-async function assertTerminalNextPlan(w, originalPlan, leftovers) {
-  const next = await planConnect(args(w));
-  const planned = new Set(originalPlan.entries.map((entry) => `${entry.root}:${entry.destination}`));
-  const leftFiles = [...leftovers.repo.map((item) => `repo:${item}`), ...leftovers.hub.map((item) => `hub:${item}`)].filter((item) => planned.has(item));
-  const markerSurvived = leftovers.repo.some((item) => item === 'SPEC-HARNESS.md' || /^\.claude\/agents\/sdd-.*\.md$/.test(item));
-  if (markerSurvived) {
-    assert.equal(next.detection.status, 'LEGACY');
-    assert.ok(!next.entries.some((entry) => entry.root === 'repo'), 'register only: no repository writes');
-  } else {
-    for (const entry of next.entries.filter((item) => item.root === 'repo' && leftovers.repo.includes(item.destination))) {
-      assert.equal(entry.status, 'PRESERVED', `repo ${entry.destination}`);
-    }
+// After a failed apply whose rollback also failed, the hub must still own the story: while a
+// pending record survives, the next plan is INTERRUPTED_CONNECT (never LEGACY, never a silent
+// resume), and recovering by that id restores both roots.
+async function assertInterruptedThenRecover(w, before, label) {
+  const after = await snap(w);
+  const ids = pendingIdsIn(after.hub);
+  if (ids.length === 0) {
+    assert.equal((await planConnect(args(w))).detection.status, 'NONE', `${label}: no pending record means no engine debris in the repo`);
+    return false;
   }
-  for (const entry of next.entries.filter((item) => item.root === 'hub' && leftovers.hub.includes(item.destination) && item.kind === 'file')) {
-    assert.equal(entry.status, 'CONFLICT', `hub ${entry.destination}`);
-  }
-  const frozen = await snap(w);
-  if (leftFiles.length > 0) {
-    assert.notEqual(next.digest, originalPlan.digest, 'leftover files change the plan digest');
-    await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: originalPlan.digest }));
-    if (next.entries.some((item) => item.status === 'CONFLICT')) await rejects('PLAN_CONFLICT', () => applyConnect({ ...args(w), approvedDigest: next.digest }));
-  }
-  assert.deepEqual(await snap(w), frozen, 'a refused retry writes nothing');
-  return next;
+  assert.equal(ids.length, 1, label);
+  const error = await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), label);
+  assert.ok(error.message.includes(ids[0]));
+  assert.deepEqual(await snap(w), after, `${label}: a refused plan writes nothing`);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+  assert.deepEqual(await snap(w), before, `${label}: recovery restores both roots`);
+  return true;
 }
 
-test('apply-time rollback failure is a named terminal state that enumerates every leftover path per root', async (t) => {
+test('apply-time rollback failure: leftovers are enumerated, the next plan is INTERRUPTED_CONNECT (never LEGACY), and recovery finishes the job', async (t) => {
   const fresh = await world(t);
   const plan = await planConnect(args(fresh));
-  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 2;
-  let sawSuccess = false;
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 4;
+  let completed = false;
   let failures = 0;
-  const seen = { legacy: 0, preserved: 0, conflict: 0 };
-  for (let step = 1; step <= 60 && !sawSuccess; step += 1) {
+  let interrupted = 0;
+  for (let step = 1; step <= 120 && !completed; step += 1) {
     const w = await world(t);
     const before = await snap(w);
     const p = await planConnect(args(w));
     let caught = null;
     try {
-      await applyConnect({ ...args(w), approvedDigest: p.digest, injectFailureAfterWrite: total, injectFailureAfterRollbackWrite: step });
+      await applyConnect({ ...args(w), approvedDigest: p.digest, injectFailureAfterWrite: total - 1, injectFailureAfterRollbackWrite: step });
     } catch (error) {
       caught = error;
     }
-    assert.ok(caught instanceof InstallPlanError);
+    assert.ok(caught instanceof InstallPlanError, `step ${step}: ${caught}`);
     const after = await snap(w);
     if (caught.code === 'INJECTED_WRITE_FAILURE') {
-      sawSuccess = true;
+      completed = true;
       assert.deepEqual(after, before, 'once every rollback step completes the roots are restored');
       continue;
     }
     failures += 1;
-    assert.equal(caught.code, 'ROLLBACK_FAILED');
-    const expected = { hub: changedPaths(before.hub, after.hub), repo: changedPaths(before.repo, after.repo) };
-    assert.deepEqual(caught.leftovers, expected, `step ${step}: leftovers enumerate exactly what is still on disk`);
-    for (const item of [...expected.hub, ...expected.repo]) assert.ok(caught.message.includes(item), `message names ${item}`);
-    assert.ok(caught.message.includes('Not resumable: re-run connect to get a fresh plan; leftover repository files will show as PRESERVED, leftover workspace files as CONFLICT.'));
-
-    // The terminal state cannot be silently resumed or overwritten.
-    const next = await assertTerminalNextPlan(w, p, expected);
-    if (next.detection.status === 'LEGACY') seen.legacy += 1;
-    seen.preserved += next.entries.filter((item) => item.status === 'PRESERVED').length;
-    seen.conflict += next.entries.filter((item) => item.status === 'CONFLICT').length;
+    assert.equal(caught.code, 'ROLLBACK_FAILED', `step ${step}`);
+    assert.deepEqual(caught.leftovers, { hub: changedPaths(before.hub, after.hub), repo: changedPaths(before.repo, after.repo) }, `step ${step}: leftovers enumerate exactly what is still on disk`);
+    for (const item of [...caught.leftovers.hub, ...caught.leftovers.repo]) assert.ok(caught.message.includes(item), `message names ${item}`);
+    assert.ok(caught.message.includes('INTERRUPTED_CONNECT') && caught.message.includes('rollbackReceipt'));
+    if (await assertInterruptedThenRecover(w, before, `step ${step}`)) interrupted += 1;
   }
-  assert.ok(sawSuccess && failures >= 10, `loop must cover many rollback steps (saw ${failures})`);
-  assert.ok(seen.legacy > 0 && seen.preserved > 0 && seen.conflict > 0, `the terminal plans must exercise LEGACY, PRESERVED and CONFLICT: ${JSON.stringify(seen)}`);
+  assert.ok(completed && failures >= 10 && interrupted >= 10, `loop must cover many rollback steps (failures ${failures}, interrupted ${interrupted})`);
 });
 
-test('apply-time rollback fails for real when a created folder is read-only, and says so per root', { skip: (!isPosix || isRoot) && 'needs POSIX permissions as a non-root user' }, async (t) => {
+test('an engine failure whose rollback also fails never makes the repository look LEGACY', async (t) => {
   const w = await world(t);
+  const before = await snap(w);
   const plan = await planConnect(args(w));
-  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 2;
+  // Failure after the 4th durable write (pending, 3 repo dirs/files), rollback dies on its first step.
+  const error = await rejects('ROLLBACK_FAILED', () => applyConnect({ ...args(w), approvedDigest: plan.digest, injectFailureAfterWrite: 12, injectFailureAfterRollbackWrite: 1 }));
+  const after = await snap(w);
+  assert.ok(Object.keys(after.repo).some((key) => key.endsWith('.md') || key.endsWith('.sh')), 'staged files are still in the repository');
+  assert.ok(error.leftovers.repo.length > 0);
+  const planError = await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)));
+  assert.ok(!/LEGACY/.test(planError.message));
+  await put(w.repo, 'SPEC-HARNESS.md', 'marker the engine itself would also have staged');
+  await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)));
+  await rm(rel(w.repo, 'SPEC-HARNESS.md'));
+  // A different repository is not blocked, a different spelling of the same name is.
+  const other = await extraRepo(w, 'unrelated');
+  assert.equal((await planConnect(args(w, { repoPath: other, name: 'unrelated' }))).detection.status, 'NONE');
+  await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w, { repoPath: other, name: 'MY-REPO' })));
+  assert.equal((await listPendingConnects({ targetPath: w.hub })).length, 1);
+  const [pendingId] = pendingIdsIn(after.hub);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.deepEqual(await snap(w), before);
+});
+
+test('apply-time rollback fails for real when a created folder is read-only; recovery finishes once it is writable', { skip: (!isPosix || isRoot) && 'needs POSIX permissions as a non-root user' }, async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 4;
   const locked = rel(w.repo, 'ai_rules/rules');
   t.after(() => chmod(locked, 0o700).catch(() => {}));
   const error = await rejects('ROLLBACK_FAILED', () => applyConnect({
     ...args(w),
     approvedDigest: plan.digest,
-    injectFailureAfterWrite: total,
+    injectFailureAfterWrite: total - 1,
     injectBeforeWrite: async (info) => {
-      if (info.destination === CONNECTIONS) await chmod(locked, 0o500);
+      if (info.kind === 'state') await chmod(locked, 0o500);
     },
   }));
-  await chmod(locked, 0o700);
   assert.ok(error.leftovers.repo.includes('ai_rules/rules/core.md'), JSON.stringify(error.leftovers));
   assert.ok(error.message.includes('ai_rules/rules/core.md'));
-  await assertTerminalNextPlan(w, plan, error.leftovers);
+  await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)));
+  await chmod(locked, 0o700);
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.deepEqual(await snap(w), before);
 });
 
 // ---------------------------------------------------------------------------
@@ -980,25 +1192,35 @@ test('rollback of a register-only connection removes the registration and leaves
   assert.deepEqual(await snap(w), before);
 });
 
-test('rollback refuses an edited, replaced or deleted created file in EITHER root with POSTIMAGE_MISMATCH naming root and path, removing nothing', async (t) => {
-  for (const [root, destination] of [['repo', 'AGENTS.md'], ['repo', 'ai_rules/rules/core.md'], ['hub', '01-Projects/my-repo/README.md'], ['hub', '01-Projects/my-repo/Connection.md'], ['hub', CONNECTIONS]]) {
-    for (const mode of ['edit', 'delete']) {
-      const w = await world(t);
-      const result = await connectNow(w);
-      const file = rel(root === 'repo' ? w.repo : w.hub, destination);
-      if (destination === CONNECTIONS && mode === 'delete') continue;
-      if (destination === CONNECTIONS) await writeFile(file, JSON.stringify(JSON.parse(await readFile(file, 'utf8')), null, 2));
-      else if (mode === 'edit') await writeFile(file, `${await readFile(file, 'utf8')}\nedited`);
-      else await rm(file);
-      const frozen = await snap(w);
-      const error = await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
-      assert.ok(error.message.includes(`${root}: ${destination}`), error.message);
-      assert.deepEqual(await snap(w), frozen, `${root}:${destination} ${mode}: nothing removed in either root`);
-    }
+test('rollback refuses an edited created file in EITHER root with POSTIMAGE_MISMATCH naming root and path, removing nothing; a file already gone counts as undone', async (t) => {
+  for (const [root, destination] of [['repo', 'AGENTS.md'], ['repo', 'ai_rules/rules/core.md'], ['hub', '01-Projects/my-repo/README.md'], ['hub', '01-Projects/my-repo/Connection.md']]) {
+    const w = await world(t);
+    const baseline = await snap(w);
+    const result = await connectNow(w);
+    const file = rel(root === 'repo' ? w.repo : w.hub, destination);
+    const original = await readFile(file);
+    await writeFile(file, `${original.toString('utf8')}\nedited`);
+    const frozen = await snap(w);
+    const error = await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
+    assert.ok(error.message.includes(`${root}: ${destination}`), error.message);
+    assert.deepEqual(await snap(w), frozen, `${root}:${destination}: nothing removed in either root`);
+    await rm(file);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await snap(w), baseline, `${root}:${destination}: deleted by the user = already undone`);
   }
 });
 
-test('rollback: a replaced file kind (directory in place of a created file) is refused readably and removes nothing', async (t) => {
+test('rollback refuses a connection record that no longer matches the receipt, and removes nothing', async (t) => {
+  const w = await world(t);
+  const result = await connectNow(w);
+  const file = rel(w.hub, CONNECTIONS);
+  const state = JSON.parse(await readFile(file, 'utf8'));
+  state.connections[result.receiptId].planDigest = 'f'.repeat(64);
+  await writeFile(file, JSON.stringify(state));
+  const frozen = await snap(w);
+  await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
+  assert.deepEqual(await snap(w), frozen);
+});test('rollback: a replaced file kind (directory in place of a created file) is refused readably and removes nothing', async (t) => {
   const w = await world(t);
   const result = await connectNow(w);
   await rm(rel(w.repo, 'RULES.md'));
@@ -1008,31 +1230,35 @@ test('rollback: a replaced file kind (directory in place of a created file) is r
   assert.deepEqual(await snap(w), frozen);
 });
 
-test('rollback: a missing repo is REPO_NOT_DIRECTORY, a deleted connections.json is INVALID_RECEIPT, and nothing is removed', async (t) => {
+test('rollback: a missing repo is REPO_NOT_DIRECTORY with nothing removed; a deleted connections.json counts as already undone', async (t) => {
   const w = await world(t);
+  const baseline = await snap(w);
   const result = await connectNow(w);
-  const saved = await readFile(rel(w.hub, CONNECTIONS));
-  await rm(rel(w.hub, CONNECTIONS));
-  const frozen = await snap(w);
-  await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
-  assert.deepEqual(await snap(w), frozen);
-  await put(w.hub, CONNECTIONS, saved);
-  const hubFrozen = await treeInventory(w.hub);
   const moved = `${w.repo}-moved`;
-  await (await import('node:fs/promises')).rename(w.repo, moved);
+  await rename(w.repo, moved);
+  const hubFrozen = await treeInventory(w.hub);
   await rejects('REPO_NOT_DIRECTORY', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
   assert.deepEqual(await treeInventory(w.hub), hubFrozen, 'the hub is untouched when the repo cannot be resolved');
+  await rename(moved, w.repo);
+  await rm(rel(w.hub, CONNECTIONS));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), baseline, 'every file is still hash-checked individually, so the missing record is not a blocker');
 });
 
-test('rollback: the receipt alone cannot resume a rolled-back connection', async (t) => {
+test('rollback: a receipt copied back after a rollback creates nothing and removes only what matches', async (t) => {
   const w = await world(t);
+  const baseline = await snap(w);
   const result = await connectNow(w);
   const receiptBytes = await readFile(rel(w.hub, result.receiptPath));
   await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
   await put(w.hub, result.receiptPath, receiptBytes);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), baseline, 'the replayed receipt is a harmless no-op that removes itself');
+  await put(w.repo, 'RULES.md', 'user file at a path the old receipt names');
+  await put(w.hub, result.receiptPath, receiptBytes);
   const frozen = await snap(w);
-  await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
-  assert.deepEqual(await snap(w), frozen);
+  await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
+  assert.deepEqual(await snap(w), frozen, 'a user file at a receipt path is never deleted');
 });
 
 test('rollback: a tampered or forged connect receipt is INVALID_RECEIPT and removes nothing', async (t) => {
@@ -1042,8 +1268,6 @@ test('rollback: a tampered or forged connect receipt is INVALID_RECEIPT and remo
     ['unknown root', (receipt) => { receipt.writes[0].root = 'elsewhere'; }],
     ['write outside the project folder', (receipt) => { const write = receipt.writes.find((item) => item.root === 'hub' && item.destination.startsWith('01-Projects/')); write.destination = 'Home.md'; }],
     ['repo write with a preimage', (receipt) => { receipt.writes.find((item) => item.root === 'repo').preimageSha256 = 'a'.repeat(64); }],
-    ['other workspace', (receipt) => { receipt.hub = `${receipt.hub}-other`; }],
-    ['other repo', (receipt) => { receipt.repo = `${receipt.repo}-other`; }],
     ['traversing destination', (receipt) => { receipt.writes.find((item) => item.root === 'repo').destination = '../escape.md'; }],
     ['traversing created directory', (receipt) => { receipt.createdDirectories.repo.push('../outside'); }],
     ['duplicate destination', (receipt) => { receipt.writes.push({ ...receipt.writes[0] }); }],
@@ -1065,6 +1289,7 @@ test('rollback: a tampered or forged connect receipt is INVALID_RECEIPT and remo
       caught = error;
     }
     assert.ok(caught instanceof InstallPlanError && ['INVALID_RECEIPT', 'INVALID_PATH'].includes(caught.code), `${label}: ${caught}`);
+    if (label === 'x') assert.fail();
     assert.deepEqual(await snap(w), frozen, label);
   }
 });
@@ -1092,14 +1317,10 @@ test('rollback keeps a created directory that is no longer empty and removes the
   assert.deepEqual(Object.keys(after).sort(), ['specs', 'specs/their-feature', 'specs/their-feature/goal.md']);
 });
 
-test('rollback-time failures are terminal: ROLLBACK_FAILED enumerates leftovers and a retry cannot resume', async (t) => {
-  const probe = await world(t);
-  const probeResult = await connectNow(probe);
-  const receipt = JSON.parse(await readFile(rel(probe.hub, probeResult.receiptPath), 'utf8'));
-  assert.ok(receipt.writes.length > 5);
+test('a rollback interrupted at ANY step by a hook can be retried to completion', async (t) => {
   let completed = false;
   let failures = 0;
-  for (let step = 1; step <= 80 && !completed; step += 1) {
+  for (let step = 1; step <= 120 && !completed; step += 1) {
     const w = await world(t);
     const before = await snap(w);
     const result = await connectNow(w);
@@ -1117,18 +1338,231 @@ test('rollback-time failures are terminal: ROLLBACK_FAILED enumerates leftovers 
     }
     failures += 1;
     assert.ok(caught instanceof InstallPlanError && caught.code === 'ROLLBACK_FAILED', `step ${step}: ${caught}`);
-    assert.deepEqual(caught.leftovers, { hub: changedPaths(before.hub, after.hub), repo: changedPaths(before.repo, after.repo) }, `step ${step}`);
-    const frozen = after;
-    let retry = null;
-    try {
-      await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
-    } catch (error) {
-      retry = error;
-    }
-    assert.ok(retry instanceof InstallPlanError && ['INVALID_RECEIPT', 'MISSING_RECEIPT', 'POSTIMAGE_MISMATCH'].includes(retry.code), `step ${step} retry: ${retry}`);
-    assert.deepEqual(await snap(w), frozen, `step ${step}: a refused retry changes nothing`);
+    const afterConnect = { hub: changedPaths(before.hub, after.hub), repo: changedPaths(before.repo, after.repo) };
+    assert.deepEqual(caught.leftovers, afterConnect, `step ${step}: leftovers enumerate exactly what is still on disk`);
+    // The repository files go first and the receipt last, so the same call can always finish.
+    if (Object.keys(after.hub).some((key) => key === result.receiptPath)) await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await snap(w), before, `step ${step}: the retry completes and restores both roots`);
   }
   assert.ok(completed && failures >= 10, `saw ${failures} failing steps`);
+});
+
+test('a rollback killed for real (SIGKILL) at ANY step can be retried to completion', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  let completedAt = null;
+  const seen = [];
+  for (let step = 1; step <= 120 && completedAt === null; step += 1) {
+    const result = await connectNow(w);
+    const child = await spawnChild(ROLLBACK_CHILD, { module: installerModule, hub: w.hub, id: result.receiptId, kill: step });
+    if (!child.killed) {
+      completedAt = step;
+      assert.deepEqual(await snap(w), before);
+      continue;
+    }
+    assertKilled(child, `rollback step ${step}`);
+    const mid = await snap(w);
+    seen.push(`step ${step}: ${Object.keys(mid.repo).filter((key) => mid.repo[key] !== 'directory').length} repo files left, receipt ${Object.keys(mid.hub).some((key) => key.startsWith('.second-brain/receipts/'))}`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await snap(w), before, `rollback killed at step ${step}: the retry restores both roots`);
+  }
+  assert.ok(completedAt !== null && completedAt > 10, `the loop covered ${completedAt} steps`);
+  t.diagnostic(seen.slice(0, 3).concat(seen.slice(-3)).join(' | '));
+});
+
+
+// ---------------------------------------------------------------------------
+// Real hard kills during connect (write-ahead pending record)
+// ---------------------------------------------------------------------------
+
+test('a SIGKILL at EVERY durable write leaves INTERRUPTED_CONNECT (never LEGACY) and recovery restores both roots', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + 4;
+  const note = [];
+  for (let kill = 1; kill <= total; kill += 1) await killProbe(w, kill, before, plan, note);
+  t.diagnostic(note.join('\n'));
+  assert.equal(note.length, total);
+});
+
+test('a SIGKILL against the REAL vendored harness at the spread of positions (repo dirs, first/middle/last repo file, first hub file, before connections, before receipt, after receipt)', async (t) => {
+  const w = await realWorld(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const repoDirs = plan.directories.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
+  const repoFiles = plan.entries.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
+  const hubDirs = plan.directories.filter((entry) => entry.root === 'hub' && entry.status === 'CREATE').length;
+  const hubFiles = plan.entries.filter((entry) => entry.root === 'hub' && entry.kind === 'file' && entry.status === 'CREATE').length;
+  const total = 1 + repoDirs + repoFiles + hubDirs + hubFiles + 3;
+  const positions = [2, 1 + repoDirs + 1, 1 + repoDirs + Math.floor(repoFiles / 2), 1 + repoDirs + repoFiles, 1 + repoDirs + repoFiles + hubDirs + 1, total - 2, total - 1, total];
+  const note = [];
+  for (const kill of positions) await killProbe(w, kill, before, plan, note);
+  t.diagnostic(note.join('\n'));
+  assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', 'file', 'file', 'state', 'receipt', 'pending-clear']);
+});
+
+test('a recovery that is itself killed at ANY step can be run again until it finishes', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  let finishedAt = null;
+  for (let step = 1; step <= 120 && finishedAt === null; step += 1) {
+    await rm(rel(w.hub, '.second-brain/connect-pending'), { recursive: true, force: true }); // residue of the previous round
+    await killConnect(w, 12, plan);
+    const [pendingId] = pendingIdsIn((await snap(w)).hub);
+    const child = await spawnChild(ROLLBACK_CHILD, { module: installerModule, hub: w.hub, id: pendingId, kill: step });
+    if (!child.killed) {
+      finishedAt = step;
+      assert.deepEqual(await snap(w), before);
+      continue;
+    }
+    assertKilled(child, `recovery step ${step}`);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const ids = pendingIdsIn((await snap(w)).hub);
+      const receiptIds = Object.keys((await snap(w)).hub).map((key) => key.match(/^\.second-brain\/receipts\/(tx-[0-9a-f-]{36})\.json$/)?.[1]).filter(Boolean);
+      const target = ids[0] ?? receiptIds.find((id) => id === pendingId);
+      if (!target) break;
+      await rollbackReceipt({ targetPath: w.hub, receiptId: target });
+    }
+    // One narrow residue is accepted: killed between removing the pending record and removing
+    // its (empty) folder, nothing is left to point at, so the empty folder stays.
+    const finalTree = await snap(w);
+    const residue = { ...finalTree.hub };
+    if (residue['.second-brain/connect-pending'] === 'directory' && before.hub['.second-brain/connect-pending'] === undefined && !Object.keys(residue).some((key) => key.startsWith('.second-brain/connect-pending/'))) delete residue['.second-brain/connect-pending'];
+    assert.deepEqual({ hub: residue, repo: finalTree.repo }, before, `recovery killed at step ${step}: running it again finishes the job`);
+  }
+  assert.ok(finishedAt !== null && finishedAt > 10);
+});
+
+test('recovery removes only bytes the transaction wrote: a user-edited file is refused and listed, an absent one is skipped, a second run is safe', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  await killConnect(w, 14, plan);
+  const [pendingId] = pendingIdsIn((await snap(w)).hub);
+  await writeFile(rel(w.repo, 'AGENTS.md'), 'my own words');
+  await rm(rel(w.repo, 'RULES.md'), { force: true });
+  const error = await rejects('ROLLBACK_FAILED', () => rollbackReceipt({ targetPath: w.hub, receiptId: pendingId }));
+  assert.deepEqual(error.leftovers, { hub: [], repo: ['AGENTS.md'] });
+  assert.equal(await readFile(rel(w.repo, 'AGENTS.md'), 'utf8'), 'my own words');
+  assert.deepEqual(pendingIdsIn((await snap(w)).hub), [pendingId], 'the pending record stays until the person acts');
+  await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)));
+  await rejects('ROLLBACK_FAILED', () => rollbackReceipt({ targetPath: w.hub, receiptId: pendingId }));
+  assert.equal(await readFile(rel(w.repo, 'AGENTS.md'), 'utf8'), 'my own words', 'a second run is safe');
+  await rm(rel(w.repo, 'AGENTS.md'));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.deepEqual(await snap(w), before);
+  await rejects('MISSING_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: pendingId }));
+});
+
+test('pending records are exact-key validated and a hostile one cannot widen what recovery removes', async (t) => {
+  const w = await world(t);
+  const plan = await planConnect(args(w));
+  await killConnect(w, 6, plan);
+  const [pendingId] = pendingIdsIn((await snap(w)).hub);
+  const file = rel(w.hub, `.second-brain/connect-pending/${pendingId}.json`);
+  const good = JSON.parse(await readFile(file, 'utf8'));
+  for (const [label, change] of [
+    ['extra key', (record) => { record.extra = 1; }],
+    ['traversal in a write', (record) => { record.writes[0].destination = '../outside.md'; }],
+    ['traversal in a directory', (record) => { record.directories.repo.push('..'); }],
+    ['unknown root', (record) => { record.writes[0].root = 'elsewhere'; }],
+    ['wrong id', (record) => { record.pendingId = `tx-${randomUUID()}`; }],
+  ]) {
+    const record = structuredClone(good);
+    change(record);
+    await writeFile(file, JSON.stringify(record));
+    const frozen = await snap(w);
+    let caught = null;
+    try {
+      await planConnect(args(w));
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(caught instanceof InstallPlanError && ['INVALID_PENDING_CONNECT', 'INVALID_PATH'].includes(caught.code), `${label}: ${caught}`);
+    assert.deepEqual(await snap(w), frozen, label);
+  }
+  await writeFile(file, JSON.stringify(good));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+});
+
+test('a moved workspace is named in the receipt and pending-record refusals', async (t) => {
+  const w = await world(t);
+  const result = await connectNow(w);
+  const moved = `${w.hub}-moved`;
+  await rename(w.hub, moved);
+  const error = await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: moved, receiptId: result.receiptId }));
+  assert.ok(/workspace path changed/.test(error.message), error.message);
+  await rename(moved, w.hub);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  const second = await world(t);
+  const plan = await planConnect(args(second));
+  await killConnect(second, 3, plan);
+  const [pendingId] = pendingIdsIn((await snap(second)).hub);
+  const movedSecond = `${second.hub}-moved`;
+  await rename(second.hub, movedSecond);
+  const pendingError = await rejects('INVALID_PENDING_CONNECT', () => rollbackReceipt({ targetPath: movedSecond, receiptId: pendingId }));
+  assert.ok(/workspace path changed/.test(pendingError.message), pendingError.message);
+});
+
+// ---------------------------------------------------------------------------
+// Rolling back the workspace's own init or upgrade receipt (R05-7)
+// ---------------------------------------------------------------------------
+
+test('the workspace init receipt cannot be rolled back while connections or interrupted connects exist, and behaves as before without them', async (t) => {
+  const w = await world(t);
+  const initReceipts = Object.keys((await snap(w)).hub).filter((key) => /^\.second-brain\/receipts\/tx-/.test(key));
+  assert.equal(initReceipts.length, 1);
+  const initId = initReceipts[0].match(/tx-[0-9a-f-]{36}/)[0];
+  const connected = await connectNow(w);
+  let frozen = await snap(w);
+  const error = await rejects('CONNECTIONS_PRESENT', () => rollbackReceipt({ targetPath: w.hub, receiptId: initId }));
+  assert.ok(error.message.includes(connected.receiptId));
+  assert.deepEqual(await snap(w), frozen, 'nothing written');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: connected.receiptId });
+  // An interrupted connect also blocks it, and the message names the pending id.
+  const plan = await planConnect(args(w));
+  await killConnect(w, 4, plan);
+  frozen = await snap(w);
+  const [pendingId] = pendingIdsIn(frozen.hub);
+  const blocked = await rejects('CONNECTIONS_PRESENT', () => rollbackReceipt({ targetPath: w.hub, receiptId: initId }));
+  assert.ok(blocked.message.includes(pendingId));
+  assert.deepEqual(await snap(w), frozen);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  // With nothing left, the hub's own rollback works exactly as before.
+  const done = await rollbackReceipt({ targetPath: w.hub, receiptId: initId });
+  assert.equal(done.receiptId, initId);
+});
+
+// ---------------------------------------------------------------------------
+// link() fallback
+// ---------------------------------------------------------------------------
+
+test('when link() is unavailable (ENOTSUP, EXDEV, EPERM) the fallback still never clobbers a file that appears', async (t) => {
+  for (const code of ['ENOTSUP', 'EXDEV', 'EPERM']) {
+    const works = await world(t);
+    const result = await connectNow(works, { injectLinkFailure: code });
+    assert.equal(result.applied, true, `${code}: the fallback path writes the same files`);
+    for (const file of works.harnessFiles) {
+      assert.deepEqual(await readFile(rel(works.repo, file.destination)), referenceRender(works.harnessManifest, file, file.text, 'my-repo'), `${code} ${file.destination}`);
+    }
+    const w = await world(t);
+    const before = await snap(w);
+    const plan = await planConnect(args(w));
+    await rejects('CONCURRENT_MODIFICATION', () => applyConnect({
+      ...args(w),
+      approvedDigest: plan.digest,
+      injectLinkFailure: code,
+      injectBeforeWrite: async (info) => {
+        if (info.root === 'repo' && info.destination === 'RULES.md') await writeFile(rel(w.repo, 'RULES.md'), 'someone else got there first');
+      },
+    }));
+    const after = await snap(w);
+    assert.equal(after.repo['RULES.md'], `file:${digestOf('someone else got there first')}`, `${code}: the foreign file is intact`);
+    delete after.repo['RULES.md'];
+    assert.deepEqual(after, before, `${code}: everything else is rolled back`);
+  }
 });
 
 // ---------------------------------------------------------------------------
