@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Adds a real v1.2.0 install fixture and a test that the current source verifies and upgrades it.
+
 ## v1.2.0
 
 First use and navigation:
