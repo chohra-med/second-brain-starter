@@ -14,9 +14,11 @@ Follow [Context](03-Resources/Procedures/context.md), then [Close](03-Resources/
 
 ## Current records
 
+These four link to the seeded example project, `Selected-Project`. For a connected project, use its own map instead.
+
 [Facts](01-Projects/Selected-Project/FACTS.md) · [Roadmap](01-Projects/Selected-Project/roadmap.md) · [Progress](01-Projects/Selected-Project/progress.md) · [Decisions](01-Projects/Selected-Project/Decisions.md)
 
-Current values live in these owners. Home only points to them.
+Current values live in these owners. Home only points to them. Connected projects live under `01-Projects/<name>/` with their own `README.md` map. A repository connected from this workspace is staged until its harness receipt exists.
 
 ## When a need repeats
 
@@ -25,5 +27,6 @@ Current values live in these owners. Home only points to them.
 ## More
 
 - Daily work: [Focus](00-Meta/Daily-Task-Plan.md), [Capture](03-Resources/Procedures/capture.md), [Review](03-Resources/Procedures/review.md).
-- Maps: [Operating](00-Meta/README.md), [Projects](01-Projects/README.md), [Selected project](01-Projects/Selected-Project/README.md), [Resources](03-Resources/README.md), [Procedures](03-Resources/Procedures/README.md).
+- Maps: [Operating](00-Meta/README.md), [Projects](01-Projects/README.md), [Seeded example project](01-Projects/Selected-Project/README.md), [Resources](03-Resources/README.md), [Procedures](03-Resources/Procedures/README.md).
+- Who I am: [Profile](00-Meta/Profile.md) sets how answers are given and what is never touched.
 - Reference: [Assistant route](00-Meta/AGENTS.md), [Cross-project decisions](00-Meta/Decisions.md), [PARA + CODE](03-Resources/PARA-CODE.md), [Areas](02-Areas/Areas.md), [Learning and scaling](03-Resources/Procedures/learning-and-scaling.md), [Archive guide](04-Archives/Projects/Archive-Guide.md), [Daily template](05-Daily/daily-template.md).

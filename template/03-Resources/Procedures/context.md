@@ -1,6 +1,6 @@
 # Context
 
-Before working, name one project folder and read the route in [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md).
+Before working, name the project you are working in (the seeded example or a connected project under `01-Projects/`) and read the route in [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md).
 
 Return this compact note:
 
@@ -22,7 +22,7 @@ Use a genuinely separate new chat with only the installed target and this manual
 ## Inputs
 
 - Reference (every run): [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md), which owns the read order and depth.
-- Working (this run): the records that route lists for the selected project, seeded under `01-Projects/Selected-Project/`.
+- Working (this run): the records that route lists for the selected project, in the project folder you named (the seeded example lives under `01-Projects/Selected-Project/`).
 
 ## Outputs
 

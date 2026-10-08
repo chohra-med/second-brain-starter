@@ -7,6 +7,7 @@ import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli
 const expectedSeedDestinations = [
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
+  '00-Meta/Profile.md',
   '01-Projects/Selected-Project/FACTS.md',
   '01-Projects/Selected-Project/Decisions.md',
   '01-Projects/Selected-Project/progress.md',
@@ -240,6 +241,7 @@ test('installed Home is a complete operating dashboard with valid contained link
     '00-Meta/AGENTS.md',
     '00-Meta/Daily-Task-Plan.md',
     '00-Meta/Decisions.md',
+    '00-Meta/Profile.md',
     '01-Projects/Selected-Project/FACTS.md',
     '01-Projects/Selected-Project/roadmap.md',
     '01-Projects/Selected-Project/Decisions.md',

@@ -6,6 +6,7 @@ Shared instructions belong in `AGENTS.md`; `CLAUDE.md` imports that owner. For n
 
 Read in this order when the files exist:
 
+0. `00-Meta/Profile.md`: it sets how answers are given and what is never touched
 1. `00-Meta/Decisions.md`
 2. The selected project's own `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, relevant `ai_rules/`, memory bank, and `README.md` before diagnosing or changing its files
 3. `01-Projects/Selected-Project/FACTS.md`
@@ -14,7 +15,7 @@ Read in this order when the files exist:
 6. The three newest entries in `01-Projects/Selected-Project/progress.md`
 7. `00-Meta/Daily-Task-Plan.md` only if today's focus changes the task
 
-`Selected-Project` stands for your project folder. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
+`Selected-Project` is the seeded example project. A connected repository keeps its records in `01-Projects/<name>/`, and its code stays in the repository at the path recorded there. This route never scans for repositories: one `connect` per repository, named by the person. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
 
 Then state: selected root, selected project, files read, current goal, constraints, next useful action, evidence required for done, and any conflict. If a completed progress entry conflicts with an open roadmap item, name the conflict. Do not call the project ready.
 

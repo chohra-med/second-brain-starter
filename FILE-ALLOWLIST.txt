@@ -24,6 +24,7 @@ template-manifest.json
 template/00-Meta/AGENTS.md
 template/00-Meta/Daily-Task-Plan.md
 template/00-Meta/Decisions.md
+template/00-Meta/Profile.md
 template/01-Projects/Selected-Project/Decisions.md
 template/01-Projects/Selected-Project/FACTS.md
 template/01-Projects/Selected-Project/progress.md
@@ -50,6 +51,7 @@ test/fixture-v1.2.0.test.mjs
 test/fixtures/unmanaged-loader-crlf.md
 test/fixtures/v1.2.0-install.json
 test/helpers/consumer-cli.mjs
+test/hub-wording.test.mjs
 test/installer.test.mjs
 test/line-endings.test.mjs
 test/onboarding.test.mjs

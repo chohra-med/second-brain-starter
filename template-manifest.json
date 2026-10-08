@@ -32,7 +32,7 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "04b39a0af12fd038a1588adee9d108304f3238c247a01382612e6e6ef453b799",
+      "sha256": "9b2dcb4e7b9157ed5d3764b471ce34ea72c8e36cf7d893ff000c590bc708b0d1",
       "mergeKind": "managed-file"
     },
     {
@@ -50,7 +50,7 @@
     {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "906db69f7caf7c843ce74055561549635690d38ac94eaade978799ed15555da6",
+      "sha256": "50bd41559ec9d9f34a64bb18427bedc51f049c5a144e820ceb84da17d9381f23",
       "mergeKind": "managed-file"
     },
     {
@@ -63,6 +63,12 @@
       "source": "template/00-Meta/Decisions.md",
       "destination": "00-Meta/Decisions.md",
       "sha256": "83db4aeb81e7864162d050a6b82a69e47c8fc42d43cb882677c4d21e8831629d",
+      "mergeKind": "seed-file"
+    },
+    {
+      "source": "template/00-Meta/Profile.md",
+      "destination": "00-Meta/Profile.md",
+      "sha256": "b07e238b0cbf1f90c4a4dee06823c5bf0b8ca9480280438a953a75cfc136fa7a",
       "mergeKind": "seed-file"
     },
     {
@@ -116,7 +122,7 @@
     {
       "source": "template/03-Resources/Procedures/context.md",
       "destination": "03-Resources/Procedures/context.md",
-      "sha256": "44065f5918e80bd1593760d2dd658b5cbca11996ac4bf4e2304338259dc09b1c",
+      "sha256": "80f1b1b80aa7dd505eedbea1bfbe72c1fda3097cb044c9b0abc5b5900956e841",
       "mergeKind": "managed-file"
     },
     {
@@ -212,7 +218,7 @@
     {
       "source": "template/01-Projects/README.md",
       "destination": "01-Projects/README.md",
-      "sha256": "034139d73b91a46fba5e1e941f5da443031fd46f5a49c6fae0c9889c17855995",
+      "sha256": "3f6c5ebd095cca32949b6c44ed713e87c877a8d8378efa04274e83cfc0a9d3c5",
       "mergeKind": "managed-file"
     },
     {
@@ -236,7 +242,7 @@
     {
       "source": "template/03-Resources/Procedures/first-use.md",
       "destination": "03-Resources/Procedures/first-use.md",
-      "sha256": "95b14f9796247e85e1b52502fd5dacf2932e40eb0b5b0ae034fff1dae7105851",
+      "sha256": "d7d6a9b3bdc149b5645b485a49fd58faea08a046e78d44525235e896c45adf33",
       "mergeKind": "managed-file"
     },
     {
