@@ -322,7 +322,7 @@ test('connect registers an INITIALISED and a LEGACY repository with zero reposit
     assert.deepEqual(await inventory(repo), before, `${status}: the repository is unchanged`);
     assert.ok((await lstat(path.join(w.hub, '01-Projects', path.basename(repo), 'Connection.md'))).isFile(), `${status}: the hub record exists`);
     const verified = await runCli(['verify', '--target', w.hub]);
-    assert.ok(hasLine(verified.stdout, `CONNECTION\t${path.basename(repo)}\t${repo}\t${listed}`), `${status}: verify states ${listed}`);
+    assert.ok(hasLine(verified.stdout, `CONNECTION\t${path.basename(repo)}\t${repo}\t${listed}\t${appliedReceipt(applied.stdout)}`), `${status}: verify states ${listed}`);
   }
 });
 
@@ -366,6 +366,31 @@ test('help names the connect usage, says it never runs git, says files are uncom
   assert.ok(printed.stdout.includes('second-brain connect --target /absolute/path --repo /absolute/repository [--name NAME] [--apply PLAN_DIGEST]'));
   assert.ok(printed.stdout.includes('connect stages Spec Harness into the named repository and registers it here; it never runs git. Files it creates are uncommitted; your team decides whether they go in by pull request.'));
   assert.match(printed.stdout, /one connect at a time per workspace/);
+});
+
+test('R06-19: every CONNECTION line ends with its connection id, which is the receipt id the --receipt hint names', async (t) => {
+  const w = await workspace(t);
+  const planned = await runCli(connectArgs(w));
+  const applied = await runCli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
+  const id = appliedReceipt(applied.stdout);
+  assert.ok(id, applied.stdout);
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tSTAGED\t${id}`), verified.stdout);
+  const refused = await runCli(['rollback', '--target', w.hub]);
+  assert.ok(hasLine(refused.stdout, 'Receipt ids are printed on the Applied receipt: line of connect or init, shown on each CONNECTION line of verify, and named by the files in .second-brain/receipts/.'), refused.stdout);
+});
+
+// R06-21: the drift guard must see a code passed as the second argument of usageError, not only a literal first argument.
+function codesIn(source) {
+  const found = new Set();
+  for (const match of source.matchAll(/(?:fail|InstallPlanError|usageError)\(\s*'([A-Z_]+)'/g)) found.add(match[1]);
+  // usageError takes its message first and its code second: the code is the second argument.
+  for (const match of source.matchAll(/usageError\(\s*(?:'(?:[^'\\]|\\.)*'|`[^`]*`)\s*,\s*'([A-Z_]+)'/g)) found.add(match[1]);
+  return found;
+}
+
+test('R06-21 positive control: a code passed as the second argument of usageError is collected by the drift scan', () => {
+  assert.ok(codesIn("throw usageError('Plan digest did not match.', 'PLANTED_SECOND_ARGUMENT_CODE');").has('PLANTED_SECOND_ARGUMENT_CODE'));
 });
 
 // The test-only hooks are reachable neither as a flag nor as an environment variable of the real CLI.
@@ -502,6 +527,7 @@ test('INVALID_CONNECTION_NAME: a name with a slash is refused with the reason, i
   const refused = await runCli(connectArgs(w, ['--name', 'team/app']));
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^INVALID_CONNECTION_NAME: Connection name contains a character the harness forbids/m);
+  assert.ok(!refused.stdout.includes('The default name comes from'), 'a typed name gets no default-name explanation');
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
   assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name ${ph('<one plain folder name>')}`));
   assert.deepEqual(await snapshot(w), before);
@@ -741,7 +767,7 @@ test('verify lists each connection by re-detection (STAGED, then INITIALISED, th
   const before = await snapshot(w);
   const staged = await runCli(['verify', '--target', w.hub]);
   assert.equal(staged.code, undefined, staged.stdout);
-  assert.ok(hasLine(staged.stdout, `CONNECTION\tapp\t${w.repo}\tSTAGED`));
+  assert.ok(hasLine(staged.stdout, `CONNECTION\tapp\t${w.repo}\tSTAGED\t${await connectionIdOf(w)}`));
   assert.ok(hasLine(staged.stdout, 'Verification: OK'));
   assert.deepEqual(await snapshot(w), before, 'verify changed nothing in either root');
 
@@ -749,13 +775,13 @@ test('verify lists each connection by re-detection (STAGED, then INITIALISED, th
   await writeFile(path.join(w.repo, '.claude', 'agents', '.init-synthesis.json'), '{}\n');
   const initialised = await runCli(['verify', '--target', w.hub]);
   assert.equal(initialised.code, undefined, initialised.stdout);
-  assert.ok(hasLine(initialised.stdout, `CONNECTION\tapp\t${w.repo}\tINITIALISED`));
+  assert.ok(hasLine(initialised.stdout, `CONNECTION\tapp\t${w.repo}\tINITIALISED\t${await connectionIdOf(w)}`));
 
   const moved = `${w.repo}-away`;
   await rename(w.repo, moved);
   const missing = await runCli(['verify', '--target', w.hub]);
   assert.equal(missing.code, undefined, 'a missing repository does not change the exit code');
-  assert.ok(hasLine(missing.stdout, `CONNECTION\tapp\t${w.repo}\tMISSING`));
+  assert.ok(hasLine(missing.stdout, `CONNECTION\tapp\t${w.repo}\tMISSING\t${await connectionIdOf(w)}`));
   await rename(moved, w.repo);
 });
 
@@ -767,7 +793,7 @@ test('verify: a connection whose staged files were all deleted is CHANGED, never
   for (const destination of created) await rm(rel(w.repo, destination));
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.equal(verified.code, undefined, verified.stdout);
-  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED\t${await connectionIdOf(w)}`), verified.stdout);
   assert.ok(hasLine(verified.stdout, `  CHANGED: ${created.length} staged files missing, 0 differ; first: ${created.slice(0, 3).join(', ')}`), verified.stdout);
   assert.equal(verified.stdout.split(CHANGED_SENTENCE).length - 1, 1, 'the CHANGED sentence is printed once');
 });
@@ -777,7 +803,7 @@ test('verify: one deleted staged file is CHANGED with a count of one missing, no
   const connected = await connectInProcess(w);
   await rm(rel(w.repo, 'AGENTS.md'));
   const verified = await runCli(['verify', '--target', w.hub]);
-  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED\t${await connectionIdOf(w)}`), verified.stdout);
   assert.ok(hasLine(verified.stdout, '  CHANGED: 1 staged file missing, 0 differ; first: AGENTS.md'), verified.stdout);
   assert.ok(!verified.stdout.includes('LEGACY'), 'a staged repository is never labelled LEGACY');
   assert.ok(connected.receiptId);
@@ -788,7 +814,7 @@ test('verify: an edited staged file is CHANGED with a count of one that differs'
   await connectInProcess(w);
   await writeFile(path.join(w.repo, 'AGENTS.md'), 'my own words\n');
   const verified = await runCli(['verify', '--target', w.hub]);
-  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED\t${await connectionIdOf(w)}`), verified.stdout);
   assert.ok(hasLine(verified.stdout, '  CHANGED: 0 staged files missing, 1 differs; first: AGENTS.md'), verified.stdout);
 });
 
@@ -800,10 +826,10 @@ test('verify: a register-only repository is REGISTERED with what detection finds
   const planned = await runCli(['connect', '--target', w.hub, '--repo', older]);
   await runCli(['connect', '--target', w.hub, '--repo', older, '--apply', planDigest(planned.stdout)]);
   const present = await runCli(['verify', '--target', w.hub]);
-  assert.ok(hasLine(present.stdout, `CONNECTION\tolder\t${older}\tREGISTERED (now: harness present)`), present.stdout);
+  assert.ok(hasLine(present.stdout, `CONNECTION\tolder\t${older}\tREGISTERED (now: harness present)\t${await connectionIdOf(w)}`), present.stdout);
   await rm(path.join(older, 'SPEC-HARNESS.md'));
   const removed = await runCli(['verify', '--target', w.hub]);
-  assert.ok(hasLine(removed.stdout, `CONNECTION\tolder\t${older}\tREGISTERED (now: no harness files found)`), removed.stdout);
+  assert.ok(hasLine(removed.stdout, `CONNECTION\tolder\t${older}\tREGISTERED (now: no harness files found)\t${await connectionIdOf(w)}`), removed.stdout);
   assert.ok(!removed.stdout.includes('STAGED'), 'never STAGED');
 });
 
@@ -824,7 +850,7 @@ test('verify lists inert residue (an empty connect-pending folder, then an unlin
   await mkdir(folder, { recursive: true });
   const empty = await runCli(['verify', '--target', w.hub]);
   assert.equal(empty.code, undefined, empty.stdout);
-  assert.ok(hasLine(empty.stdout, 'RESIDUE\t.second-brain/connect-pending/\tan empty folder left by an interrupted connect; the next approved connect, a rollback or a recovery removes it.'));
+  assert.ok(hasLine(empty.stdout, 'RESIDUE\t.second-brain/connect-pending/\tan empty folder left behind by a connect; the next approved connect, a rollback or a recovery removes it.'));
   assert.ok(hasLine(empty.stdout, 'Verification: OK'));
   const id = `tx-${randomUUID()}`;
   const temp = `.${id}.json.second-brain-${id}.tmp`;
@@ -920,6 +946,11 @@ test('T06-6: a symlink to a repository that is already connected says so and sen
   assert.ok(!refused.stdout.includes(' connect --target '), 'no connect command is suggested');
 });
 
+// The id of the only connection in a workspace: the record key, which is the connect receipt id.
+async function connectionIdOf(w) {
+  return Object.keys(JSON.parse(await readFile(rel(w.hub, '.second-brain/connections.json'), 'utf8')).connections)[0];
+}
+
 async function readConnectionsFor(w) {
   const { readConnections } = await import('../lib/connect.mjs');
   return Object.values((await readConnections({ targetPath: w.hub })).connections)[0];
@@ -944,7 +975,7 @@ test('T06-8: a derived temp directly under .second-brain/ is listed by verify, l
   await writeFile(rel(w.hub, `.second-brain/${temp}`), '{"partial":');
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.equal(verified.code, undefined, verified.stdout);
-  assert.ok(hasLine(verified.stdout, `RESIDUE\t.second-brain/${temp}\tan unfinished copy of a connection state file left by an interrupted connect; the next approved connect, a rollback or a recovery clears it.`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, `RESIDUE\t.second-brain/${temp}\tan unfinished copy of a connection state file left behind by a connect; the next approved connect, a rollback or a recovery clears it.`), verified.stdout);
   const before = await snapshot(w);
   const planned = await runCli(connectArgs(w));
   assert.equal(planned.code, undefined, planned.stdout);
@@ -952,6 +983,30 @@ test('T06-8: a derived temp directly under .second-brain/ is listed by verify, l
   const applied = await runCli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
   assert.equal(applied.code, undefined, applied.stdout);
   assert.equal((await lstat(rel(w.hub, `.second-brain/${temp}`)).catch(() => null)), null, 'the approved connect removes it');
+});
+
+test('T06 nit: a residue temp left after a finished connect is not described as an interrupted connect', async (t) => {
+  const w = await workspace(t);
+  const connected = await connectInProcess(w);
+  const temp = `.connections.json.second-brain-${connected.receiptId}.tmp`;
+  await writeFile(rel(w.hub, `.second-brain/${temp}`), '{"partial":');
+  const verified = await runCli(['verify', '--target', w.hub]);
+  const line = linesOf(verified.stdout).find((item) => item.startsWith(`RESIDUE\t.second-brain/${temp}\t`));
+  assert.ok(line, verified.stdout);
+  assert.ok(!line.includes('interrupted'), line);
+});
+
+test('T06 nit: a repository folder whose name is not portable is refused as a default name, and the message says so and suggests --name', { skip: !isPosix && 'the name contains a character Windows does not allow in a folder' }, async (t) => {
+  const w = await workspace(t);
+  const repo = path.join(w.root, 'app?v2');
+  await mkdir(repo);
+  const before = await snapshot(w);
+  const refused = await runCli(['connect', '--target', w.hub, '--repo', repo]);
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.match(refused.stdout, /^INVALID_CONNECTION_NAME: Connection name contains a character that is not portable/m);
+  assert.ok(hasLine(refused.stdout, 'The default name comes from the repository folder name, and that name cannot be used. Pass --name with a plain folder name.'), refused.stdout);
+  assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'), refused.stdout);
+  assert.deepEqual(await snapshot(w), before);
 });
 
 test('T06-9: rollback with no --receipt says the flag is required, nothing was changed, and where to find the ids', async (t) => {
@@ -1030,11 +1085,13 @@ test('T06-11: a connection whose receipt file is missing is NO_RECEIPT: no rollb
   await rm(rel(w.hub, `.second-brain/receipts/${connected.receiptId}.json`));
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.equal(verified.code, undefined, verified.stdout);
-  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tNO_RECEIPT`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tNO_RECEIPT\t${await connectionIdOf(w)}`), verified.stdout);
   assert.ok(verified.stdout.includes('cannot be rolled back by the tool'), verified.stdout);
   assert.ok(verified.stdout.includes('Nothing was changed.'));
   assert.ok(verified.stdout.includes('Connection.md does not list the staged files'));
   assert.ok(!verified.stdout.includes('rollback --target'), 'no command that cannot work is printed');
+  assert.ok(verified.stdout.includes('Next: the tool has no command for this connection.'), verified.stdout);
+  assert.ok(verified.stdout.includes('.second-brain/connections.json by hand'), 'the manual option is named');
 });
 
 test('T06-12: grammar: one missing file is singular, two are plural, and "differs" follows one', async (t) => {
@@ -1069,6 +1126,7 @@ test('T06-14: a connect that finished but whose pending marker was not cleared i
   assert.equal(verified.code, 1, 'a pending marker still fails the workspace check');
   assert.ok(verified.stdout.includes('finished connect, not yet cleared'), verified.stdout);
   assert.ok(verified.stdout.includes('only clears the marker and keeps the connection'), verified.stdout);
+  assert.ok(!verified.stdout.includes('the command below'), 'the command is on the same line, so it is not below');
   assert.ok(!verified.stdout.includes('interrupted connect; recover with'), 'the finished case is not described as interrupted');
   assert.deepEqual(await snapshot(w), before, 'verify changed nothing');
 });
@@ -1121,12 +1179,14 @@ test('R06-16: printed commands run through the real POSIX shell for paths with a
 });
 
 test('R06-5 drift: every error code the libraries can throw is translated in the CLI or listed here as generic', async () => {
+  // Limit (stated, not hidden): a code passed through a variable (fail(code, ...), new InstallPlanError(error.code, ...))
+  // is not collected here; those paths are covered by the refusal tests above and by the generic branch.
   const codes = new Set();
   for (const file of ['installer.mjs', 'connect.mjs', 'cli-arguments.mjs']) {
-    const source = await readFile(path.join(sourceRoot, 'lib', file), 'utf8');
-    for (const match of source.matchAll(/(?:fail|InstallPlanError|usageError)\(\s*'([A-Z_]+)'/g)) codes.add(match[1]);
+    for (const code of codesIn(await readFile(path.join(sourceRoot, 'lib', file), 'utf8'))) codes.add(code);
   }
   const bin = await readFile(path.join(sourceRoot, 'bin', 'second-brain.mjs'), 'utf8');
+  for (const code of codesIn(bin)) codes.add(code);
   const translated = new Set([...bin.matchAll(/case '([A-Z_]+)'/g)].map((match) => match[1]));
   // Codes without their own wording: the generic branch prints the code, the message, what is not changed, and verify.
   const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE']);
@@ -1142,7 +1202,8 @@ test('the generic branch of connect prints the code, what is not changed, and ve
   const refused = await runCli(['connect', '--target', file, '--repo', w.repo]);
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^TARGET_NOT_DIRECTORY: /m);
-  assert.ok(hasLine(refused.stdout, 'Not changed: if the message above does not say a file was written, none was. Run verify to see what is on disk.'), refused.stdout);
+  assert.ok(!refused.stdout.includes('Not changed: if the message above'), 'the hedge is gone');
+  assert.ok(!refused.stdout.includes('does not say a file was written'), refused.stdout);
   assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} verify --target ${file}`), refused.stdout);
 });
 

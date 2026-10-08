@@ -48,6 +48,8 @@ template/shared-skills/second-brain-close/SKILL.md
 template/shared-skills/second-brain-context/SKILL.md
 template/shared-skills/second-brain-learning/SKILL.md
 template/shared-skills/second-brain-review/SKILL.md
+test/cli-approval.test.mjs
+test/docs-contract.test.mjs
 test/cli-connect.test.mjs
 test/cli.test.mjs
 test/connect.test.mjs
