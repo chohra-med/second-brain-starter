@@ -164,6 +164,8 @@ const snap = async (w) => ({ hub: await treeInventory(w.hub), repo: await treeIn
 
 const PENDING_PATTERN = /^\.second-brain\/connect-pending\/(tx-[0-9a-f-]{36})\.json$/;
 const pendingIdsIn = (inventory) => Object.keys(inventory).map((key) => key.match(PENDING_PATTERN)?.[1]).filter(Boolean);
+const RECEIPT_PATTERN = /^\.second-brain\/receipts\/(tx-[0-9a-f-]{36})\.json$/;
+const receiptIdsIn = (inventory) => Object.keys(inventory).map((key) => key.match(RECEIPT_PATTERN)?.[1]).filter(Boolean);
 
 // Real hard kills: a child node process runs the engine and kills ITSELF with SIGKILL from
 // inside a hook (Windows has no POSIX signals; process.kill(pid, 'SIGKILL') terminates the
@@ -253,10 +255,11 @@ async function killConnect(w, kill, plan, extra = {}) {
 
 // Parent-side kill: the child announces GO just before the apply starts, the parent waits a
 // chosen delay and SIGKILLs it from outside, so the kill can land INSIDE any write.
-function parentKill(config, delayMs) {
+function parentKill(config, delayMs, script = FREE_RUN_CHILD) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, ['--input-type=module', '-e', FREE_RUN_CHILD], { env: { ...process.env, SB_CFG: JSON.stringify(config) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, ['--input-type=module', '-e', script], { env: { ...process.env, SB_CFG: JSON.stringify(config) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     let out = '';
+    let err = '';
     let started = 0;
     let timer = null;
     child.stdout.on('data', (chunk) => {
@@ -267,13 +270,24 @@ function parentKill(config, delayMs) {
         timer = setTimeout(() => child.kill('SIGKILL'), delayMs);
       }
     });
+    child.stderr.on('data', (chunk) => { err += chunk; });
     child.on('error', reject);
     child.on('close', (code, signal) => {
       clearTimeout(timer);
-      resolve({ done: out.includes('DONE'), killed: signal === 'SIGKILL' || (code !== 0 && !out.includes('DONE')), elapsed: started ? Date.now() - started : 0 });
+      resolve({ done: out.includes('DONE'), killed: signal === 'SIGKILL' || (code !== 0 && !out.includes('DONE')), elapsed: started ? Date.now() - started : 0, stderr: err });
     });
   });
 }
+
+// The receipt rollback and the recovery run as one child; GO comes right before the call, DONE after it.
+const ROLLBACK_FREE_CHILD = `
+import { writeSync } from 'node:fs';
+const cfg = JSON.parse(process.env.SB_CFG);
+const { rollbackReceipt } = await import(cfg.module);
+writeSync(1, 'GO\\n');
+await rollbackReceipt({ targetPath: cfg.hub, receiptId: cfg.id });
+writeSync(1, 'DONE\\n');
+`;
 
 // Re-run a rollback until done: a finished or never-started one answers MISSING_RECEIPT or "nothing to recover".
 async function retryRollback(w, id) {
@@ -1221,6 +1235,151 @@ test('apply-time rollback fails for real when a created folder is read-only; rec
   assert.deepEqual(await snap(w), before);
 });
 
+test('R05-18: an apply that fails after its pending record was cleared, with the undo failing too, stays INTERRUPTED_CONNECT until the undo completes', async (t) => {
+  let completed = false;
+  let receiptLeftWithoutRecord = 0;
+  for (let step = 1; step <= 120 && !completed; step += 1) {
+    const w = await world(t);
+    const before = await snap(w);
+    const plan = await planConnect(args(w));
+    const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+    let caught = null;
+    try {
+      // Position `total` fails right after the pending record is cleared; the undo then fails at `step`.
+      await applyConnect({ ...args(w), approvedDigest: plan.digest, injectFailureAfterWrite: total, injectFailureAfterRollbackWrite: step });
+    } catch (error) {
+      caught = error;
+    }
+    assert.ok(caught instanceof InstallPlanError, `step ${step}: ${caught}`);
+    if (caught.code === 'INJECTED_WRITE_FAILURE') {
+      completed = true;
+      assert.deepEqual(await snap(w), before, `step ${step}: a completed undo restores both roots`);
+      continue;
+    }
+    assert.equal(caught.code, 'ROLLBACK_FAILED', `step ${step}: ${caught.message}`);
+    const after = await snap(w);
+    const [receiptId] = [...receiptIdsIn(after.hub), ...pendingIdsIn(after.hub)].filter((id) => !receiptIdsIn(before.hub).includes(id));
+    if (!receiptId) {
+      // Receipt, record and pending are all gone: the undo finished except for the empty pending
+      // folder, so the next plan is allowed and its start-of-plan sweep removes that folder.
+      await planConnect(args(w));
+      assert.deepEqual(await snap(w), before, `step ${step}: the next plan sweeps the empty pending folder and both roots are identical`);
+      continue;
+    }
+    if (receiptIdsIn(after.hub).includes(receiptId) && Object.keys((await readConnections({ targetPath: w.hub })).connections).length === 0) receiptLeftWithoutRecord += 1;
+    await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `step ${step}:`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId });
+    assert.deepEqual(await snap(w), before, `step ${step}: recovery by the same id restores both roots`);
+  }
+  assert.ok(completed && receiptLeftWithoutRecord >= 1, `completed ${completed}; a receipt left with its record already gone: ${receiptLeftWithoutRecord} steps`);
+});
+
+// ---------------------------------------------------------------------------
+// Engine residue (R05-19): the sweep removes only what the engine itself leaves
+// ---------------------------------------------------------------------------
+
+test('R05-19 (a): an unlinked pending temp from a kill inside the first write is removed by the next plan, which then works', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const id = `tx-${randomUUID()}`;
+  await put(w.hub, `.second-brain/connect-pending/.${id}.json.second-brain-${id}.tmp`, '{"partial":');
+  const plan = await planConnect(args(w));
+  assert.equal(plan.detection.status, 'NONE');
+  assert.equal((await snap(w)).hub[`.second-brain/connect-pending/.${id}.json.second-brain-${id}.tmp`], undefined, 'the unlinked temp is gone');
+  assert.deepEqual(await snap(w), before, 'the folder it held is removed as well');
+});
+
+test('R05-19 (b): a receipt temp left after its receipt was linked is removed by the plan, the apply, the rollback and the completed recovery; the receipt is untouched', async (t) => {
+  const w = await world(t);
+  const baseline = await snap(w);
+  const first = await connectNow(w);
+  const firstTemp = `.second-brain/receipts/.${first.receiptId}.json.second-brain-${first.receiptId}.tmp`;
+  const firstBytes = await readFile(rel(w.hub, first.receiptPath));
+  const other = await extraRepo(w, 'second-repo');
+  await put(w.hub, firstTemp, 'half a copy of the receipt');
+  await planConnect(args(w, { repoPath: other }));
+  assert.equal((await snap(w)).hub[firstTemp], undefined, 'plan: the receipt temp is gone');
+  assert.deepEqual(await readFile(rel(w.hub, first.receiptPath)), firstBytes, 'plan: the receipt is untouched');
+
+  await put(w.hub, firstTemp, 'half a copy of the receipt');
+  const second = await connectNow(w, { repoPath: other });
+  assert.equal((await snap(w)).hub[firstTemp], undefined, 'apply: the receipt temp is gone');
+  assert.deepEqual(await readFile(rel(w.hub, first.receiptPath)), firstBytes, 'apply: the receipt is untouched');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: second.receiptId });
+
+  await put(w.hub, firstTemp, 'half a copy of the receipt');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId });
+  assert.equal((await snap(w)).hub[firstTemp], undefined, 'rollback: the receipt temp is gone');
+  assert.deepEqual(await snap(w), baseline);
+});
+
+test('R05-19 (b, completed recovery): the completed-recovery path removes a receipt temp and keeps the committed receipt', async (t) => {
+  const w = await world(t);
+  const baseline = await snap(w);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+  const marker = await killConnect(w, total, plan);
+  assert.equal(marker.kind, 'pending-clear');
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  const temp = `.second-brain/receipts/.${pendingId}.json.second-brain-${pendingId}.tmp`;
+  await put(w.hub, temp, 'half a copy of the receipt');
+  const result = await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.equal(result.completed, true);
+  assert.equal((await snap(w)).hub[temp], undefined, 'the receipt temp is gone');
+  assert.ok((await snap(w)).hub[`.second-brain/receipts/${pendingId}.json`], 'the committed receipt is kept');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.deepEqual(await snap(w), baseline);
+});
+
+test('R05-20: a killed connect whose staged file is gone is not "completed" by recovery and is undone, with the missing file counted as undone', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+  const marker = await killConnect(w, total, plan);
+  assert.equal(marker.kind, 'pending-clear', 'the pending record, the receipt and the connection record all exist at the kill');
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  await rm(rel(w.repo, 'AGENTS.md'));
+  const result = await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.notEqual(result.completed, true, 'a connect with a missing staged file is not completed');
+  assert.deepEqual(await snap(w), before, 'both roots are identical to before the connect');
+});
+
+test('R05-21: a connections.json that held no records before the connect comes back with its original bytes on rollback, not re-serialised', async (t) => {
+  const w = await world(t);
+  const handFormatted = Buffer.from('{ "schemaVersion":   1,\n\t"connections" :   {}   }\n\n');
+  await put(w.hub, CONNECTIONS, handFormatted);
+  const baseline = await snap(w);
+  const result = await connectNow(w);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.equal(digestOf(await readFile(rel(w.hub, CONNECTIONS))), digestOf(handFormatted), 'sha256 equal to the original file');
+  assert.deepEqual(await snap(w), baseline);
+});
+
+test('R05-19 (c): an empty connect-pending folder is removed by the next plan', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  await mkdir(rel(w.hub, '.second-brain/connect-pending'));
+  assert.equal((await planConnect(args(w))).detection.status, 'NONE');
+  assert.deepEqual(await snap(w), before);
+});
+
+test('R05-19: the sweep never removes a foreign file, a notes.tmp or a derived temp whose pending record is live', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  await killConnect(w, 6, plan);
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  const kept = ['.DS_Store', 'notes.tmp', `.${pendingId}.json.second-brain-${pendingId}.tmp`].map((name) => `.second-brain/connect-pending/${name}`);
+  for (const file of kept) await put(w.hub, file, 'keep me');
+  await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), 'the live pending record still refuses the plan');
+  const inventory = await treeInventory(w.hub);
+  for (const file of kept) assert.equal(inventory[file], `file:${digestOf('keep me')}`, `${file} survives the sweep`);
+  for (const file of kept) await rm(rel(w.hub, file));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.deepEqual(await snap(w), before);
+});
+
 // ---------------------------------------------------------------------------
 // Rollback of a connect receipt
 // ---------------------------------------------------------------------------
@@ -1419,6 +1578,7 @@ test('a rollback killed for real (SIGKILL) at ANY step leaves INTERRUPTED_CONNEC
   const seen = [];
   for (let step = 0; step <= 300 && completedAt === null; step += 1) {
     const result = await connectNow(w);
+    const connected = await snap(w);
     const child = await spawnChild(ROLLBACK_CHILD, { module: installerModule, hub: w.hub, id: result.receiptId, kill: step });
     if (!child.killed) {
       completedAt = step;
@@ -1430,7 +1590,16 @@ test('a rollback killed for real (SIGKILL) at ANY step leaves INTERRUPTED_CONNEC
     const pendingIds = pendingIdsIn(mid.hub);
     seen.push(`step ${step}: ${treeFiles(mid.repo).length} repo files left, receipt ${Object.keys(mid.hub).some((key) => key === result.receiptPath)}, pending ${pendingIds.length}`);
     if (step <= 1) assert.equal(pendingIds.length, 1, `step ${step}: the rollback intent is durable before the first undo step`);
-    if (pendingIds.length > 0) await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `rollback killed at step ${step}:`);
+    if (pendingIds.length > 0) {
+      await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `rollback killed at step ${step}:`);
+    } else if (JSON.stringify(mid) !== JSON.stringify(connected)) {
+      // No pending record: the workspace is the connected state, or the rollback finished. A kill after the
+      // pending record is removed can leave only its now-empty folder, which the retry below removes.
+      const { '.second-brain/connect-pending': pendingFolder, ...hubWithoutPendingFolder } = mid.hub;
+      assert.ok(pendingFolder === undefined || (pendingFolder === 'directory' && (await readdir(rel(w.hub, '.second-brain/connect-pending'))).length === 0),
+        `rollback killed at step ${step} left no pending record and something other than an empty pending folder`);
+      assert.deepEqual({ hub: hubWithoutPendingFolder, repo: mid.repo }, before, `rollback killed at step ${step} left no pending record: connected or pre-connect, nothing in between`);
+    }
     await retryRollback(w, result.receiptId);
     assert.deepEqual(await snap(w), before, `rollback killed at step ${step}: the retry restores both roots`);
   }
@@ -1656,9 +1825,10 @@ test('a SIGKILL between the temp write and the link of EVERY durable file leaves
       assert.deepEqual(treeFiles(after.repo), [], `kill ${kill}: the repository is untouched`);
       const stale = (await listPendingConnects({ targetPath: w.hub })).filter((item) => item.kind === 'unlinked-temp');
       assert.equal(stale.length, 1);
-      assert.equal((await planConnect(args(w))).detection.status, 'NONE', 'nothing but an unlinked temp exists, so the plan is not blocked');
+      // Recovery runs first: planConnect now sweeps this temp and its empty folder, so the id is no longer there to recover.
       const result = await rollbackReceipt({ targetPath: w.hub, receiptId: stale[0].pendingId });
       assert.equal(result.nothingToRecover, true);
+      assert.equal((await planConnect(args(w))).detection.status, 'NONE', 'nothing but an unlinked temp exists, so the plan is not blocked');
     } else {
       await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `kill ${kill}:`);
       await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
@@ -1715,13 +1885,9 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
       }
     }
     if (staged >= 1 && staged <= 83) mid += 1;
-    // One inert residue exists by construction: a kill after the pending FOLDER was created but
-    // before any record or temp was written leaves an empty folder with no id to recover.
-    const folder = rel(w.hub, '.second-brain/connect-pending');
-    if (before.hub['.second-brain/connect-pending'] === undefined && (await lstat(folder).catch(() => null))?.isDirectory() && (await readdir(folder)).length === 0) {
-      await rm(folder, { recursive: true });
-      result = `${result} (empty pending folder, inert)`;
-    }
+    // A kill right after the pending FOLDER was created leaves an empty folder with no id to pass to
+    // recovery. The next plan's start-of-plan sweep is the entry point that removes it.
+    await planConnect(args(w));
     const identical = JSON.stringify(await snap(w)) === JSON.stringify(before);
     const row = bands.get(band) ?? { kills: 0, minFiles: Infinity, maxFiles: 0, identical: 0, results: new Set() };
     row.kills += 1;
@@ -1741,6 +1907,130 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
   t.diagnostic([`${kills} kills, ${mid} landed mid-apply (1..83 repo files)`, ...[...bands].sort().map(([band, row]) => `${band}: ${row.kills} kills, repo files ${row.minFiles}..${row.maxFiles}, ${[...row.results].join(' / ')}, roots identical ${row.identical}/${row.kills}`)].join('\n'));
   assert.ok(kills >= 60, `${kills} kills`);
   assert.ok(mid >= 6, `only ${mid} kills landed with 1..83 repo files`);
+});
+
+// ---------------------------------------------------------------------------
+// The invariant (round 3): SIGKILL at random moments in apply, rollback and recovery
+// ---------------------------------------------------------------------------
+
+// Residue a kill can leave in connect-pending/ or receipts/: a pending record, or a derived temp
+// named with the same id twice (the backreference makes the match exact).
+const TRANSACTION_TEMP_PATTERN = /^\.second-brain\/(?:connect-pending|receipts)\/\.(tx-[0-9a-f-]{36})\.json\.second-brain-\1\.tmp$/;
+
+function residueIdsIn(hubInventory, initId) {
+  const ids = new Set();
+  for (const key of Object.keys(hubInventory)) {
+    const pending = key.match(PENDING_PATTERN)?.[1];
+    const temp = key.match(TRANSACTION_TEMP_PATTERN)?.[1];
+    if (pending) ids.add(pending);
+    if (temp) ids.add(temp);
+  }
+  ids.delete(initId);
+  return [...ids];
+}
+
+// The plan's start-of-plan sweep is the entry point that also removes an empty pending folder.
+async function sweepPlan(w) {
+  try {
+    await planConnect(args(w));
+    return 'plan';
+  } catch (error) {
+    assert.ok(error instanceof InstallPlanError, String(error));
+    return error.code;
+  }
+}
+
+/** Step (1) of the invariant: recovery for every id left behind, repeated until none is left, then the sweep. */
+async function recoverEverything(w, initId) {
+  for (let round = 0; round < 4; round += 1) {
+    const ids = residueIdsIn((await snap(w)).hub, initId);
+    if (ids.length === 0) break;
+    for (const id of ids) await retryRollback(w, id);
+  }
+  const code = await sweepPlan(w);
+  assert.deepEqual(residueIdsIn((await snap(w)).hub, initId), [], 'recovery converges: no residue id survives');
+  return code;
+}
+
+/** Steps (1) to (3) of the invariant. Returns the outcome: 'identical' or 'fully present'. */
+async function settleAfterKill(w, before, initId) {
+  const code = await recoverEverything(w, initId);
+  const after = await snap(w);
+  const temps = [...Object.keys(after.hub), ...Object.keys(after.repo)].filter((key) => key.endsWith('.tmp'));
+  assert.deepEqual(temps, [], 'no temporary file survives in either folder');
+  assert.deepEqual(pendingIdsIn(after.hub), [], 'no pending record survives');
+  const connected = Object.keys((await readConnections({ targetPath: w.hub })).connections);
+  if (connected.length === 0) {
+    assert.equal(code, 'plan', 'nothing is connected, so the next plan is allowed');
+    assert.deepEqual(after, before, 'both folders are byte-for-byte and directory-for-directory identical to the pre-connect inventory');
+    return 'identical';
+  }
+  assert.equal(connected.length, 1, `one connection at most, saw ${connected.join(', ')}`);
+  const [id] = connected;
+  assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
+  assert.equal(treeFiles(after.repo).length, 84, 'the connection is fully present with all 84 staged files');
+  assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: id });
+  assert.deepEqual(await snap(w), before, 'rollback of the fully present connection restores both folders');
+  return 'fully present';
+}
+
+test('invariant: after a SIGKILL at a random moment in applyConnect, in a receipt rollback or in a recovery, one recovery pass plus rollback leaves both folders identical or the connection fully present', async (t) => {
+  const w = await realWorld(t);
+  const before = await snap(w);
+  const [initId] = receiptIdsIn(before.hub);
+  const manifest = await manifestFile(w);
+  const configFor = (digest) => ({ module: connectModule, manifest, sourceRoot: w.sourceRoot, hub: w.hub, repo: w.repo, digest });
+  // One unkilled apply measures the duration that the random delays are drawn from.
+  const measured = await parentKill(configFor((await planConnect(args(w))).digest), null);
+  assert.ok(measured.done, 'the measuring apply completes');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: Object.keys((await readConnections({ targetPath: w.hub })).connections)[0] });
+  assert.deepEqual(await snap(w), before);
+  const spreadMs = Math.max(measured.elapsed, 20) * 1.1;
+  const arms = { apply: { kills: 0, noKill: 0, outcomes: {} }, rollback: { kills: 0, noKill: 0, outcomes: {} }, recovery: { kills: 0, noKill: 0, outcomes: {} } };
+  const record = (arm, outcome, killed) => {
+    if (!killed) {
+      arms[arm].noKill += 1;
+      return;
+    }
+    arms[arm].kills += 1;
+    arms[arm].outcomes[outcome] = (arms[arm].outcomes[outcome] ?? 0) + 1;
+  };
+  const MAX_ATTEMPTS = 150;
+  const TARGET = 30;
+
+  // Arm 1: SIGKILL inside applyConnect.
+  for (let attempt = 0; attempt < MAX_ATTEMPTS && arms.apply.kills < TARGET; attempt += 1) {
+    const plan = await planConnect(args(w));
+    const run = await parentKill(configFor(plan.digest), Math.random() * spreadMs);
+    assert.equal(run.stderr, '', 'the apply child must not fail on its own');
+    record('apply', await settleAfterKill(w, before, initId), run.killed && !run.done);
+  }
+
+  // Arm 2: SIGKILL inside the receipt rollback of a fully present connection.
+  for (let attempt = 0; attempt < MAX_ATTEMPTS && arms.rollback.kills < TARGET; attempt += 1) {
+    const connected = await connectNow(w);
+    const run = await parentKill({ module: installerModule, hub: w.hub, id: connected.receiptId }, Math.random() * spreadMs, ROLLBACK_FREE_CHILD);
+    assert.equal(run.stderr, '', 'the rollback child must not fail on its own');
+    record('rollback', await settleAfterKill(w, before, initId), run.killed && !run.done);
+  }
+
+  // Arm 3: SIGKILL inside a recovery of an interrupted connect (the apply is killed in-process first).
+  for (let attempt = 0; attempt < MAX_ATTEMPTS && arms.recovery.kills < TARGET; attempt += 1) {
+    const plan = await planConnect(args(w));
+    const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+    await killConnect(w, 1 + Math.floor(Math.random() * total), plan);
+    const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+    let run = { done: false, killed: false, stderr: '' };
+    if (pendingId) run = await parentKill({ module: installerModule, hub: w.hub, id: pendingId }, Math.random() * spreadMs, ROLLBACK_FREE_CHILD);
+    assert.equal(run.stderr, '', 'the recovery child must not fail on its own');
+    record('recovery', await settleAfterKill(w, before, initId), run.killed && !run.done);
+  }
+
+  const total = arms.apply.kills + arms.rollback.kills + arms.recovery.kills;
+  const line = Object.entries(arms).map(([arm, row]) => `${arm} ${row.kills} SIGKILLs: ${Object.entries(row.outcomes).map(([outcome, count]) => `${outcome} ${count}`).join(', ')} (${row.noKill} runs with no SIGKILL landed)`).join('; ');
+  t.diagnostic(`invariant: ${total} SIGKILLs; ${line}`);
+  for (const [arm, row] of Object.entries(arms)) assert.ok(row.kills >= 25, `${arm}: ${row.kills} kills landed, at least 25 required`);
 });
 
 test('the write-ahead pending record is fsynced before the first repository write, and the connections state and receipt are fsynced too', async (t) => {
