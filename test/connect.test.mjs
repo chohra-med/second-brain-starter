@@ -1276,22 +1276,58 @@ test('R05-18: an apply that fails after its pending record was cleared, with the
     }
     assert.equal(caught.code, 'ROLLBACK_FAILED', `step ${step}: ${caught.message}`);
     const after = await snap(w);
-    const [receiptId] = [...receiptIdsIn(after.hub), ...pendingIdsIn(after.hub)].filter((id) => !receiptIdsIn(before.hub).includes(id));
-    if (!receiptId) {
-      // Receipt, record and pending are all gone: no id is left, so only inert residue may remain.
+    // R05-31: an id counts when it survives as a pending record, a receipt or a derived temp (a temp id is never skipped).
+    const added = idsAddedBy(before, after);
+    const live = added.filter((id) => pendingIdsIn(after.hub).includes(id) || receiptIdsIn(after.hub).includes(id));
+    if (live.length === 0) {
+      // Receipt, record and pending are all gone: no live id is left, so only derived residue may remain.
       // Planning is read-only, so the next approved connect and its rollback clear it.
-      assertOnlyInertResidue(before, await snap(w));
+      if (added.length === 0) assertOnlyInertResidue(before, await snap(w));
+      else assertOnlyDerivedResidue(before, await snap(w));
       const fresh = await connectNow(w);
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before, `step ${step}: the next approved connect and rollback leave both roots identical`);
       continue;
     }
+    const [receiptId] = live;
     if (receiptIdsIn(after.hub).includes(receiptId) && Object.keys((await readConnections({ targetPath: w.hub })).connections).length === 0) receiptLeftWithoutRecord += 1;
     await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `step ${step}:`);
     await rollbackReceipt({ targetPath: w.hub, receiptId });
     assert.deepEqual(await snap(w), before, `step ${step}: recovery by the same id restores both roots`);
   }
   assert.ok(completed && receiptLeftWithoutRecord >= 1, `completed ${completed}; a receipt left with its record already gone: ${receiptLeftWithoutRecord} steps`);
+});
+
+// R05-31: the ids a step left in the workspace, including an id that survives only as a derived temp file.
+function idsAddedBy(before, after) {
+  const known = new Set(receiptIdsIn(before.hub));
+  const found = new Set([...receiptIdsIn(after.hub), ...pendingIdsIn(after.hub)]);
+  for (const key of Object.keys(after.hub)) {
+    const temp = key.match(TRANSACTION_TEMP_PATTERN)?.[1];
+    if (temp) found.add(temp);
+  }
+  return [...found].filter((id) => !known.has(id));
+}
+
+// Only derived temps (and the folders they sit in) may be added to the workspace; nothing that existed changes.
+function assertOnlyDerivedResidue(before, after) {
+  assert.deepEqual(after.repo, before.repo, 'the repository is untouched');
+  for (const key of Object.keys(before.hub)) {
+    assert.ok(key in after.hub, `nothing that existed is removed: ${key}`);
+    assert.equal(after.hub[key], before.hub[key], `nothing that existed changes: ${key}`);
+  }
+  for (const key of Object.keys(after.hub).filter((item) => !(item in before.hub))) {
+    const folder = after.hub[key] === 'directory' && /^\.second-brain\/(connect-pending|receipts)$/.test(key);
+    assert.ok(folder || TRANSACTION_TEMP_PATTERN.test(key), `only derived residue may be added, saw ${key}`);
+  }
+}
+
+test('R05-31: an id that survives only as a derived temp file is still reported as left behind', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const id = `tx-${randomUUID()}`;
+  await put(w.hub, `.second-brain/receipts/.${id}.json.second-brain-${id}.tmp`, 'half a receipt');
+  assert.deepEqual(idsAddedBy(before, await snap(w)), [id]);
 });
 
 // ---------------------------------------------------------------------------
@@ -1368,6 +1404,22 @@ test('R05-20: a killed connect whose staged file is gone is not "completed" by r
   const result = await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
   assert.notEqual(result.completed, true, 'a connect with a missing staged file is not completed');
   assert.deepEqual(await snap(w), before, 'both roots are identical to before the connect');
+});
+
+test('R05-24: a committed connect whose staged file the person then edited is completed by recovery, and the edit is left alone', async (t) => {
+  const w = await world(t);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+  const marker = await killConnect(w, total, plan);
+  assert.equal(marker.kind, 'pending-clear', 'the receipt and the connection record exist at the kill');
+  const [pendingId] = pendingIdsIn(await treeInventory(w.hub));
+  await writeFile(rel(w.repo, 'AGENTS.md'), 'my own words');
+  const result = await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+  assert.equal(result.completed, true, 'the connect is complete, so recovery reports it as completed');
+  assert.equal(result.recovered, false);
+  assert.equal(await readFile(rel(w.repo, 'AGENTS.md'), 'utf8'), 'my own words', 'the person edit is left alone');
+  assert.deepEqual(pendingIdsIn(await treeInventory(w.hub)), [], 'the pending record is cleared');
+  await rejects('ALREADY_CONNECTED', () => planConnect(args(w)), 'after recovery:');
 });
 
 test('R05-21: a connections.json that held no records before the connect comes back with its original bytes on rollback, not re-serialised', async (t) => {
@@ -1976,6 +2028,35 @@ test('a SIGKILL between the temp write and the link of EVERY durable file leaves
   assert.ok(completedAt !== null && sawTemp >= 10, `covered ${sawTemp} temp-write kills`);
 });
 
+// R05-29 / R05-30: the quota decides what a run may claim. A run that landed kills but missed the
+// mid-apply quota is skipped visibly, or fails when CI is set off Windows; it is never a silent pass.
+function quotaVerdict({ kills, mid, platform, ci }) {
+  if (kills === 0) return 'skip';
+  if (mid >= 6) return 'met';
+  return ci && platform !== 'win32' ? 'fail' : 'skip';
+}
+
+// R05-30: an invariant arm needs at least five landed kills to say anything; fewer is a visible skip.
+function invariantVerdict(kills) {
+  return kills >= 5 ? 'pass' : 'skip';
+}
+
+test('R05-29: a randomised kill run that misses the mid-apply quota fails under CI off win32, skips visibly otherwise, and never fails on win32', () => {
+  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'linux', ci: true }), 'fail');
+  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'darwin', ci: true }), 'fail');
+  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'win32', ci: true }), 'skip');
+  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'linux', ci: false }), 'skip');
+  assert.equal(quotaVerdict({ kills: 0, mid: 0, platform: 'linux', ci: true }), 'skip');
+  assert.equal(quotaVerdict({ kills: 60, mid: 6, platform: 'linux', ci: true }), 'met');
+});
+
+test('R05-30: an invariant arm with fewer than five landed kills is skipped visibly, never passed', () => {
+  assert.equal(invariantVerdict(0), 'skip');
+  assert.equal(invariantVerdict(1), 'skip');
+  assert.equal(invariantVerdict(4), 'skip');
+  assert.equal(invariantVerdict(5), 'pass');
+});
+
 test('a parent-side SIGKILL at randomised moments across the whole real apply: recovery always restores both roots exactly', async (t) => {
   const w = await realWorld(t);
   const before = await snap(w);
@@ -2046,7 +2127,10 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     }
   }
   t.diagnostic([`randomised apply on ${process.platform}: ${kills} SIGKILLs landed in ${attempts} attempts, ${mid} mid-apply (1..83 repo files); ${kills >= 60 && mid >= 6 ? 'quota met' : 'quota not met (60 SIGKILLs and 6 mid-apply wanted), assertions ran on the kills that landed'}`, ...[...bands].sort().map(([band, row]) => `${band}: ${row.kills} runs, repo files ${row.minFiles}..${row.maxFiles}, ${[...row.results].join(' / ')}, roots identical ${row.identical}/${row.kills}`)].join('\n'));
-  if (kills === 0) t.skip(`not exercised: no SIGKILL landed in ${attempts} attempts on ${process.platform}`);
+  // R05-29: a run that landed kills but missed the mid-apply quota is never a silent pass.
+  const verdict = quotaVerdict({ kills, mid, platform: process.platform, ci: Boolean(process.env.CI) });
+  if (verdict === 'fail') assert.fail(`quota not met on ${process.platform} under CI: ${kills} kills landed, ${mid} mid-apply (6 wanted)`);
+  if (verdict === 'skip') t.skip(`quota not met: ${kills} kills landed, ${mid} mid-apply (6 wanted) on ${process.platform}; the mid-apply assertions ran only on the kills that landed`);
 });
 
 // ---------------------------------------------------------------------------
@@ -2120,10 +2204,7 @@ async function settleAfterKill(w, before, initId) {
   const [id] = connected;
   assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
   assert.equal(treeFiles(after.repo).length, 84, 'the connection is fully present with all 84 staged files');
-  const receipt = JSON.parse(await readFile(rel(w.hub, `.second-brain/receipts/${id}.json`), 'utf8'));
-  for (const write of receipt.writes.filter((item) => item.root === 'repo')) {
-    assert.equal(digestOf(await readFile(rel(w.repo, write.destination))), write.postimageSha256, `repository file ${write.destination} matches the sha256 its receipt records`);
-  }
+  await assertReceiptFilesPresent(w, id);
   assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
   await rollbackReceipt({ targetPath: w.hub, receiptId: id });
   assert.deepEqual(await snap(w), before, 'rollback of the fully present connection restores both folders');
@@ -2214,8 +2295,9 @@ async function invariantArm(t, arm) {
   }
   const text = Object.entries(outcomes).map(([outcome, count]) => `${outcome} ${count}`).join(', ') || 'none';
   const note = `median ${duration} ms, delays drawn over ${Math.round(spread)} ms`;
-  if (kills === 0) {
-    t.skip(`not exercised: ${arm} landed 0 SIGKILLs in ${attempts} attempts on ${process.platform} (${note})`);
+  // R05-30: fewer than five landed kills is a visible skip; the assertions above already ran on each of them.
+  if (invariantVerdict(kills) === 'skip') {
+    t.skip(`not exercised enough: ${arm} landed ${kills} SIGKILLs in ${attempts} attempts on ${process.platform}, five are needed (${note}); ${text}`);
     return;
   }
   t.diagnostic(kills >= INVARIANT_TARGET
@@ -2233,6 +2315,30 @@ test('invariant (receipt rollback arm): a SIGKILL at a random moment in rollback
 
 test('invariant (recovery arm): a SIGKILL at a random moment in the recovery of an interrupted connect leaves identical roots', async (t) => {
   await invariantArm(t, 'recovery');
+});
+
+// R05-32: a fully present connection is checked in every root it wrote to, against the sha256 its receipt
+// recorded: repository files, workspace project files and connections.json.
+async function assertReceiptFilesPresent(w, id) {
+  const receipt = JSON.parse(await readFile(rel(w.hub, `.second-brain/receipts/${id}.json`), 'utf8'));
+  for (const write of receipt.writes) {
+    const base = write.root === 'repo' ? w.repo : w.hub;
+    assert.equal(digestOf(await readFile(rel(base, write.destination))), write.postimageSha256, `${write.root} file ${write.destination} matches its receipt`);
+  }
+}
+
+test('R05-32: a fully present connection is checked in the workspace too: a changed project file or connections.json fails the check', async (t) => {
+  const w = await world(t);
+  const connected = await connectNow(w);
+  await assertReceiptFilesPresent(w, connected.receiptId);
+  const project = rel(w.hub, '01-Projects/my-repo/FACTS.md');
+  const projectBytes = await readFile(project);
+  await writeFile(project, 'an edit the check must see\n');
+  await assert.rejects(assertReceiptFilesPresent(w, connected.receiptId), /FACTS\.md/);
+  await writeFile(project, projectBytes);
+  const connectionsBytes = await readFile(rel(w.hub, CONNECTIONS));
+  await writeFile(rel(w.hub, CONNECTIONS), `${connectionsBytes}\n`);
+  await assert.rejects(assertReceiptFilesPresent(w, connected.receiptId), /connections\.json/);
 });
 
 test('the write-ahead pending record is fsynced before the first repository write, and the connections state and receipt are fsynced too', async (t) => {
