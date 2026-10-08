@@ -2041,20 +2041,40 @@ function invariantVerdict(kills) {
   return kills >= 5 ? 'pass' : 'skip';
 }
 
-test('R05-29: a randomised kill run that misses the mid-apply quota fails under CI off win32, skips visibly otherwise, and never fails on win32', () => {
-  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'linux', ci: true }), 'fail');
-  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'darwin', ci: true }), 'fail');
-  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'win32', ci: true }), 'skip');
-  assert.equal(quotaVerdict({ kills: 3, mid: 0, platform: 'linux', ci: false }), 'skip');
-  assert.equal(quotaVerdict({ kills: 0, mid: 0, platform: 'linux', ci: true }), 'skip');
-  assert.equal(quotaVerdict({ kills: 60, mid: 6, platform: 'linux', ci: true }), 'met');
+// The decision the randomised test makes after its loop: the same function the test body calls.
+function settleQuota(t, { kills, mid, platform = process.platform, ci = Boolean(process.env.CI) }) {
+  const verdict = quotaVerdict({ kills, mid, platform, ci });
+  if (verdict === 'fail') assert.fail(`quota not met on ${platform} under CI: ${kills} kills landed, ${mid} mid-apply (6 wanted)`);
+  if (verdict === 'skip') t.skip(`quota not met: ${kills} kills landed, ${mid} mid-apply (6 wanted) on ${platform}; the mid-apply assertions ran only on the kills that landed`);
+}
+
+// The decision each invariant arm makes after its loop. Returns false when the arm was skipped.
+function settleArm(t, { arm, kills, attempts, note, text }) {
+  if (invariantVerdict(kills) !== 'skip') return true;
+  t.skip(`not exercised enough: ${arm} landed ${kills} SIGKILLs in ${attempts} attempts on ${process.platform}, five are needed (${note}); ${text}`);
+  return false;
+}
+
+test('R05-29: the randomised test settles through settleQuota: CI off win32 with landed kills and fewer than six mid-apply fails, win32 and local runs skip visibly, and a met quota is not skipped', () => {
+  const log = [];
+  const fakeT = { skip: (message) => log.push(message) };
+  assert.throws(() => settleQuota(fakeT, { kills: 3, mid: 0, platform: 'linux', ci: true }), /quota not met on linux under CI/);
+  settleQuota(fakeT, { kills: 3, mid: 0, platform: 'win32', ci: true });
+  settleQuota(fakeT, { kills: 3, mid: 0, platform: 'linux', ci: false });
+  settleQuota(fakeT, { kills: 0, mid: 0, platform: 'linux', ci: true });
+  assert.equal(log.length, 3, 'three visible skips');
+  settleQuota(fakeT, { kills: 60, mid: 6, platform: 'linux', ci: true });
+  assert.equal(log.length, 3, 'a met quota is not skipped');
 });
 
-test('R05-30: an invariant arm with fewer than five landed kills is skipped visibly, never passed', () => {
-  assert.equal(invariantVerdict(0), 'skip');
-  assert.equal(invariantVerdict(1), 'skip');
-  assert.equal(invariantVerdict(4), 'skip');
-  assert.equal(invariantVerdict(5), 'pass');
+test('R05-30: an invariant arm with fewer than five landed kills is skipped visibly through settleArm, never passed', () => {
+  const log = [];
+  const fakeT = { skip: (message) => log.push(message) };
+  assert.equal(settleArm(fakeT, { arm: 'apply', kills: 1, attempts: 9, note: 'n', text: 'x' }), false);
+  assert.equal(settleArm(fakeT, { arm: 'apply', kills: 4, attempts: 9, note: 'n', text: 'x' }), false);
+  assert.equal(log.length, 2);
+  assert.equal(settleArm(fakeT, { arm: 'apply', kills: 5, attempts: 9, note: 'n', text: 'x' }), true);
+  assert.equal(log.length, 2, 'five kills are not skipped');
 });
 
 test('a parent-side SIGKILL at randomised moments across the whole real apply: recovery always restores both roots exactly', async (t) => {
@@ -2128,9 +2148,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
   }
   t.diagnostic([`randomised apply on ${process.platform}: ${kills} SIGKILLs landed in ${attempts} attempts, ${mid} mid-apply (1..83 repo files); ${kills >= 60 && mid >= 6 ? 'quota met' : 'quota not met (60 SIGKILLs and 6 mid-apply wanted), assertions ran on the kills that landed'}`, ...[...bands].sort().map(([band, row]) => `${band}: ${row.kills} runs, repo files ${row.minFiles}..${row.maxFiles}, ${[...row.results].join(' / ')}, roots identical ${row.identical}/${row.kills}`)].join('\n'));
   // R05-29: a run that landed kills but missed the mid-apply quota is never a silent pass.
-  const verdict = quotaVerdict({ kills, mid, platform: process.platform, ci: Boolean(process.env.CI) });
-  if (verdict === 'fail') assert.fail(`quota not met on ${process.platform} under CI: ${kills} kills landed, ${mid} mid-apply (6 wanted)`);
-  if (verdict === 'skip') t.skip(`quota not met: ${kills} kills landed, ${mid} mid-apply (6 wanted) on ${process.platform}; the mid-apply assertions ran only on the kills that landed`);
+  settleQuota(t, { kills, mid });
 });
 
 // ---------------------------------------------------------------------------
@@ -2296,10 +2314,7 @@ async function invariantArm(t, arm) {
   const text = Object.entries(outcomes).map(([outcome, count]) => `${outcome} ${count}`).join(', ') || 'none';
   const note = `median ${duration} ms, delays drawn over ${Math.round(spread)} ms`;
   // R05-30: fewer than five landed kills is a visible skip; the assertions above already ran on each of them.
-  if (invariantVerdict(kills) === 'skip') {
-    t.skip(`not exercised enough: ${arm} landed ${kills} SIGKILLs in ${attempts} attempts on ${process.platform}, five are needed (${note}); ${text}`);
-    return;
-  }
+  if (!settleArm(t, { arm, kills, attempts, note, text })) return;
   t.diagnostic(kills >= INVARIANT_TARGET
     ? `invariant: ${arm} landed ${kills} SIGKILLs after ${attempts} attempts on ${process.platform}: ${text} (${note})`
     : `invariant: ${arm} landed ${kills} of ${INVARIANT_TARGET} kills after ${attempts} attempts on ${process.platform}; quota not met, assertions ran on the ${kills} that landed: ${text} (${note})`);
