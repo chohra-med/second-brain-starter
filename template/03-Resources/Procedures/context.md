@@ -22,7 +22,8 @@ Use a genuinely separate new chat with only the installed target and this manual
 ## Inputs
 
 - Reference (every run): [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md), which owns the read order and depth.
-- Working (this run): the records that route lists for the selected project, in the project folder you named (the seeded example lives under `01-Projects/Selected-Project/`).
+- Working (this run): the records that route lists for the selected project, in the project folder you named (the seeded project lives under `01-Projects/Selected-Project/`).
+- Connected repository (when you name one): its folder under `01-Projects/` is the project folder. Its `Connection.md` shows the status at connect time; run `node ./bin/second-brain.mjs verify --target <this folder>` from the starter copy for the current status.
 
 ## Outputs
 

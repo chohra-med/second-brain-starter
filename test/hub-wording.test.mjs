@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { planInstall, stableStringify } from '../lib/installer.mjs';
 import { cleanup, consumerRoot, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
 const profileQuestions = [
@@ -101,4 +102,85 @@ test('an existing user Profile.md plans a named CONFLICT and is never overwritte
   assert.equal(rejected.code, 1, rejected.stdout);
   assert.match(rejected.stdout, /PLAN_CONFLICT/);
   assert.equal(await readFile(path.join(target, '00-Meta', 'Profile.md'), 'utf8'), 'my own profile\n');
+});
+
+// R03-12: the sentence that tells the assistant to record unanswered Profile items as Unknown is pinned.
+const UNKNOWN_RULE = 'Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`.';
+
+function assertUnknownRule(firstUse) {
+  assert.ok(firstUse.includes(UNKNOWN_RULE), 'first-use must record unanswered Profile items as Unknown');
+}
+
+test('first-use pins the Unknown rule, so replacing it with a default is caught (R03-12)', async () => {
+  const firstUse = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/first-use.md'), 'utf8');
+  assertUnknownRule(firstUse);
+  assert.throws(() => assertUnknownRule(firstUse.replace(UNKNOWN_RULE, 'Fill any gap with a sensible default.')), /record unanswered Profile items as Unknown/);
+});
+
+// R03-13: the same Profile CONFLICT rule holds for an upgrade of the real v1.2.0 install, not only for init.
+async function putFile(root, posixPath, content) {
+  const destination = path.join(root, ...posixPath.split('/'));
+  await mkdir(path.dirname(destination), { recursive: true });
+  await writeFile(destination, content);
+}
+
+test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Profile.md and never overwrites it (R03-13)', async (t) => {
+  const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
+  const target = await consumerRoot('second-brain-upgrade-profile-');
+  cleanup(t, target);
+  for (const [destination, content] of Object.entries(fixture.files)) await putFile(target, destination, content);
+  await putFile(target, '.second-brain/installed-state.json', `${stableStringify(fixture.state)}\n`);
+  await putFile(target, fixture.receiptPath, `${stableStringify(fixture.receipt)}\n`);
+  await putFile(target, '00-Meta/Profile.md', 'my own profile\n');
+  const manifestBytes = await readFile(path.join(sourceRoot, 'template-manifest.json'));
+  const plan = await planInstall({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot, targetPath: target, operation: 'upgrade' });
+  const profile = plan.entries.find((entry) => entry.destination === '00-Meta/Profile.md');
+  assert.ok(profile, 'the upgrade plan lists the Profile seed');
+  assert.equal(profile.status, 'CONFLICT');
+  assert.equal(profile.undo.action, 'none');
+  assert.equal(await readFile(path.join(target, '00-Meta', 'Profile.md'), 'utf8'), 'my own profile\n');
+});
+
+// R03-14: a managed template file may only name a CLI command the CLI exposes. The allowed set is read from bin.
+const CLI_COMMAND_PATTERN = /\bsecond-brain(?:\.mjs)?\s+([a-z][a-z-]*)/g;
+
+function exposedCommands(binSource) {
+  const declared = binSource.match(/const commands = new Set\(\[([^\]]*)\]\)/);
+  assert.ok(declared, 'the bin declares its commands in one Set literal');
+  return declared[1].split(',').map((item) => item.trim().replace(/['"]/g, '')).filter(Boolean);
+}
+
+function namedCommands(text) {
+  return [...text.matchAll(CLI_COMMAND_PATTERN)].map((match) => match[1]);
+}
+
+test('no managed template file names a CLI command the CLI does not expose, and the scan really sees command mentions (R03-14)', async () => {
+  const exposed = new Set(exposedCommands(await readFile(path.join(sourceRoot, 'bin', 'second-brain.mjs'), 'utf8')));
+  assert.ok(exposed.has('connect') && exposed.has('verify') && exposed.has('init'), 'the derived set is the CLI command set');
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  const named = [];
+  for (const entry of manifest.entries) {
+    named.push(...namedCommands(await readFile(path.join(sourceRoot, entry.source), 'utf8')).map((command) => ({ file: entry.destination, command })));
+  }
+  assert.ok(named.length > 0, 'the scan found command mentions in the managed files, so the guard is not a no-op');
+  assert.deepEqual(named.filter((item) => !exposed.has(item.command)), [], 'every named command is exposed by the CLI');
+});
+
+test('the R03-14 scan fires on a planted command the CLI does not expose (positive control)', () => {
+  const exposed = new Set(exposedCommands('const commands = new Set([\'init\', \'connect\']);'));
+  assert.deepEqual(namedCommands('Run `node ./bin/second-brain.mjs frobnicate --target x`.'), ['frobnicate']);
+  assert.equal(exposed.has('frobnicate'), false);
+});
+
+test('the connect wording defines the harness where Home first uses it', async () => {
+  const home = await readFile(path.join(sourceRoot, 'template/Home.md'), 'utf8');
+  assert.ok(home.includes('(the harness is the set of agent rules and commands that Spec Harness installs)'), 'Home defines the harness at first use');
+  assert.ok(home.indexOf('(the harness is') > home.indexOf('Spec Harness files'), 'the definition sits at the first use');
+});
+
+// R03-11: the context procedure calls the seeded folder the seeded project, not an example.
+test('the context procedure names the seeded project, not an example (R03-11)', async () => {
+  const context = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/context.md'), 'utf8');
+  assert.ok(context.includes('the seeded project lives under `01-Projects/Selected-Project/`'), 'context names the seeded project');
+  assert.equal(context.includes('the seeded example lives under'), false, 'the example wording is gone');
 });

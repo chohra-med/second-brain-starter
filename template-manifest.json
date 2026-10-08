@@ -32,7 +32,7 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "5d6a8261cf89bc3ee3b1407a1f192eb6d89f29ce1a8657baac921e8dd6a9df6d",
+      "sha256": "e70a19865b9b355e69d8b7bf50df58a860169042b3bc1a26ebc01cb8c955e78a",
       "mergeKind": "managed-file"
     },
     {
@@ -50,7 +50,7 @@
     {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "114de01476bc1f9a75dcdbafaa59e5d60ddd6460f5a1f6d104819010fbc24081",
+      "sha256": "3374a76917423a49e3cd922773fdd6f6f3887ab757c73d186583e9b5d2a0e789",
       "mergeKind": "managed-file"
     },
     {
@@ -122,7 +122,7 @@
     {
       "source": "template/03-Resources/Procedures/context.md",
       "destination": "03-Resources/Procedures/context.md",
-      "sha256": "23d198adc72550ad365ee77e5980d10c7575e6074c34ae64921298ad5aa38046",
+      "sha256": "e4f372ae2c463ad7f7ac5059b8cf4dc560ddf78b5212e6f183f2d74cec8315ec",
       "mergeKind": "managed-file"
     },
     {
@@ -218,7 +218,7 @@
     {
       "source": "template/01-Projects/README.md",
       "destination": "01-Projects/README.md",
-      "sha256": "8db6a5cdc34523587481353ea381cc1878242b44011bee3aaad9f5b5c5c6906e",
+      "sha256": "a241999035fb757eb88d11b8d307265ece548490a653f7abfaddf27a0e008bec",
       "mergeKind": "managed-file"
     },
     {
