@@ -18,6 +18,19 @@ Ask only missing goal, current work, desired output and constraints. Use these p
 
 If the user is undecided, offer the existing learn-one-idea example below: ask for a paragraph they want to understand and obtain their confirmation of its goal and output before continuing. Suggest the saved learning note and paragraph comparison; do not choose or write automatically. A project can be learning or planning; coding is optional.
 
+## 2a. Profile: only what is missing
+
+Read `00-Meta/Profile.md` first. Ask only the questions whose section still says `Unknown`:
+
+- What is your role?
+- What is your stack?
+- How do you want answers given?
+- What must never be touched (paths or systems)?
+
+Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`. Do not invent a role, stack, preference or boundary. Write `00-Meta/Profile.md` under the same exact-plan approval and preimage rule as the next section. The read order in `00-Meta/AGENTS.md` puts Profile first, so read the `Never touch` entries before changing anything. Do not assume the client loads it automatically.
+
+Do not record credentials, tokens, client names or anything confidential. `Never touch` names paths and areas, not secrets.
+
 ## 3. Approve the exact personalization
 
 Show the exact personalized-record plan: file paths, proposed edits, evidence/source and unknowns. Use the existing [Facts](../../01-Projects/Selected-Project/FACTS.md), [Roadmap](../../01-Projects/Selected-Project/roadmap.md), [Decisions](../../01-Projects/Selected-Project/Decisions.md), [Progress](../../01-Projects/Selected-Project/progress.md) and [Daily task plan](../../00-Meta/Daily-Task-Plan.md) as state owners, only when their actual gaps require edits.
