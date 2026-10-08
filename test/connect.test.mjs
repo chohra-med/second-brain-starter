@@ -29,16 +29,16 @@ const rel = (root, posixPath) => path.join(root, ...posixPath.split('/'));
 
 // The expected-failure helper asserts OUTSIDE the catch: an action that resolves, or that
 // throws something else, fails the test (see the falsification test below).
-async function rejects(code, action) {
+async function rejects(code, action, context = '') {
   let caught = null;
   try {
     await action();
   } catch (error) {
     caught = error;
   }
-  assert.ok(caught !== null, `expected ${code} but the action resolved`);
-  assert.ok(caught instanceof InstallPlanError, `expected InstallPlanError ${code}, got ${caught}`);
-  assert.equal(caught.code, code, `expected ${code}, got ${caught.code}: ${caught.message}`);
+  assert.ok(caught !== null, `${context} expected ${code} but the action resolved`.trim());
+  assert.ok(caught instanceof InstallPlanError, `${context} expected InstallPlanError ${code}, got ${caught}`.trim());
+  assert.equal(caught.code, code, `${context} expected ${code}, got ${caught.code}: ${caught.message}`.trim());
   return caught;
 }
 
@@ -555,10 +555,13 @@ test('approve: a wrong, stale or foreign digest is refused with nothing written'
   const other = await extraRepo(w, 'other-repo');
   const plan = await planConnect(args(w));
   const planOther = await planConnect(args(w, { repoPath: other }));
+  const elsewhere = await world(t);
+  const planElsewhere = await planConnect(args(elsewhere));
   const before = await snap(w);
   await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: '0'.repeat(64) }));
   await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: undefined }));
   await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: planOther.digest }));
+  await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: planElsewhere.digest }), 'a digest from another workspace');
   await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w, { name: 'renamed' }), approvedDigest: plan.digest }));
   await put(w.repo, 'AGENTS.md', 'appeared after approval');
   await rejects('PLAN_DIGEST_MISMATCH', () => applyConnect({ ...args(w), approvedDigest: plan.digest }));
@@ -726,7 +729,7 @@ async function interruptionLoop(w, extra = {}) {
   const expected = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 2;
   assert.ok(expected >= 3);
   for (let position = 1; position <= expected; position += 1) {
-    await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(w, extra), approvedDigest: plan.digest, injectFailureAfterWrite: position }));
+    await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(w, extra), approvedDigest: plan.digest, injectFailureAfterWrite: position }), `position ${position} of ${expected}:`);
     assert.deepEqual(await snap(w), before, `position ${position}: both roots must be restored byte for byte`);
     assert.equal((await planConnect(args(w, extra))).digest, plan.digest, `position ${position}: the plan is reproducible afterwards`);
   }
