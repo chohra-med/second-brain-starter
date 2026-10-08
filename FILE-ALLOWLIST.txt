@@ -55,3 +55,12 @@ test/plan.test.mjs
 test/security.test.mjs
 test/transaction.test.mjs
 test/upgrade.test.mjs
+template/00-Meta/README.md
+template/01-Projects/README.md
+template/01-Projects/Selected-Project/README.md
+template/03-Resources/README.md
+template/03-Resources/Procedures/README.md
+template/03-Resources/Procedures/first-use.md
+template/shared-skills/second-brain-icm/SKILL.md
+template/03-Resources/Extensions.md
+template/03-Resources/Procedures/extend.md

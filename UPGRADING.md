@@ -1,5 +1,11 @@
 # Upgrading the free starter
 
+## 2026-10-05 UNRELEASED candidate
+
+This candidate adds managed first-use/navigation files. Upgrade from a baseline-seeded workspace preserves safe personalized seed records. Review the exact new plan and verify afterward; later personalization and artifacts have separate recovery preimages. A failed transaction into a missing target may leave an empty directory. Inspect the receipt and current state, produce a fresh plan and obtain current approval before retrying; do not blindly replay an earlier digest.
+
+Version stays 1.1.0. Identify unpublished bytes by the exact candidate commit/tree and archive SHA-256 in its local binding receipt, not by a release label. No publication is asserted.
+
 ## Before an initializer upgrade
 
 1. Read [CHANGELOG.md](CHANGELOG.md). A source [VERSION](VERSION) is not proof that a matching archive is published; use the Releases page for publication status.
