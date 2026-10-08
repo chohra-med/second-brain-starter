@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.1.0",
+    "templateVersion": "1.2.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -32,7 +32,7 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "47843bbc6167b6dc84f535ff7253b316b8c7a178ebf2f94c76db4af20176f492",
+      "sha256": "4b8c4324364b432ec9fec2b4677198a44d800b05bb937869a774d6d4c4832064",
       "mergeKind": "managed-file"
     },
     {
@@ -104,31 +104,31 @@
     {
       "source": "template/03-Resources/Procedures/capture.md",
       "destination": "03-Resources/Procedures/capture.md",
-      "sha256": "d309e7f4a1cc584a96715cfee66614d7233eddbe0e958072b94a103fdcf20881",
+      "sha256": "7a4f3b3a8069335d3c10f2e96ca668f1cbebe80bc4946b2a01af037855902773",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/close.md",
       "destination": "03-Resources/Procedures/close.md",
-      "sha256": "e0a7ef76677126c7765044c845ecb436d929fa555a52d8f9229a97f791d2bfbb",
+      "sha256": "b1029fda05d35974300c36a6872ea8529e2c8ef792247eaeb5a425852c2bc4aa",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/context.md",
       "destination": "03-Resources/Procedures/context.md",
-      "sha256": "a3c76700c0e42f86917c65bc16938073f3d2e74457a5bd6358371291b9e746e6",
+      "sha256": "44065f5918e80bd1593760d2dd658b5cbca11996ac4bf4e2304338259dc09b1c",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/learning-and-scaling.md",
       "destination": "03-Resources/Procedures/learning-and-scaling.md",
-      "sha256": "529e7e1606f35bf871c4e98c2a7b88b30f15ece14da5f31967ccff167d9af723",
+      "sha256": "2176aa37633801e31afb3ddb8b2dce1dc99ad76d6f6ad2aa198b3abb6073ba21",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/review.md",
       "destination": "03-Resources/Procedures/review.md",
-      "sha256": "87d1b5777d265d26acb24b4f816a676f2e035eae1ea94889eee3defdfccf4163",
+      "sha256": "73e498c3d4744e10a63bcf7e6f5d13be1ea260cb2a8c5dff934bdbf7ba18350b",
       "mergeKind": "managed-file"
     },
     {
@@ -146,61 +146,61 @@
     {
       "source": "template/shared-skills/second-brain-capture/SKILL.md",
       "destination": ".agents/skills/second-brain-capture/SKILL.md",
-      "sha256": "d889b6caca6df9ae03f40af271916480089ede3a66610230e8798ef42e906245",
+      "sha256": "d77cc834b069211c213405f257f06f08bd09372162b5840c09428fa3f533732f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-close/SKILL.md",
       "destination": ".agents/skills/second-brain-close/SKILL.md",
-      "sha256": "4bdaf34482d89938c9a29ba54de67d776ba25328c96447ec39565561e51b9bf9",
+      "sha256": "dc7ee1844ecae749af0a2d25d707eb6e50be09707a4960ce777c26807fb9744f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-context/SKILL.md",
       "destination": ".agents/skills/second-brain-context/SKILL.md",
-      "sha256": "c33372036f6912fe8bbb42a42639788352923c94518c24c12fe7abd1ea41d0fb",
+      "sha256": "44db5adf1822052abcb8a785da27091781330af2044bdbe8fe1a4daffffc78cc",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-learning/SKILL.md",
       "destination": ".agents/skills/second-brain-learning/SKILL.md",
-      "sha256": "e38e85d3e6ee0b66a979a0b83248934d45db916bba6fd3863a6914dcf9dd6fd7",
+      "sha256": "34cd582132f20432f08201d0443b203f2012955a0aa291a1379af5eba3c377e6",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-review/SKILL.md",
       "destination": ".agents/skills/second-brain-review/SKILL.md",
-      "sha256": "04226c1d25518e88060a326770cf2ed93dce3d58957200c7541c79e781112849",
+      "sha256": "b00fc14bf06cdcc2ed99b8b0730b2cff34610a3ee40089f71d76993e7f28c455",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-capture/SKILL.md",
       "destination": ".claude/skills/second-brain-capture/SKILL.md",
-      "sha256": "d889b6caca6df9ae03f40af271916480089ede3a66610230e8798ef42e906245",
+      "sha256": "d77cc834b069211c213405f257f06f08bd09372162b5840c09428fa3f533732f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-close/SKILL.md",
       "destination": ".claude/skills/second-brain-close/SKILL.md",
-      "sha256": "4bdaf34482d89938c9a29ba54de67d776ba25328c96447ec39565561e51b9bf9",
+      "sha256": "dc7ee1844ecae749af0a2d25d707eb6e50be09707a4960ce777c26807fb9744f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-context/SKILL.md",
       "destination": ".claude/skills/second-brain-context/SKILL.md",
-      "sha256": "c33372036f6912fe8bbb42a42639788352923c94518c24c12fe7abd1ea41d0fb",
+      "sha256": "44db5adf1822052abcb8a785da27091781330af2044bdbe8fe1a4daffffc78cc",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-learning/SKILL.md",
       "destination": ".claude/skills/second-brain-learning/SKILL.md",
-      "sha256": "e38e85d3e6ee0b66a979a0b83248934d45db916bba6fd3863a6914dcf9dd6fd7",
+      "sha256": "34cd582132f20432f08201d0443b203f2012955a0aa291a1379af5eba3c377e6",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-review/SKILL.md",
       "destination": ".claude/skills/second-brain-review/SKILL.md",
-      "sha256": "04226c1d25518e88060a326770cf2ed93dce3d58957200c7541c79e781112849",
+      "sha256": "b00fc14bf06cdcc2ed99b8b0730b2cff34610a3ee40089f71d76993e7f28c455",
       "mergeKind": "managed-file"
     },
     {
@@ -212,7 +212,7 @@
     {
       "source": "template/01-Projects/README.md",
       "destination": "01-Projects/README.md",
-      "sha256": "b50866034d96a018ba9c4af33bd3c195fd2c3cd5aa168466c4edf9a205918336",
+      "sha256": "034139d73b91a46fba5e1e941f5da443031fd46f5a49c6fae0c9889c17855995",
       "mergeKind": "managed-file"
     },
     {
@@ -230,7 +230,7 @@
     {
       "source": "template/03-Resources/Procedures/README.md",
       "destination": "03-Resources/Procedures/README.md",
-      "sha256": "31abfd3a5058458bff42e8b605a52981585a79b32539013990928fa406cce66b",
+      "sha256": "a50fc6e17bd2823f053ada45aab29c09ef6a6ad94defd5439b120b0b80af0ef3",
       "mergeKind": "managed-file"
     },
     {
@@ -242,13 +242,13 @@
     {
       "source": "template/shared-skills/second-brain-icm/SKILL.md",
       "destination": ".agents/skills/second-brain-icm/SKILL.md",
-      "sha256": "6a48235631c76c85f554604791f7e781fd9d9f832f84162107db6f36b3a15adf",
+      "sha256": "230571ea0f4a8a7d6d50d92cd1ef6f6ffc1d2ae85915ba61ca0a0815253bb75a",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-icm/SKILL.md",
       "destination": ".claude/skills/second-brain-icm/SKILL.md",
-      "sha256": "6a48235631c76c85f554604791f7e781fd9d9f832f84162107db6f36b3a15adf",
+      "sha256": "230571ea0f4a8a7d6d50d92cd1ef6f6ffc1d2ae85915ba61ca0a0815253bb75a",
       "mergeKind": "managed-file"
     },
     {
@@ -260,7 +260,217 @@
     {
       "source": "template/03-Resources/Procedures/extend.md",
       "destination": "03-Resources/Procedures/extend.md",
-      "sha256": "2e5fcd03acba1e9eda2ef0c10468cdfde85abb8b381cf7bc736d22cb3323916a",
+      "sha256": "fcc2654a1240ee5b6eebac7cc4c03b0eaace05f681a0b6f38bcba7c161d2efce",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/LICENSE",
+      "destination": ".agents/skills/icm-architect/LICENSE",
+      "sha256": "e13cd56a64956720629206c84499871594585bb3e17b6ef01ccca570cf38ce1d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/LICENSE",
+      "destination": ".claude/skills/icm-architect/LICENSE",
+      "sha256": "e13cd56a64956720629206c84499871594585bb3e17b6ef01ccca570cf38ce1d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/README.md",
+      "destination": ".agents/skills/icm-architect/README.md",
+      "sha256": "9399c65c911565537e9665b619417573f2cbf46b3cb59428f3bdf8014a81402f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/README.md",
+      "destination": ".claude/skills/icm-architect/README.md",
+      "sha256": "9399c65c911565537e9665b619417573f2cbf46b3cb59428f3bdf8014a81402f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/SKILL.md",
+      "destination": ".agents/skills/icm-architect/SKILL.md",
+      "sha256": "8a0d62444f047e84aa02ca1728a5dc3848dd06afa32f9e66bf3225352fe67a38",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/SKILL.md",
+      "destination": ".claude/skills/icm-architect/SKILL.md",
+      "sha256": "8a0d62444f047e84aa02ca1728a5dc3848dd06afa32f9e66bf3225352fe67a38",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/CLAUDE.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/CLAUDE.md",
+      "sha256": "4a3b8a05a4469b78b703f2e5593fd977097038fe24c39c7cb7ca5bcf5aea6154",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/CLAUDE.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/CLAUDE.md",
+      "sha256": "4a3b8a05a4469b78b703f2e5593fd977097038fe24c39c7cb7ca5bcf5aea6154",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/CONTEXT.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/CONTEXT.md",
+      "sha256": "edc2c382d7559fa9232e8f93aef1c220d099f940f3668d937c47f9151196f1b2",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/CONTEXT.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/CONTEXT.md",
+      "sha256": "edc2c382d7559fa9232e8f93aef1c220d099f940f3668d937c47f9151196f1b2",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/node.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/node.md",
+      "sha256": "28f94085722ae44f7c0c1483e051e87c4cae8c715afd86976db9b9ae656e8ca5",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/node.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/node.md",
+      "sha256": "28f94085722ae44f7c0c1483e051e87c4cae8c715afd86976db9b9ae656e8ca5",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/object.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/object.md",
+      "sha256": "614bf1620533c2b0f48fde415caf3d0158b6b4847b80aa7e992b46a1bb1b1a3a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/object.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/object.md",
+      "sha256": "614bf1620533c2b0f48fde415caf3d0158b6b4847b80aa7e992b46a1bb1b1a3a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/process.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/process.md",
+      "sha256": "5e2481d15912d813f608e89d2e69e5f8e6c3bd21ebdcf4f7cbee5c4fc1a69433",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/process.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/process.md",
+      "sha256": "5e2481d15912d813f608e89d2e69e5f8e6c3bd21ebdcf4f7cbee5c4fc1a69433",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/questionnaire.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/questionnaire.md",
+      "sha256": "47eeaa58318f87f443bc3937fcfa8166c6f225c36367698426edc85824980ee6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/questionnaire.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/questionnaire.md",
+      "sha256": "47eeaa58318f87f443bc3937fcfa8166c6f225c36367698426edc85824980ee6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/schema.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/schema.md",
+      "sha256": "be96c82389d9d1d697a9767c601769bac8f71d7734ae8dd6ea4214d3958c40a0",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/schema.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/schema.md",
+      "sha256": "be96c82389d9d1d697a9767c601769bac8f71d7734ae8dd6ea4214d3958c40a0",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/stage-CONTEXT.md",
+      "destination": ".agents/skills/icm-architect/assets/templates/stage-CONTEXT.md",
+      "sha256": "c689a6b4207c81f7c83219ef79ca268156841063ec25b686e5c07972822e31e3",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/assets/templates/stage-CONTEXT.md",
+      "destination": ".claude/skills/icm-architect/assets/templates/stage-CONTEXT.md",
+      "sha256": "c689a6b4207c81f7c83219ef79ca268156841063ec25b686e5c07972822e31e3",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/core.md",
+      "destination": ".agents/skills/icm-architect/references/core.md",
+      "sha256": "4d1a8a415dc36250f3c0cad002be558d12ef63843396749b81106fbf52e5ba64",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/core.md",
+      "destination": ".claude/skills/icm-architect/references/core.md",
+      "sha256": "4d1a8a415dc36250f3c0cad002be558d12ef63843396749b81106fbf52e5ba64",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/forms.md",
+      "destination": ".agents/skills/icm-architect/references/forms.md",
+      "sha256": "4a3e68efcb5aac5803f46bebae499975337bc3ab9caf006e73bc32517284c73d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/forms.md",
+      "destination": ".claude/skills/icm-architect/references/forms.md",
+      "sha256": "4a3e68efcb5aac5803f46bebae499975337bc3ab9caf006e73bc32517284c73d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/reference-integrity.md",
+      "destination": ".agents/skills/icm-architect/references/reference-integrity.md",
+      "sha256": "1317824d70edb0db5561914940f3dff83ec706179e6d5d42c8794e9c52e89403",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/reference-integrity.md",
+      "destination": ".claude/skills/icm-architect/references/reference-integrity.md",
+      "sha256": "1317824d70edb0db5561914940f3dff83ec706179e6d5d42c8794e9c52e89403",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/system-map.md",
+      "destination": ".agents/skills/icm-architect/references/system-map.md",
+      "sha256": "d8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/icm-architect/references/system-map.md",
+      "destination": ".claude/skills/icm-architect/references/system-map.md",
+      "sha256": "d8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/_templates/project/README.md",
+      "destination": "03-Resources/_templates/project/README.md",
+      "sha256": "2145339e4925db53f131fb4623d4fa310e5405728dbc043a6925675c4fadf913",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/_templates/project/FACTS.md",
+      "destination": "03-Resources/_templates/project/FACTS.md",
+      "sha256": "df4c9133ba75cfbd0782ec45e36a227d791e8c329feec84b153a7b3d0f9f01c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/_templates/project/roadmap.md",
+      "destination": "03-Resources/_templates/project/roadmap.md",
+      "sha256": "715ff4e41a497059e0988bad424657fa5abe76ce1b65c558f2b11f19c6738133",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/_templates/project/Decisions.md",
+      "destination": "03-Resources/_templates/project/Decisions.md",
+      "sha256": "2862a0cf3df93b8520aa2b7b810654f585ea1406393716ca48bded8809c04803",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/_templates/project/progress.md",
+      "destination": "03-Resources/_templates/project/progress.md",
+      "sha256": "16574176a2f02bef9d55d4630d07029a0a1fd326634b398b98ca377c93b35a52",
       "mergeKind": "managed-file"
     }
   ]

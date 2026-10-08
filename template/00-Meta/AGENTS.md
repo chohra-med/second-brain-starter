@@ -18,4 +18,4 @@ Then state: selected root, selected project, files read, current goal, constrain
 
 Capture new work with `03-Resources/Procedures/capture.md`. Never invent a fact, decision, or verification result.
 
-For system architecture changes to rules, commands, skills, workflows, automations, handoffs or context routing, use `second-brain-icm` before editing. If native skill invocation is unavailable, manually read `.agents/skills/second-brain-icm/SKILL.md` or `.claude/skills/second-brain-icm/SKILL.md`, then its owner `03-Resources/Procedures/context.md`. Ordinary note work uses the selected-project route above without loading architecture safeguards.
+For system architecture changes to rules, commands, skills, workflows, automations, handoffs or context routing, use `second-brain-icm` before editing. If native skill invocation is unavailable, manually read `.agents/skills/second-brain-icm/SKILL.md` or `.claude/skills/second-brain-icm/SKILL.md`, then the method it names, `icm-architect/SKILL.md` in the same skills folder. Ordinary note work uses the selected-project route above without loading architecture safeguards.

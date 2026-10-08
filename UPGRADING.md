@@ -1,10 +1,10 @@
 # Upgrading the free starter
 
-## 2026-10-05 UNRELEASED candidate
+## Upgrading to v1.2.0
 
-This candidate adds managed first-use/navigation files. Upgrade from a baseline-seeded workspace preserves safe personalized seed records. Review the exact new plan and verify afterward; later personalization and artifacts have separate recovery preimages. A failed transaction into a missing target may leave an empty directory. Inspect the receipt and current state, produce a fresh plan and obtain current approval before retrying; do not blindly replay an earlier digest.
+This version adds managed first-use/navigation files. Upgrade from a baseline-seeded workspace preserves safe personalized seed records. Review the exact new plan and verify afterward; later personalization and artifacts have separate recovery preimages. A failed transaction into a missing target may leave an empty directory. Inspect the receipt and current state, produce a fresh plan and obtain current approval before retrying; do not blindly replay an earlier digest.
 
-Version stays 1.1.0. Identify unpublished bytes by the exact candidate commit/tree and archive SHA-256 in its local binding receipt, not by a release label. No publication is asserted.
+It also adds the bundled `icm-architect` skill in both client skill folders and a project template under `03-Resources/_templates/project/`. Managed procedures and skills changed in this version, so read each line of the new plan before approving it.
 
 ## Before an initializer upgrade
 

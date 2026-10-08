@@ -10,3 +10,17 @@ Open the roadmap item and its progress entries together.
 Use these words plainly: Done, Verified, Open, Next. They make handoffs readable and expose wishful completion.
 
 Request a separate new chat: “Read Home and [Context](context.md), recover the goal, constraints, artifact evidence and saved Next from the selected project owners, then tell me the next step.” Preserve unknowns and report conflicts. A same-chat reread does not prove recovery; manual new-chat recovery does not prove native automatic loading.
+
+## Inputs
+
+- Working (this run): the roadmap item in the selected project's [roadmap](../../01-Projects/Selected-Project/roadmap.md), its entries in [progress](../../01-Projects/Selected-Project/progress.md), and the artifact the work produced.
+- Reference (every run): the selected project's [facts](../../01-Projects/Selected-Project/FACTS.md), to compare the artifact against.
+
+## Outputs
+
+- One dated entry in `01-Projects/Selected-Project/progress.md` with Done, Verified, Open and Next.
+- The item's status in `01-Projects/Selected-Project/roadmap.md`.
+
+## Human check
+
+Open the artifact and the recorded check result side by side. Confirm they agree before the roadmap item reads `Verified`.
