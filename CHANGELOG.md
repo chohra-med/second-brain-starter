@@ -4,6 +4,7 @@
 
 - Adds a real v1.2.0 install fixture and a test that the current source verifies and upgrades it.
 - Adds a `00-Meta/Profile.md` seed and a missing-only Profile interview in `first-use.md`, and rewords Home, `00-Meta/AGENTS.md`, `01-Projects/README.md` and the context procedure so another project can sit beside the seeded `Selected-Project`; all seeds stay in the manifest, and an upgrade plans a named CONFLICT if you already made your own `00-Meta/Profile.md`.
+- Vendors Spec Harness 0.2.0 at commit `a663397c2aafa35071fb1fe899bd6a174cd423e6` under `vendor/spec-harness/` with its MIT `LICENSE`, a pin record in `vendor/SPEC-HARNESS-PIN.json` and a test that checks every vendored byte. Bundled only: nothing reads it yet, and it is never installed into the workspace. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 ## v1.2.0
 

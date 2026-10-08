@@ -1,0 +1,40 @@
+{
+  "name": "spec-harness",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Spec-driven development wrapped in a harness: a persistent memory bank, a ratchet that only tightens, a separate verifier that says PASS/FAIL, and a learning loop that classifies feedback before reviewed corrections become rules.",
+  "author": "Malik Chohra <malik@getwireai.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chohra-med/spec-harness-oss.git"
+  },
+  "homepage": "https://github.com/chohra-med/spec-harness-oss#readme",
+  "bugs": {
+    "url": "https://github.com/chohra-med/spec-harness-oss/issues"
+  },
+  "bin": {
+    "spec-harness": "bin/spec-harness"
+  },
+  "files": [
+    "bin",
+    "agents",
+    "commands",
+    "skills",
+    "templates",
+    "docs",
+    "install-manifest.json",
+    "README.md",
+    "ARCHITECTURE.md"
+  ],
+  "keywords": [
+    "spec-driven-development",
+    "sdd",
+    "spec-kit",
+    "ai-agents",
+    "harness-engineering",
+    "claude-code",
+    "verifier",
+    "context-engineering"
+  ]
+}

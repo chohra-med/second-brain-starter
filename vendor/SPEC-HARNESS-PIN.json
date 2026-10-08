@@ -1,0 +1,529 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/chohra-med/spec-harness-oss",
+  "commit": "a663397c2aafa35071fb1fe899bd6a174cd423e6",
+  "tree": "4bbbc0cdf42bf18b4954cae84a4a0fa5673a508e",
+  "harnessVersion": "0.2.0",
+  "license": {
+    "spdx": "MIT",
+    "path": "LICENSE",
+    "sha256": "d67c2236ec74cb01e489d79fa3b260b128ed0efb133608addfa5cacb07688dc1"
+  },
+  "sourceInventory": [
+    {
+      "path": ".gitattributes",
+      "bytes": 19,
+      "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 162,
+      "sha256": "42d3f6df5b89aa86d43b39a507aae2a127521ebd8c000a80f5d26978c0b00a97"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "bytes": 21298,
+      "sha256": "9cbca39981bca09592dc406083582f85fd4fa0a0da55c15f770265cc6df7eb92"
+    },
+    {
+      "path": "LICENSE",
+      "bytes": 1069,
+      "sha256": "d67c2236ec74cb01e489d79fa3b260b128ed0efb133608addfa5cacb07688dc1"
+    },
+    {
+      "path": "README.md",
+      "bytes": 13913,
+      "sha256": "8a07b5af3b941cc66769f719237d762eb7084e4e51a9ed7482fc76cab8aef87c"
+    },
+    {
+      "path": "agents/sdd-architect.md",
+      "bytes": 2892,
+      "sha256": "5b62aa5cdaf57bcc787be1cd68db0664a21b0b641a6b8588cbb7ba4c021b6b76"
+    },
+    {
+      "path": "agents/sdd-design-verifier.md",
+      "bytes": 5712,
+      "sha256": "d086fdf96c83f771220662702b791c73c5901d4bf26494ba588da2e592cf9476"
+    },
+    {
+      "path": "agents/sdd-documenter.md",
+      "bytes": 7765,
+      "sha256": "b290b3d9d1f3186f4b450479ba96e3dc91599d567a5ed606411dac928a5a7504"
+    },
+    {
+      "path": "agents/sdd-implementer.md",
+      "bytes": 3391,
+      "sha256": "9d436d168db5cee2475f505e5e47e29600b7b345dad6d8e4f09f646c56a554dd"
+    },
+    {
+      "path": "agents/sdd-learner.md",
+      "bytes": 2579,
+      "sha256": "13bda8af9c8ef0d008f093ee140af6fa123b674cb35f7eccfc4af0537e27d3bc"
+    },
+    {
+      "path": "agents/sdd-merger.md",
+      "bytes": 1593,
+      "sha256": "7f068d356ee571871f09a1566b6ac5eb94e668a36de869244d87a62d8a93b9d8"
+    },
+    {
+      "path": "agents/sdd-planner.md",
+      "bytes": 3255,
+      "sha256": "b0f3f85341a5772466db053a82601396dcd1587ebf00fb176b3d326cf3b2f632"
+    },
+    {
+      "path": "agents/sdd-researcher.md",
+      "bytes": 2049,
+      "sha256": "342ca8ff3b249b3f4221d0afb01f51aeebdf3905ac29e90092b4c489e29b8f47"
+    },
+    {
+      "path": "agents/sdd-reviewer.md",
+      "bytes": 2436,
+      "sha256": "bf7370ffc650a8c3ffdde3ffb0146da3886b8eb3d40803f2db5196f6c554d2d3"
+    },
+    {
+      "path": "agents/sdd-tester.md",
+      "bytes": 3202,
+      "sha256": "d3c82546288d81c67310b2e16db39e16bfb64a96d1174f539e2a51c1a292d24e"
+    },
+    {
+      "path": "agents/sdd-verifier.md",
+      "bytes": 3340,
+      "sha256": "f6596cbb7950fed6815d427e98917216ca46ea8d683c913197b386235b5458c4"
+    },
+    {
+      "path": "agents/sdd-workflow-tester.md",
+      "bytes": 6488,
+      "sha256": "59a305c6c457d7e753cae461ec73b168fbeeefc520951bf770668d8d9f8060bf"
+    },
+    {
+      "path": "bin/loop.sh",
+      "bytes": 2097,
+      "sha256": "2d00990a70b6ff58f5d49959de804ca1f0d69168bc2e1f5ccb46e16fe696b7f4"
+    },
+    {
+      "path": "bin/sh-gen-agents.sh",
+      "bytes": 25883,
+      "sha256": "3d5f340f3f484f4494718454f8ddddd0c71a47881aafc59e32f630afffa96bfc"
+    },
+    {
+      "path": "bin/sh-index.sh",
+      "bytes": 35311,
+      "sha256": "f0b481bae33245b6419f04e31579d2f2fb14667aefc8af64be2bf867bea58c7a"
+    },
+    {
+      "path": "bin/sh-init.sh",
+      "bytes": 332,
+      "sha256": "4baeeb29b433cad9814f0f0b7a0d046896dd8c6e7670d7ddb2c31bb3ca80b730"
+    },
+    {
+      "path": "bin/sh-install.sh",
+      "bytes": 12394,
+      "sha256": "0ffa97db5fedabae68bbb6c9efbf8afa8896ee74939b4a746d26da8b8a2791b9"
+    },
+    {
+      "path": "bin/sh-make-skills.sh",
+      "bytes": 14310,
+      "sha256": "713fc9fab80005f6c7535a6b0eca9767506c1792fb49719fd584d78e593b4ed8"
+    },
+    {
+      "path": "bin/spec-harness",
+      "bytes": 3413,
+      "sha256": "a5ec9ff0fe0445c03ee50036dc35cfe6acf78ab70902fae61ac7b1bc6ae29919"
+    },
+    {
+      "path": "commands/audit.md",
+      "bytes": 1142,
+      "sha256": "57726a4cc4067fd434eda84fe22cc5c84915edfc69fa0ffd98b7bde30d479e03"
+    },
+    {
+      "path": "commands/build.md",
+      "bytes": 3708,
+      "sha256": "df6daba614501a53e144591d1305d7798b5bcd6650f9790b98f695d3848ee826"
+    },
+    {
+      "path": "commands/document.md",
+      "bytes": 2234,
+      "sha256": "4c76ed1d3d58caa99f01d6c7211681010cc3f32821097ce9b921d57aadb58f05"
+    },
+    {
+      "path": "commands/generate-agents.md",
+      "bytes": 5837,
+      "sha256": "528e97741c8ccd8ec836e2e869646c90be15dc6b5845f75bf4b45df4cbdbdaf0"
+    },
+    {
+      "path": "commands/grill-me.md",
+      "bytes": 994,
+      "sha256": "cadf2554953a1fe0103664e719a45512f33402cfb6c7efa5ebe56b2e3de602f3"
+    },
+    {
+      "path": "commands/init.md",
+      "bytes": 10649,
+      "sha256": "f1e4c7d69edd3490bc8ed82be88d866c4ad98f3527b0804fcac2dfc783f67791"
+    },
+    {
+      "path": "commands/learn.md",
+      "bytes": 3566,
+      "sha256": "98c565645f8967ffc141555ab37de217ea0f2e051e294bac8ad3d0011f9a3a9e"
+    },
+    {
+      "path": "commands/migrate.md",
+      "bytes": 1325,
+      "sha256": "092f5c13eb24bc27705129b15521e003e920880906e0b152b30d5349a2a34064"
+    },
+    {
+      "path": "commands/package-finder.md",
+      "bytes": 1663,
+      "sha256": "ef6d4b9cffa1aea8ff802c71319cd6441d6e7c4839b2bcef746ea08c56528377"
+    },
+    {
+      "path": "commands/plan.md",
+      "bytes": 2514,
+      "sha256": "8e574657705eb5c42bdb662cafdc861f3c6fe741b649172f84c7a00ff975a5a9"
+    },
+    {
+      "path": "commands/ponytail.md",
+      "bytes": 1024,
+      "sha256": "c17e80699028241c922e072ecfe7936a2b9fc2e3cbaef46ba83db9e031df6e3a"
+    },
+    {
+      "path": "commands/rules.md",
+      "bytes": 3626,
+      "sha256": "40d2b80e3c8aedc9ae2e2e13863551ccf751920aacd20d0ee01e21c2a4cee311"
+    },
+    {
+      "path": "commands/sdd.md",
+      "bytes": 20331,
+      "sha256": "6b209f34b7e5ce7b31fdbdb16a54f3bbfbec26ad7a39eeff3b8dbe8487822e56"
+    },
+    {
+      "path": "commands/ship.md",
+      "bytes": 1453,
+      "sha256": "6b544548cb30c4fdd987b42271b6afef96f37704b67176f95e56bb64fee32d2d"
+    },
+    {
+      "path": "commands/skill-finder.md",
+      "bytes": 1428,
+      "sha256": "b919c2e0315ad8c9baa080d373fd211da038b9e7da5c6b9a89173c14a360d69d"
+    },
+    {
+      "path": "commands/spec.md",
+      "bytes": 1576,
+      "sha256": "fc1b2b115f9817954efb110591d391838b11515518b989d38c7760b87684e24b"
+    },
+    {
+      "path": "commands/tasks.md",
+      "bytes": 1095,
+      "sha256": "8881b392c217e124093d492204ca269b15035e8bf7a4069cca26d57e0f4a8f96"
+    },
+    {
+      "path": "commands/tester.md",
+      "bytes": 6696,
+      "sha256": "00582389eb131388ad4f8d7b2f52cabf13b91337dba39f0312022894405a2f47"
+    },
+    {
+      "path": "commands/tickets.md",
+      "bytes": 2083,
+      "sha256": "0965934173b0a69c7473d0c1daa6cc72b1fc4145681935628c5722718fe1193e"
+    },
+    {
+      "path": "commands/verify.md",
+      "bytes": 1507,
+      "sha256": "d452edd7b9ae0baee69931bee6a3e4e02ca3d733b55a91348608476c34836bf7"
+    },
+    {
+      "path": "docs/GETTING-STARTED.md",
+      "bytes": 15334,
+      "sha256": "c95470564761d514e867578802f69ed45c0f7ac4df595c201a0b38aa80cf8b23"
+    },
+    {
+      "path": "docs/GUARDRAILS.md",
+      "bytes": 2953,
+      "sha256": "55e545680a6a2e35ea60d639084441c9cc26bfb1f96ce108d4d8d78c66e8fbc8"
+    },
+    {
+      "path": "docs/MCP-SERVERS.md",
+      "bytes": 4004,
+      "sha256": "ad1f388b3b4835f995f8015a0b0fdc262e60a92d45d0d6de09d653f5ca9d180a"
+    },
+    {
+      "path": "install-manifest.json",
+      "bytes": 26200,
+      "sha256": "6507c421b244deb4741ed1297a5f87357e521630c2f467e8b6ee95a9384cdc91"
+    },
+    {
+      "path": "package.json",
+      "bytes": 1060,
+      "sha256": "718f611d12fabf4ce382ea088c0e82e449ac109322c354d0c91766ff8689cf90"
+    },
+    {
+      "path": "skills/spec-harness-audit/SKILL.md",
+      "bytes": 1256,
+      "sha256": "c3fecd9340404e4306e17cb42842f8afcc67c83c305cb93c79efe2118d2b607f"
+    },
+    {
+      "path": "skills/spec-harness-build/SKILL.md",
+      "bytes": 1329,
+      "sha256": "f9fb57493b6b8bcb396bebed5c56ad3e0e108104f9194cdf47157a9bf31df694"
+    },
+    {
+      "path": "skills/spec-harness-generate-agents/SKILL.md",
+      "bytes": 1718,
+      "sha256": "ddaaa2941313d73c7100d4e67be7fe2afb0e85f154a30efcd18a2cfb5e02441c"
+    },
+    {
+      "path": "skills/spec-harness-grill-me/SKILL.md",
+      "bytes": 1086,
+      "sha256": "56c9456dd72a7a891caf1c8005bb1c6e7d72c47327c48fe067a87a4c1a351b5d"
+    },
+    {
+      "path": "skills/spec-harness-install/SKILL.md",
+      "bytes": 1595,
+      "sha256": "2d79d52413c55da730c1dd7a6ae7cf3a10de93afabb0d7e1f28c7dcd0c199432"
+    },
+    {
+      "path": "skills/spec-harness-learn/SKILL.md",
+      "bytes": 1460,
+      "sha256": "cbc2fb894a242c0b07123051d7259457cdf0542f594a570e32f0cdab6410e282"
+    },
+    {
+      "path": "skills/spec-harness-package-finder/SKILL.md",
+      "bytes": 1122,
+      "sha256": "607aea125a03c183129e060935e2b9f276abfcba16e3cb7e5fec4a9d2ab62c29"
+    },
+    {
+      "path": "skills/spec-harness-plan/SKILL.md",
+      "bytes": 1375,
+      "sha256": "37f9d97cc5ee1f809c903ca5ca4dd607ba9a62fc09fbca8741646107eead1375"
+    },
+    {
+      "path": "skills/spec-harness-ponytail/SKILL.md",
+      "bytes": 1113,
+      "sha256": "7ca469897b3f85c984182d96f805af31b61374ad457b9dee354ae0293bd50ec1"
+    },
+    {
+      "path": "skills/spec-harness-rules/SKILL.md",
+      "bytes": 1503,
+      "sha256": "2eb212e10840a99b184592b00fca198b60396bccf7ec8435232937172bb5eb63"
+    },
+    {
+      "path": "skills/spec-harness-skill-finder/SKILL.md",
+      "bytes": 1110,
+      "sha256": "b8a8e214bc373cceb3dde9bb6f670291689febffb520454f428baf868bba3f8d"
+    },
+    {
+      "path": "skills/spec-harness-spec/SKILL.md",
+      "bytes": 1265,
+      "sha256": "d31683ee73903f7154660bddf4871cc36e8bef2ec99c04390dfc391cefdaecde"
+    },
+    {
+      "path": "skills/spec-harness-tasks/SKILL.md",
+      "bytes": 1226,
+      "sha256": "940ed845775c1ee2be438ff8b4ce192ea1983a1ae9d9bf5fa3ec1799f019c380"
+    },
+    {
+      "path": "skills/spec-harness-tester/SKILL.md",
+      "bytes": 2250,
+      "sha256": "afe3c47371c5d4e661bbfd114bf331cf6f41a193b276549d40220b62e6bab169"
+    },
+    {
+      "path": "skills/spec-harness-tickets/SKILL.md",
+      "bytes": 1455,
+      "sha256": "216d6fe60efc1a750b0ebebf8391c47740014f87e858384c5705e171443d37a8"
+    },
+    {
+      "path": "skills/spec-harness-verify/SKILL.md",
+      "bytes": 1291,
+      "sha256": "557a1ed330c6cf55373b3d0d00c7cee813ab1af52372ee62dfc494f6ae6c20ed"
+    },
+    {
+      "path": "skills/spec-harness/SKILL.md",
+      "bytes": 1646,
+      "sha256": "2bf1b4a219fd94993886854484ac990a19583ce586eb2920377be22a67bee7cc"
+    },
+    {
+      "path": "templates/AGENTS.md",
+      "bytes": 2136,
+      "sha256": "d5f2fe7b42d141196399ec37e350ac21b8b36b1d99394e750f4665490b3d0fbe"
+    },
+    {
+      "path": "templates/CLAUDE.md",
+      "bytes": 2440,
+      "sha256": "54ad3db271b9f088b2ac3e222a18c0ded79e35974b114369af9d3f86c584729c"
+    },
+    {
+      "path": "templates/RULES.md",
+      "bytes": 1746,
+      "sha256": "7daad920397cb43517fbfa6105038dc81e0b0393b7706cb6d5dd4da4cc7707a2"
+    },
+    {
+      "path": "templates/constitution.md",
+      "bytes": 2633,
+      "sha256": "e9f68723a1a3d6368d616fbb48994458b4b8e5cb2ac8877b0f3e24c3f134223f"
+    },
+    {
+      "path": "templates/goal.template.md",
+      "bytes": 820,
+      "sha256": "0000c4badb30cb3d8eb4bcebddb3c9eba7b5083d47ffc3e684980286519b53ed"
+    },
+    {
+      "path": "templates/install/SPEC-HARNESS.md",
+      "bytes": 1112,
+      "sha256": "8fc9169e735662fbca33796db2cf066c2d7a6a49fbeee3e95906b1ab9f0c5db6"
+    },
+    {
+      "path": "templates/install/agents-skill-sdd.md",
+      "bytes": 724,
+      "sha256": "52e55547267625417c924c84e468b727b77949355396a3b0f26c648e23ad0514"
+    },
+    {
+      "path": "templates/install/ai_rules/context_map.md",
+      "bytes": 96,
+      "sha256": "1faaa30001f967fbbb276d429237186716658098bc32537ac66f9cfc7dfed145"
+    },
+    {
+      "path": "templates/install/ai_rules/globalRules.md",
+      "bytes": 409,
+      "sha256": "391f0e715e3eb87da00aafefdadc4a77ce3eb8dbc3f20f893f764d061f092c2c"
+    },
+    {
+      "path": "templates/install/ai_rules/rules/context_management.md",
+      "bytes": 214,
+      "sha256": "1cfc6b2da580c9a5ad2bf8b9987e078efe5417dc0f080d7fd2a6224302476b80"
+    },
+    {
+      "path": "templates/install/ai_rules/rules/core.md",
+      "bytes": 236,
+      "sha256": "de5063fd5f004f8079986f63926008c3a473a908a657e611895858db0a44a4de"
+    },
+    {
+      "path": "templates/install/ai_rules/rules/frequent_rules.md",
+      "bytes": 188,
+      "sha256": "8a5b266ccca44c7eb24046041b7423693c68cdb622f145c3fce402886d44d228"
+    },
+    {
+      "path": "templates/install/ai_rules/updated_rules.md",
+      "bytes": 112,
+      "sha256": "8ad465abaf07efca167ebaa1ba544dac458a96b51b7c35298b05ef7c34054d46"
+    },
+    {
+      "path": "templates/install/learning/NOTES.md",
+      "bytes": 121,
+      "sha256": "72daedbb3a5b3a9865ed263a4e99375d918d864bb5b7e0e458162f9642ca0fce"
+    },
+    {
+      "path": "templates/install/memory/00-description.md",
+      "bytes": 175,
+      "sha256": "7b19f1af8b99ba8e5cc451d4d7de5f559d8d4f332c4d4d014e67315f4cec1e85"
+    },
+    {
+      "path": "templates/install/memory/01-brief.md",
+      "bytes": 178,
+      "sha256": "4b6ca6c05655866eaaa6ede92f98a2e47fb2fc5b3696b3cccf56d833b4258a71"
+    },
+    {
+      "path": "templates/install/memory/10-product.md",
+      "bytes": 181,
+      "sha256": "c06279abf52b290b30c70c298bc7c4afd87538390b908a52029ba8339ed3f2db"
+    },
+    {
+      "path": "templates/install/memory/20-system.md",
+      "bytes": 183,
+      "sha256": "ad8115d19b0089d63a62fe605ec5a4976510a3dc0f52962f4e56fe0542a40886"
+    },
+    {
+      "path": "templates/install/memory/30-tech.md",
+      "bytes": 191,
+      "sha256": "a7ac1a323369efb38058dd4937a5cfec75f2978359ff92102b3825edc3e81a2f"
+    },
+    {
+      "path": "templates/install/memory/40-active.md",
+      "bytes": 172,
+      "sha256": "59755f966499ce6cf279340615b96d52a2a25a37b0818412d9c0dbbcb2423dc6"
+    },
+    {
+      "path": "templates/install/memory/50-progress.md",
+      "bytes": 163,
+      "sha256": "fa8b813ad04420312e1540b1e191d008090dcece534ef9a7240652d8c7d6cdd5"
+    },
+    {
+      "path": "templates/install/memory/60-decisions.md",
+      "bytes": 185,
+      "sha256": "5bf94d3fa6202165bf7e40e32302488b7b327b71291e1a13a817f729c6fee6fd"
+    },
+    {
+      "path": "templates/install/memory/70-knowledge.md",
+      "bytes": 175,
+      "sha256": "314c59ba72d517a98db29eacf6ff5dd3bbd3a3d57e7f9746e10e8441809c7f2f"
+    },
+    {
+      "path": "templates/install/memory/80-feedback.md",
+      "bytes": 164,
+      "sha256": "2d0836e81f7c0545f7793b045cf312c338fd03bbb8a409f2e2163512ee4685c6"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-architecture.md",
+      "bytes": 2402,
+      "sha256": "6467c6118ef1b940f2ed316bc1e7112cf4698ea9ea339de47820f2eac9a4a05b"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-packages.md",
+      "bytes": 2500,
+      "sha256": "db12b8aa54af35eae9c6fa6b707b1367392123f61196760c10968fdfab846143"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-performance.md",
+      "bytes": 2177,
+      "sha256": "f0c5ade9565cf43f717b002b86da4ca5bbc3e48e01bc48d39a036f5c0386d7e3"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-tech.md",
+      "bytes": 2483,
+      "sha256": "d2c16e7a9cf2c3d1681d6b3c805ca5571c98c1e96fb624788221938a054a385d"
+    },
+    {
+      "path": "templates/workflows/EXAMPLE.md",
+      "bytes": 2573,
+      "sha256": "a248ee193f87038661f7a4449a812fa15478caeb261707a04cc87556261abdb5"
+    },
+    {
+      "path": "templates/workflows/README.md",
+      "bytes": 4161,
+      "sha256": "c89407e88870a57d55e9c5c06093d839480bdf7e49b9484baf495f86919c5c10"
+    },
+    {
+      "path": "tests/index-fixtures.sh",
+      "bytes": 25185,
+      "sha256": "071c6ea5ea2b92d3f4c701b87b1dd955a61774d3a0227244448867f07007bd1a"
+    },
+    {
+      "path": "tests/install-manifest-contract.sh",
+      "bytes": 10987,
+      "sha256": "89d042020d82e1cfba4cfee99b123c357b132d1094316652203e87838c709f4d"
+    },
+    {
+      "path": "tests/installed-init-contract.sh",
+      "bytes": 4124,
+      "sha256": "88056456a0cab853b440ba9715626790e5c08528667b70f354d98d874eb07010"
+    },
+    {
+      "path": "tests/installer-fixtures.sh",
+      "bytes": 15045,
+      "sha256": "d29063932630dcb1f93871fd2955b992e7ebf4b8931f086e46c6ac8d660313cb"
+    },
+    {
+      "path": "tests/portable-skills-contract.sh",
+      "bytes": 12495,
+      "sha256": "fff8f8c3fc69428bd06f12375efd0b20dec6c2fffd12fe995f95d0a0b49a2fc8"
+    },
+    {
+      "path": "tests/sdd-fixtures.sh",
+      "bytes": 41200,
+      "sha256": "463ebdce57e09ac327d9aaab9587266b4b429090a0fd2f6e9a36a4ad4e3d08e2"
+    },
+    {
+      "path": "tests/synthesis-contract.sh",
+      "bytes": 27355,
+      "sha256": "2968cdff7f4f32a6c2082dfb66b9b4b2416f292208d35bc2cd7d440ee574db96"
+    }
+  ]
+}

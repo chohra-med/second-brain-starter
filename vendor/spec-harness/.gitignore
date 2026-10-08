@@ -1,0 +1,9 @@
+# Dependencies
+node_modules/
+
+# Run artifacts (per-project logs from real runs — may contain client specifics)
+_run-logs/
+
+# Logs / OS / editor
+*.log
+.DS_Store

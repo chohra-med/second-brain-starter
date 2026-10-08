@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# spec-harness — thin dispatcher over the system's scripts + command docs.
+# Usage: spec-harness <command> [args]
+#   install <target> [new|integrate] [name]  safely stage the system in a repo
+#   init <target> [new|integrate] [name]      stage a new or integrated project (PENDING)
+#   index <target>            inventory an existing codebase into the bank's index layer
+#   sdd [init|ticket text|connected reference]  print the shared model-led route; PENDING here
+#   verify --goal specs/<feature>/goal.md      print the manual verifier handoff; no check runs
+#   tester [<id>|--scan]      print a PENDING/manual handoff for capable-client workflow checks
+#   learn "<feedback>"        capture, classify and review feedback; apply policy only after approval
+#   loop                      legacy illustrative placeholder (bin/loop.sh), outside ticket execution
+#   <other>                   print the command doc; docs-only operations return PENDING/exit 2
+set -euo pipefail
+SOURCE_PATH="${BASH_SOURCE[0]}"
+case "$SOURCE_PATH" in
+  /*) ;;
+  *) SOURCE_PATH="$PWD/$SOURCE_PATH" ;;
+esac
+while [ -L "$SOURCE_PATH" ]; do
+  SOURCE_DIR="$(cd -P "$(dirname "$SOURCE_PATH")" >/dev/null 2>&1 && pwd)"
+  LINK_TARGET="$(readlink "$SOURCE_PATH")"
+  case "$LINK_TARGET" in
+    /*) SOURCE_PATH="$LINK_TARGET" ;;
+    *) SOURCE_PATH="$SOURCE_DIR/$LINK_TARGET" ;;
+  esac
+done
+SOURCE_DIR="$(cd -P "$(dirname "$SOURCE_PATH")" >/dev/null 2>&1 && pwd)"
+DIR="$(cd -P "$SOURCE_DIR/.." >/dev/null 2>&1 && pwd)"
+cmd="${1:-help}"; shift || true
+
+show_help() {
+  echo "Spec Harness — spec-driven development × a harness (ratchet + verifier + tester + learning loop)"
+  echo "pillars: Memory bank · Spec-Driven Development · Harness"
+  echo "front door: spec-harness init <target> [new|integrate] [name]   # stages files; reports PENDING"
+  echo "SDD entry: /sdd init or /sdd <ticket text or connected reference>"
+  echo "shell sdd: spec-harness sdd ... prints the route and exits 2/PENDING; no model stages run"
+  echo "commands: init <target> | install | index | sdd | tickets | rules | generate-agents | spec | plan | tasks | build | verify | tester | learn | audit | loop (legacy placeholder)"
+  echo "docs: $DIR/commands/  agents: $DIR/agents/  architecture: $DIR/ARCHITECTURE.md"
+}
+
+case "$cmd" in
+  # The installer only stages files. Project-specific synthesis and acceptance remain PENDING.
+  init|install)
+           exec bash "$DIR/bin/sh-install.sh" --entrypoint "$cmd" "$@" ;;
+  scaffold) exec bash "$DIR/bin/sh-init.sh" "$@" ;;
+  index)   exec bash "$DIR/bin/sh-index.sh" "$@" ;;
+  generate-agents|gen-agents)
+           exec bash "$DIR/bin/sh-gen-agents.sh" "$@" ;;
+  loop)    exec bash "${LOOP_SH:-./loop.sh}" "$@" ;;
+  sdd)
+           echo "PENDING: the shell CLI does not perform model synthesis, independent gates, or merger judgment.";
+           echo "Manual procedure: $DIR/commands/sdd.md";
+           cat "$DIR/commands/sdd.md";
+           exit 2 ;;
+  verify|tester|learn|tickets|rules|spec|plan|tasks|build|audit|migrate|ship)
+           echo "PENDING: documentation only; '$cmd' did not run a model stage, test, verification, or external action.";
+           echo "Continue through the shared procedure: $DIR/commands/sdd.md";
+           cat "$DIR/commands/$cmd.md";
+           exit 2 ;;
+  help) show_help ;;
+  *)
+    echo "unknown command: $cmd" >&2
+    show_help >&2
+    exit 2 ;;
+esac

@@ -1,0 +1,764 @@
+{
+  "schemaVersion": 1,
+  "harnessVersion": "0.2.0",
+  "description": "Record of the file set bin/sh-install.sh stages into a target. The installer does not read this file; tests/install-manifest-contract.sh proves a real install produces exactly this set, byte for byte.",
+  "substitutions": {
+    "placeholder": "{name}",
+    "projectName": {
+      "default": "basename of the resolved target directory when no name is passed",
+      "mustBeNonEmpty": true,
+      "forbiddenCharacters": [
+        "LF",
+        "CR",
+        "TAB",
+        "/",
+        "\\"
+      ],
+      "note": "The installer refuses a name containing any forbidden character (exit 2). Every other character, including $, &, backticks and {{...}}, is taken literally."
+    },
+    "tokens": {
+      "{{PROJECT_NAME}}": "{name}",
+      "{{DIR}}": "{name} (repo root - base rules)"
+    },
+    "rule": "Only the tokens listed in an entry's own tokens array are replaced in that entry; every other {{...}} token in the source survives untouched. Replacement is literal (no escape or back-reference processing), single pass, every occurrence on each line. A substituted value is never rescanned. {name} in a token value is the project name."
+  },
+  "directories": [
+    ".claude/agents",
+    ".claude/commands",
+    ".claude/commands/spec-harness",
+    ".claude/skills",
+    ".claude/spec-harness/methods",
+    ".agents/skills",
+    ".agents/skills/sdd",
+    ".memory",
+    "ai_rules/rules",
+    "learning",
+    "learning/lessons",
+    "specs",
+    "workflows"
+  ],
+  "loaderBlock": "## Spec Harness\n\n- Setup status: `SPEC-HARNESS.md`. Keep PENDING items PENDING until they are checked.\n- Before code edits read `ai_rules/rules/frequent_rules.md`, `.memory/40-active.md` and the nearest `RULES.md`.\n- Feature work goes through `/sdd <ticket text>`. The procedure is `.claude/commands/sdd.md`.\n- A task is done when a fresh verifier returns PASS against the ticket's own goal, not when tests pass.\n- Rules change only through `.claude/commands/spec-harness/learn.md`, after review.\n",
+  "entries": [
+    {
+      "destination": ".agents/skills/sdd/SKILL.md",
+      "source": "templates/install/agents-skill-sdd.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "52e55547267625417c924c84e468b727b77949355396a3b0f26c648e23ad0514",
+      "mode": "0644"
+    },
+    {
+      "destination": ".agents/skills/spec-harness-grill-me/SKILL.md",
+      "source": "skills/spec-harness-grill-me/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "56c9456dd72a7a891caf1c8005bb1c6e7d72c47327c48fe067a87a4c1a351b5d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".agents/skills/spec-harness-package-finder/SKILL.md",
+      "source": "skills/spec-harness-package-finder/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "607aea125a03c183129e060935e2b9f276abfcba16e3cb7e5fec4a9d2ab62c29",
+      "mode": "0644"
+    },
+    {
+      "destination": ".agents/skills/spec-harness-ponytail/SKILL.md",
+      "source": "skills/spec-harness-ponytail/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "7ca469897b3f85c984182d96f805af31b61374ad457b9dee354ae0293bd50ec1",
+      "mode": "0644"
+    },
+    {
+      "destination": ".agents/skills/spec-harness-skill-finder/SKILL.md",
+      "source": "skills/spec-harness-skill-finder/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "b8a8e214bc373cceb3dde9bb6f670291689febffb520454f428baf868bba3f8d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-architect.md",
+      "source": "agents/sdd-architect.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "5b62aa5cdaf57bcc787be1cd68db0664a21b0b641a6b8588cbb7ba4c021b6b76",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-design-verifier.md",
+      "source": "agents/sdd-design-verifier.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d086fdf96c83f771220662702b791c73c5901d4bf26494ba588da2e592cf9476",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-documenter.md",
+      "source": "agents/sdd-documenter.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "b290b3d9d1f3186f4b450479ba96e3dc91599d567a5ed606411dac928a5a7504",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-implementer.md",
+      "source": "agents/sdd-implementer.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "9d436d168db5cee2475f505e5e47e29600b7b345dad6d8e4f09f646c56a554dd",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-learner.md",
+      "source": "agents/sdd-learner.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "13bda8af9c8ef0d008f093ee140af6fa123b674cb35f7eccfc4af0537e27d3bc",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-merger.md",
+      "source": "agents/sdd-merger.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "7f068d356ee571871f09a1566b6ac5eb94e668a36de869244d87a62d8a93b9d8",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-planner.md",
+      "source": "agents/sdd-planner.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "b0f3f85341a5772466db053a82601396dcd1587ebf00fb176b3d326cf3b2f632",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-researcher.md",
+      "source": "agents/sdd-researcher.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "342ca8ff3b249b3f4221d0afb01f51aeebdf3905ac29e90092b4c489e29b8f47",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-reviewer.md",
+      "source": "agents/sdd-reviewer.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "bf7370ffc650a8c3ffdde3ffb0146da3886b8eb3d40803f2db5196f6c554d2d3",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-tester.md",
+      "source": "agents/sdd-tester.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d3c82546288d81c67310b2e16db39e16bfb64a96d1174f539e2a51c1a292d24e",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-verifier.md",
+      "source": "agents/sdd-verifier.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f6596cbb7950fed6815d427e98917216ca46ea8d683c913197b386235b5458c4",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/agents/sdd-workflow-tester.md",
+      "source": "agents/sdd-workflow-tester.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "59a305c6c457d7e753cae461ec73b168fbeeefc520951bf770668d8d9f8060bf",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/sdd.md",
+      "source": "commands/sdd.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "6b209f34b7e5ce7b31fdbdb16a54f3bbfbec26ad7a39eeff3b8dbe8487822e56",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/audit.md",
+      "source": "commands/audit.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "57726a4cc4067fd434eda84fe22cc5c84915edfc69fa0ffd98b7bde30d479e03",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/build.md",
+      "source": "commands/build.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "df6daba614501a53e144591d1305d7798b5bcd6650f9790b98f695d3848ee826",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/document.md",
+      "source": "commands/document.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "4c76ed1d3d58caa99f01d6c7211681010cc3f32821097ce9b921d57aadb58f05",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/generate-agents.md",
+      "source": "commands/generate-agents.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "528e97741c8ccd8ec836e2e869646c90be15dc6b5845f75bf4b45df4cbdbdaf0",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/grill-me.md",
+      "source": "commands/grill-me.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "cadf2554953a1fe0103664e719a45512f33402cfb6c7efa5ebe56b2e3de602f3",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/init.md",
+      "source": "commands/init.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f1e4c7d69edd3490bc8ed82be88d866c4ad98f3527b0804fcac2dfc783f67791",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/learn.md",
+      "source": "commands/learn.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "98c565645f8967ffc141555ab37de217ea0f2e051e294bac8ad3d0011f9a3a9e",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/migrate.md",
+      "source": "commands/migrate.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "092f5c13eb24bc27705129b15521e003e920880906e0b152b30d5349a2a34064",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/package-finder.md",
+      "source": "commands/package-finder.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "ef6d4b9cffa1aea8ff802c71319cd6441d6e7c4839b2bcef746ea08c56528377",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/plan.md",
+      "source": "commands/plan.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "8e574657705eb5c42bdb662cafdc861f3c6fe741b649172f84c7a00ff975a5a9",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/ponytail.md",
+      "source": "commands/ponytail.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "c17e80699028241c922e072ecfe7936a2b9fc2e3cbaef46ba83db9e031df6e3a",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/rules.md",
+      "source": "commands/rules.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "40d2b80e3c8aedc9ae2e2e13863551ccf751920aacd20d0ee01e21c2a4cee311",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/ship.md",
+      "source": "commands/ship.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "6b544548cb30c4fdd987b42271b6afef96f37704b67176f95e56bb64fee32d2d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/skill-finder.md",
+      "source": "commands/skill-finder.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "b919c2e0315ad8c9baa080d373fd211da038b9e7da5c6b9a89173c14a360d69d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/spec.md",
+      "source": "commands/spec.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "fc1b2b115f9817954efb110591d391838b11515518b989d38c7760b87684e24b",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/tasks.md",
+      "source": "commands/tasks.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "8881b392c217e124093d492204ca269b15035e8bf7a4069cca26d57e0f4a8f96",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/tester.md",
+      "source": "commands/tester.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "00582389eb131388ad4f8d7b2f52cabf13b91337dba39f0312022894405a2f47",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/tickets.md",
+      "source": "commands/tickets.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "0965934173b0a69c7473d0c1daa6cc72b1fc4145681935628c5722718fe1193e",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/commands/spec-harness/verify.md",
+      "source": "commands/verify.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d452edd7b9ae0baee69931bee6a3e4e02ca3d733b55a91348608476c34836bf7",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-audit/SKILL.md",
+      "source": "skills/spec-harness-audit/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "c3fecd9340404e4306e17cb42842f8afcc67c83c305cb93c79efe2118d2b607f",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-build/SKILL.md",
+      "source": "skills/spec-harness-build/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f9fb57493b6b8bcb396bebed5c56ad3e0e108104f9194cdf47157a9bf31df694",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-generate-agents/SKILL.md",
+      "source": "skills/spec-harness-generate-agents/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "ddaaa2941313d73c7100d4e67be7fe2afb0e85f154a30efcd18a2cfb5e02441c",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-grill-me/SKILL.md",
+      "source": "skills/spec-harness-grill-me/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "56c9456dd72a7a891caf1c8005bb1c6e7d72c47327c48fe067a87a4c1a351b5d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-install/SKILL.md",
+      "source": "skills/spec-harness-install/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "2d79d52413c55da730c1dd7a6ae7cf3a10de93afabb0d7e1f28c7dcd0c199432",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-learn/SKILL.md",
+      "source": "skills/spec-harness-learn/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "cbc2fb894a242c0b07123051d7259457cdf0542f594a570e32f0cdab6410e282",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-package-finder/SKILL.md",
+      "source": "skills/spec-harness-package-finder/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "607aea125a03c183129e060935e2b9f276abfcba16e3cb7e5fec4a9d2ab62c29",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-plan/SKILL.md",
+      "source": "skills/spec-harness-plan/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "37f9d97cc5ee1f809c903ca5ca4dd607ba9a62fc09fbca8741646107eead1375",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-ponytail/SKILL.md",
+      "source": "skills/spec-harness-ponytail/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "7ca469897b3f85c984182d96f805af31b61374ad457b9dee354ae0293bd50ec1",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-rules/SKILL.md",
+      "source": "skills/spec-harness-rules/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "2eb212e10840a99b184592b00fca198b60396bccf7ec8435232937172bb5eb63",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-skill-finder/SKILL.md",
+      "source": "skills/spec-harness-skill-finder/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "b8a8e214bc373cceb3dde9bb6f670291689febffb520454f428baf868bba3f8d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-spec/SKILL.md",
+      "source": "skills/spec-harness-spec/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d31683ee73903f7154660bddf4871cc36e8bef2ec99c04390dfc391cefdaecde",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-tasks/SKILL.md",
+      "source": "skills/spec-harness-tasks/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "940ed845775c1ee2be438ff8b4ce192ea1983a1ae9d9bf5fa3ec1799f019c380",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-tester/SKILL.md",
+      "source": "skills/spec-harness-tester/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "afe3c47371c5d4e661bbfd114bf331cf6f41a193b276549d40220b62e6bab169",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-tickets/SKILL.md",
+      "source": "skills/spec-harness-tickets/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "216d6fe60efc1a750b0ebebf8391c47740014f87e858384c5705e171443d37a8",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness-verify/SKILL.md",
+      "source": "skills/spec-harness-verify/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "557a1ed330c6cf55373b3d0d00c7cee813ab1af52372ee62dfc494f6ae6c20ed",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/skills/spec-harness/SKILL.md",
+      "source": "skills/spec-harness/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "2bf1b4a219fd94993886854484ac990a19583ce586eb2920377be22a67bee7cc",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-architecture.md",
+      "source": "templates/project-skills/spec-harness-architecture.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "6467c6118ef1b940f2ed316bc1e7112cf4698ea9ea339de47820f2eac9a4a05b",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-packages.md",
+      "source": "templates/project-skills/spec-harness-packages.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "db12b8aa54af35eae9c6fa6b707b1367392123f61196760c10968fdfab846143",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-performance.md",
+      "source": "templates/project-skills/spec-harness-performance.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f0c5ade9565cf43f717b002b86da4ca5bbc3e48e01bc48d39a036f5c0386d7e3",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-tech.md",
+      "source": "templates/project-skills/spec-harness-tech.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d2c16e7a9cf2c3d1681d6b3c805ca5571c98c1e96fb624788221938a054a385d",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/00-description.md",
+      "source": "templates/install/memory/00-description.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "7b19f1af8b99ba8e5cc451d4d7de5f559d8d4f332c4d4d014e67315f4cec1e85",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/01-brief.md",
+      "source": "templates/install/memory/01-brief.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "4b6ca6c05655866eaaa6ede92f98a2e47fb2fc5b3696b3cccf56d833b4258a71",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/10-product.md",
+      "source": "templates/install/memory/10-product.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "c06279abf52b290b30c70c298bc7c4afd87538390b908a52029ba8339ed3f2db",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/20-system.md",
+      "source": "templates/install/memory/20-system.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "ad8115d19b0089d63a62fe605ec5a4976510a3dc0f52962f4e56fe0542a40886",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/30-tech.md",
+      "source": "templates/install/memory/30-tech.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "a7ac1a323369efb38058dd4937a5cfec75f2978359ff92102b3825edc3e81a2f",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/40-active.md",
+      "source": "templates/install/memory/40-active.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "59755f966499ce6cf279340615b96d52a2a25a37b0818412d9c0dbbcb2423dc6",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/50-progress.md",
+      "source": "templates/install/memory/50-progress.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "fa8b813ad04420312e1540b1e191d008090dcece534ef9a7240652d8c7d6cdd5",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/60-decisions.md",
+      "source": "templates/install/memory/60-decisions.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "5bf94d3fa6202165bf7e40e32302488b7b327b71291e1a13a817f729c6fee6fd",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/70-knowledge.md",
+      "source": "templates/install/memory/70-knowledge.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "314c59ba72d517a98db29eacf6ff5dd3bbd3a3d57e7f9746e10e8441809c7f2f",
+      "mode": "0644"
+    },
+    {
+      "destination": ".memory/80-feedback.md",
+      "source": "templates/install/memory/80-feedback.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "2d0836e81f7c0545f7793b045cf312c338fd03bbb8a409f2e2163512ee4685c6",
+      "mode": "0644"
+    },
+    {
+      "destination": "AGENTS.md",
+      "source": "templates/AGENTS.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "d5f2fe7b42d141196399ec37e350ac21b8b36b1d99394e750f4665490b3d0fbe",
+      "mode": "0644"
+    },
+    {
+      "destination": "CLAUDE.md",
+      "source": "templates/CLAUDE.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "54ad3db271b9f088b2ac3e222a18c0ded79e35974b114369af9d3f86c584729c",
+      "mode": "0644"
+    },
+    {
+      "destination": "RULES.md",
+      "source": "templates/RULES.md",
+      "render": "template",
+      "tokens": [
+        "{{DIR}}"
+      ],
+      "sha256": "7daad920397cb43517fbfa6105038dc81e0b0393b7706cb6d5dd4da4cc7707a2",
+      "mode": "0644"
+    },
+    {
+      "destination": "SPEC-HARNESS.md",
+      "source": "templates/install/SPEC-HARNESS.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "8fc9169e735662fbca33796db2cf066c2d7a6a49fbeee3e95906b1ab9f0c5db6",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/context_map.md",
+      "source": "templates/install/ai_rules/context_map.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "1faaa30001f967fbbb276d429237186716658098bc32537ac66f9cfc7dfed145",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/globalRules.md",
+      "source": "templates/install/ai_rules/globalRules.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "391f0e715e3eb87da00aafefdadc4a77ce3eb8dbc3f20f893f764d061f092c2c",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/rules/context_management.md",
+      "source": "templates/install/ai_rules/rules/context_management.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "1cfc6b2da580c9a5ad2bf8b9987e078efe5417dc0f080d7fd2a6224302476b80",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/rules/core.md",
+      "source": "templates/install/ai_rules/rules/core.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "de5063fd5f004f8079986f63926008c3a473a908a657e611895858db0a44a4de",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/rules/frequent_rules.md",
+      "source": "templates/install/ai_rules/rules/frequent_rules.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "8a5b266ccca44c7eb24046041b7423693c68cdb622f145c3fce402886d44d228",
+      "mode": "0644"
+    },
+    {
+      "destination": "ai_rules/updated_rules.md",
+      "source": "templates/install/ai_rules/updated_rules.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "8ad465abaf07efca167ebaa1ba544dac458a96b51b7c35298b05ef7c34054d46",
+      "mode": "0644"
+    },
+    {
+      "destination": "constitution.md",
+      "source": "templates/constitution.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "e9f68723a1a3d6368d616fbb48994458b4b8e5cb2ac8877b0f3e24c3f134223f",
+      "mode": "0644"
+    },
+    {
+      "destination": "goal.md",
+      "source": "templates/goal.template.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "0000c4badb30cb3d8eb4bcebddb3c9eba7b5083d47ffc3e684980286519b53ed",
+      "mode": "0644"
+    },
+    {
+      "destination": "learning/NOTES.md",
+      "source": "templates/install/learning/NOTES.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "72daedbb3a5b3a9865ed263a4e99375d918d864bb5b7e0e458162f9642ca0fce",
+      "mode": "0644"
+    },
+    {
+      "destination": "loop.sh",
+      "source": "bin/loop.sh",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "2d00990a70b6ff58f5d49959de804ca1f0d69168bc2e1f5ccb46e16fe696b7f4",
+      "mode": "0755"
+    },
+    {
+      "destination": "workflows/EXAMPLE.md",
+      "source": "templates/workflows/EXAMPLE.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "a248ee193f87038661f7a4449a812fa15478caeb261707a04cc87556261abdb5",
+      "mode": "0644"
+    },
+    {
+      "destination": "workflows/README.md",
+      "source": "templates/workflows/README.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "c89407e88870a57d55e9c5c06093d839480bdf7e49b9484baf495f86919c5c10",
+      "mode": "0644"
+    }
+  ],
+  "renders": {
+    "copy": "destination bytes equal the source bytes; tokens is empty",
+    "template": "line by line: replace the entry's tokens, then end every line with LF. A LF is appended only if the last line of the source lacks one; a source already ending in LF gains none, and an empty source renders empty."
+  },
+  "modeNote": "mode is informational. Conformance is bytes-only; the only staged executable is loop.sh (0755), everything else is 0644. Actual file modes depend on the installing tool and umask."
+}
