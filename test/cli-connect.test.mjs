@@ -21,7 +21,7 @@ function word(value) {
   const plain = process.platform === 'win32' ? /^[A-Za-z0-9_.\\/:~-]+$/ : /^[A-Za-z0-9_./:-]+$/;
   if (plain.test(text)) return text;
   if (process.platform === 'win32') return `"${text.replace(/"/g, '\\"')}"`;
-  return `"${text.replace(/(["\\$`])/g, '\\$1')}"`;
+  return `'${text.replace(/'/g, "'\\''")}'`;
 }
 const cliScript = word(bin);
 const digestOf = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -153,31 +153,45 @@ async function killedAfterCommit(w) {
 function splitCommand(line) {
   const words = [];
   let current = null;
-  let quoted = false;
-  for (let index = 0; index < line.length; index += 1) {
+  let index = 0;
+  const start = () => { current ??= ''; };
+  while (index < line.length) {
     const character = line[index];
-    if (quoted) {
-      if (character === '"') {
-        quoted = false;
-      } else if (character === '\\' && '"\\$`'.includes(line[index + 1])) {
-        current += line[index + 1];
-        index += 1;
-      } else {
-        current += character;
-      }
-      continue;
-    }
-    if (character === '"') {
-      quoted = true;
-      current ??= '';
-    } else if (character === ' ') {
+    if (character === ' ') {
       if (current !== null) words.push(current);
       current = null;
+      index += 1;
+    } else if (character === '\'') {
+      // single quotes: everything up to the next single quote is literal
+      const end = line.indexOf('\'', index + 1);
+      assert.ok(end !== -1, `unterminated single quote in: ${line}`);
+      start();
+      current += line.slice(index + 1, end);
+      index = end + 1;
+    } else if (character === '"') {
+      // double quotes: a backslash escapes only " \ $ and backtick
+      start();
+      index += 1;
+      let closed = false;
+      while (index < line.length) {
+        const inner = line[index];
+        if (inner === '"') { closed = true; index += 1; break; }
+        if (inner === '\\' && '"\\$`'.includes(line[index + 1])) { current += line[index + 1]; index += 2; continue; }
+        current += inner;
+        index += 1;
+      }
+      assert.ok(closed, `unterminated double quote in: ${line}`);
+    } else if (character === '\\' && index + 1 < line.length) {
+      // outside quotes a backslash makes the next character literal
+      start();
+      current += line[index + 1];
+      index += 2;
     } else {
-      current = (current ?? '') + character;
+      start();
+      current += character;
+      index += 1;
     }
   }
-  assert.equal(quoted, false, `unterminated quote in: ${line}`);
   if (current !== null) words.push(current);
   return words;
 }
@@ -290,12 +304,15 @@ test('connect registers an INITIALISED and a LEGACY repository with zero reposit
     const before = await inventory(repo);
     const planned = await runCli(['connect', '--target', w.hub, '--repo', repo]);
     assert.equal(planned.code, undefined, planned.stdout);
-    assert.ok(hasLine(planned.stdout, `Detection: ${status} (evidence: ${evidence})`));
+    assert.ok(hasLine(planned.stdout, status === 'LEGACY' ? `Detection: this repository already has Spec Harness files (engine code: LEGACY; evidence: ${evidence})` : `Detection: ${status} (evidence: ${evidence})`));
     assert.ok(hasLine(planned.stdout, 'Repository writes: none (register only)'));
     assert.ok(planned.stdout.includes(reason), `${status} reason`);
     const applied = await runCli(['connect', '--target', w.hub, '--repo', repo, '--apply', planDigest(planned.stdout)]);
     assert.equal(applied.code, undefined, applied.stdout);
-    assert.ok(hasLine(applied.stdout, `Status: ${status}, registered`));
+    assert.ok(hasLine(applied.stdout, status === 'LEGACY' ? 'Status: already has harness files, registered' : `Status: ${status}, registered`));
+    const handoff = applied.stdout.slice(applied.stdout.indexOf('Applied receipt:'));
+    assert.ok(!/\bLEGACY\b/.test(handoff), 'the hand-off never shows the code word');
+    assert.ok(!/\bLEGACY\b/.test(applied.stdout.replace('(engine code: LEGACY', '')), 'the apply output shows the code word once, in the plan detection line');
     if (status === 'LEGACY') {
       assert.ok(hasLine(applied.stdout, 'Next: no repository file was written. If /sdd commands do not work in this repository, run /sdd init inside it.'), 'the hand-off says what to do');
       assert.ok(!registerLine(planned.stdout).includes('LEGACY') && !planned.stdout.includes('migrate'), 'the reason a person reads never uses the code word or migrate guidance');
@@ -459,7 +476,7 @@ test('CONNECTION_NAME_TAKEN: a second repository with the same connection name i
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^CONNECTION_NAME_TAKEN: The workspace already has a connection named app/m);
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name "<a name no other connection uses>"`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name '<a name no other connection uses>'`));
   assert.deepEqual(await snapshot(w), before);
   assert.deepEqual(await inventory(second), {});
 });
@@ -472,7 +489,7 @@ test('CONNECTION_NAME_TAKEN with --name given prints one --name in the Next comm
   const refused = await runCli(['connect', '--target', w.hub, '--repo', second, '--name', 'app']);
   assert.equal(refused.code, 1, refused.stdout);
   const next = linesOf(refused.stdout).find((line) => line.startsWith('Next: '));
-  assert.equal(next, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name "<a name no other connection uses>"`);
+  assert.equal(next, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name '<a name no other connection uses>'`);
   assert.equal(next.split('--name').length - 1, 1, 'the flag appears once');
   parseArguments(splitCommand(next.slice('Next: '.length)).slice(2).map((item) => (item.startsWith('<') ? '/placeholder' : item)));
 });
@@ -484,7 +501,7 @@ test('INVALID_CONNECTION_NAME: a name with a slash is refused with the reason, i
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^INVALID_CONNECTION_NAME: Connection name contains a character the harness forbids/m);
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name "<one plain folder name>"`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name '<one plain folder name>'`));
   assert.deepEqual(await snapshot(w), before);
 });
 
@@ -638,7 +655,7 @@ test('UNSAFE_TARGET: a workspace path that is the filesystem root is refused, th
   assert.ok(refused.stdout.includes(`The path ${root} cannot be used`), refused.stdout);
   assert.ok(refused.stdout.includes('Target cannot be the filesystem root.'));
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target "<a workspace folder>" --repo ${w.repo}`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target '<a workspace folder>' --repo ${w.repo}`));
   assert.deepEqual(await inventory(w.repo), {});
 });
 
@@ -670,7 +687,7 @@ test('verify: a pending record that never parsed prints a usable command with a 
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.equal(verified.code, 1, verified.stdout);
   assert.doesNotMatch(verified.stdout, /\bnull\b/);
-  assert.ok(verified.stdout.includes('--repo "<repository path>"'), verified.stdout);
+  assert.ok(verified.stdout.includes("--repo '<repository path>'"), verified.stdout);
 });
 
 // ---------------------------------------------------------------------------
@@ -759,7 +776,7 @@ test('verify: one deleted staged file is CHANGED with a count of one missing, no
   await rm(rel(w.repo, 'AGENTS.md'));
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED`), verified.stdout);
-  assert.ok(hasLine(verified.stdout, '  CHANGED: 1 staged files missing, 0 differ; first: AGENTS.md'), verified.stdout);
+  assert.ok(hasLine(verified.stdout, '  CHANGED: 1 staged file missing, 0 differ; first: AGENTS.md'), verified.stdout);
   assert.ok(!verified.stdout.includes('LEGACY'), 'a staged repository is never labelled LEGACY');
   assert.ok(connected.receiptId);
 });
@@ -770,7 +787,7 @@ test('verify: an edited staged file is CHANGED with a count of one that differs'
   await writeFile(path.join(w.repo, 'AGENTS.md'), 'my own words\n');
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tCHANGED`), verified.stdout);
-  assert.ok(hasLine(verified.stdout, '  CHANGED: 0 staged files missing, 1 differ; first: AGENTS.md'), verified.stdout);
+  assert.ok(hasLine(verified.stdout, '  CHANGED: 0 staged files missing, 1 differs; first: AGENTS.md'), verified.stdout);
 });
 
 test('verify: a register-only repository is REGISTERED with what detection finds now, and never STAGED', async (t) => {
@@ -850,7 +867,7 @@ test('T06-1, T06-7: a name that is refused is never echoed as a flag, and a long
   assert.ok(!missing.stdout.includes('team/app'), 'an invalid name is never suggested back');
   assert.equal(refused.code, 1, refused.stdout);
   assert.ok(!refused.stdout.includes('x'.repeat(61)), 'the 300-character name is never printed in full');
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name "<one plain folder name>"`), refused.stdout);
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name '<one plain folder name>'`), refused.stdout);
   const ninety = 'n'.repeat(90);
   await mkdir(path.join(w.root, 'ninety'));
   await connectInProcess(w, { repoPath: path.join(w.root, 'ninety'), name: ninety });
@@ -862,15 +879,15 @@ test('T06-1, T06-7: a name that is refused is never echoed as a flag, and a long
   assert.ok(clash.stdout.includes(`${'n'.repeat(60)}...`), 'the echoed name is clipped with an ellipsis');
 });
 
-test('T06-4: an in-process LEGACY repository gets a reason with no code word and no migrate guidance, and verify says REGISTERED', async (t) => {
+test('T06-4: a repository that already has harness files gets a plain reason, names the engine code once in the detection line, and never mentions migrate guidance', async (t) => {
   const w = await workspace(t);
   const older = path.join(w.root, 'older');
   await mkdir(older);
   await writeFile(path.join(older, 'SPEC-HARNESS.md'), '# an older copy\n');
   const planned = await runCli(['connect', '--target', w.hub, '--repo', older]);
-  assert.ok(hasLine(planned.stdout, 'Detection: LEGACY (evidence: SPEC-HARNESS.md)'));
+  assert.ok(hasLine(planned.stdout, 'Detection: this repository already has Spec Harness files (engine code: LEGACY; evidence: SPEC-HARNESS.md)'));
   assert.ok(registerLine(planned.stdout).includes('a teammate added the harness'), registerLine(planned.stdout));
-  assert.ok(!registerLine(planned.stdout).includes('LEGACY'));
+  assert.ok(!registerLine(planned.stdout).includes('LEGACY'), 'the reason a person reads never shows the code word');
   assert.ok(!planned.stdout.includes('migrate'));
 });
 
@@ -933,6 +950,198 @@ test('T06-8: a derived temp directly under .second-brain/ is listed by verify, l
   const applied = await runCli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
   assert.equal(applied.code, undefined, applied.stdout);
   assert.equal((await lstat(rel(w.hub, `.second-brain/${temp}`)).catch(() => null)), null, 'the approved connect removes it');
+});
+
+test('T06-9: rollback with no --receipt says the flag is required, nothing was changed, and where to find the ids', async (t) => {
+  const w = await workspace(t);
+  const before = await snapshot(w);
+  const refused = await runCli(['rollback', '--target', w.hub]);
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.ok(hasLine(refused.stdout, 'USAGE: rollback requires --receipt <receipt id>. Nothing was changed.'), refused.stdout);
+  assert.ok(hasLine(refused.stdout, 'Usage: second-brain rollback --target /absolute/path --receipt RECEIPT_ID'), refused.stdout);
+  assert.ok(refused.stdout.includes('Applied receipt: line'), 'says where the ids are printed');
+  assert.ok(!refused.stdout.includes('must be a receipt id'), 'the malformed-value message is not used for a missing flag');
+  assert.deepEqual(await snapshot(w), before);
+});
+
+test('T06-9: rollback with a malformed --receipt keeps the format message', async (t) => {
+  const w = await workspace(t);
+  const refused = await runCli(['rollback', '--target', w.hub, '--receipt', 'tx-not-a-uuid']);
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.ok(hasLine(refused.stdout, 'USAGE: rollback --receipt must be a receipt id: tx- followed by a UUID. Nothing was changed.'), refused.stdout);
+});
+
+test('T06-10: all connections as recorded: verify prints the summary before the footer, and exits 0', async (t) => {
+  const w = await workspace(t);
+  await connectInProcess(w);
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.ok(hasLine(verified.stdout, 'Connections: 1, all as recorded.'), verified.stdout);
+  assert.ok(linesOf(verified.stdout).indexOf('Connections: 1, all as recorded.') < linesOf(verified.stdout).indexOf('Verification: OK'), 'the summary is printed before the footer');
+});
+
+test('T06-10: CHANGED and MISSING connections print the attention line, and the exit code stays 0 (D18-a)', async (t) => {
+  const w = await workspace(t);
+  for (const name of ['a', 'b', 'c']) await mkdir(path.join(w.root, name));
+  await connectInProcess(w, { repoPath: path.join(w.root, 'a') });
+  await connectInProcess(w, { repoPath: path.join(w.root, 'b') });
+  await connectInProcess(w, { repoPath: path.join(w.root, 'c') });
+  await rm(path.join(w.root, 'a', 'AGENTS.md'));
+  await rename(path.join(w.root, 'b'), path.join(w.root, 'b-away'));
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, undefined, 'the exit code does not change for a connection');
+  assert.ok(hasLine(verified.stdout, "Connections: 2 of 3 need attention (see CHANGED and MISSING above). This does not affect the workspace's own files."), verified.stdout);
+  assert.ok(hasLine(verified.stdout, 'Verification: OK'));
+});
+
+test('T06-10: with no connections nothing new is printed, and the footer is unchanged', async (t) => {
+  const w = await workspace(t);
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.ok(!verified.stdout.includes('Connections:'), 'no summary line without connections');
+  assert.ok(hasLine(verified.stdout, 'Verification: OK'));
+});
+
+test('T06-11: a successful staged connect prints the undo command with its receipt id, absolute and quoted', async (t) => {
+  const w = await workspace(t);
+  const planned = await runCli(connectArgs(w));
+  const applied = await runCli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
+  const receipt = appliedReceipt(applied.stdout);
+  assert.ok(receipt);
+  assert.ok(hasLine(applied.stdout, `To undo this connect: node ${cliScript} rollback --target ${w.hub} --receipt ${receipt}`), applied.stdout);
+});
+
+test('T06-11: a register-only connect prints the same undo line', async (t) => {
+  const w = await workspace(t);
+  const older = path.join(w.root, 'older');
+  await mkdir(older);
+  await writeFile(path.join(older, 'SPEC-HARNESS.md'), '# an older copy\n');
+  const planned = await runCli(['connect', '--target', w.hub, '--repo', older]);
+  const applied = await runCli(['connect', '--target', w.hub, '--repo', older, '--apply', planDigest(planned.stdout)]);
+  const receipt = appliedReceipt(applied.stdout);
+  assert.ok(hasLine(applied.stdout, `To undo this connect: node ${cliScript} rollback --target ${w.hub} --receipt ${receipt}`), applied.stdout);
+});
+
+test('T06-11: a connection whose receipt file is missing is NO_RECEIPT: no rollback command is printed, and it says what was not changed', async (t) => {
+  const w = await workspace(t);
+  const connected = await connectInProcess(w);
+  await rm(rel(w.hub, `.second-brain/receipts/${connected.receiptId}.json`));
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tNO_RECEIPT`), verified.stdout);
+  assert.ok(verified.stdout.includes('cannot be rolled back by the tool'), verified.stdout);
+  assert.ok(verified.stdout.includes('Nothing was changed.'));
+  assert.ok(verified.stdout.includes('Connection.md does not list the staged files'));
+  assert.ok(!verified.stdout.includes('rollback --target'), 'no command that cannot work is printed');
+});
+
+test('T06-12: grammar: one missing file is singular, two are plural, and "differs" follows one', async (t) => {
+  const w = await workspace(t);
+  for (const name of ['one', 'two']) await mkdir(path.join(w.root, name));
+  const one = await connectInProcess(w, { repoPath: path.join(w.root, 'one') });
+  await rm(path.join(w.root, 'one', 'AGENTS.md'));
+  const two = await connectInProcess(w, { repoPath: path.join(w.root, 'two') });
+  await rm(path.join(w.root, 'two', 'AGENTS.md'));
+  await rm(path.join(w.root, 'two', 'RULES.md'));
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.ok(hasLine(verified.stdout, '  CHANGED: 1 staged file missing, 0 differ; first: AGENTS.md'), verified.stdout);
+  assert.ok(hasLine(verified.stdout, '  CHANGED: 2 staged files missing, 0 differ; first: AGENTS.md, RULES.md'), verified.stdout);
+  assert.ok(one.receiptId && two.receiptId);
+});
+
+test('T06-12: grammar: two differing files read "2 differ", and one read "1 differs"', async (t) => {
+  const w = await workspace(t);
+  await mkdir(path.join(w.root, 'edited'));
+  await connectInProcess(w, { repoPath: path.join(w.root, 'edited') });
+  await writeFile(path.join(w.root, 'edited', 'AGENTS.md'), 'changed\n');
+  await writeFile(path.join(w.root, 'edited', 'RULES.md'), 'changed\n');
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.ok(hasLine(verified.stdout, '  CHANGED: 0 staged files missing, 2 differ; first: AGENTS.md, RULES.md'), verified.stdout);
+});
+
+test('T06-14: a connect that finished but whose pending marker was not cleared is named as finished, and verify writes nothing', { skip: !isPosix && 'the kill helper uses SIGKILL' }, async (t) => {
+  const w = await workspace(t);
+  await killedAfterCommit(w);
+  const before = await snapshot(w);
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, 1, 'a pending marker still fails the workspace check');
+  assert.ok(verified.stdout.includes('finished connect, not yet cleared'), verified.stdout);
+  assert.ok(verified.stdout.includes('only clears the marker and keeps the connection'), verified.stdout);
+  assert.ok(!verified.stdout.includes('interrupted connect; recover with'), 'the finished case is not described as interrupted');
+  assert.deepEqual(await snapshot(w), before, 'verify changed nothing');
+});
+
+test('T06-15: CONNECTIONS_PRESENT prints one full rollback command per connection, not a list of ids', async (t) => {
+  const w = await workspace(t);
+  for (const name of ['first', 'second']) await mkdir(path.join(w.root, name));
+  const first = await connectInProcess(w, { repoPath: path.join(w.root, 'first') });
+  const second = await connectInProcess(w, { repoPath: path.join(w.root, 'second') });
+  const refused = await runCli(['rollback', '--target', w.hub, '--receipt', w.initReceipt]);
+  assert.equal(refused.code, 1, refused.stdout);
+  // One Next and one Then, each a full command ending in one connection's receipt id (the engine's order decides which).
+  const printed = linesOf(refused.stdout);
+  const ids = [first.receiptId, second.receiptId];
+  const next = printed.filter((line) => line.startsWith('Next: node '));
+  const then = printed.filter((line) => line.startsWith('Then: node '));
+  assert.equal(next.length, 1, refused.stdout);
+  assert.equal(then.length, 1, refused.stdout);
+  assert.ok(ids.some((id) => next[0] === `Next: node ${cliScript} rollback --target ${w.hub} --receipt ${id}`), refused.stdout);
+  assert.ok(ids.some((id) => then[0] === `Then: node ${cliScript} rollback --target ${w.hub} --receipt ${id}`) && then[0] !== next[0], refused.stdout);
+  assert.ok(!refused.stdout.includes('Then repeat the same command for'), 'no list of bare ids');
+});
+
+test('R06-15: a planted derived temp with another prefix under .second-brain/ is neither listed nor removed', async (t) => {
+  const w = await workspace(t);
+  const id = `tx-${randomUUID()}`;
+  const temp = `.anything.second-brain-${id}.tmp`;
+  await writeFile(rel(w.hub, `.second-brain/${temp}`), '{"partial":');
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.ok(!verified.stdout.includes(temp), 'verify does not list a name outside the two state files');
+  const planned = await runCli(connectArgs(w));
+  await runCli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
+  assert.ok((await lstat(rel(w.hub, `.second-brain/${temp}`))).isFile(), 'an approved connect does not remove it either');
+});
+
+test('R06-16: printed commands run through the real POSIX shell for paths with a space, $, backtick, !, double and single quotes, and nothing else executes', { skip: !isPosix && 'the POSIX shell is not available on win32' }, async (t) => {
+  const names = ['a b', 'a$b', 'a`b`', 'a!b', 'a"b', "a'b", '$(touch SHOULD_NOT_EXIST)'];
+  for (const name of names) {
+    const w = await workspace(t, { hubName: name, repoName: 'app' });
+    const pending = await interruptedApply(w);
+    const refused = await runCli(connectArgs(w));
+    const command = printedCommands(refused.stdout).find((line) => line.includes('rollback'));
+    assert.ok(command, refused.stdout);
+    // The printed form is single-quoted: double quotes leave ! open to history expansion in interactive shells.
+    assert.ok(command.includes(`'${w.hub.replace(/'/g, "'\\''")}'`), `${name}: the hub path is printed in single quotes: ${command}`);
+    const ran = await run('sh', ['-c', command], { cwd: w.root, windowsHide: true });
+    assert.ok(ran.stdout.includes(`Recovered interrupted connect ${pending.pendingId}`), `${name}: ${ran.stdout}`);
+    await assert.rejects(lstat(path.join(w.root, 'SHOULD_NOT_EXIST')), /ENOENT/, `${name}: the shell did not run the $(...) text`);
+  }
+});
+
+test('R06-5 drift: every error code the libraries can throw is translated in the CLI or listed here as generic', async () => {
+  const codes = new Set();
+  for (const file of ['installer.mjs', 'connect.mjs', 'cli-arguments.mjs']) {
+    const source = await readFile(path.join(sourceRoot, 'lib', file), 'utf8');
+    for (const match of source.matchAll(/(?:fail|InstallPlanError|usageError)\(\s*'([A-Z_]+)'/g)) codes.add(match[1]);
+  }
+  const bin = await readFile(path.join(sourceRoot, 'bin', 'second-brain.mjs'), 'utf8');
+  const translated = new Set([...bin.matchAll(/case '([A-Z_]+)'/g)].map((match) => match[1]));
+  // Codes without their own wording: the generic branch prints the code, the message, what is not changed, and verify.
+  const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE']);
+  for (const code of codes) {
+    assert.ok(translated.has(code) || generic.has(code), `${code} has no translation and is not listed as generic`);
+  }
+});
+
+test('the generic branch of connect prints the code, what is not changed, and verify as the next command', async (t) => {
+  const w = await workspace(t);
+  const file = path.join(w.root, 'a-file');
+  await writeFile(file, 'not a folder\n');
+  const refused = await runCli(['connect', '--target', file, '--repo', w.repo]);
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.match(refused.stdout, /^TARGET_NOT_DIRECTORY: /m);
+  assert.ok(hasLine(refused.stdout, 'Not changed: if the message above does not say a file was written, none was. Run verify to see what is on disk.'), refused.stdout);
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} verify --target ${file}`), refused.stdout);
 });
 
 test('no printed output in this file contains null or undefined', () => {

@@ -20,6 +20,7 @@ import {
   usageError,
 } from '../lib/cli-arguments.mjs';
 import {
+  STATE_TEMP_PATTERN,
   applyConnect,
   detectHarness,
   listPendingConnects,
@@ -34,13 +35,13 @@ const ROOT_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md', 'RULES.md'];
 const HARNESS_RECEIPT = '.claude/agents/.init-synthesis.json';
 const RECEIPT_IDS_IN_TEXT = /tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 const DERIVED_TEMP_PATTERN = /^\.(tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json\.second-brain-\1\.tmp$/;
-const STATE_TEMP_PATTERN = /^\.[A-Za-z0-9_.-]+\.second-brain-(tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.tmp$/;
 const CHANGED_SENTENCE = 'CHANGED: some files this connect wrote are missing or differ now. You can roll the connection back, or keep the files as they are.';
 const LABEL_SENTENCES = {
   STAGED: 'STAGED: the harness files this connect wrote are present and unchanged, and the repository is waiting for /sdd init.',
   INITIALISED: 'INITIALISED: the repository has its harness receipt, .claude/agents/.init-synthesis.json.',
   MISSING: 'MISSING: the repository folder is not at the path the connection recorded.',
   CHANGED: CHANGED_SENTENCE,
+  NO_RECEIPT: 'NO_RECEIPT: the receipt for this connection is missing, so the tool cannot roll it back.',
   REGISTERED: 'REGISTERED: this repository was registered without writing files into it; its harness state is read from disk now.',
   UNREADABLE: 'UNREADABLE: verify could not read this repository safely.',
 };
@@ -51,8 +52,12 @@ function word(value) {
   const text = String(value);
   const plain = process.platform === 'win32' ? /^[A-Za-z0-9_.\\/:~-]+$/ : /^[A-Za-z0-9_./:-]+$/;
   if (plain.test(text)) return text;
+  // win32: double quotes, the form cmd.exe and Windows argument splitting read. % is not escaped, so this
+  // form targets argument splitting, not every cmd.exe expansion. Leave it unless a Windows shell test says otherwise.
   if (process.platform === 'win32') return `"${text.replace(/"/g, '\\"')}"`;
-  return `"${text.replace(/(["\\$`])/g, '\\$1')}"`;
+  // POSIX: single quotes, which no shell expands ($, `, !, " and \ are all literal inside them). An embedded
+  // single quote is written as '\'' (close, escaped quote, reopen).
+  return `'${text.replace(/'/g, "'\\''")}'`;
 }
 
 function cliCommand(subcommand, { target, repo, name, receipt, apply } = {}) {
@@ -132,6 +137,8 @@ async function runPlan(command, targetPath, suppliedDigest) {
 // ---------------------------------------------------------------------------
 
 function detectionLine(detection) {
+  // The engine code appears once, in parentheses, for support; the words a person reads are plain.
+  if (detection.status === 'LEGACY') return `Detection: this repository already has Spec Harness files (engine code: LEGACY; evidence: ${detection.evidence.join(', ')})`;
   const evidence = detection.evidence.length > 0 ? ` (evidence: ${detection.evidence.join(', ')})` : ' (no harness files found)';
   return `Detection: ${detection.status}${evidence}`;
 }
@@ -198,7 +205,7 @@ function printConnectHandoff(plan, receiptId) {
   } else if (plan.detection.status === 'INITIALISED') {
     lines.push('Status: INITIALISED, registered', 'Next: no repository file was written. Open the repository in your client as usual.');
   } else {
-    lines.push('Status: LEGACY, registered', 'Next: no repository file was written. If /sdd commands do not work in this repository, run /sdd init inside it.');
+    lines.push('Status: already has harness files, registered', 'Next: no repository file was written. If /sdd commands do not work in this repository, run /sdd init inside it.');
   }
   lines.push(`Record: ${path.join(plan.hub, '01-Projects', plan.name, 'Connection.md')}`);
   if (plan.detection.status === 'NONE') {
@@ -207,6 +214,7 @@ function printConnectHandoff(plan, receiptId) {
     lines.push('Nothing is committed: connect ran no git command and wrote no repository files.');
   }
   lines.push('Optional: spec-harness index needs Python 3.11 or newer and does not run on native Windows. See vendor/spec-harness/docs/GETTING-STARTED.md in the starter copy.');
+  lines.push(`To undo this connect: ${cliCommand('rollback', { target: plan.hub, receipt: receiptId })}`);
   output.write(`${lines.join('\n')}\n`);
   const preserved = plan.entries.filter((entry) => entry.status === 'PRESERVED' && entry.root === 'repo' && ROOT_INSTRUCTION_FILES.includes(entry.destination));
   if (preserved.length > 0) {
@@ -268,7 +276,8 @@ const pendingFileFor = (targetPath, id) => path.join(targetPath, '.second-brain'
 async function stagedState(targetPath, record) {
   const receipt = await readJsonOrNull(receiptFileFor(targetPath, record.connectionId));
   if (!receipt || !Array.isArray(receipt.writes)) {
-    return { label: 'CHANGED', lines: ['The receipt for this connection is missing, so its staged files cannot be checked.'] };
+    // No receipt means the tool has no record of what it wrote, so it cannot roll this connection back. No command is printed for it.
+    return { label: 'NO_RECEIPT', lines: ['Without its receipt this connection cannot be rolled back by the tool. Nothing was changed. Connection.md does not list the staged files: it only names the repository.'] };
   }
   const problems = [];
   let missing = 0;
@@ -288,7 +297,7 @@ async function stagedState(targetPath, record) {
   return {
     label: 'CHANGED',
     lines: [
-      `CHANGED: ${missing} staged files missing, ${differ} differ; first: ${problems.slice(0, 3).join(', ')}`,
+      `CHANGED: ${missing} staged ${missing === 1 ? 'file' : 'files'} missing, ${differ} ${differ === 1 ? 'differs' : 'differ'}; first: ${problems.slice(0, 3).join(', ')}`,
       `To roll the connection back: ${cliCommand('rollback', { target: targetPath, receipt: record.connectionId })}`,
     ],
   };
@@ -317,8 +326,10 @@ async function runVerify(targetPath) {
   for (const issue of result.issues) output.write(`${issue.code}\t${issue.path}\t${issue.message}\n`);
   const connections = Object.values((await readConnections({ targetPath })).connections).sort((left, right) => left.name.localeCompare(right.name));
   const printedLabels = new Set();
+  const labels = [];
   for (const record of connections) {
     const state = await connectionState(targetPath, record);
+    labels.push(state.label);
     output.write(`CONNECTION\t${record.name}\t${record.repo}\t${state.text ?? state.label}\n`);
     for (const line of state.lines ?? []) output.write(`  ${line}\n`);
     if (!printedLabels.has(state.label)) {
@@ -332,12 +343,28 @@ async function runVerify(targetPath) {
     if (item.kind === 'pending') {
       blocked = true;
       pendingIds.add(item.pendingId);
-      output.write(`PENDING\t${item.pendingId}\t${item.name}\t${item.repo}\tinterrupted connect; recover with: ${cliCommand('rollback', { target: targetPath, receipt: item.pendingId })}\n`);
+      const command = cliCommand('rollback', { target: targetPath, receipt: item.pendingId });
+      if (item.committed) {
+        output.write(`PENDING\t${item.pendingId}\t${item.name}\t${item.repo}\tfinished connect, not yet cleared; the command below only clears the marker and keeps the connection: ${command}\n`);
+      } else {
+        output.write(`PENDING\t${item.pendingId}\t${item.name}\t${item.repo}\tinterrupted connect; recover with: ${command}\n`);
+      }
     } else {
       output.write(`RESIDUE\t.second-brain/connect-pending/.${item.pendingId}.json.second-brain-${item.pendingId}.tmp\tthe first write of an interrupted connect; the next approved connect, a rollback or a recovery clears it.\n`);
     }
   }
   for (const line of await inertResidueLines(targetPath, pendingIds)) output.write(`${line}\n`);
+  // D18-a: connections never change the exit code. The summary says what needs attention, so "Verification: OK" is not misread.
+  if (connections.length > 0) {
+    const attention = [...new Set(labels.filter((label) => ['CHANGED', 'MISSING', 'NO_RECEIPT'].includes(label)))];
+    if (attention.length > 0) {
+      const named = attention.length > 1 ? `${attention.slice(0, -1).join(', ')} and ${attention.at(-1)}` : attention[0];
+      const count = labels.filter((label) => attention.includes(label)).length;
+      output.write(`Connections: ${count} of ${connections.length} need attention (see ${named} above). This does not affect the workspace's own files.\n`);
+    } else {
+      output.write(`Connections: ${connections.length}, all as recorded.\n`);
+    }
+  }
   const ok = result.ok && !blocked;
   output.write(ok ? 'Verification: OK\n' : 'Verification: FAILED\n');
   if (!ok) process.exitCode = 1;
@@ -451,7 +478,10 @@ async function explain(error, context) {
 
   if (context.parsing) {
     const usage = USAGE_LINES[context.command] ? `Usage: ${USAGE_LINES[context.command]}` : 'Usage: run this script with --help to list every command.';
-    return lines(`USAGE: ${message}`, ...(message.includes('Nothing was changed') ? [] : ['Nothing was changed.']), usage);
+    const hint = message.includes('--receipt <receipt id>')
+      ? ['Receipt ids are printed on the Applied receipt: line of connect or init, listed by verify, and named by the files in .second-brain/receipts/.']
+      : [];
+    return lines(`USAGE: ${message}`, ...(message.includes('Nothing was changed') ? [] : ['Nothing was changed.']), usage, ...hint);
   }
 
   switch (code) {
@@ -482,7 +512,7 @@ async function explain(error, context) {
     case 'CONNECTIONS_PRESENT': {
       const found = ids(message);
       const after = found.length > 0
-        ? [next(rollbackCmd(found[0])), ...(found.length > 1 ? [`Then repeat the same command for: ${found.slice(1).join(', ')}`] : [])]
+        ? [next(rollbackCmd(found[0])), ...found.slice(1).map((id) => `Then: ${rollbackCmd(id)}`)]
         : [next(verifyCmd())];
       return lines(
         'CONNECTIONS_PRESENT: this workspace still has connections or interrupted connects, so the init or upgrade cannot be rolled back yet.',
@@ -631,6 +661,14 @@ async function explain(error, context) {
     case 'TARGET_TRAVERSAL':
       return lines(`TARGET_TRAVERSAL: ${message}`, notChanged(), next('run the command again with the full absolute path, without .. segments.'));
     default:
+      // Codes without their own wording: the code and message, what is not changed, and verify as the next command.
+      if (['connect', 'rollback'].includes(context.command) && code !== 'LOADER_CONFLICT') {
+        return lines(
+          `${code ?? 'ERROR'}: ${message}`,
+          'Not changed: if the message above does not say a file was written, none was. Run verify to see what is on disk.',
+          next(verifyCmd()),
+        );
+      }
       return generic();
   }
 }
