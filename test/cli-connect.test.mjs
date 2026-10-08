@@ -24,6 +24,7 @@ function word(value) {
   return `'${text.replace(/'/g, "'\\''")}'`;
 }
 const cliScript = word(bin);
+const ph = (text) => word(text);
 const digestOf = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const rel = (root, posixPath) => path.join(root, ...posixPath.split('/'));
 const linesOf = (text) => text.split(/\r?\n/);
@@ -176,12 +177,13 @@ function splitCommand(line) {
       while (index < line.length) {
         const inner = line[index];
         if (inner === '"') { closed = true; index += 1; break; }
-        if (inner === '\\' && '"\\$`'.includes(line[index + 1])) { current += line[index + 1]; index += 2; continue; }
+        const escapes = process.platform === 'win32' ? '"' : '"\\$`';
+        if (inner === '\\' && escapes.includes(line[index + 1])) { current += line[index + 1]; index += 2; continue; }
         current += inner;
         index += 1;
       }
       assert.ok(closed, `unterminated double quote in: ${line}`);
-    } else if (character === '\\' && index + 1 < line.length) {
+    } else if (character === '\\' && index + 1 < line.length && process.platform !== 'win32') {
       // outside quotes a backslash makes the next character literal
       start();
       current += line[index + 1];
@@ -476,7 +478,7 @@ test('CONNECTION_NAME_TAKEN: a second repository with the same connection name i
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^CONNECTION_NAME_TAKEN: The workspace already has a connection named app/m);
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name '<a name no other connection uses>'`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name ${ph('<a name no other connection uses>')}`));
   assert.deepEqual(await snapshot(w), before);
   assert.deepEqual(await inventory(second), {});
 });
@@ -489,7 +491,7 @@ test('CONNECTION_NAME_TAKEN with --name given prints one --name in the Next comm
   const refused = await runCli(['connect', '--target', w.hub, '--repo', second, '--name', 'app']);
   assert.equal(refused.code, 1, refused.stdout);
   const next = linesOf(refused.stdout).find((line) => line.startsWith('Next: '));
-  assert.equal(next, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name '<a name no other connection uses>'`);
+  assert.equal(next, `Next: node ${cliScript} connect --target ${w.hub} --repo ${second} --name ${ph('<a name no other connection uses>')}`);
   assert.equal(next.split('--name').length - 1, 1, 'the flag appears once');
   parseArguments(splitCommand(next.slice('Next: '.length)).slice(2).map((item) => (item.startsWith('<') ? '/placeholder' : item)));
 });
@@ -501,7 +503,7 @@ test('INVALID_CONNECTION_NAME: a name with a slash is refused with the reason, i
   assert.equal(refused.code, 1, refused.stdout);
   assert.match(refused.stdout, /^INVALID_CONNECTION_NAME: Connection name contains a character the harness forbids/m);
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name '<one plain folder name>'`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name ${ph('<one plain folder name>')}`));
   assert.deepEqual(await snapshot(w), before);
 });
 
@@ -655,7 +657,7 @@ test('UNSAFE_TARGET: a workspace path that is the filesystem root is refused, th
   assert.ok(refused.stdout.includes(`The path ${root} cannot be used`), refused.stdout);
   assert.ok(refused.stdout.includes('Target cannot be the filesystem root.'));
   assert.ok(hasLine(refused.stdout, 'Not changed: nothing was written.'));
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target '<a workspace folder>' --repo ${w.repo}`));
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${ph('<a workspace folder>')} --repo ${w.repo}`));
   assert.deepEqual(await inventory(w.repo), {});
 });
 
@@ -687,7 +689,7 @@ test('verify: a pending record that never parsed prints a usable command with a 
   const verified = await runCli(['verify', '--target', w.hub]);
   assert.equal(verified.code, 1, verified.stdout);
   assert.doesNotMatch(verified.stdout, /\bnull\b/);
-  assert.ok(verified.stdout.includes("--repo '<repository path>'"), verified.stdout);
+  assert.ok(verified.stdout.includes(`--repo ${ph('<repository path>')}`), verified.stdout);
 });
 
 // ---------------------------------------------------------------------------
@@ -867,7 +869,7 @@ test('T06-1, T06-7: a name that is refused is never echoed as a flag, and a long
   assert.ok(!missing.stdout.includes('team/app'), 'an invalid name is never suggested back');
   assert.equal(refused.code, 1, refused.stdout);
   assert.ok(!refused.stdout.includes('x'.repeat(61)), 'the 300-character name is never printed in full');
-  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name '<one plain folder name>'`), refused.stdout);
+  assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name ${ph('<one plain folder name>')}`), refused.stdout);
   const ninety = 'n'.repeat(90);
   await mkdir(path.join(w.root, 'ninety'));
   await connectInProcess(w, { repoPath: path.join(w.root, 'ninety'), name: ninety });
