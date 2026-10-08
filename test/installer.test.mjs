@@ -588,6 +588,14 @@ test('each loop procedure states its inputs, outputs and human check', async () 
 });
 
 const projectTemplateFiles = ['Decisions.md', 'FACTS.md', 'README.md', 'progress.md', 'roadmap.md'];
+// The stamp equals the seed except for one line per file listed here: [seed line, stamp line].
+const projectTemplateDifferences = new Map([
+  ['Decisions.md', [
+    'Keep project decisions here. A choice that affects every project belongs in [cross-project decisions](../../00-Meta/Decisions.md).',
+    'Keep project decisions here. A choice that affects every project belongs in the cross-project decisions record, `00-Meta/Decisions.md`.',
+  ]],
+  ['README.md', ['# Selected project map', '# Project map: [project name]']],
+]);
 
 test('the project template folder ships the five seed project files as a managed stamp', async () => {
   const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
@@ -599,6 +607,17 @@ test('the project template folder ships the five seed project files as a managed
   }
   const seeded = manifest.entries.filter((entry) => entry.destination.startsWith('01-Projects/Selected-Project/')).map((entry) => path.posix.basename(entry.destination)).sort();
   assert.deepEqual(seeded, [...projectTemplateFiles].sort(), 'the stamp must carry every seeded project file');
+  for (const file of projectTemplateFiles) {
+    const seed = await readFile(path.join(sourceRoot, 'template/01-Projects/Selected-Project', file), 'utf8');
+    const stamp = await readFile(path.join(sourceRoot, 'template/03-Resources/_templates/project', file), 'utf8');
+    const [seedLine, stampLine] = projectTemplateDifferences.get(file) ?? [null, null];
+    if (stampLine === null) {
+      assert.equal(stamp, seed, `stamp differs from seed: ${file}`);
+      continue;
+    }
+    assert.equal(stamp.split('\n').filter((line) => line === stampLine).length, 1, `stamp lost its known line: ${file}`);
+    assert.equal(stamp.split('\n').map((line) => (line === stampLine ? seedLine : line)).join('\n'), seed, `stamp differs from seed beyond its known line: ${file}`);
+  }
   const projectsMap = await readFile(path.join(sourceRoot, 'template/01-Projects/README.md'), 'utf8');
   assert.match(projectsMap, /\[Project template\]\(\.\.\/03-Resources\/_templates\/project\/README\.md\): a new project is a copy of that folder/);
 });

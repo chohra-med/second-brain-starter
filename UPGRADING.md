@@ -44,10 +44,10 @@ node ./bin/second-brain.mjs rollback --target "$PROJECT" --receipt RECEIPT_ID
 
 ## Migrating a v1.0.x direct-clone workspace
 
-Earlier direct-clone workspaces have no `.second-brain` installed-state record. V1.1.0 does not silently adopt or overwrite them.
+Earlier direct-clone workspaces have no `.second-brain` installed-state record. This version does not silently adopt or overwrite them.
 
 1. Keep the direct clone unchanged as your historical base and create a dated backup of your working copy.
-2. Create a separate empty target directory and initialize it from the v1.1.0 source root.
+2. Create a separate empty target directory and initialize it from this version's source root.
 3. Compare the old working copy with the new target. Manually transfer only the records you intend to keep: facts, decisions, roadmap, progress, daily notes, and any deliberately customized procedures.
 4. Resolve any root `AGENTS.md` or `CLAUDE.md` instructions manually. Preserve project-specific rules outside the initializer's compatible managed block.
 5. Run `verify` against the new target, then review every named managed path. Existing safe seed records are reported as `PERSONALIZED` and preserved; copied personalized managed records intentionally make baseline `verify` non-green. Neither result adopts or overwrites your records. Open the installed `Home.md` and complete one first-loop item before retiring the old working copy.

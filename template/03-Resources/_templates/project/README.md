@@ -1,4 +1,4 @@
-# Selected project map
+# Project map: [project name]
 
 Read this map when locating current project records, after reading the project’s own rules.
 

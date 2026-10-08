@@ -32,7 +32,7 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "4b8c4324364b432ec9fec2b4677198a44d800b05bb937869a774d6d4c4832064",
+      "sha256": "04b39a0af12fd038a1588adee9d108304f3238c247a01382612e6e6ef453b799",
       "mergeKind": "managed-file"
     },
     {
@@ -224,7 +224,7 @@
     {
       "source": "template/03-Resources/README.md",
       "destination": "03-Resources/README.md",
-      "sha256": "12aea7603d9dc52476bf66d6f92335184c500081ae3ff39c41b5ea39a74e38ae",
+      "sha256": "062d76c8e2511e41700f256bbaefd46d699cddde8f50e2fb73d741996c986b05",
       "mergeKind": "managed-file"
     },
     {
@@ -446,7 +446,7 @@
     {
       "source": "template/03-Resources/_templates/project/README.md",
       "destination": "03-Resources/_templates/project/README.md",
-      "sha256": "2145339e4925db53f131fb4623d4fa310e5405728dbc043a6925675c4fadf913",
+      "sha256": "06c219a620fbb85d2216cdce70f282fc37828599bacfcdd13de2bdc5d10d2c4e",
       "mergeKind": "managed-file"
     },
     {
