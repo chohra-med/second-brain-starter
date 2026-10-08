@@ -1,5 +1,41 @@
 # Upgrading the free starter
 
+## Upgrading to v1.3.0
+
+Before you upgrade, make the dated copy described in [Before an initializer upgrade](#before-an-initializer-upgrade). This version adds the `connect` command, which registers one repository you name with a workspace, and a Profile interview that fills the `00-Meta/Profile.md` seed. Both are optional. An in-project install made by a v1.x version keeps working unchanged. Nothing in this version forces a move to the hub shape.
+
+### What an installed v1.2.0 workspace sees
+
+The plan below is what this version prints when it upgrades a real v1.2.0 install. That install was created by the v1.2.0 CLI from commit `6fc244e`. The other 69 lines of the plan are `IDENTICAL`. The plan has no `CONFLICT` and no `DEPRECATED` line.
+
+```text
+MANAGED-UPDATE	00-Meta/AGENTS.md	undo=restore-preimage
+CREATE	00-Meta/Profile.md	undo=remove-created-file
+MANAGED-UPDATE	01-Projects/README.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/context.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/first-use.md	undo=restore-preimage
+MANAGED-UPDATE	Home.md	undo=restore-preimage
+```
+
+- `CREATE 00-Meta/Profile.md` adds the Profile seed. The Profile interview fills it under the same exact-plan approval as your other records.
+- The five `MANAGED-UPDATE` lines are managed files whose wording changed for the hub shape. Your records are not in this list.
+- If you already created `00-Meta/Profile.md` yourself, the plan shows `CONFLICT` for it and the apply is refused. Move your file aside, or keep it outside the workspace, and plan again. The upgrade never overwrites it.
+
+Until the upgrade is applied, `verify` on the old install reports `SOURCE_MANIFEST_MISMATCH` and exits non-zero. That is expected from a newer source. After the upgrade is applied and verified, it exits zero.
+
+### Ctrl-C at the approval prompt
+
+`init` and `upgrade` now print the exact apply command after the plan digest, as `connect` already does. Ctrl-C or end of input at the approval prompt now prints `Plan not applied.` and exits 1. Before this version it exited 0 with no message. An empty answer still prints `Plan not applied.` and exits 0. No other exit code changed.
+
+### connect is optional
+
+`connect` is a separate command. Run it once for each repository you want the workspace to know about. Each run prints its own plan and needs its own digest. [ONBOARDING.md](ONBOARDING.md) stage 9 and [README.md](README.md) describe it.
+
+- A connect receipt covers both the workspace and the repository. Rolling it back removes exactly the files that receipt created, in both folders. It refuses if one of those files changed since, and it removes nothing.
+- Files that `/sdd init` writes in the repository afterwards are not in the receipt. Rollback does not remove them.
+- `verify` lists each connection with its state and its receipt ID. An interrupted connect makes `verify` exit non-zero, and it prints the rollback command for that connect.
+- Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
+
 ## Upgrading to v1.2.0
 
 This version adds managed first-use/navigation files. Upgrade from a baseline-seeded workspace preserves safe personalized seed records. Review the exact new plan and verify afterward; later personalization and artifacts have separate recovery preimages. A failed transaction into a missing target may leave an empty directory. Inspect the receipt and current state, produce a fresh plan and obtain current approval before retrying; do not blindly replay an earlier digest.

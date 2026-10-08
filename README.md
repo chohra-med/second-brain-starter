@@ -2,7 +2,7 @@
 
 # Second Brain Starter
 
-**Give one project a memory your AI can continue.**
+**A workspace that connects your repositories to a memory your AI can continue.**
 
 A free, plain-Markdown foundation for keeping facts, decisions, progress and next work available across Claude Code or Codex sessions.
 
@@ -29,6 +29,8 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 Keep the source copy separate from your work. For example, `Downloads/second-brain-starter` holds the installer; `Projects/learn-one-idea` is the project folder you choose and confirm. The project may already exist, or the assistant can plan a new folder under a parent you select.
 
+Connecting a repository is a separate, optional step after setup, and it is covered below in [Connect a repository](#5-connect-a-repository-optional).
+
 The assistant asks only missing questions about your goal, useful output and constraints, reads existing project rules and checks for Node.js `>=22`. If that runtime is missing, it explains the trusted installation options and asks before installing anything. The starter has zero production dependencies.
 
 You confirm the exact project folder and review the full setup plan before approving it. After installation, the assistant verifies the result and opens the installed Home to finish one small, checked result. Later record edits and artifacts each keep their own approval.
@@ -37,16 +39,18 @@ Ordinary web chat cannot perform this local setup. Your client and operating sys
 
 ## Your first useful result
 
-The starter gives one project:
+The starter gives one workspace:
 
 - one official home for current facts, decisions, roadmap and progress;
 - a `Home.md` dashboard that points to the next useful action;
+- a `00-Meta/Profile.md` seed, which the first-use interview fills in for role, stack, answer style and boundaries, leaving anything you do not answer as `Unknown`;
 - seven local skills: context, capture, close, review, learning, the local ICM bindings and the bundled `icm-architect` method;
-- a project template folder to copy when a second project starts;
+- a project template folder to copy when a second project starts, and a `connect` command that creates the same kind of folder for each repository you name;
+- a `connect` command that stages Spec Harness into a repository you name and registers that repository with the workspace;
 - a safe initializer with plan approval, verification, receipts and rollback;
 - plain Markdown files you can inspect without a private application.
 
-Start with one project. Turning the whole laptop into a knowledge empire on day one is how tasteful digital archaeology begins.
+Start with one repository. Turning the whole laptop into a knowledge empire on day one is how tasteful digital archaeology begins.
 
 ## The first loop
 
@@ -66,7 +70,7 @@ PARA gives each record a home. CODE moves information from capture to finished w
 
 | Second Brain Starter | Builder AI OS |
 |---|---|
-| Public MIT foundation for one selected project | Paid operating layer for builders |
+| Public MIT foundation for one workspace and the repositories you connect to it | Paid operating layer for builders |
 | Home dashboard and seven shared skills: context, capture, close, review, learning, ICM bindings and the bundled `icm-architect` method | A premium Home page, more skills and adapters |
 | Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
@@ -78,13 +82,13 @@ Use the free starter first. [Builder AI OS](https://choumed.gumroad.com/l/builde
 
 This starter is licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies under those terms. Keep the copyright and license notices with substantial copies.
 
-This is the free Second Brain foundation. It contains PARA, CODE, the one-project workflow, manual procedures and the local initializer below. It does not include Builder AI OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
+This is the free Second Brain foundation. It contains PARA, CODE, the per-project workflow, manual procedures, the local initializer and the `connect` command below. It does not include Builder AI OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
-This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license; it is not used by the starter yet. See [ATTRIBUTION.md](ATTRIBUTION.md).
+This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license. The `connect` command stages its files into a repository you name. The starter never runs its shell scripts. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.2.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.3.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Manual and recovery setup
 
@@ -99,7 +103,7 @@ If you use a source checkout rather than a release ZIP, keep its structure intac
 
 ### 2. Initialize a project safely
 
-The initializer needs Node.js `>=22`, an existing project directory or a missing empty target outside the source copy, and an absolute target path. macOS, Linux, and Windows are the V1 portability target; no npm package is required or published.
+The initializer needs Node.js `>=22`, an existing project directory or a missing empty target outside the source copy, and an absolute target path. macOS, Linux, and Windows are the V1 portability target; no npm package is required or published. `connect` is part of the same target, and its printed commands are quoted for the shell family in use.
 
 From the extracted or cloned starter root, set `PROJECT` to the absolute directory you want to prepare. On macOS/Linux shells:
 
@@ -133,8 +137,9 @@ The target may already contain your project files. Differing managed files remai
 1. Open the installed `Home.md` in your target. It is the dashboard for the project you will run. The source template is [template/Home.md](template/Home.md); it is not the workspace you will edit.
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
 3. Follow Home's [First use](template/03-Resources/Procedures/first-use.md) route in the installed target. Agree the missing goal and constraints, approve the exact record edits, then approve and finish one small artifact with a check. Preserve existing personalized records. Close the result and start a new chat in that target to recover the next action.
-4. The initializer writes compatible root loader and skill files for supported-client discovery: seven skills (context, capture, close, review, learning, `second-brain-icm` and the bundled `icm-architect`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
-5. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
+4. The Profile interview is part of that route. It asks only the four questions whose answers are still missing in `00-Meta/Profile.md`: your role, your stack, how you want answers given, and what must never be touched. An answer you do not give stays `Unknown`, so a later session asks again instead of guessing.
+5. The initializer writes compatible root loader and skill files for supported-client discovery: seven skills (context, capture, close, review, learning, `second-brain-icm` and the bundled `icm-architect`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
+6. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
 ### 4. Run the free first loop
 
@@ -150,7 +155,49 @@ PARA gives records a home and CODE gives work a direction. Read [PARA + CODE](te
 
 For system architecture maintenance, use `second-brain-icm` before changing rules, skills or context routes. It holds this workspace's local bindings and change contract, and it names its method owner: the bundled [`icm-architect`](template/shared-skills/icm-architect/SKILL.md) skill by Jake Van Clief, copied unmodified under its MIT license (see [ATTRIBUTION.md](ATTRIBUTION.md)). Ordinary notes keep the compact project route. If native invocation is unavailable, manually read both installed skill files; automatic discovery remains unverified.
 
-To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. The initializer still seeds one project, `Selected-Project`, and does not rename it.
+To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. The initializer still seeds one project, `Selected-Project`, and does not rename it. To register a repository you already work in, use `connect` instead, as described in the next section.
+
+### 5. Connect a repository (optional)
+
+`connect` registers one repository you name with the workspace you set up. It does not search for repositories. Run it once for each repository, from the starter copy:
+
+```sh
+node ./bin/second-brain.mjs connect --target "$PROJECT" --repo "$REPOSITORY"
+```
+
+Add `--name NAME` when you want a folder name other than the repository's own. The name becomes the folder `01-Projects/NAME/` in the workspace. If the default name cannot be used, the refusal says so and asks for `--name`.
+
+The command prints one plan for both folders and writes nothing. Without `--apply`, it is read-only in both folders. Read these lines first:
+
+- `CREATE` lines are files that connect will write: the connection folder and its `Connection.md` record in the workspace, and the harness files in the repository.
+- `PRESERVED` lines are files the repository already has. connect creates a file in the repository only where none exists, keeps the existing ones unchanged and lists them. If a preserved `AGENTS.md`, `CLAUDE.md` or `RULES.md` is listed, the plan prints a loader block for you to add by hand. Until you add it, your client does not load the harness.
+- `Detection` says what the repository already has. A repository with no Spec Harness files is `NONE`, and connect stages the harness files there. A repository with a harness receipt, `.claude/agents/.init-synthesis.json`, or with older Spec Harness files, is registered only, and connect writes nothing into it.
+
+The plan ends with the exact apply command, with the plan digest. Approve that plan by running the same command with that digest:
+
+```sh
+node ./bin/second-brain.mjs connect --target "$PROJECT" --repo "$REPOSITORY" --apply YOUR_PLAN_DIGEST
+```
+
+The printed commands use the absolute path of the script, so you can paste them from any folder. A successful apply prints one of these statuses:
+
+- `Status: STAGED`. The harness files are written and waiting for `/sdd init`. The repository is STAGED until `.claude/agents/.init-synthesis.json` exists, and it is not initialised before that.
+- `Status: INITIALISED, registered` or `Status: already has harness files, registered`. The repository is register only. No file was written into it.
+
+For a STAGED repository, open it in Claude Code or Codex and run `/sdd init` there. That step is written by the model, so the files it edits afterwards are outside the connect receipt.
+
+Nothing is committed. connect runs no git command. The files it creates are uncommitted, and your team decides whether they go in by pull request. The staged `loop.sh` is copied as bytes, so it is not executable on this route.
+
+The Spec Harness `index` step is optional and is not run by connect. It needs Python 3.11 or newer, and it does not run on native Windows. See `vendor/spec-harness/docs/GETTING-STARTED.md` in the starter copy.
+
+What connect does not do:
+
+- It does not find repositories. You name each one, and each connect covers one repository.
+- It does not commit, push, branch or stash.
+- It does not run `/sdd init`, the `index` step or any shell script from the vendored copy.
+- It does not write into a repository that already has harness files.
+- It does not add a loader block to your files. You add it, when the plan asks.
+- It does not work from ordinary web chat. Your client still needs local file access.
 
 ## Verify, update, and roll back
 
@@ -160,23 +207,47 @@ Run verification from the source root against the installed target:
 node ./bin/second-brain.mjs verify --target "$PROJECT"
 ```
 
-Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files. Editable seed records are expected to change after setup; once the v1.1.0 seed policy is installed, verification reports those existing contained records as `PERSONALIZED` and still succeeds. Missing, unsafe, or escaping seed paths still fail.
+Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files. It also lists each connection, if the workspace has any, and the connections do not change the exit code. `verify` only reads: it writes nothing in either folder. Editable seed records are expected to change after setup; once the v1.1.0 seed policy is installed, verification reports those existing contained records as `PERSONALIZED` and still succeeds. Missing, unsafe, or escaping seed paths still fail.
 
 Personalize editable seed records such as project facts, decisions, roadmap and progress as you work; those changes remain valid. Personalizing a managed record intentionally creates baseline drift: this includes managed procedures and loaders, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest; non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](UPGRADING.md) before upgrading.
 
-Every applied transaction prints a receipt ID and stores its receipt inside the target's `.second-brain` state. To undo only that receipt's writes:
+Every applied transaction prints a receipt ID and stores its receipt inside the target's `.second-brain` state. A connect prints its receipt ID too. Each `CONNECTION` line of `verify` ends with that ID. To undo only that receipt's writes:
 
 ```sh
 node ./bin/second-brain.mjs rollback --target "$PROJECT" --receipt RECEIPT_ID
 ```
 
-The rollback checks that receipt's current preconditions and does not undo unrelated project work. Keep a dated copy of your target before any migration.
+The rollback checks that receipt's current preconditions and does not undo unrelated project work. A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
+
+`verify` prints one line for each connection:
+
+| Label | Meaning |
+|---|---|
+| `STAGED` | The harness files connect wrote are present and unchanged. `/sdd init` has not written its receipt yet. |
+| `INITIALISED` | The repository has `.claude/agents/.init-synthesis.json`. |
+| `CHANGED` | Some staged files are missing or differ now. The line gives the count and the first names. You can roll the connection back, or keep the files. |
+| `MISSING` | The repository folder is not at the path the connection recorded. |
+| `REGISTERED (now: ...)` | A register-only connection, with what detection finds now. |
+| `NO_RECEIPT` | The receipt is missing, so the tool cannot roll the connection back. The line says what you can do. |
+
+After the connection lines, one summary line says how many connections need attention, or that all are as recorded. Two more labels can appear:
+
+- `PENDING` names an interrupted connect, or a finished connect whose marker was not cleared, with the command that recovers it. A pending record makes `verify` exit non-zero.
+- `RESIDUE` names a leftover temporary file or empty folder from a connect. It is information only, and it does not change the exit code.
+
+The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
 ## Recovery and removal
 
 If a change goes wrong, stop editing the target. Use the relevant receipt rollback when its preconditions hold, or return to the dated copy made before the update. Your records remain plain Markdown and readable without Obsidian.
+
+If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. It restores both folders. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
+
+Two leftovers are known and accepted. A stop before any pending record exists can leave an empty `.second-brain/connect-pending/` folder, and at most one temporary engine file in it, in the workspace. Nothing is left in the repository. `verify` lists this as `RESIDUE`, and the next approved connect, rollback or recovery removes it. Only one connect should run at a time per workspace. There is no lock across processes, and two connects running together can fail one of them with a missing-file error.
+
+Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
 
 To remove the starter, first keep any Markdown files you want to retain. Then delete your copied workspace and, if you used Git, your local clone. Removing a local copy cannot revoke rights granted by the MIT License for copies you already received.
 
