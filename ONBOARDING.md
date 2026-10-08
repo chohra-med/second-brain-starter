@@ -12,13 +12,17 @@ Do not hijack repository maintenance, source edits, tests, release work, or an u
 
 ## 2. Select one exact project root
 
-Ask for one exact existing project folder. Do not guess from the clone location. If the user asks for help choosing, ask them to select one parent folder and list only its immediate child directory names. Do not recursively search parents, siblings, home directories, hidden directories, symlinks, `.env` files, credentials, client data, or unrelated projects.
+Ask for one exact existing project folder or a new workspace at a path that does not exist yet, outside the source copy. For a new path, confirm its selected existing parent and intended folder name. Do not guess from the clone location. If the user asks for help choosing, ask them to select one parent folder and list only its immediate child directory names. Do not recursively search parents, siblings, home directories, hidden directories, symlinks, `.env` files, credentials, client data, or unrelated projects.
+
+For choosing the project, follow only the missing-question section in the source [first-use owner](template/03-Resources/Procedures/first-use.md#2-only-ask-what-is-missing). These are read-only questions, not permission to edit records. Reuse the answers after installation; the full installed procedure starts only after verification.
 
 Repeat the exact selected path and ask the user to confirm it before reading or writing inside it. A changed path starts selection again.
 
+Do not create a missing target before approval. The initializer plans through real ancestors and creates the target only within its approved transaction.
+
 ## 3. Read the selected project's rules
 
-Before touching the selected project, read its applicable instructions in this order when present: `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, and `README.md`. Follow those project rules for any later project work. If they conflict with this contract, stop and explain the conflict before proceeding.
+If the confirmed target does not exist, say that it has no project rules yet; do not create it to inspect it. For an existing target, before touching the selected project, read its applicable instructions in this order when present: `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, and `README.md`. Follow those project rules for any later project work. If they conflict with this contract, stop and explain the conflict before proceeding.
 
 Only inspect the selected project and files required for this setup. A declared instruction path such as `.memory/` may be read when the project's rules require it. Do not browse unrelated hidden directories or open secrets, credentials, environment files, or unrelated files.
 
@@ -32,7 +36,7 @@ When Node is missing or too old, explain the need in plain language and ask for 
 
 Run the copied starter's canonical initializer only for the confirmed target: `node ./bin/second-brain.mjs init --target ABSOLUTE_TARGET`.
 
-Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. If the target changes or the plan changes, produce a new plan and discard the old digest.
+Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. Preserve existing loader instructions for manual review, or let the user separately select an empty workspace and produce a fresh plan and digest. Never rename, delete or append managed markers to instructions to bypass rejection. If the target changes or the plan changes, produce a new plan and discard the old digest.
 
 ## 6. Obtain human approval
 
@@ -48,6 +52,6 @@ Report the initializer receipt ID and the verification result. A stale digest, c
 
 ## 8. Draft records and hand off
 
-After successful verification, inspect only evidence already available in the selected project. Draft the editable project records from that evidence: facts, roadmap, decisions, progress, and today's task plan. Mark unknown facts as unknown. Do not invent facts, decisions, deadlines, or verification results.
+After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before its approval gate.
 
-Open or point the user to the installed `Home.md`, explain that it is the dashboard, and offer the first focused outcome. The user owns the draft records after creation. Do not claim authenticated client discovery or universal client compatibility until it has been observed separately.
+On repeated or interrupted setup, inspect the receipt and current installed state, verify, then fill only actual gaps through the same first-use owner. Do not replay completed writes or claim authenticated client discovery or universal client compatibility without separate observed evidence.

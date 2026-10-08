@@ -1,40 +1,29 @@
 # Home
 
-This page is navigation, not a second database. Current values live in the files that own them. Start with one selected project and keep the records small enough to use.
+## Start my first result
 
-## Start here
+> Read Home and First use. Help me agree one small saved result, ask only what is missing, and show the exact plan before edits.
 
-1. Personalize [Facts](01-Projects/Selected-Project/FACTS.md) with the project's goal, scope, constraints, and sources of truth.
-2. Add the first outcome to the [Roadmap](01-Projects/Selected-Project/roadmap.md) with an owner, evidence for done, and a next action.
-3. Record a project choice in [Project decisions](01-Projects/Selected-Project/Decisions.md) when it affects the work.
-4. Choose one outcome in the [Daily task plan](00-Meta/Daily-Task-Plan.md). Keep dated completion evidence in [Progress](01-Projects/Selected-Project/progress.md).
+Follow [First use](03-Resources/Procedures/first-use.md). Undecided? Try learning one idea from a paragraph you supply.
 
-## One project
+## Continue my project
 
-- [Facts](01-Projects/Selected-Project/FACTS.md): values and current constraints.
-- [Roadmap](01-Projects/Selected-Project/roadmap.md): unfinished work, status, next action.
-- [Progress](01-Projects/Selected-Project/progress.md): dated evidence of completed work.
-- [Project decisions](01-Projects/Selected-Project/Decisions.md): decisions that affect this project.
+> Read Home and Context. Recover my saved Next action and its evidence, then help me continue without repeating setup.
 
-## Daily loop
+Follow [Context](03-Resources/Procedures/context.md), then [Close](03-Resources/Procedures/close.md) to save what changed and the next step.
 
-Follow this order for the selected project:
+## Current records
 
-1. **Focus:** choose one outcome in the [Daily task plan](00-Meta/Daily-Task-Plan.md).
-2. **Context:** follow [Context](03-Resources/Procedures/context.md) to read the selected project route and name the next action.
-3. **Do:** work from the [Roadmap](01-Projects/Selected-Project/roadmap.md); use [Capture](03-Resources/Procedures/capture.md) when new work arrives.
-4. **Close:** follow [Close](03-Resources/Procedures/close.md), then record Done, Verified, Open, and Next in [Progress](01-Projects/Selected-Project/progress.md).
-5. **Review:** follow [Review](03-Resources/Procedures/review.md) before a handoff or weekly to compare the records and choose one Next action.
+[Facts](01-Projects/Selected-Project/FACTS.md) · [Roadmap](01-Projects/Selected-Project/roadmap.md) · [Progress](01-Projects/Selected-Project/progress.md) · [Decisions](01-Projects/Selected-Project/Decisions.md)
 
-## Operating route
+Current values live in these owners. Home only points to them.
 
-- [Assistant route](00-Meta/AGENTS.md)
-- [Cross-project decisions](00-Meta/Decisions.md)
+## When a need repeats
 
-## Organise and retain
+[Your extensions](03-Resources/Extensions.md) links your reusable references and methods. Use [Extend](03-Resources/Procedures/extend.md) for a named repeated need after first use.
 
-- [PARA + CODE](03-Resources/PARA-CODE.md)
-- [Areas](02-Areas/Areas.md)
-- [Learning and scaling](03-Resources/Procedures/learning-and-scaling.md)
-- [Archive guide](04-Archives/Projects/Archive-Guide.md)
-- [Daily template](05-Daily/daily-template.md)
+## More
+
+- Daily work: [Focus](00-Meta/Daily-Task-Plan.md), [Capture](03-Resources/Procedures/capture.md), [Review](03-Resources/Procedures/review.md).
+- Maps: [Operating](00-Meta/README.md), [Projects](01-Projects/README.md), [Selected project](01-Projects/Selected-Project/README.md), [Resources](03-Resources/README.md), [Procedures](03-Resources/Procedures/README.md).
+- Reference: [Assistant route](00-Meta/AGENTS.md), [Cross-project decisions](00-Meta/Decisions.md), [PARA + CODE](03-Resources/PARA-CODE.md), [Areas](02-Areas/Areas.md), [Learning and scaling](03-Resources/Procedures/learning-and-scaling.md), [Archive guide](04-Archives/Projects/Archive-Guide.md), [Daily template](05-Daily/daily-template.md).

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -79,4 +79,48 @@ test('a nonempty unmanaged loader warns for manual resolution and preserves the 
   assert.equal(rejected.code, 1);
   assert.match(rejected.stdout, /PLAN_CONFLICT/);
   assert.equal(await readFile(path.join(target, 'AGENTS.md'), 'utf8'), '# Existing project rules\n');
+});
+
+
+test('absent selected target plans without writes and is created only by exact approval', async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-absent-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const target = path.join(root, 'new selected project');
+  const other = path.join(root, 'other selected project');
+  await writeFile(path.join(root, 'existing-note.md'), 'preserve this parent record\n');
+  const before = await readdir(root);
+  const planned = await cli(['init', '--target', target]);
+  assert.equal(planned.code, undefined, planned.stdout);
+  const planDigest = digest(planned.stdout);
+  assert.ok(planDigest);
+  await assert.rejects(stat(target), /ENOENT/);
+  assert.deepEqual(await readdir(root), before);
+  const wrong = await cli(['init', '--target', target, '--apply', '0'.repeat(64)]);
+  assert.equal(wrong.code, 1);
+  await assert.rejects(stat(target), /ENOENT/);
+  assert.deepEqual(await readdir(root), before);
+  const changed = await cli(['init', '--target', other, '--apply', planDigest]);
+  assert.equal(changed.code, 1);
+  await assert.rejects(stat(other), /ENOENT/);
+  assert.deepEqual(await readdir(root), before);
+  const applied = await cli(['init', '--target', target, '--apply', planDigest]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  assert.ok((await stat(target)).isDirectory());
+  const verified = await cli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+  const repeated = await cli(['init', '--target', target]);
+  assert.match(repeated.stdout, /^IDENTICAL\tHome\.md\tundo=none$/m);
+  const noop = await cli(['init', '--target', target, '--apply', digest(repeated.stdout)]);
+  assert.equal(noop.code, undefined, noop.stdout);
+  assert.match(noop.stdout, /No changes/);
+  assert.equal(await readFile(path.join(root, 'existing-note.md'), 'utf8'), 'preserve this parent record\n');
+
+  const empty = path.join(root, 'existing empty project');
+  await mkdir(empty);
+  const emptyPlan = await cli(['init', '--target', empty]);
+  assert.equal(emptyPlan.code, undefined, emptyPlan.stdout);
+  assert.deepEqual(await readdir(empty), []);
+  const emptyApplied = await cli(['init', '--target', empty, '--apply', digest(emptyPlan.stdout)]);
+  assert.equal(emptyApplied.code, undefined, emptyApplied.stdout);
 });
