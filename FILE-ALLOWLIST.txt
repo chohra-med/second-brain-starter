@@ -17,6 +17,7 @@ SECURITY.md
 UPGRADING.md
 VERSION
 bin/second-brain.mjs
+lib/connect.mjs
 lib/installer.mjs
 lib/package-scan.mjs
 package.json
@@ -47,6 +48,7 @@ template/shared-skills/second-brain-context/SKILL.md
 template/shared-skills/second-brain-learning/SKILL.md
 template/shared-skills/second-brain-review/SKILL.md
 test/cli.test.mjs
+test/connect.test.mjs
 test/fixture-v1.2.0.test.mjs
 test/fixtures/unmanaged-loader-crlf.md
 test/fixtures/v1.2.0-install.json
