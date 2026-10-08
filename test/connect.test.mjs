@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
-import { InstallPlanError, applyInstall, planInstall, rollbackReceipt, verifyInstall } from '../lib/installer.mjs';
+import { InstallPlanError, applyInstall, planInstall, rollbackReceipt, stableStringify, verifyInstall } from '../lib/installer.mjs';
 import {
   applyConnect,
   detectHarness,
@@ -177,7 +177,14 @@ let calls = 0;
 await applyConnect({
   manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: cfg.sourceRoot,
   targetPath: cfg.hub, repoPath: cfg.repo, name: cfg.name, approvedDigest: cfg.digest,
-  injectBeforeWrite: async (info) => {
+  injectBetweenTempAndLink: cfg.betweenKill ? async (info) => {
+    calls += 1;
+    if (calls !== cfg.betweenKill) return;
+    writeSync(1, 'KILLED ' + JSON.stringify({ root: info.root, destination: info.destination, kind: info.kind }) + '\\n');
+    try { process.kill(process.pid, 'SIGKILL'); } catch { process.exit(137); }
+    await new Promise(() => {});
+  } : null,
+  injectBeforeWrite: cfg.betweenKill ? null : async (info) => {
     calls += 1;
     if (calls !== cfg.kill) return;
     writeSync(1, 'KILLED ' + JSON.stringify({ root: info.root, destination: info.destination, kind: info.kind }) + '\\n');
@@ -217,6 +224,16 @@ async function manifestFile(w) {
   return file;
 }
 
+const FREE_RUN_CHILD = `
+import { readFileSync, writeSync } from 'node:fs';
+const cfg = JSON.parse(process.env.SB_CFG);
+const { applyConnect } = await import(cfg.module);
+const manifestBytes = readFileSync(cfg.manifest);
+writeSync(1, 'GO\\n');
+await applyConnect({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: cfg.sourceRoot, targetPath: cfg.hub, repoPath: cfg.repo, approvedDigest: cfg.digest });
+writeSync(1, 'DONE\\n');
+`;
+
 const connectModule = pathToFileURL(path.join(realSourceRoot, 'lib', 'connect.mjs')).href;
 const installerModule = pathToFileURL(path.join(realSourceRoot, 'lib', 'installer.mjs')).href;
 
@@ -233,6 +250,42 @@ async function killConnect(w, kill, plan, extra = {}) {
   assertKilled(child, `kill ${kill}`);
   return JSON.parse(child.stdout.match(/KILLED (\{.*\})/)?.[1] ?? 'null');
 }
+
+// Parent-side kill: the child announces GO just before the apply starts, the parent waits a
+// chosen delay and SIGKILLs it from outside, so the kill can land INSIDE any write.
+function parentKill(config, delayMs) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ['--input-type=module', '-e', FREE_RUN_CHILD], { env: { ...process.env, SB_CFG: JSON.stringify(config) }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
+    let out = '';
+    let started = 0;
+    let timer = null;
+    child.stdout.on('data', (chunk) => {
+      out += chunk;
+      if (started === 0 && out.includes('GO')) {
+        started = Date.now();
+        if (delayMs === null) return;
+        timer = setTimeout(() => child.kill('SIGKILL'), delayMs);
+      }
+    });
+    child.on('error', reject);
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      resolve({ done: out.includes('DONE'), killed: signal === 'SIGKILL' || (code !== 0 && !out.includes('DONE')), elapsed: started ? Date.now() - started : 0 });
+    });
+  });
+}
+
+// Re-run a rollback until done: a finished or never-started one answers MISSING_RECEIPT or "nothing to recover".
+async function retryRollback(w, id) {
+  try {
+    return await rollbackReceipt({ targetPath: w.hub, receiptId: id });
+  } catch (error) {
+    assert.ok(error instanceof InstallPlanError && error.code === 'MISSING_RECEIPT', String(error));
+    return null;
+  }
+}
+
+const treeFiles = (inventory) => Object.keys(inventory).filter((key) => inventory[key] !== 'directory');
 
 // Kill the apply at hook position `kill`, then prove: the next plan is INTERRUPTED_CONNECT
 // (never LEGACY, never a silent resume), recovery restores BOTH roots byte for byte,
@@ -252,6 +305,16 @@ async function killProbe(w, kill, before, plan, note) {
   const error = await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `kill ${kill}:`);
   assert.ok(error.message.includes(ids[0]) && error.message.includes('rollbackReceipt'), 'names the pending id and the recovery call');
   await rejects('INTERRUPTED_CONNECT', () => applyConnect({ ...args(w), approvedDigest: plan.digest }), `kill ${kill} apply:`);
+  if (marker.kind === 'pending-clear') {
+    // The receipt is durable: this connect COMMITTED. Recovery only clears the pending record.
+    const result = await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+    assert.equal(result.completed, true, 'recovery reports a completed connect');
+    assert.equal(Object.keys((await snap(w)).repo).filter((key) => before.repo[key] === undefined && !key.endsWith('/')).length > 0, true, 'the staged files are kept');
+    await rejects('ALREADY_CONNECTED', () => planConnect(args(w)));
+    await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+    assert.deepEqual(await snap(w), before, `kill ${kill}: rolling back the committed connect restores both roots`);
+    return;
+  }
   await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
   assert.deepEqual(await snap(w), before, `kill ${kill}: recovery restores both roots byte for byte`);
   await rejects('MISSING_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] }));
@@ -805,7 +868,7 @@ test('apply: creates exactly the planned set in both roots, never touches instal
   assert.equal(connections.connections[result.connectionId].stage, 'STAGED');
 
   const receipt = JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8'));
-  assert.deepEqual(Object.keys(receipt).sort(), ['createdDirectories', 'detection', 'harness', 'hub', 'name', 'operation', 'planDigest', 'receiptId', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
+  assert.deepEqual(Object.keys(receipt).sort(), ['connectionsPreimage', 'createdDirectories', 'detection', 'harness', 'hub', 'name', 'operation', 'planDigest', 'receiptId', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
   assert.equal(receipt.operation, 'connect');
   assert.equal(receipt.receiptId, result.receiptId);
   assert.equal(receipt.repo, w.repo);
@@ -1071,7 +1134,8 @@ async function assertInterruptedThenRecover(w, before, label) {
   assert.ok(error.message.includes(ids[0]));
   assert.deepEqual(await snap(w), after, `${label}: a refused plan writes nothing`);
   await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
-  assert.deepEqual(await snap(w), before, `${label}: recovery restores both roots`);
+  const restored = await snap(w);
+  assert.deepEqual({ hub: changedPaths(before.hub, restored.hub), repo: changedPaths(before.repo, restored.repo) }, { hub: [], repo: [] }, `${label}: recovery restores both roots`);
   return true;
 }
 
@@ -1341,18 +1405,19 @@ test('a rollback interrupted at ANY step by a hook can be retried to completion'
     const afterConnect = { hub: changedPaths(before.hub, after.hub), repo: changedPaths(before.repo, after.repo) };
     assert.deepEqual(caught.leftovers, afterConnect, `step ${step}: leftovers enumerate exactly what is still on disk`);
     // The repository files go first and the receipt last, so the same call can always finish.
-    if (Object.keys(after.hub).some((key) => key === result.receiptPath)) await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    if (pendingIdsIn(after.hub).length > 0) await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `step ${step}:`);
+    await retryRollback(w, result.receiptId);
     assert.deepEqual(await snap(w), before, `step ${step}: the retry completes and restores both roots`);
   }
   assert.ok(completed && failures >= 10, `saw ${failures} failing steps`);
 });
 
-test('a rollback killed for real (SIGKILL) at ANY step can be retried to completion', async (t) => {
+test('a rollback killed for real (SIGKILL) at ANY step leaves INTERRUPTED_CONNECT and can be retried to completion (T05-3)', async (t) => {
   const w = await world(t);
   const before = await snap(w);
   let completedAt = null;
   const seen = [];
-  for (let step = 1; step <= 120 && completedAt === null; step += 1) {
+  for (let step = 0; step <= 300 && completedAt === null; step += 1) {
     const result = await connectNow(w);
     const child = await spawnChild(ROLLBACK_CHILD, { module: installerModule, hub: w.hub, id: result.receiptId, kill: step });
     if (!child.killed) {
@@ -1362,16 +1427,16 @@ test('a rollback killed for real (SIGKILL) at ANY step can be retried to complet
     }
     assertKilled(child, `rollback step ${step}`);
     const mid = await snap(w);
-    seen.push(`step ${step}: ${Object.keys(mid.repo).filter((key) => mid.repo[key] !== 'directory').length} repo files left, receipt ${Object.keys(mid.hub).some((key) => key.startsWith('.second-brain/receipts/'))}`);
-    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    const pendingIds = pendingIdsIn(mid.hub);
+    seen.push(`step ${step}: ${treeFiles(mid.repo).length} repo files left, receipt ${Object.keys(mid.hub).some((key) => key === result.receiptPath)}, pending ${pendingIds.length}`);
+    if (step <= 1) assert.equal(pendingIds.length, 1, `step ${step}: the rollback intent is durable before the first undo step`);
+    if (pendingIds.length > 0) await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `rollback killed at step ${step}:`);
+    await retryRollback(w, result.receiptId);
     assert.deepEqual(await snap(w), before, `rollback killed at step ${step}: the retry restores both roots`);
   }
   assert.ok(completedAt !== null && completedAt > 10, `the loop covered ${completedAt} steps`);
   t.diagnostic(seen.slice(0, 3).concat(seen.slice(-3)).join(' | '));
-});
-
-
-// ---------------------------------------------------------------------------
+});// ---------------------------------------------------------------------------
 // Real hard kills during connect (write-ahead pending record)
 // ---------------------------------------------------------------------------
 
@@ -1402,13 +1467,13 @@ test('a SIGKILL against the REAL vendored harness at the spread of positions (re
   assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', 'file', 'file', 'state', 'receipt', 'pending-clear']);
 });
 
-test('a recovery that is itself killed at ANY step can be run again until it finishes', async (t) => {
+test('a recovery that is itself killed at ANY step can be run again until it finishes, with no residue (T05-2)', async (t) => {
   const w = await world(t);
   const before = await snap(w);
   const plan = await planConnect(args(w));
   let finishedAt = null;
-  for (let step = 1; step <= 120 && finishedAt === null; step += 1) {
-    await rm(rel(w.hub, '.second-brain/connect-pending'), { recursive: true, force: true }); // residue of the previous round
+  let tidied = 0;
+  for (let step = 1; step <= 300 && finishedAt === null; step += 1) {
     await killConnect(w, 12, plan);
     const [pendingId] = pendingIdsIn((await snap(w)).hub);
     const child = await spawnChild(ROLLBACK_CHILD, { module: installerModule, hub: w.hub, id: pendingId, kill: step });
@@ -1418,21 +1483,17 @@ test('a recovery that is itself killed at ANY step can be run again until it fin
       continue;
     }
     assertKilled(child, `recovery step ${step}`);
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      const ids = pendingIdsIn((await snap(w)).hub);
-      const receiptIds = Object.keys((await snap(w)).hub).map((key) => key.match(/^\.second-brain\/receipts\/(tx-[0-9a-f-]{36})\.json$/)?.[1]).filter(Boolean);
-      const target = ids[0] ?? receiptIds.find((id) => id === pendingId);
-      if (!target) break;
-      await rollbackReceipt({ targetPath: w.hub, receiptId: target });
+    let result = null;
+    try {
+      result = await rollbackReceipt({ targetPath: w.hub, receiptId: pendingId });
+    } catch (error) {
+      assert.ok(error instanceof InstallPlanError && error.code === 'MISSING_RECEIPT' && /nothing left to recover|Receipt does not exist/.test(error.message), String(error));
     }
-    // One narrow residue is accepted: killed between removing the pending record and removing
-    // its (empty) folder, nothing is left to point at, so the empty folder stays.
-    const finalTree = await snap(w);
-    const residue = { ...finalTree.hub };
-    if (residue['.second-brain/connect-pending'] === 'directory' && before.hub['.second-brain/connect-pending'] === undefined && !Object.keys(residue).some((key) => key.startsWith('.second-brain/connect-pending/'))) delete residue['.second-brain/connect-pending'];
-    assert.deepEqual({ hub: residue, repo: finalTree.repo }, before, `recovery killed at step ${step}: running it again finishes the job`);
+    if (result?.nothingToRecover) tidied += 1;
+    assert.deepEqual(await snap(w), before, `recovery killed at step ${step}: running it again finishes the job with no leftover file or folder`);
   }
   assert.ok(finishedAt !== null && finishedAt > 10);
+  assert.ok(tidied >= 1, 'a recovery killed after the pending record went reports "nothing to recover" and tidies the empty folder');
 });
 
 test('recovery removes only bytes the transaction wrote: a user-edited file is refused and listed, an absent one is skipped, a second run is safe', async (t) => {
@@ -1563,6 +1624,202 @@ test('when link() is unavailable (ENOTSUP, EXDEV, EPERM) the fallback still neve
     delete after.repo['RULES.md'];
     assert.deepEqual(after, before, `${code}: everything else is rolled back`);
   }
+});
+
+
+// ---------------------------------------------------------------------------
+// Kills INSIDE a write (T05-1, T05-2): the temp file is owned by the transaction
+// ---------------------------------------------------------------------------
+
+test('a SIGKILL between the temp write and the link of EVERY durable file leaves no stray temp after recovery', async (t) => {
+  const w = await world(t);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  let completedAt = null;
+  let sawTemp = 0;
+  for (let kill = 1; kill <= 80 && completedAt === null; kill += 1) {
+    const child = await spawnChild(CONNECT_CHILD, { module: connectModule, manifest: await manifestFile(w), sourceRoot: w.sourceRoot, hub: w.hub, repo: w.repo, digest: plan.digest, betweenKill: kill });
+    if (!child.killed) {
+      completedAt = kill;
+      await rollbackReceipt({ targetPath: w.hub, receiptId: Object.keys((await readConnections({ targetPath: w.hub })).connections)[0] });
+      assert.deepEqual(await snap(w), before);
+      continue;
+    }
+    assertKilled(child, `between ${kill}`);
+    const after = await snap(w);
+    const temps = [...Object.keys(after.hub), ...Object.keys(after.repo)].filter((key) => key.endsWith('.tmp'));
+    assert.equal(temps.length, 1, `kill ${kill}: the kill landed with exactly one temp file on disk (positive control), saw ${temps.join(', ')}`);
+    sawTemp += 1;
+    const ids = pendingIdsIn(after.hub);
+    if (ids.length === 0) {
+      // Killed while writing the pending record itself: nothing else exists; the temp is named by id and tidied by that id.
+      assert.deepEqual(treeFiles(after.repo), [], `kill ${kill}: the repository is untouched`);
+      const stale = (await listPendingConnects({ targetPath: w.hub })).filter((item) => item.kind === 'unlinked-temp');
+      assert.equal(stale.length, 1);
+      assert.equal((await planConnect(args(w))).detection.status, 'NONE', 'nothing but an unlinked temp exists, so the plan is not blocked');
+      const result = await rollbackReceipt({ targetPath: w.hub, receiptId: stale[0].pendingId });
+      assert.equal(result.nothingToRecover, true);
+    } else {
+      await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `kill ${kill}:`);
+      await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+    }
+    assert.deepEqual(await snap(w), before, `kill ${kill}: both roots equal the pre-connect inventory, no temp file, no folder`);
+    const fresh = await connectNow(w);
+    assert.equal(treeFiles((await snap(w)).repo).length, w.harnessFiles.length, 'a fresh connect stages exactly the harness set');
+    await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
+    assert.deepEqual(await snap(w), before);
+  }
+  assert.ok(completedAt !== null && sawTemp >= 10, `covered ${sawTemp} temp-write kills`);
+});
+
+test('a parent-side SIGKILL at randomised moments across the whole real apply: recovery always restores both roots exactly', async (t) => {
+  const w = await realWorld(t);
+  const before = await snap(w);
+  const manifest = await manifestFile(w);
+  let plan = await planConnect(args(w));
+  const config = () => ({ module: connectModule, manifest, sourceRoot: w.sourceRoot, hub: w.hub, repo: w.repo, digest: plan.digest });
+  // Measure the apply duration first (a full, unkilled run), then undo it.
+  const full = await parentKill(config(), null);
+  assert.ok(full.done, 'the measuring run completes');
+  const receiptId = Object.keys((await readConnections({ targetPath: w.hub })).connections)[0];
+  await rollbackReceipt({ targetPath: w.hub, receiptId });
+  assert.deepEqual(await snap(w), before);
+  const duration = Math.max(full.elapsed, 20);
+  const bands = new Map();
+  let kills = 0;
+  let mid = 0;
+  for (let attempt = 0; attempt < 220 && (kills < 60 || mid < 6); attempt += 1) {
+    plan = await planConnect(args(w));
+    const delay = Math.random() * duration * 1.1;
+    const run = await parentKill(config(), delay);
+    kills += 1;
+    const after = await snap(w);
+    const staged = treeFiles(after.repo).length;
+    const band = `${Math.min(3, Math.floor((delay / (duration * 1.1)) * 4)) * 25}-${Math.min(3, Math.floor((delay / (duration * 1.1)) * 4)) * 25 + 25}% of ${duration} ms`;
+    const ids = pendingIdsIn(after.hub);
+    let result = 'nothing to recover';
+    const stale = (await listPendingConnects({ targetPath: w.hub })).filter((item) => item.kind === 'unlinked-temp');
+    for (const item of stale) {
+      await rollbackReceipt({ targetPath: w.hub, receiptId: item.pendingId });
+      result = 'unlinked pending temp tidied';
+    }
+    if (ids.length > 0) {
+      const recovered = await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+      result = recovered.completed ? 'completed connect, rolled back' : 'undone';
+      if (recovered.completed) await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
+    } else {
+      const committed = Object.keys((await readConnections({ targetPath: w.hub })).connections)[0];
+      if (committed) {
+        await rollbackReceipt({ targetPath: w.hub, receiptId: committed });
+        result = run.done ? 'finished before the kill, rolled back' : 'committed just before the kill, rolled back';
+      }
+    }
+    if (staged >= 1 && staged <= 83) mid += 1;
+    // One inert residue exists by construction: a kill after the pending FOLDER was created but
+    // before any record or temp was written leaves an empty folder with no id to recover.
+    const folder = rel(w.hub, '.second-brain/connect-pending');
+    if (before.hub['.second-brain/connect-pending'] === undefined && (await lstat(folder).catch(() => null))?.isDirectory() && (await readdir(folder)).length === 0) {
+      await rm(folder, { recursive: true });
+      result = `${result} (empty pending folder, inert)`;
+    }
+    const identical = JSON.stringify(await snap(w)) === JSON.stringify(before);
+    const row = bands.get(band) ?? { kills: 0, minFiles: Infinity, maxFiles: 0, identical: 0, results: new Set() };
+    row.kills += 1;
+    row.minFiles = Math.min(row.minFiles, staged);
+    row.maxFiles = Math.max(row.maxFiles, staged);
+    row.identical += identical ? 1 : 0;
+    row.results.add(result);
+    bands.set(band, row);
+    assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
+    if (mid <= 3 || kills % 10 === 0) {
+      const fresh = await connectNow(w);
+      assert.equal(treeFiles((await snap(w)).repo).length, 84, 'a fresh connect stages exactly the 84 harness files');
+      await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
+      assert.deepEqual(await snap(w), before);
+    }
+  }
+  t.diagnostic([`${kills} kills, ${mid} landed mid-apply (1..83 repo files)`, ...[...bands].sort().map(([band, row]) => `${band}: ${row.kills} kills, repo files ${row.minFiles}..${row.maxFiles}, ${[...row.results].join(' / ')}, roots identical ${row.identical}/${row.kills}`)].join('\n'));
+  assert.ok(kills >= 60, `${kills} kills`);
+  assert.ok(mid >= 6, `only ${mid} kills landed with 1..83 repo files`);
+});
+
+test('the write-ahead pending record is fsynced before the first repository write, and the connections state and receipt are fsynced too', async (t) => {
+  const w = await world(t);
+  const probe = await open(rel(w.hub, STATE), 'r');
+  const proto = Object.getPrototypeOf(probe);
+  await probe.close();
+  const original = proto.sync;
+  const events = [];
+  proto.sync = async function patched(...rest) {
+    events.push('sync');
+    return original.apply(this, rest);
+  };
+  t.after(() => { proto.sync = original; });
+  const plan = await planConnect(args(w));
+  await applyConnect({ ...args(w), approvedDigest: plan.digest, injectBeforeWrite: async (info) => { events.push(`before:${info.kind}`); } });
+  proto.sync = original;
+  const at = (name) => events.indexOf(name);
+  const syncsBetween = (from, to) => events.slice(at(from), at(to)).filter((event) => event === 'sync').length;
+  const firstRepoWrite = events.findIndex((event, index) => index > at('before:pending') && /^before:(directory|file)$/.test(event));
+  const minimum = isPosix ? 2 : 1; // file and containing directory; Windows cannot fsync a directory
+  assert.ok(at('before:pending') === 0, 'the pending record is the first durable write');
+  assert.ok(events.slice(0, firstRepoWrite).filter((event) => event === 'sync').length >= minimum, `pending record synced before the first repository write: ${events.slice(0, firstRepoWrite).join(',')}`);
+  assert.ok(syncsBetween('before:state', 'before:receipt') >= minimum, 'connections.json synced before the receipt');
+  assert.ok(syncsBetween('before:receipt', 'before:pending-clear') >= minimum, 'receipt synced before the pending record is cleared');
+});
+
+test('foreign names in the pending folder (.DS_Store, Thumbs.db, a stray folder) never block a plan, an apply or the workspace rollback (R05-12)', async (t) => {
+  const w = await world(t);
+  const initId = Object.keys((await snap(w)).hub).map((key) => key.match(/^\.second-brain\/receipts\/(tx-[0-9a-f-]{36})\.json$/)?.[1]).find(Boolean);
+  await put(w.hub, '.second-brain/connect-pending/.DS_Store', 'finder');
+  await put(w.hub, '.second-brain/connect-pending/Thumbs.db', 'explorer');
+  await mkdir(rel(w.hub, '.second-brain/connect-pending/stray-folder'));
+  assert.equal((await planConnect(args(w))).detection.status, 'NONE');
+  assert.deepEqual(await listPendingConnects({ targetPath: w.hub }), []);
+  const result = await connectNow(w);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  const done = await rollbackReceipt({ targetPath: w.hub, receiptId: initId });
+  assert.equal(done.receiptId, initId, 'the workspace init rollback is not blocked by foreign files');
+});
+
+test('an empty or truncated pending record is refused with its absolute path and the words that it can be deleted (R05-14)', async (t) => {
+  for (const content of ['', '{"schemaVersion":1,"pendingId"']) {
+    const w = await world(t);
+    const id = `tx-${randomUUID()}`;
+    await put(w.hub, `.second-brain/connect-pending/${id}.json`, content);
+    const error = await rejects('INVALID_PENDING_CONNECT', () => planConnect(args(w)));
+    assert.ok(error.message.includes(rel(w.hub, `.second-brain/connect-pending/${id}.json`)), error.message);
+    assert.ok(/never parsed was never acted on/.test(error.message) && /can be deleted/.test(error.message));
+    await rm(rel(w.hub, `.second-brain/connect-pending/${id}.json`));
+    assert.equal((await planConnect(args(w))).detection.status, 'NONE');
+  }
+});
+
+test('a connections.json that existed empty before the connect is restored, not deleted, on rollback (R05-16)', async (t) => {
+  const w = await world(t);
+  await put(w.hub, CONNECTIONS, `${stableStringify({ schemaVersion: 1, connections: {} })}\n`);
+  const baseline = await snap(w);
+  const result = await connectNow(w);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), baseline);
+});
+
+test('a stale receipt whose record is gone cannot remove the files of a NEWER connection to the same repository (T05-3)', async (t) => {
+  const w = await world(t);
+  const baseline = await snap(w);
+  const first = await connectNow(w);
+  const oldReceipt = await readFile(rel(w.hub, first.receiptPath));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId });
+  assert.deepEqual(await snap(w), baseline);
+  const second = await connectNow(w);
+  await put(w.hub, first.receiptPath, oldReceipt);
+  const frozen = await snap(w);
+  const error = await rejects('RECEIPT_SUPERSEDED', () => rollbackReceipt({ targetPath: w.hub, receiptId: first.receiptId }));
+  assert.ok(error.message.includes(second.receiptId), 'names the receipt that now owns the files');
+  assert.deepEqual(await snap(w), frozen, 'nothing of the new connection was removed');
+  await rm(rel(w.hub, first.receiptPath));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: second.receiptId });
+  assert.deepEqual(await snap(w), baseline);
 });
 
 // ---------------------------------------------------------------------------
@@ -1699,7 +1956,7 @@ test('compat: a real v1.2.0 install (fixture) is connectable and its installed s
 const FORBIDDEN_ENGINE_PATTERN = /child_process|execFile|\bspawn\b|node:net|\bfetch\(|node:http|node:dgram|node:dns/;
 
 test('the engine has no child_process, network or git invocation (positive control: the pattern fires on planted text)', async () => {
-  assert.ok(FORBIDDEN_ENGINE_PATTERN.test("import { execFile } from 'node:child_process';"), 'control: child_process');
+  assert.ok(FORBIDDEN_ENGINE_PATTERN.test("import { execFile, spawn } from 'node:child_process';"), 'control: child_process');
   assert.ok(FORBIDDEN_ENGINE_PATTERN.test('await fetch(url)'), 'control: fetch');
   const lib = path.join(realSourceRoot, 'lib');
   const names = (await readdir(lib)).filter((name) => name.endsWith('.mjs'));
