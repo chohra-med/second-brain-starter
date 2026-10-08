@@ -17,7 +17,7 @@ const manifestPath = path.join(sourceRoot, 'template-manifest.json');
 const commands = new Set(['init', 'upgrade', 'verify', 'rollback']);
 
 function help() {
-  return `Second Brain Starter 1.1.0
+  return `Second Brain Starter 1.2.0
 
 Usage:
   second-brain init --target /absolute/path [--apply PLAN_DIGEST]

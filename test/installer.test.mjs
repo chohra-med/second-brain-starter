@@ -90,7 +90,7 @@ function assertIcmRoute(meta, skill) {
   assert.match(meta, /For system architecture changes.*use `second-brain-icm` before editing/);
   assert.match(meta, /If native skill invocation is unavailable, manually read/);
   assert.match(meta, /Ordinary note work uses the selected-project route above without loading architecture safeguards/);
-  assert.match(skill, /installed owner `03-Resources\/Procedures\/context\.md`/);
+  assert.match(skill, /The method owner is the bundled `icm-architect` skill/);
 }
 
 test('the ICM contract installs exactly, stays bounded, and rejects missing inputs or evidence', async (t) => {
@@ -105,14 +105,17 @@ test('the ICM contract installs exactly, stays bounded, and rejects missing inpu
   for (const destination of icmDestinations) {
     assert.throws(() => assertIcmProjection({ entries: manifest.entries.filter((entry) => entry.destination !== destination) }, skillHash), /ICM destination set must be exact/);
   }
-  const contract = source.toString('utf8');
+  const contextProcedure = source.toString('utf8');
+  const contract = skill.toString('utf8');
   assertIcmContract(contract);
+  assert.match(contextProcedure, /use the `second-brain-icm` skill/, 'context procedure must point at the bindings skill');
+  assert.doesNotMatch(contextProcedure, /^- Owner: /m, 'the change contract has one home, the bindings skill');
 
   const metaRoute = await readFile(path.join(sourceRoot, 'template/00-Meta/AGENTS.md'), 'utf8');
   assertIcmRoute(metaRoute, skill.toString('utf8'));
   assert.throws(() => assertIcmRoute(metaRoute.replace('use `second-brain-icm` before editing', 'skip maintenance'), skill.toString('utf8')), /AssertionError/);
   assert.throws(() => assertIcmRoute(metaRoute.replace('If native skill invocation is unavailable, manually read', 'No manual route'), skill.toString('utf8')), /AssertionError/);
-  assert.throws(() => assertIcmRoute(metaRoute, skill.toString('utf8').replace('03-Resources/Procedures/context.md', 'missing.md')), /AssertionError/);
+  assert.throws(() => assertIcmRoute(metaRoute, skill.toString('utf8').replace('The method owner is the bundled `icm-architect` skill', 'No method owner')), /AssertionError/);
   const projectPrerequisite = /The selected project's own `AGENTS\.md`, `RULES\.md`, `CONTRIBUTING\.md`, relevant `ai_rules\/`, memory bank, and `README\.md` before diagnosing or changing its files/;
   assert.match(metaRoute, projectPrerequisite, 'selected-project rules must precede project facts');
   assert.ok(metaRoute.search(projectPrerequisite) < metaRoute.indexOf('`01-Projects/Selected-Project/FACTS.md`'));
@@ -132,10 +135,10 @@ test('the ICM contract installs exactly, stays bounded, and rejects missing inpu
   assert.equal(applied.code, undefined, applied.stdout);
   const installed = await readFile(path.join(target, entry.destination));
   assert.deepEqual(installed, source);
-  assertIcmContract(installed.toString('utf8'));
+  assertIcmContract((await readFile(path.join(target, icmDestinations[0]))).toString('utf8'));
   for (const destination of icmDestinations) assert.deepEqual(await readFile(path.join(target, destination)), skill);
   assertIcmRoute(await readFile(path.join(target, '00-Meta/AGENTS.md'), 'utf8'), skill.toString('utf8'));
-  await validateDashboardLinks(contract, path.join(target, '03-Resources/Procedures'), target);
+  await validateDashboardLinks(contextProcedure, path.join(target, '03-Resources/Procedures'), target);
   const installedRoute = await readFile(path.join(target, '.agents/skills/second-brain-context/SKILL.md'), 'utf8');
   assert.equal(installedRoute, route);
   const learningSource = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/learning-and-scaling.md'));
@@ -471,4 +474,150 @@ test('recovery and close require actual artifact evidence and a separate new cha
       check(text);
     }
   }
+});
+
+const bundledMethod = 'icm-architect';
+const bundledMethodSource = `template/shared-skills/${bundledMethod}`;
+const bundledMethodClients = ['.agents', '.claude'];
+// SHA-256 of each file at upstream commit e16cafe6a664dcf6d787a726b452adba77d913f4. The bundle ships unmodified.
+const bundledMethodFiles = new Map([
+  ['LICENSE', 'e13cd56a64956720629206c84499871594585bb3e17b6ef01ccca570cf38ce1d'],
+  ['README.md', '9399c65c911565537e9665b619417573f2cbf46b3cb59428f3bdf8014a81402f'],
+  ['SKILL.md', '8a0d62444f047e84aa02ca1728a5dc3848dd06afa32f9e66bf3225352fe67a38'],
+  ['assets/templates/CLAUDE.md', '4a3b8a05a4469b78b703f2e5593fd977097038fe24c39c7cb7ca5bcf5aea6154'],
+  ['assets/templates/CONTEXT.md', 'edc2c382d7559fa9232e8f93aef1c220d099f940f3668d937c47f9151196f1b2'],
+  ['assets/templates/node.md', '28f94085722ae44f7c0c1483e051e87c4cae8c715afd86976db9b9ae656e8ca5'],
+  ['assets/templates/object.md', '614bf1620533c2b0f48fde415caf3d0158b6b4847b80aa7e992b46a1bb1b1a3a'],
+  ['assets/templates/process.md', '5e2481d15912d813f608e89d2e69e5f8e6c3bd21ebdcf4f7cbee5c4fc1a69433'],
+  ['assets/templates/questionnaire.md', '47eeaa58318f87f443bc3937fcfa8166c6f225c36367698426edc85824980ee6'],
+  ['assets/templates/schema.md', 'be96c82389d9d1d697a9767c601769bac8f71d7734ae8dd6ea4214d3958c40a0'],
+  ['assets/templates/stage-CONTEXT.md', 'c689a6b4207c81f7c83219ef79ca268156841063ec25b686e5c07972822e31e3'],
+  ['references/core.md', '4d1a8a415dc36250f3c0cad002be558d12ef63843396749b81106fbf52e5ba64'],
+  ['references/forms.md', '4a3e68efcb5aac5803f46bebae499975337bc3ab9caf006e73bc32517284c73d'],
+  ['references/reference-integrity.md', '1317824d70edb0db5561914940f3dff83ec706179e6d5d42c8794e9c52e89403'],
+  ['references/system-map.md', 'd8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739'],
+]);
+const installedSkills = [
+  'icm-architect',
+  'second-brain-capture',
+  'second-brain-close',
+  'second-brain-context',
+  'second-brain-icm',
+  'second-brain-learning',
+  'second-brain-review',
+];
+
+function assertBundledMethodProjection(manifest) {
+  const expected = bundledMethodClients.flatMap((client) => [...bundledMethodFiles.keys()].map((file) => `${client}/skills/${bundledMethod}/${file}`)).sort();
+  const entries = manifest.entries.filter((entry) => entry.source.startsWith(`${bundledMethodSource}/`) || entry.destination.includes(`/skills/${bundledMethod}/`));
+  assert.deepEqual(entries.map((entry) => entry.destination).sort(), expected, 'bundled method destination set must be exact');
+  for (const entry of entries) {
+    const file = entry.source.slice(bundledMethodSource.length + 1);
+    assert.deepEqual(entry, { source: entry.source, destination: entry.destination, sha256: bundledMethodFiles.get(file), mergeKind: 'managed-file' }, `bundled method entry differs from upstream: ${entry.destination}`);
+  }
+}
+
+test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into both client skill folders', async (t) => {
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  assertBundledMethodProjection(manifest);
+  for (const client of bundledMethodClients) {
+    for (const file of ['LICENSE', 'SKILL.md']) {
+      const destination = `${client}/skills/${bundledMethod}/${file}`;
+      assert.throws(() => assertBundledMethodProjection({ entries: manifest.entries.filter((entry) => entry.destination !== destination) }), /destination set must be exact/);
+    }
+  }
+  const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
+  assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
+  const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
+  assert.match(readme, /seven local skills/);
+  assert.match(readme, /seven shared skills/);
+  assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
+
+  const license = await readFile(path.join(sourceRoot, bundledMethodSource, 'LICENSE'), 'utf8');
+  assert.match(license, /^MIT License\n\nCopyright \(c\) 2026 Jake Van Clief\n/);
+  const attribution = await readFile(path.join(sourceRoot, 'ATTRIBUTION.md'), 'utf8');
+  for (const required of ['Jake Van Clief', 'https://github.com/RinDig/icm-architect', 'e16cafe6a664dcf6d787a726b452adba77d913f4', 'MIT-licensed', 'copied unmodified', 'arXiv:2603.16021', 'does not imply endorsement']) {
+    assert.ok(attribution.includes(required), `ATTRIBUTION.md is missing: ${required}`);
+  }
+
+  const root = await consumerRoot('second-brain-method-');
+  cleanup(t, root);
+  const target = path.join(root, 'Method Project');
+  await mkdir(target);
+  const planned = await runCli(['init', '--target', target]);
+  const digest = planDigest(planned.stdout);
+  assert.ok(digest, planned.stdout);
+  const applied = await runCli(['init', '--target', target, '--apply', digest]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const { createHash } = await import('node:crypto');
+  for (const client of bundledMethodClients) {
+    for (const [file, upstreamHash] of bundledMethodFiles) {
+      const installed = await readFile(path.join(target, client, 'skills', bundledMethod, ...file.split('/')));
+      assert.deepEqual(installed, await readFile(path.join(sourceRoot, bundledMethodSource, ...file.split('/'))), `${client} ${file}`);
+      assert.equal(createHash('sha256').update(installed).digest('hex'), upstreamHash, `${client} ${file} differs from upstream`);
+    }
+  }
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+});
+
+const loopProcedures = ['capture.md', 'close.md', 'context.md', 'review.md', 'learning-and-scaling.md'];
+const procedureContractHeadings = ['## Inputs', '## Outputs', '## Human check'];
+
+function assertProcedureContract(name, markdown) {
+  let previous = -1;
+  for (const heading of procedureContractHeadings) {
+    const lines = markdown.split('\n');
+    const index = lines.indexOf(heading);
+    assert.ok(index !== -1, `${name} is missing ${heading}`);
+    assert.ok(index > previous, `${name} has ${heading} out of order`);
+    assert.ok(lines.slice(index + 1).find((line) => line.trim() !== '' )?.startsWith('#') === false, `${name} has an empty ${heading}`);
+    previous = index;
+  }
+}
+
+test('each loop procedure states its inputs, outputs and human check', async () => {
+  for (const name of loopProcedures) {
+    const text = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures', name), 'utf8');
+    assertProcedureContract(name, text);
+    for (const heading of procedureContractHeadings) {
+      assert.throws(() => assertProcedureContract(name, text.replace(`${heading}\n`, '')), new RegExp(`${name.replace('.', '\\.')} is missing ${heading}`));
+    }
+  }
+});
+
+const projectTemplateFiles = ['Decisions.md', 'FACTS.md', 'README.md', 'progress.md', 'roadmap.md'];
+// The stamp equals the seed except for one line per file listed here: [seed line, stamp line].
+const projectTemplateDifferences = new Map([
+  ['Decisions.md', [
+    'Keep project decisions here. A choice that affects every project belongs in [cross-project decisions](../../00-Meta/Decisions.md).',
+    'Keep project decisions here. A choice that affects every project belongs in the cross-project decisions record, `00-Meta/Decisions.md`.',
+  ]],
+  ['README.md', ['# Selected project map', '# Project map: [project name]']],
+]);
+
+test('the project template folder ships the five seed project files as a managed stamp', async () => {
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  const entries = manifest.entries.filter((entry) => entry.destination.startsWith('03-Resources/_templates/'));
+  assert.deepEqual(entries.map((entry) => entry.destination).sort(), projectTemplateFiles.map((file) => `03-Resources/_templates/project/${file}`).sort());
+  for (const entry of entries) {
+    assert.equal(entry.source, `template/${entry.destination}`);
+    assert.equal(entry.mergeKind, 'managed-file');
+  }
+  const seeded = manifest.entries.filter((entry) => entry.destination.startsWith('01-Projects/Selected-Project/')).map((entry) => path.posix.basename(entry.destination)).sort();
+  assert.deepEqual(seeded, [...projectTemplateFiles].sort(), 'the stamp must carry every seeded project file');
+  for (const file of projectTemplateFiles) {
+    const seed = await readFile(path.join(sourceRoot, 'template/01-Projects/Selected-Project', file), 'utf8');
+    const stamp = await readFile(path.join(sourceRoot, 'template/03-Resources/_templates/project', file), 'utf8');
+    const [seedLine, stampLine] = projectTemplateDifferences.get(file) ?? [null, null];
+    if (stampLine === null) {
+      assert.equal(stamp, seed, `stamp differs from seed: ${file}`);
+      continue;
+    }
+    assert.equal(stamp.split('\n').filter((line) => line === stampLine).length, 1, `stamp lost its known line: ${file}`);
+    assert.equal(stamp.split('\n').map((line) => (line === stampLine ? seedLine : line)).join('\n'), seed, `stamp differs from seed beyond its known line: ${file}`);
+  }
+  const projectsMap = await readFile(path.join(sourceRoot, 'template/01-Projects/README.md'), 'utf8');
+  assert.match(projectsMap, /\[Project template\]\(\.\.\/03-Resources\/_templates\/project\/README\.md\): a new project is a copy of that folder/);
 });

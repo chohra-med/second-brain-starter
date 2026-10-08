@@ -9,3 +9,18 @@ Run this weekly or before a handoff.
 5. End with one `Next` action.
 
 Use [learning and scaling](learning-and-scaling.md) when a correction is worth keeping.
+
+## Inputs
+
+- Working (this run): the selected project's [roadmap](../../01-Projects/Selected-Project/roadmap.md) and the newest three entries in [progress](../../01-Projects/Selected-Project/progress.md).
+- Reference (every run): the selected project's [facts](../../01-Projects/Selected-Project/FACTS.md) and [decisions](../../01-Projects/Selected-Project/Decisions.md).
+
+## Outputs
+
+- Any repaired row in `01-Projects/Selected-Project/roadmap.md` or conflict noted in `01-Projects/Selected-Project/progress.md`.
+- A confirmed rule in the project's `Decisions.md`, or in `00-Meta/Decisions.md` when it affects several projects.
+- One `Next` action.
+
+## Human check
+
+Read the `Next` action and each conflict the review found. Confirm that no item reads ready while its evidence is missing.

@@ -41,7 +41,8 @@ The starter gives one project:
 
 - one official home for current facts, decisions, roadmap and progress;
 - a `Home.md` dashboard that points to the next useful action;
-- six local skills for context, capture, close, review, learning and ICM;
+- seven local skills: context, capture, close, review, learning, the local ICM bindings and the bundled `icm-architect` method;
+- a project template folder to copy when a second project starts;
 - a safe initializer with plan approval, verification, receipts and rollback;
 - plain Markdown files you can inspect without a private application.
 
@@ -66,7 +67,7 @@ PARA gives each record a home. CODE moves information from capture to finished w
 | Second Brain Starter | Builder AI OS |
 |---|---|
 | Public MIT foundation for one selected project | Paid operating layer for builders |
-| Home dashboard and six shared skills: context, capture, close, review, learning and ICM | Extended dashboards, skills and adapters |
+| Home dashboard and seven shared skills: context, capture, close, review, learning, ICM bindings and the bundled `icm-architect` method | A premium Home page, more skills and adapters |
 | Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
 | Community source updates | Paid product updates and private repository access |
@@ -81,7 +82,7 @@ This is the free Second Brain foundation. It contains PARA, CODE, the one-projec
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.1.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.2.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Manual and recovery setup
 
@@ -130,7 +131,7 @@ The target may already contain your project files. Differing managed files remai
 1. Open the installed `Home.md` in your target. It is the dashboard for the project you will run. The source template is [template/Home.md](template/Home.md); it is not the workspace you will edit.
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
 3. Follow Home's [First use](template/03-Resources/Procedures/first-use.md) route in the installed target. Agree the missing goal and constraints, approve the exact record edits, then approve and finish one small artifact with a check. Preserve existing personalized records. Close the result and start a new chat in that target to recover the next action.
-4. The initializer writes compatible root loader and skill files for supported-client discovery: six skills (context, capture, close, review, learning and ICM) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
+4. The initializer writes compatible root loader and skill files for supported-client discovery: seven skills (context, capture, close, review, learning, `second-brain-icm` and the bundled `icm-architect`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
 5. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
 ### 4. Run the free first loop
@@ -145,7 +146,9 @@ The following links are source-template examples. After initialization, use the 
 
 PARA gives records a home and CODE gives work a direction. Read [PARA + CODE](template/03-Resources/PARA-CODE.md) when you need the definitions.
 
-For system architecture maintenance, use `second-brain-icm` and the existing [context owner](template/03-Resources/Procedures/context.md) before changing rules, skills or context routes. Ordinary notes keep the compact project route. If native invocation is unavailable, manually read the installed skill and its owner; automatic discovery remains unverified.
+For system architecture maintenance, use `second-brain-icm` before changing rules, skills or context routes. It holds this workspace's local bindings and change contract, and it names its method owner: the bundled [`icm-architect`](template/shared-skills/icm-architect/SKILL.md) skill by Jake Van Clief, copied unmodified under its MIT license (see [ATTRIBUTION.md](ATTRIBUTION.md)). Ordinary notes keep the compact project route. If native invocation is unavailable, manually read both installed skill files; automatic discovery remains unverified.
+
+To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. The initializer still seeds one project, `Selected-Project`, and does not rename it.
 
 ## Verify, update, and roll back
 

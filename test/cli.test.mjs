@@ -124,3 +124,14 @@ test('absent selected target plans without writes and is created only by exact a
   const emptyApplied = await cli(['init', '--target', empty, '--apply', digest(emptyPlan.stdout)]);
   assert.equal(emptyApplied.code, undefined, emptyApplied.stdout);
 });
+
+test('the CLI prints the version recorded in VERSION, package.json and the manifest', async () => {
+  const version = (await readFile(path.join(sourceRoot, 'VERSION'), 'utf8')).trim();
+  assert.match(version, /^v\d+\.\d+\.\d+$/);
+  const bare = version.slice(1);
+  assert.equal(JSON.parse(await readFile(path.join(sourceRoot, 'package.json'), 'utf8')).version, bare);
+  assert.equal(JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8')).metadata.templateVersion, bare);
+  const printed = await cli(['--help']);
+  assert.equal(printed.code, undefined, printed.stderr);
+  assert.equal(printed.stdout.split(/\r?\n/)[0], `Second Brain Starter ${bare}`);
+});

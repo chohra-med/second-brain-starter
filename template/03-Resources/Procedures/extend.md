@@ -1,6 +1,6 @@
 # Extend your workspace
 
-Use after first use when you have an actual repeated need and a named input. Follow [Context](context.md), including selected-project rules and the ICM change contract. Read only those owners and the input needed for this extension. Keep facts, work and history in their existing project owners.
+Use after first use when you have an actual repeated need and a named input. Follow [Context](context.md), including selected-project rules, and the change contract in the `second-brain-icm` skill. Read only those owners and the input needed for this extension. Keep facts, work and history in their existing project owners.
 
 ## Choose the smallest addition
 
