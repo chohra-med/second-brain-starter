@@ -1194,8 +1194,7 @@ test('real manifest: connect into an empty repo creates exactly the manifest des
 
 test('real manifest: hostile names render byte-equal to the independent reference for every entry; forbidden names are refused', async (t) => {
   const { harness, sources } = await readRealHarness();
-  for (const name of ['A$&B$$C', 'X{{PROJECT_NAME}}Y', 'has {{DIR}} inside', 'unicode éè 日本', 'two  spaces', "quote's $1 \\1 $` $'"]) {
-    if (name.includes('\\')) continue;
+  for (const name of ['A$&B$$C', 'X{{PROJECT_NAME}}Y', 'has {{DIR}} inside', 'unicode éè 日本', 'two  spaces', "quote's $1 $` $'"]) {
     for (const entry of harness.manifest.entries) {
       const rendered = renderHarnessEntry(harness.entries.find((item) => item.destination === entry.destination), name, harness);
       assert.deepEqual(rendered, referenceRender(harness.manifest, entry, sources.get(entry.destination), name), `${name} :: ${entry.destination}`);
