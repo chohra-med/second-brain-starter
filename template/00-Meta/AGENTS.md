@@ -15,7 +15,7 @@ Read in this order when the files exist:
 6. The three newest entries in `01-Projects/Selected-Project/progress.md`
 7. `00-Meta/Daily-Task-Plan.md` only if today's focus changes the task
 
-`Selected-Project` is the seeded example project. A connected repository keeps its records in `01-Projects/<name>/`, and its code stays in the repository at the path recorded there. This route never scans for repositories: one `connect` per repository, named by the person. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
+`Selected-Project` is the seeded project and stands for the project you are working in: for another project, read the same four records in its folder under `01-Projects/`. Its code stays where it is. This route never scans for repositories; the person names each one. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
 
 Then state: selected root, selected project, files read, current goal, constraints, next useful action, evidence required for done, and any conflict. If a completed progress entry conflicts with an open roadmap item, name the conflict. Do not call the project ready.
 

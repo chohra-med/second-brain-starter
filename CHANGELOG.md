@@ -3,8 +3,7 @@
 ## Unreleased
 
 - Adds a real v1.2.0 install fixture and a test that the current source verifies and upgrades it.
-- Adds a `00-Meta/Profile.md` seed (role, stack, how answers are given, never touch) and a missing-only Profile interview in `first-use.md`. Unknowns stay `Unknown`.
-- Rewords Home, `00-Meta/AGENTS.md`, `01-Projects/README.md` and the context procedure so a connected project is the normal case and `Selected-Project` is the seeded example. Every `Selected-Project` seed stays in the manifest, and an existing v1.x install upgrades without conflicts.
+- Adds a `00-Meta/Profile.md` seed and a missing-only Profile interview in `first-use.md`, and rewords Home, `00-Meta/AGENTS.md`, `01-Projects/README.md` and the context procedure so another project can sit beside the seeded `Selected-Project`; all seeds stay in the manifest, and an upgrade plans a named CONFLICT if you already made your own `00-Meta/Profile.md`.
 
 ## v1.2.0
 

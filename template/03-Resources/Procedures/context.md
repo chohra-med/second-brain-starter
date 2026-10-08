@@ -1,6 +1,6 @@
 # Context
 
-Before working, name the project you are working in (the seeded example or a connected project under `01-Projects/`) and read the route in [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md).
+Before working, name the project you are working in (the seeded `Selected-Project`, or another project folder under `01-Projects/` made by copying the project template) and read the route in [00-Meta/AGENTS.md](../../00-Meta/AGENTS.md).
 
 Return this compact note:
 

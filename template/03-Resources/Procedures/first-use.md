@@ -27,7 +27,9 @@ Read `00-Meta/Profile.md` first. Ask only the questions whose section still says
 - How do you want answers given?
 - What must never be touched (paths or systems)?
 
-Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`. Do not invent a role, stack, preference or boundary. Write `00-Meta/Profile.md` under the same exact-plan approval and preimage rule as the next section. Every later session reads the `Never touch` entries before changing anything.
+Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`. Do not invent a role, stack, preference or boundary. Write `00-Meta/Profile.md` under the same exact-plan approval and preimage rule as the next section. The read order in `00-Meta/AGENTS.md` puts Profile first, so read the `Never touch` entries before changing anything. Do not assume the client loads it automatically.
+
+Do not record credentials, tokens, client names or anything confidential. `Never touch` names paths and areas, not secrets.
 
 ## 3. Approve the exact personalization
 
