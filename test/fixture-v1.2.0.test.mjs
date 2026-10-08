@@ -11,6 +11,22 @@ import { sourceRoot } from './helpers/consumer-cli.mjs';
 // .second-brain/installed-state.json and the init receipt. It was produced by the
 // v1.2.0 CLI, not assembled by hand. The test recomputes every hash from the
 // materialised bytes; it never copies an installed hash into the assertion side.
+//
+// Reproduce it: check out commit 6fc244e9b72ba4beab3d57fe2676883b4b25e624 (VERSION
+// v1.2.0) of chohra-med/second-brain-starter, then with a neutral absolute path P
+// (for example /tmp/second-brain-fixture/target, never a home directory):
+//   node ./bin/second-brain.mjs init --target P                       (prints the plan digest)
+//   node ./bin/second-brain.mjs init --target P --apply <plan digest>
+//   node ./bin/second-brain.mjs verify --target P                     (must print "Verification: OK")
+// and snapshot every regular file under P: the 74 managed files, the installed state
+// and the single receipt under .second-brain/receipts/. Two such runs differ ONLY in
+// planDigest, transactionId, writeSetDigest, the receiptId (and so the receipt file
+// name and its planDigest) and the state write's postimageSha256 in the receipt. The
+// tests below must not depend on any of those values. The v1.2.0 manifest bytes are
+// pinned by PINNED_MANIFEST_SHA256 so the fixture cannot drift from the real release.
+
+// sha256 of `git show 6fc244e:template-manifest.json`, pasted from that command.
+const PINNED_MANIFEST_SHA256 = 'e40baf119b921df58a5178aae37394b44813d4e5495961ddb0970da174c9d7c4';
 
 const STATE_KEYS = ['edition', 'managedPaths', 'manifestSha256', 'operation', 'planDigest', 'publicDependency', 'schemaVersion', 'templateVersion', 'transactionId', 'writeSetDigest'];
 const STATE_PATH = '.second-brain/installed-state.json';
@@ -87,12 +103,19 @@ test('the fixture regenerates byte-identical v1.2.0 records and is internally co
   for (const write of fixture.receipt.writes.filter((item) => item.destination !== STATE_PATH)) {
     assert.equal(write.postimageSha256, sha256(await readFile(rel(target, write.destination))), `receipt postimage mismatch: ${write.destination}`);
   }
+  assert.equal(sha256(Buffer.from(fixture.manifestBytes, 'utf8')), PINNED_MANIFEST_SHA256);
   assert.equal(sha256(Buffer.from(fixture.manifestBytes, 'utf8')), fixture.manifestSha256);
+  // Anchored to the real release: the files are exactly what the pinned v1.2.0 manifest declares.
+  const declared = JSON.parse(fixture.manifestBytes).entries;
+  assert.deepEqual(Object.keys(fixture.files).sort(), declared.map((entry) => entry.destination).sort());
+  for (const entry of declared) {
+    assert.equal(sha256(await readFile(rel(target, entry.destination))), entry.sha256, `file differs from the v1.2.0 manifest: ${entry.destination}`);
+  }
   assert.equal(state.manifestSha256, fixture.manifestSha256);
   assert.equal(state.templateVersion, '1.2.0');
 });
 
-test('the v1.2.0 installed-state schema keeps exactly its ten keys (guards D14)', async () => {
+test('the committed v1.2.0 state record has exactly its ten keys (fixture shape only; the engine side is asserted after the upgrade apply)', async () => {
   const state = JSON.parse(JSON.stringify(fixture.state));
   assert.deepEqual(Object.keys(state).sort(), STATE_KEYS);
   assert.equal(state.schemaVersion, 1);
@@ -152,8 +175,9 @@ test('the current source plans an upgrade of the v1.2.0 install with zero CONFLI
 
   assert.deepEqual(plan.entries.filter((entry) => entry.status === 'CONFLICT').map((entry) => entry.destination), []);
   const manifestDestinations = new Set(current.manifest.entries.map((entry) => entry.destination));
+  // D15: no manifest path is removed this release. A removal must be a conscious edit of this line.
   const dropped = Object.keys(fixture.state.managedPaths).filter((destination) => !manifestDestinations.has(destination));
-  assert.deepEqual(dropped.filter((d) => byDestination.get(d) !== 'DEPRECATED'), []);
+  assert.deepEqual(dropped, []);
   for (const destination of Object.keys(fixture.state.managedPaths).filter((d) => manifestDestinations.has(d))) {
     assert.equal(['IDENTICAL', 'MANAGED-UPDATE', 'PERSONALIZED'].includes(byDestination.get(destination)), true, `${byDestination.get(destination)} ${destination}`);
   }
@@ -197,6 +221,9 @@ test('an upgrade from a newer source updates managed files, keeps edits safe, an
   assert.equal(applied.applied, true);
   assert.equal((await readFile(rel(target, probe))).equals(next), true);
   assert.equal((await verifyInstall({ ...newer, targetPath: target })).ok, true);
+  const engineState = await readState(target);
+  assert.deepEqual(Object.keys(engineState).sort(), STATE_KEYS, 'the engine-written state must keep exactly the v1.2.0 keys');
+  assert.equal(engineState.schemaVersion, 1);
 
   await rollbackReceipt({ targetPath: target, receiptId: applied.receiptId });
   assert.deepEqual(await hashTree(target, Object.keys(fixture.files)), before);
@@ -204,6 +231,20 @@ test('an upgrade from a newer source updates managed files, keeps edits safe, an
   const restored = await verifyInstall({ manifest: pristine.manifest, manifestBytes: pristine.manifestBytes, sourceRoot: pristine.root, targetPath: target });
   assert.deepEqual(restored.issues, []);
   assert.equal(restored.ok, true);
+  // The original v1.2.0 receipt is rollback-able again once the upgrade is undone.
+  const original = await rollbackReceipt({ targetPath: target, receiptId: fixture.receipt.receiptId });
+  assert.equal(original.rolledBackPaths.length, Object.keys(fixture.files).length + 1);
+  await assert.rejects(readFile(rel(target, STATE_PATH)), { code: 'ENOENT' });
+});
+
+test('the original v1.2.0 init receipt rolls back with the current engine', async (t) => {
+  const target = await materialise(t);
+  const result = await rollbackReceipt({ targetPath: target, receiptId: fixture.receipt.receiptId });
+  assert.equal(result.receiptId, fixture.receipt.receiptId);
+  assert.deepEqual([...result.rolledBackPaths].sort(), [...Object.keys(fixture.files), STATE_PATH].sort());
+  for (const destination of [...Object.keys(fixture.files), STATE_PATH, fixture.receiptPath]) {
+    await assert.rejects(readFile(rel(target, destination)), { code: 'ENOENT' }, `still present after rollback: ${destination}`);
+  }
 });
 
 test('a hand edit of a managed file that the newer source also changes is a named CONFLICT', async (t) => {
