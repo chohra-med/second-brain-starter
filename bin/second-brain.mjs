@@ -9,8 +9,16 @@ import {
   applyInstall,
   planInstall,
   rollbackReceipt,
+  sha256,
   verifyInstall,
 } from '../lib/installer.mjs';
+import {
+  RECEIPT_ID_PATTERN,
+  USAGE_LINES,
+  clip,
+  parseArguments,
+  usageError,
+} from '../lib/cli-arguments.mjs';
 import {
   applyConnect,
   detectHarness,
@@ -21,11 +29,41 @@ import {
 
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(sourceRoot, 'template-manifest.json');
-const commands = new Set(['init', 'upgrade', 'connect', 'verify', 'rollback']);
-const FLAGS = ['--target', '--apply', '--receipt', '--repo', '--name'];
+const SCRIPT = path.resolve(fileURLToPath(import.meta.url));
 const ROOT_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md', 'RULES.md'];
-const RECEIPT_ID_PATTERN = /tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+const HARNESS_RECEIPT = '.claude/agents/.init-synthesis.json';
+const RECEIPT_IDS_IN_TEXT = /tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 const DERIVED_TEMP_PATTERN = /^\.(tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json\.second-brain-\1\.tmp$/;
+const STATE_TEMP_PATTERN = /^\.[A-Za-z0-9_.-]+\.second-brain-(tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.tmp$/;
+const CHANGED_SENTENCE = 'CHANGED: some files this connect wrote are missing or differ now. You can roll the connection back, or keep the files as they are.';
+const LABEL_SENTENCES = {
+  STAGED: 'STAGED: the harness files this connect wrote are present and unchanged, and the repository is waiting for /sdd init.',
+  INITIALISED: 'INITIALISED: the repository has its harness receipt, .claude/agents/.init-synthesis.json.',
+  MISSING: 'MISSING: the repository folder is not at the path the connection recorded.',
+  CHANGED: CHANGED_SENTENCE,
+  REGISTERED: 'REGISTERED: this repository was registered without writing files into it; its harness state is read from disk now.',
+  UNREADABLE: 'UNREADABLE: verify could not read this repository safely.',
+};
+
+// Every printed command is built here, once. Words that are not plain are double-quoted; each flag is
+// emitted at most once; the script is the absolute path of this file, so the command runs from any folder.
+function word(value) {
+  const text = String(value);
+  const plain = process.platform === 'win32' ? /^[A-Za-z0-9_.\\/:~-]+$/ : /^[A-Za-z0-9_./:-]+$/;
+  if (plain.test(text)) return text;
+  if (process.platform === 'win32') return `"${text.replace(/"/g, '\\"')}"`;
+  return `"${text.replace(/(["\\$`])/g, '\\$1')}"`;
+}
+
+function cliCommand(subcommand, { target, repo, name, receipt, apply } = {}) {
+  const parts = ['node', word(SCRIPT), subcommand];
+  if (target !== undefined) parts.push('--target', word(target));
+  if (repo !== undefined) parts.push('--repo', word(repo));
+  if (name !== undefined) parts.push('--name', word(name));
+  if (receipt !== undefined) parts.push('--receipt', word(receipt));
+  if (apply !== undefined) parts.push('--apply', word(apply));
+  return parts.join(' ');
+}
 
 function help() {
   return `Second Brain Starter 1.2.0
@@ -43,54 +81,8 @@ supplies that exact digest. Differing files are conflicts; --force is not
 available in V1.
 
 connect stages Spec Harness into the named repository and registers it here; it never runs git. Files it creates are uncommitted; your team decides whether they go in by pull request.
-Run one connect at a time per workspace; two running together can fail one of them with a missing-file error.`;
-}
-
-function usageError(message, code = 'USAGE') {
-  const error = new Error(message);
-  error.code = code;
-  return error;
-}
-
-function parseArguments(argv) {
-  if (argv.length === 0 || argv.includes('--help') || argv.includes('-h')) return { help: true };
-  const [command, ...rest] = argv;
-  if (!commands.has(command)) throw usageError(`Unknown command: ${command}`);
-  const values = {};
-  for (let index = 0; index < rest.length; index += 2) {
-    const flag = rest[index];
-    const value = rest[index + 1];
-    if (!FLAGS.includes(flag) || value === undefined || Object.hasOwn(values, flag)) {
-      throw usageError(`Invalid arguments for ${command}.`);
-    }
-    values[flag] = value;
-  }
-  if (!values['--target'] || !path.isAbsolute(values['--target'])) {
-    throw usageError('An explicit absolute --target path is required.');
-  }
-  if (command === 'rollback') {
-    if (!values['--receipt'] || values['--apply']) throw usageError('rollback requires --receipt and does not accept --apply.');
-  } else if (values['--receipt']) {
-    throw usageError(`${command} does not accept --receipt.`);
-  }
-  if (command === 'connect') {
-    if (!values['--repo']) throw usageError('connect requires --repo with an absolute path to the repository.');
-    if (!path.isAbsolute(values['--repo'])) throw usageError('An explicit absolute --repo path is required.');
-  } else {
-    if (Object.hasOwn(values, '--repo')) throw usageError(`${command} does not accept --repo.`);
-    if (Object.hasOwn(values, '--name')) throw usageError(`${command} does not accept --name.`);
-  }
-  if (!['init', 'upgrade', 'connect'].includes(command) && values['--apply']) {
-    throw usageError(`${command} does not accept --apply.`);
-  }
-  return {
-    command,
-    targetPath: values['--target'],
-    approvedDigest: values['--apply'] ?? null,
-    receiptId: values['--receipt'] ?? null,
-    repoPath: values['--repo'] ?? null,
-    name: values['--name'] ?? null,
-  };
+Run one connect at a time per workspace; two running together can fail one of them with a missing-file error.
+Commands this CLI prints use the absolute path of this script, so they run from any folder.`;
 }
 
 async function source() {
@@ -144,9 +136,10 @@ function detectionLine(detection) {
   return `Detection: ${detection.status}${evidence}`;
 }
 
+// The reason a person reads never uses the engine's internal code word; the detection line carries it.
 function registerOnlyReason(detection) {
-  if (detection.status === 'INITIALISED') return 'the harness receipt .claude/agents/.init-synthesis.json exists.';
-  return 'harness files exist without a receipt; this may be an older or partial install; nothing is written into the repository; run the harness\'s own migrate guidance inside it if you want to upgrade it.';
+  if (detection.status === 'INITIALISED') return `the harness receipt ${HARNESS_RECEIPT} exists.`;
+  return 'this repository already has Spec Harness files, so connect will only register it and will not write into it. If a teammate added the harness, that is expected. If /sdd commands do not work there, run /sdd init inside that repository.';
 }
 
 function printConnectPlan(plan) {
@@ -192,6 +185,7 @@ function printConnectPlan(plan) {
   }
   output.write(`Harness: spec-harness ${plan.harness.harnessVersion} at ${plan.harness.commit}\n`);
   output.write(`Plan digest: ${plan.digest}\n`);
+  output.write(`Apply this exact plan with: ${cliCommand('connect', { target: plan.hub, repo: plan.repo, name: plan.name, apply: plan.digest })}\n`);
 }
 
 function printConnectHandoff(plan, receiptId) {
@@ -199,12 +193,12 @@ function printConnectHandoff(plan, receiptId) {
   if (plan.detection.status === 'NONE') {
     lines.push(
       'Status: STAGED',
-      `Next: open ${plan.repo} in your client and run /sdd init there. The repository is STAGED until .claude/agents/.init-synthesis.json exists.`,
+      `Next: open ${plan.repo} in your client and run /sdd init there. The repository is STAGED until ${HARNESS_RECEIPT} exists.`,
     );
   } else if (plan.detection.status === 'INITIALISED') {
     lines.push('Status: INITIALISED, registered', 'Next: no repository file was written. Open the repository in your client as usual.');
   } else {
-    lines.push('Status: LEGACY, registered', 'Next: no repository file was written. To upgrade an older install, run the harness\'s own migrate guidance inside the repository.');
+    lines.push('Status: LEGACY, registered', 'Next: no repository file was written. If /sdd commands do not work in this repository, run /sdd init inside it.');
   }
   lines.push(`Record: ${path.join(plan.hub, '01-Projects', plan.name, 'Connection.md')}`);
   if (plan.detection.status === 'NONE') {
@@ -214,15 +208,41 @@ function printConnectHandoff(plan, receiptId) {
   }
   lines.push('Optional: spec-harness index needs Python 3.11 or newer and does not run on native Windows. See vendor/spec-harness/docs/GETTING-STARTED.md in the starter copy.');
   output.write(`${lines.join('\n')}\n`);
+  const preserved = plan.entries.filter((entry) => entry.status === 'PRESERVED' && entry.root === 'repo' && ROOT_INSTRUCTION_FILES.includes(entry.destination));
+  if (preserved.length > 0) {
+    output.write(`\nAdd this block by hand to the preserved ${preserved.map((entry) => entry.destination).join(' or ')} so your client loads the harness:\n\n`);
+    output.write(plan.loaderBlock);
+    output.write('The harness is not loaded by your client until you add that block.\n');
+  }
+}
+
+// connect owns its prompt: Ctrl-C, end of input and a broken prompt are all a cancel, so the terminal run says
+// "Plan not applied." and exits 1 instead of ending silently. init keeps its own prompt, unchanged.
+async function approvalForConnect(plan, suppliedDigest) {
+  if (!input.isTTY || !output.isTTY) return suppliedDigest;
+  if (suppliedDigest) throw usageError('Use the terminal prompt for approval; --apply is for non-interactive use.');
+  const prompt = createInterface({ input, output, terminal: true });
+  const cancelled = new Promise((resolve) => {
+    prompt.once('SIGINT', () => resolve(null));
+    prompt.once('close', () => resolve(null));
+  });
+  try {
+    return await Promise.race([prompt.question('Type the exact plan digest to apply, or press Enter to cancel: '), cancelled]) ?? null;
+  } catch {
+    return null;
+  } finally {
+    prompt.close();
+  }
 }
 
 async function runConnect({ targetPath, repoPath, name, approvedDigest }) {
   const payload = await source();
   const plan = await planConnect({ ...payload, targetPath, repoPath, name });
   printConnectPlan(plan);
-  const approved = await confirmInteractive(plan, approvedDigest);
+  const approved = await approvalForConnect(plan, approvedDigest);
   if (!approved) {
     output.write('Plan not applied.\n');
+    if (input.isTTY && output.isTTY) process.exitCode = 1;
     return;
   }
   if (approved !== plan.digest) throw usageError('Plan digest did not match. No files were changed.', 'PLAN_DIGEST_MISMATCH');
@@ -231,82 +251,7 @@ async function runConnect({ targetPath, repoPath, name, approvedDigest }) {
 }
 
 // ---------------------------------------------------------------------------
-// verify
-// ---------------------------------------------------------------------------
-
-// The files a connect staged are harness files without a receipt, which the engine's detection reads as LEGACY.
-// So a connection whose own staged files are all still present, and that has no receipt yet, is STAGED.
-async function stagedFilesStillPresent(targetPath, record) {
-  const receipt = await readJsonOrNull(receiptFileFor(targetPath, record.connectionId));
-  if (!receipt || !Array.isArray(receipt.writes)) return false;
-  for (const write of receipt.writes.filter((item) => item.root === 'repo')) {
-    const stat = await lstat(path.join(record.repo, ...write.destination.split('/'))).catch(() => null);
-    if (!stat?.isFile()) return false;
-  }
-  return true;
-}
-
-async function connectionStatus(targetPath, record) {
-  const stat = await lstat(record.repo).catch(() => null);
-  if (stat?.isSymbolicLink()) return 'UNREADABLE (SYMLINK_PATH)';
-  if (!stat || !stat.isDirectory()) return 'MISSING';
-  try {
-    const { status } = await detectHarness({ repoReal: record.repo });
-    if (status === 'NONE') return 'STAGED';
-    if (status === 'LEGACY' && record.stage === 'STAGED' && await stagedFilesStillPresent(targetPath, record)) return 'STAGED';
-    return status;
-  } catch (error) {
-    if (error instanceof InstallPlanError) return `UNREADABLE (${error.code})`;
-    throw error;
-  }
-}
-
-// Inert leftovers the engine clears on the next approved connect, rollback or recovery. Listed, never removed here.
-async function inertResidueLines(targetPath) {
-  const lines = [];
-  const pendingFolder = path.join(targetPath, '.second-brain', 'connect-pending');
-  const pendingStat = await lstat(pendingFolder).catch(() => null);
-  if (pendingStat?.isDirectory() && (await readdir(pendingFolder)).length === 0) {
-    lines.push('RESIDUE\t.second-brain/connect-pending/\tan empty folder left by an interrupted connect; the next approved connect, a rollback or a recovery removes it.');
-  }
-  const receiptFolder = path.join(targetPath, '.second-brain', 'receipts');
-  const receiptStat = await lstat(receiptFolder).catch(() => null);
-  if (receiptStat?.isDirectory()) {
-    for (const name of (await readdir(receiptFolder)).sort()) {
-      if (DERIVED_TEMP_PATTERN.test(name)) {
-        lines.push(`RESIDUE\t.second-brain/receipts/${name}\tthe temporary copy of a receipt left by an interrupted connect; the next approved connect or a rollback clears it.`);
-      }
-    }
-  }
-  return lines;
-}
-
-async function runVerify(targetPath) {
-  const payload = await source();
-  const result = await verifyInstall({ ...payload, targetPath });
-  for (const entry of result.entries) output.write(`${entry.status}\t${entry.destination}\n`);
-  for (const issue of result.issues) output.write(`${issue.code}\t${issue.path}\t${issue.message}\n`);
-  const connections = Object.values((await readConnections({ targetPath })).connections).sort((left, right) => left.name.localeCompare(right.name));
-  for (const record of connections) {
-    output.write(`CONNECTION\t${record.name}\t${record.repo}\t${await connectionStatus(targetPath, record)}\n`);
-  }
-  let blocked = false;
-  for (const item of await listPendingConnects({ targetPath })) {
-    if (item.kind === 'pending') {
-      blocked = true;
-      output.write(`PENDING\t${item.pendingId}\t${item.name}\t${item.repo}\tinterrupted connect; recover with: node ./bin/second-brain.mjs rollback --target ${targetPath} --receipt ${item.pendingId}\n`);
-    } else {
-      output.write(`RESIDUE\t.second-brain/connect-pending/.${item.pendingId}.json.second-brain-${item.pendingId}.tmp\tthe first write of an interrupted connect; the next approved connect, a rollback or a recovery clears it.\n`);
-    }
-  }
-  for (const line of await inertResidueLines(targetPath)) output.write(`${line}\n`);
-  const ok = result.ok && !blocked;
-  output.write(ok ? 'Verification: OK\n' : 'Verification: FAILED\n');
-  if (!ok) process.exitCode = 1;
-}
-
-// ---------------------------------------------------------------------------
-// rollback (receipts and interrupted connects)
+// verify: states read from disk, read-only
 // ---------------------------------------------------------------------------
 
 async function readJsonOrNull(filePath) {
@@ -320,6 +265,116 @@ async function readJsonOrNull(filePath) {
 const receiptFileFor = (targetPath, id) => path.join(targetPath, '.second-brain', 'receipts', `${id}.json`);
 const pendingFileFor = (targetPath, id) => path.join(targetPath, '.second-brain', 'connect-pending', `${id}.json`);
 
+async function stagedState(targetPath, record) {
+  const receipt = await readJsonOrNull(receiptFileFor(targetPath, record.connectionId));
+  if (!receipt || !Array.isArray(receipt.writes)) {
+    return { label: 'CHANGED', lines: ['The receipt for this connection is missing, so its staged files cannot be checked.'] };
+  }
+  const problems = [];
+  let missing = 0;
+  let differ = 0;
+  for (const write of receipt.writes.filter((item) => item.root === 'repo')) {
+    const file = path.join(record.repo, ...write.destination.split('/'));
+    const stat = await lstat(file).catch(() => null);
+    if (!stat?.isFile()) {
+      missing += 1;
+      problems.push(write.destination);
+    } else if (sha256(await readFile(file)) !== write.postimageSha256) {
+      differ += 1;
+      problems.push(write.destination);
+    }
+  }
+  if (problems.length === 0) return { label: 'STAGED' };
+  return {
+    label: 'CHANGED',
+    lines: [
+      `CHANGED: ${missing} staged files missing, ${differ} differ; first: ${problems.slice(0, 3).join(', ')}`,
+      `To roll the connection back: ${cliCommand('rollback', { target: targetPath, receipt: record.connectionId })}`,
+    ],
+  };
+}
+
+// The ruled order: missing folder; harness receipt present; staged and intact; staged but changed; registered only.
+async function connectionState(targetPath, record) {
+  const stat = await lstat(record.repo).catch(() => null);
+  if (stat?.isSymbolicLink()) return { label: 'UNREADABLE', text: 'UNREADABLE (SYMLINK_PATH)' };
+  if (!stat || !stat.isDirectory()) return { label: 'MISSING' };
+  if ((await lstat(path.join(record.repo, ...HARNESS_RECEIPT.split('/'))).catch(() => null))?.isFile()) return { label: 'INITIALISED' };
+  if (record.stage === 'STAGED') return stagedState(targetPath, record);
+  try {
+    const { status } = await detectHarness({ repoReal: record.repo });
+    return { label: 'REGISTERED', text: status === 'NONE' ? 'REGISTERED (now: no harness files found)' : 'REGISTERED (now: harness present)' };
+  } catch (error) {
+    if (error instanceof InstallPlanError) return { label: 'UNREADABLE', text: `UNREADABLE (${error.code})` };
+    throw error;
+  }
+}
+
+async function runVerify(targetPath) {
+  const payload = await source();
+  const result = await verifyInstall({ ...payload, targetPath });
+  for (const entry of result.entries) output.write(`${entry.status}\t${entry.destination}\n`);
+  for (const issue of result.issues) output.write(`${issue.code}\t${issue.path}\t${issue.message}\n`);
+  const connections = Object.values((await readConnections({ targetPath })).connections).sort((left, right) => left.name.localeCompare(right.name));
+  const printedLabels = new Set();
+  for (const record of connections) {
+    const state = await connectionState(targetPath, record);
+    output.write(`CONNECTION\t${record.name}\t${record.repo}\t${state.text ?? state.label}\n`);
+    for (const line of state.lines ?? []) output.write(`  ${line}\n`);
+    if (!printedLabels.has(state.label)) {
+      printedLabels.add(state.label);
+      output.write(`  ${LABEL_SENTENCES[state.label]}\n`);
+    }
+  }
+  let blocked = false;
+  const pendingIds = new Set();
+  for (const item of await listPendingConnects({ targetPath })) {
+    if (item.kind === 'pending') {
+      blocked = true;
+      pendingIds.add(item.pendingId);
+      output.write(`PENDING\t${item.pendingId}\t${item.name}\t${item.repo}\tinterrupted connect; recover with: ${cliCommand('rollback', { target: targetPath, receipt: item.pendingId })}\n`);
+    } else {
+      output.write(`RESIDUE\t.second-brain/connect-pending/.${item.pendingId}.json.second-brain-${item.pendingId}.tmp\tthe first write of an interrupted connect; the next approved connect, a rollback or a recovery clears it.\n`);
+    }
+  }
+  for (const line of await inertResidueLines(targetPath, pendingIds)) output.write(`${line}\n`);
+  const ok = result.ok && !blocked;
+  output.write(ok ? 'Verification: OK\n' : 'Verification: FAILED\n');
+  if (!ok) process.exitCode = 1;
+}
+
+// Inert leftovers the engine clears on the next approved connect, rollback or recovery. Listed, never removed here.
+async function inertResidueLines(targetPath, livePendingIds) {
+  const lines = [];
+  const pendingFolder = path.join(targetPath, '.second-brain', 'connect-pending');
+  const pendingStat = await lstat(pendingFolder).catch(() => null);
+  if (pendingStat?.isDirectory() && (await readdir(pendingFolder)).length === 0) {
+    lines.push('RESIDUE\t.second-brain/connect-pending/\tan empty folder left by an interrupted connect; the next approved connect, a rollback or a recovery removes it.');
+  }
+  const receiptFolder = path.join(targetPath, '.second-brain', 'receipts');
+  if ((await lstat(receiptFolder).catch(() => null))?.isDirectory()) {
+    for (const name of (await readdir(receiptFolder)).sort()) {
+      if (DERIVED_TEMP_PATTERN.test(name)) {
+        lines.push(`RESIDUE\t.second-brain/receipts/${name}\tthe temporary copy of a receipt left by an interrupted connect; the next approved connect or a rollback clears it.`);
+      }
+    }
+  }
+  const stateFolder = path.join(targetPath, '.second-brain');
+  if ((await lstat(stateFolder).catch(() => null))?.isDirectory()) {
+    for (const name of (await readdir(stateFolder)).sort()) {
+      const match = name.match(STATE_TEMP_PATTERN);
+      if (match && !livePendingIds.has(match[1])) {
+        lines.push(`RESIDUE\t.second-brain/${name}\tan unfinished copy of a connection state file left by an interrupted connect; the next approved connect, a rollback or a recovery clears it.`);
+      }
+    }
+  }
+  return lines;
+}
+
+// ---------------------------------------------------------------------------
+// rollback (receipts and interrupted connects)
+// ---------------------------------------------------------------------------
+
 async function runRollback({ targetPath, receiptId }) {
   const receipt = await readJsonOrNull(receiptFileFor(targetPath, receiptId));
   const result = await rollbackReceipt({ targetPath, receiptId });
@@ -329,7 +384,7 @@ async function runRollback({ targetPath, receiptId }) {
     } else if (result.completed) {
       output.write(`Interrupted connect ${receiptId} had already finished. Its receipt and connection record were kept; only its pending marker was cleared.\n`);
       output.write('Nothing was removed. The repository stays connected.\n');
-      output.write(`Next: node ./bin/second-brain.mjs verify --target ${targetPath} lists the connection.\n`);
+      output.write(`Next: ${cliCommand('verify', { target: targetPath })}\n`);
     } else {
       output.write(`Recovered interrupted connect ${receiptId}: the files it had written were removed, so both roots are back to their state before the connect. Nothing was committed.\n`);
       output.write('Next: run connect again when you are ready; it prints a new plan.\n');
@@ -347,7 +402,7 @@ async function runRollback({ targetPath, receiptId }) {
 }
 
 // ---------------------------------------------------------------------------
-// Plain-words refusals. Every engine code that a person can meet is translated here;
+// Plain-words refusals. Every engine code a person can meet is translated here;
 // anything else keeps the engine's own `CODE: message` line.
 // ---------------------------------------------------------------------------
 
@@ -359,10 +414,17 @@ async function pendingIds(targetPath) {
   }
 }
 
-async function connectionFolderFor(targetPath, id) {
+async function connectionFor(targetPath, id) {
   try {
-    const record = (await readConnections({ targetPath })).connections[id];
-    return record ? record.name : null;
+    return (await readConnections({ targetPath })).connections[id] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function connectionForRepository(targetPath, repoPath) {
+  try {
+    return Object.values((await readConnections({ targetPath })).connections).find((record) => record.repo === repoPath) ?? null;
   } catch {
     return null;
   }
@@ -372,51 +434,56 @@ async function explain(error, context) {
   const code = error?.code;
   const message = error?.message ?? String(error);
   const hub = context.targetPath;
-  const cmd = (args) => `node ./bin/second-brain.mjs ${args}`;
+  const repo = context.repoPath ?? '<repository path>';
+  // A name is suggested back only when it is plain: short, and with no slash, backslash or control character.
+  const name = context.name && context.name.length <= 60 && !/[\\/\u0000-\u001f]/.test(context.name) ? context.name : undefined;
+  // Echoed user input is clipped, so a long value is never printed in full.
+  const echo = (text) => (context.name && text.includes(context.name) ? text.split(context.name).join(clip(context.name)) : text);
   const next = (text) => `Next: ${text}`;
-  const connectCommand = (extra = '') => {
-    const name = context.name ? ` --name ${context.name}` : '';
-    return cmd(`connect --target ${hub} --repo ${context.repoPath}${name}${extra}`);
-  };
-  const generic = () => (code === 'LOADER_CONFLICT' ? `Manual resolution required: ${message}\n` : `${code ?? 'ERROR'}: ${message}\n`);
   const lines = (...items) => `${items.join('\n')}\n`;
-  const ids = (text) => [...new Set(text.match(RECEIPT_ID_PATTERN) ?? [])];
+  const generic = () => (code === 'LOADER_CONFLICT' ? `Manual resolution required: ${message}\n` : `${code ?? 'ERROR'}: ${message}\n`);
+  const ids = (text) => [...new Set(text.match(RECEIPT_IDS_IN_TEXT) ?? [])];
+  const list = (items) => (items.length > 0 ? items.join(', ') : 'none');
+  const connectCmd = (overrides = {}) => cliCommand('connect', { target: hub, repo, name, ...overrides });
+  const rollbackCmd = (id) => cliCommand('rollback', { target: hub, receipt: id });
+  const verifyCmd = () => cliCommand('verify', { target: hub });
+  const notChanged = (text = 'Not changed: nothing was written.') => text;
+
+  if (context.parsing) {
+    const usage = USAGE_LINES[context.command] ? `Usage: ${USAGE_LINES[context.command]}` : 'Usage: run this script with --help to list every command.';
+    return lines(`USAGE: ${message}`, ...(message.includes('Nothing was changed') ? [] : ['Nothing was changed.']), usage);
+  }
 
   switch (code) {
     case 'INTERRUPTED_CONNECT': {
       const pending = await pendingIds(hub);
       const head = `INTERRUPTED_CONNECT: an earlier connect for this repository or name did not finish${pending.length > 0 ? ` (pending ${pending.join(', ')})` : ''}.`;
-      const after = pending.length > 0
-        ? pending.map((id) => next(cmd(`rollback --target ${hub} --receipt ${id}`)))
-        : [next(cmd(`verify --target ${hub}`))];
+      const after = pending.length > 0 ? pending.map((id) => next(rollbackCmd(id))) : [next(verifyCmd())];
       return lines(head, 'Not changed: this command wrote nothing. The repository may hold part of that connect\'s files.', ...after);
     }
     case 'ROLLBACK_FAILED': {
       const leftovers = error.leftovers ?? { hub: [], repo: [] };
-      const list = (items) => (items.length > 0 ? items.join(', ') : 'none');
       const id = context.receiptId ?? (await pendingIds(hub))[0];
-      const after = id
-        ? next(`restore or remove the files listed above, then run: ${cmd(`rollback --target ${hub} --receipt ${id}`)}`)
-        : next(`restore or remove the files listed above, then run: ${cmd(`verify --target ${hub}`)}`);
       return lines(
         'ROLLBACK_FAILED: undoing this connect did not finish. Some of its files are still in place.',
         `Left in the workspace: ${list(leftovers.hub)}`,
         `Left in the repository: ${list(leftovers.repo)}`,
         'Not changed: files that are not listed were removed by the undo. The connect stays interrupted, and connect for this repository is refused until the listed files are dealt with.',
-        after,
+        'These files no longer hold what the connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
+        next(id ? rollbackCmd(id) : verifyCmd()),
       );
     }
     case 'RECEIPT_SUPERSEDED':
       return lines(
         `RECEIPT_SUPERSEDED: this receipt's connection record is gone, and ${ids(message).join(', ') || 'a newer connect'} now claims the same repository files.`,
         'Not changed: nothing was removed in either root.',
-        next(cmd(`verify --target ${hub}`)),
+        next(verifyCmd()),
       );
     case 'CONNECTIONS_PRESENT': {
       const found = ids(message);
       const after = found.length > 0
-        ? [next(cmd(`rollback --target ${hub} --receipt ${found[0]}`)), ...(found.length > 1 ? [`Then repeat the same command for: ${found.slice(1).join(', ')}`] : [])]
-        : [next(cmd(`verify --target ${hub}`))];
+        ? [next(rollbackCmd(found[0])), ...(found.length > 1 ? [`Then repeat the same command for: ${found.slice(1).join(', ')}`] : [])]
+        : [next(verifyCmd())];
       return lines(
         'CONNECTIONS_PRESENT: this workspace still has connections or interrupted connects, so the init or upgrade cannot be rolled back yet.',
         'Not changed: nothing was removed.',
@@ -425,56 +492,65 @@ async function explain(error, context) {
     }
     case 'ALREADY_CONNECTED': {
       const id = ids(message)[0];
-      const folder = id ? await connectionFolderFor(hub, id) : null;
+      const record = id ? await connectionFor(hub, id) : null;
       return lines(
-        `ALREADY_CONNECTED: this repository is already connected to this workspace by receipt ${id}${folder ? ` (folder 01-Projects/${folder})` : ''}.`,
-        'Not changed: nothing was written.',
-        next(cmd(`verify --target ${hub}`)),
-        `To undo that connection instead, run: ${cmd(`rollback --target ${hub} --receipt ${id}`)}`,
+        `ALREADY_CONNECTED: this repository is already connected to this workspace by receipt ${id}${record ? ` (folder 01-Projects/${record.name})` : ''}.`,
+        notChanged(),
+        next(verifyCmd()),
+        `To undo that connection instead, run: ${rollbackCmd(id)}`,
       );
     }
     case 'CONNECTION_NAME_TAKEN':
       return lines(
-        `CONNECTION_NAME_TAKEN: ${message}`,
-        'Not changed: nothing was written.',
-        next(connectCommand(' --name <a name no other connection uses>')),
+        `CONNECTION_NAME_TAKEN: ${echo(message)}`,
+        notChanged(),
+        next(connectCmd({ name: '<a name no other connection uses>' })),
       );
     case 'INVALID_CONNECTION_NAME':
+      // The user's name is never echoed back as a flag value: the suggestion is a placeholder.
       return lines(
-        `INVALID_CONNECTION_NAME: ${message}`,
-        'Not changed: nothing was written.',
-        next(connectCommand(' --name <one plain folder name>')),
+        `INVALID_CONNECTION_NAME: ${echo(message)}`,
+        notChanged(),
+        next(connectCmd({ name: '<one plain folder name>' })),
       );
     case 'UNSAFE_REPO':
       return lines(
-        `UNSAFE_REPO: ${message}`,
-        'Not changed: nothing was written.',
-        next(cmd(`connect --target ${hub} --repo <a repository folder outside the workspace>`)),
+        `UNSAFE_REPO: ${echo(message)}`,
+        notChanged(),
+        next(connectCmd({ repo: '<a repository folder outside the workspace>' })),
       );
     case 'SYMLINK_PATH': {
       if (context.command !== 'connect') return generic();
+      const given = await lstat(context.repoPath).catch(() => null);
       const real = await realpath(context.repoPath).catch(() => null);
-      return lines(
-        `SYMLINK_PATH: ${message}`,
-        'If this is another spelling of a repository already connected here, that is the reason.',
-        'Not changed: nothing was written.',
-        next(cmd(`connect --target ${hub} --repo ${real ?? '<the real path of the repository>'}`)),
-      );
+      const head = given?.isSymbolicLink()
+        ? `SYMLINK_PATH: the path you gave is a symlink to ${real ?? 'another folder'}.`
+        : `SYMLINK_PATH: a folder on the path you gave is a symlink: ${message.replace(/^Repository contains a symlink: /, '')}`;
+      const existing = real ? await connectionForRepository(hub, real) : null;
+      if (existing) {
+        return lines(
+          head,
+          notChanged(),
+          `That repository is already connected (receipt ${existing.connectionId}, folder 01-Projects/${existing.name}).`,
+          next(verifyCmd()),
+        );
+      }
+      return lines(head, notChanged(), next(connectCmd({ repo: real ?? '<the real path of the repository>' })));
     }
     case 'REPO_NOT_DIRECTORY': {
       if (context.command === 'rollback') {
         const receipt = await readJsonOrNull(receiptFileFor(hub, context.receiptId));
-        const repo = receipt?.repo ?? '<the repository of this connect>';
+        const recorded = receipt?.repo ?? '<the repository of this connect>';
         return lines(
           'REPO_NOT_DIRECTORY: the repository of this connect is no longer an existing folder, so its files cannot be removed yet. Nothing was removed.',
-          next(`put the folder back at ${repo} (or move it back), then run: ${cmd(`rollback --target ${hub} --receipt ${context.receiptId}`)}`),
+          next(`put the folder back at ${recorded} (or move it back), then run: ${rollbackCmd(context.receiptId)}`),
         );
       }
       if (context.command !== 'connect') return generic();
       return lines(
-        `REPO_NOT_DIRECTORY: ${context.repoPath} is not an existing folder.`,
-        'Not changed: nothing was written.',
-        next(cmd(`connect --target ${hub} --repo <an existing folder>`)),
+        `REPO_NOT_DIRECTORY: ${echo(repo)} is not an existing folder.`,
+        notChanged(),
+        next(connectCmd({ repo: '<an existing folder>' })),
       );
     }
     case 'PLAN_DIGEST_MISMATCH':
@@ -482,7 +558,7 @@ async function explain(error, context) {
       return lines(
         `PLAN_DIGEST_MISMATCH: ${message}`,
         'Not changed: no files were changed.',
-        next(connectCommand()),
+        next(connectCmd()),
       );
     case 'INVALID_PENDING_CONNECT': {
       const unparsed = message.match(/Pending connect record (.+?) is empty or truncated/);
@@ -491,21 +567,17 @@ async function explain(error, context) {
         return lines(
           `INVALID_PENDING_CONNECT: ${message}`,
           'Not changed: the record was not acted on.',
-          next(`move the workspace back to ${recorded}, then run: ${cmd(`rollback --target ${recorded} --receipt ${context.receiptId}`)}`),
+          next(`move the workspace back to ${recorded}, then run: ${cliCommand('rollback', { target: recorded, receipt: context.receiptId })}`),
         );
       }
       if (unparsed) {
         return lines(
           `INVALID_PENDING_CONNECT: ${message}`,
           'Not changed: the record was never acted on, so nothing was written.',
-          next(`delete ${unparsed[1]} (it never parsed), then run: ${connectCommand()}`),
+          next(`delete ${word(unparsed[1])} (it never parsed), then run: ${connectCmd()}`),
         );
       }
-      return lines(
-        `INVALID_PENDING_CONNECT: ${message}`,
-        'Not changed: the record was not acted on.',
-        next(cmd(`verify --target ${hub}`)),
-      );
+      return lines(`INVALID_PENDING_CONNECT: ${message}`, 'Not changed: the record was not acted on.', next(verifyCmd()));
     }
     case 'INVALID_RECEIPT': {
       if (/different workspace path/.test(message) && context.receiptId) {
@@ -514,40 +586,59 @@ async function explain(error, context) {
           return lines(
             `INVALID_RECEIPT: this receipt was written for a workspace at ${recorded}, and this workspace is at ${hub}.`,
             'Not changed: nothing was removed.',
-            next(cmd(`rollback --target ${recorded} --receipt ${context.receiptId}`)),
+            next(cliCommand('rollback', { target: recorded, receipt: context.receiptId })),
           );
         }
       }
-      return lines(`INVALID_RECEIPT: ${message}`, 'Not changed: nothing was removed.', next(cmd(`verify --target ${hub}`)));
+      return lines(`INVALID_RECEIPT: ${message}`, 'Not changed: nothing was removed.', next(verifyCmd()));
     }
     case 'PLAN_CONFLICT':
       if (context.command !== 'connect') return generic();
       return lines(
         `PLAN_CONFLICT: ${message}`,
-        'Not changed: nothing was written.',
-        next(`move the files listed above aside by hand, then run: ${connectCommand()}`),
+        notChanged(),
+        next(`move the files listed above aside by hand, then run: ${connectCmd()}`),
       );
+    case 'HUB_NOT_INITIALISED':
+      if (context.command !== 'connect') return generic();
+      return lines(
+        `HUB_NOT_INITIALISED: the folder ${hub} is not an initialised workspace yet, so connect has nothing to register into.`,
+        notChanged(),
+        next(cliCommand('init', { target: hub })),
+      );
+    case 'UNSAFE_TARGET': {
+      if (context.command !== 'connect') return generic();
+      const named = /^Repository/.test(message) ? repo : hub;
+      return lines(
+        `UNSAFE_TARGET: The path ${echo(named)} cannot be used here. ${message}`,
+        notChanged(),
+        next(connectCmd({ target: '<a workspace folder>' })),
+      );
+    }
     case 'MISSING_RECEIPT':
       if (context.command !== 'rollback') return generic();
       return lines(
         `MISSING_RECEIPT: no receipt or interrupted connect with the id ${context.receiptId} exists in this workspace. It was probably rolled back already.`,
         'Not changed: nothing was removed.',
-        next(cmd(`verify --target ${hub}`)),
+        next(verifyCmd()),
       );
     case 'POSTIMAGE_MISMATCH':
       return lines(
         `POSTIMAGE_MISMATCH: ${message}`,
-        next(`put back the bytes the connect wrote (or move the changed file aside), then run: ${cmd(`rollback --target ${hub} --receipt ${context.receiptId}`)}`),
+        'The files named above differ from what connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
+        next(rollbackCmd(context.receiptId)),
       );
     case 'TARGET_TRAVERSAL':
-      return lines(`TARGET_TRAVERSAL: ${message}`, 'Not changed: nothing was written.', next('run the command again with the full absolute path, without .. segments.'));
+      return lines(`TARGET_TRAVERSAL: ${message}`, notChanged(), next('run the command again with the full absolute path, without .. segments.'));
     default:
       return generic();
   }
 }
 
 async function run(context) {
+  context.parsing = true;
   const parsed = parseArguments(process.argv.slice(2));
+  context.parsing = false;
   if (parsed.help) {
     output.write(`${help()}\n`);
     return;
@@ -568,7 +659,7 @@ async function run(context) {
   await runRollback(parsed);
 }
 
-const context = {};
+const context = { command: process.argv[2] };
 run(context).catch(async (error) => {
   output.write(await explain(error, context));
   process.exitCode = 1;

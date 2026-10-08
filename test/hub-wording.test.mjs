@@ -145,8 +145,8 @@ test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Pr
 const CLI_COMMAND_PATTERN = /\bsecond-brain(?:\.mjs)?\s+([a-z][a-z-]*)/g;
 
 function exposedCommands(binSource) {
-  const declared = binSource.match(/const commands = new Set\(\[([^\]]*)\]\)/);
-  assert.ok(declared, 'the bin declares its commands in one Set literal');
+  const declared = binSource.match(/COMMANDS = new Set\(\[([^\]]*)\]\)/);
+  assert.ok(declared, 'the argument module declares its commands in one Set literal');
   return declared[1].split(',').map((item) => item.trim().replace(/['"]/g, '')).filter(Boolean);
 }
 
@@ -155,7 +155,8 @@ function namedCommands(text) {
 }
 
 test('no managed template file names a CLI command the CLI does not expose, and the scan really sees command mentions (R03-14)', async () => {
-  const exposed = new Set(exposedCommands(await readFile(path.join(sourceRoot, 'bin', 'second-brain.mjs'), 'utf8')));
+  // The command set is declared once, in the argument module the bin imports; read it from there.
+  const exposed = new Set(exposedCommands(await readFile(path.join(sourceRoot, 'lib', 'cli-arguments.mjs'), 'utf8')));
   assert.ok(exposed.has('connect') && exposed.has('verify') && exposed.has('init'), 'the derived set is the CLI command set');
   const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
   const named = [];
@@ -167,7 +168,7 @@ test('no managed template file names a CLI command the CLI does not expose, and 
 });
 
 test('the R03-14 scan fires on a planted command the CLI does not expose (positive control)', () => {
-  const exposed = new Set(exposedCommands('const commands = new Set([\'init\', \'connect\']);'));
+  const exposed = new Set(exposedCommands('export const COMMANDS = new Set([\'init\', \'connect\']);'));
   assert.deepEqual(namedCommands('Run `node ./bin/second-brain.mjs frobnicate --target x`.'), ['frobnicate']);
   assert.equal(exposed.has('frobnicate'), false);
 });
