@@ -525,7 +525,7 @@ async function explain(error, context) {
         'ROLLBACK_FAILED: undoing this connect did not finish. Some of its files are still in place.',
         `Left in the workspace: ${list(leftovers.hub)}`,
         `Left in the repository: ${list(leftovers.repo)}`,
-        'Removed: every file the connect wrote that still held its original bytes.',
+        'Removed: every file the connect wrote that still held the bytes the connect wrote.',
         'Left untouched: the files listed above.',
         'The connect stays interrupted, and connect for this repository is refused until the listed files are dealt with.',
         'These files no longer hold what the connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
@@ -584,7 +584,9 @@ async function explain(error, context) {
         // R07-4: the refusal names the real path, so the next command runs without the symlink.
         const real = await realpath(hub).catch(() => null);
         const again = real ? cliCommand(context.command, { target: real, receipt: context.command === 'rollback' ? context.receiptId : undefined }) : verifyCmd();
-        return lines(`SYMLINK_PATH: ${message}`, notChanged(), next(again));
+        // NEW-1: the first line names the real path too, not only the Next line.
+        const first = real ? `SYMLINK_PATH: ${message}; the real path is ${real}.` : `SYMLINK_PATH: ${message}`;
+        return lines(first, notChanged(), next(again));
       }
       const given = await lstat(context.repoPath).catch(() => null);
       const real = await realpath(context.repoPath).catch(() => null);

@@ -14,18 +14,19 @@ The bundled copy lives in `vendor/spec-harness/`. It is a byte-for-byte copy of 
 
 The pin file itself stays on the allowlist. It is listed as `vendor/SPEC-HARNESS-PIN.json`, next to one `vendor/spec-harness/<path>` line for each file in the inventory.
 
-Follow these steps in order, from the repository root. Keep the upstream clone and the export in scratch folders, never inside the repository.
+Run the steps in order from the repository root, in bash or zsh (step 6 uses `<(...)`). Every scratch path lives under one folder, so nothing is written inside the repository except the three vendored files.
 
 1. Choose one full 40-character commit `C` on `chohra-med/spec-harness-oss`.
-2. Clone the upstream repository: `git clone https://github.com/chohra-med/spec-harness-oss UPSTREAM`.
-3. Record the tracked files and the tree: `git -C UPSTREAM ls-tree -r C > LS-TREE.txt`, then `git -C UPSTREAM rev-parse C^{tree}`. The second value is `TREE`.
-4. Export `C` into an empty folder: `mkdir EXPORT && git -C UPSTREAM archive C | tar -x -C EXPORT`.
-5. Prove the export holds exactly the tracked files: `diff <(cut -f2 LS-TREE.txt | sort) <(cd EXPORT && find . -type f | sed 's|^\./||' | sort)`. It must print nothing. If it prints anything, stop.
-6. Replace the vendored folder: `rm -rf vendor/spec-harness && mkdir vendor/spec-harness && cp -R EXPORT/. vendor/spec-harness/`.
-7. Write the pin with the script below, saved outside the repository as `pin.mjs`: `node pin.mjs EXPORT LS-TREE.txt C TREE https://github.com/chohra-med/spec-harness-oss > vendor/SPEC-HARNESS-PIN.json`. Do not edit the pin by hand.
-8. If the commit or the harness version changed, update the Spec Harness section of [ATTRIBUTION.md](ATTRIBUTION.md). That section may name only the pinned commit.
-9. Update the `vendor/` lines of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt). Keep `vendor/SPEC-HARNESS-PIN.json`. Keep one `vendor/spec-harness/<path>` line for each file in the new inventory, remove the lines of files that are gone, and change nothing else.
-10. Run `node --test test/vendor.test.mjs`. It must report `# fail 0`. Then run `node --test` for the whole suite.
+2. Name one scratch folder, once: `S=$(mktemp -d)`. Every path below starts with `$S/`.
+3. Clone the upstream repository: `git clone https://github.com/chohra-med/spec-harness-oss "$S/UPSTREAM"`.
+4. Record the tracked files and the tree: `git -C "$S/UPSTREAM" ls-tree -r C > "$S/LS-TREE.txt"`, then `git -C "$S/UPSTREAM" rev-parse C^{tree}`. The second value is `TREE`.
+5. Export `C` into an empty folder: `mkdir "$S/EXPORT" && git -C "$S/UPSTREAM" archive C | tar -x -C "$S/EXPORT"`.
+6. Prove the export holds exactly the tracked files: `diff <(cut -f2 "$S/LS-TREE.txt" | sort) <(cd "$S/EXPORT" && find . -type f | sed 's|^\./||' | sort)`. It must print nothing. If it prints anything, stop.
+7. Replace the vendored folder: `rm -rf vendor/spec-harness && mkdir vendor/spec-harness && cp -R "$S/EXPORT/." vendor/spec-harness/`.
+8. Save the script below as `"$S/pin.mjs"`, then write the pin: `node "$S/pin.mjs" "$S/EXPORT" "$S/LS-TREE.txt" C TREE https://github.com/chohra-med/spec-harness-oss > vendor/SPEC-HARNESS-PIN.json`. Do not edit the pin by hand.
+9. If the commit or the harness version changed, update the Spec Harness section of [ATTRIBUTION.md](ATTRIBUTION.md). That section may name only the pinned commit.
+10. Update the `vendor/` lines of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt). Keep `vendor/SPEC-HARNESS-PIN.json`. Keep one `vendor/spec-harness/<path>` line for each file in the new inventory, remove the lines of files that are gone, and change nothing else.
+11. Run `node --test test/vendor.test.mjs`. It must report `# fail 0`. Then run `node --test` for the whole suite.
 
 The script `pin.mjs`:
 

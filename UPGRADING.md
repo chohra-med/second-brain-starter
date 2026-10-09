@@ -52,7 +52,7 @@ A pinned copy of Spec Harness ships under `vendor/spec-harness/`. It is not inst
 
 ### Rolling back an upgrade
 
-Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place. The trunk behaves the same way; this version does not change it.
+Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place.
 
 ## Upgrading to v1.2.0
 

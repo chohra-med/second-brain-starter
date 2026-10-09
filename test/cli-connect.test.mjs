@@ -396,6 +396,9 @@ test('R07-4: a symlinked workspace path is refused by init, upgrade, verify and 
     assert.equal(refused.code, 1, `${name} must exit 1: ${refused.stdout}`);
     assert.match(refused.stdout, /^SYMLINK_PATH: /m, name);
     assert.ok(hasLine(refused.stdout, `Next: ${next}`), `${name} names its next command: ${refused.stdout}`);
+    // NEW-1: the first line names the real path too, so the reader sees it before the Next line.
+    // The real path is a substring of the symlink path here, so the check looks for the exact phrase, not the bare path.
+    assert.ok(refused.stdout.split('\n')[0].includes(`the real path is ${w.hub}`), `${name} first line names the real path: ${refused.stdout}`);
   }
 });
 
@@ -480,7 +483,7 @@ test('ROLLBACK_FAILED: an undo that cannot finish prints the leftover list in fu
   assert.ok(hasLine(failed.stdout, 'Left in the workspace: none'));
   assert.ok(hasLine(failed.stdout, `Left in the repository: ${edited}`));
   // T07-1: the heading and the sentence agree; nothing is called "Not changed" when files were removed.
-  assert.ok(hasLine(failed.stdout, 'Removed: every file the connect wrote that still held its original bytes.'), failed.stdout);
+  assert.ok(hasLine(failed.stdout, 'Removed: every file the connect wrote that still held the bytes the connect wrote.'), failed.stdout);
   assert.ok(hasLine(failed.stdout, 'Left untouched: the files listed above.'), failed.stdout);
   assert.ok(!failed.stdout.includes('Not changed: files that are not listed'), 'the contradictory sentence is gone');
   assert.ok(failed.stdout.includes('The connect stays interrupted'), 'the connect stays pending');
@@ -1282,4 +1285,15 @@ test('rollback removes exactly the files of its receipt and reports the result p
   const rolledBack = await runCli(['rollback', '--target', w.hub, '--receipt', appliedReceipt(applied.stdout)]);
   assert.equal(rolledBack.code, undefined, rolledBack.stdout);
   assert.deepEqual(await snapshot(w), before);
+});
+
+// PRIVACY: a .git/config that is not a regular file refuses the connect, and nothing is written in either root.
+test('a .git/config that is not a regular file refuses the connect with NON_REGULAR_FILE and writes nothing', async (t) => {
+  const w = await workspace(t);
+  await mkdir(path.join(w.repo, '.git', 'config'), { recursive: true });
+  const before = await snapshot(w);
+  const refused = await runCli(connectArgs(w));
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.match(refused.stdout, /^NON_REGULAR_FILE: Repository \.git\/config is not a regular file\./m);
+  assert.deepEqual(await snapshot(w), before, 'nothing was written');
 });

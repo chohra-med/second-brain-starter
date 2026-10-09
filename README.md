@@ -219,14 +219,14 @@ Every applied transaction prints a receipt ID and stores its receipt inside the 
 node ./bin/second-brain.mjs rollback --target "$PROJECT" --receipt RECEIPT_ID
 ```
 
-The rollback checks that receipt's current preconditions and does not undo unrelated project work. Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place. The trunk behaves the same way. A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
+The rollback checks that receipt's current preconditions and does not undo unrelated project work. Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place. A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
 
 `verify` prints one line for each connection:
 
 | Label | Meaning |
 |---|---|
 | `STAGED` | The harness files connect wrote are present and unchanged. `/sdd init` has not written its receipt yet. |
-| `INITIALISED` | The repository has the harness receipt `.claude/agents/.init-synthesis.json`. Connect wrote nothing into it. |
+| `INITIALISED` | The repository has the harness receipt `.claude/agents/.init-synthesis.json`. Connect may have staged files here earlier; this label reads the receipt on disk now. |
 | `CHANGED` | Some staged files are missing or differ now. The line gives the count and the first names. You can roll the connection back, or keep the files. |
 | `MISSING` | The repository folder is not at the path the connection recorded. |
 | `REGISTERED (now: ...)` | The repository has Spec Harness files but no `.claude/agents/.init-synthesis.json` receipt, so connect registered it without writing. The bracket shows what detection finds on disk now: harness present, or no harness files found. |
@@ -269,7 +269,7 @@ If you edited a file that the connect wrote, the rollback stops with `ROLLBACK_F
 
 Two leftovers are known and accepted. A stop before any pending record exists can leave an empty `.second-brain/connect-pending/` folder, and at most one temporary engine file in it, in the workspace. The design writes the pending record before any repository file, so this leaves nothing in the repository. `verify` lists this as `RESIDUE`, and the next approved connect, rollback or recovery removes it.
 
-Run one connect at a time per workspace. Two connects at the same time are not supported. In a test, both finished with exit 0 and both repositories were staged, but the workspace kept only one connection record, so `verify` listed one. There is no lock across processes.
+Run one connect at a time per workspace. Two connects at the same time are not supported. In a run measured on this branch, both finished with exit 0 and both repositories were staged. The workspace kept one connection record, so `verify` listed one. The other repository's files stay in place, and its receipt file stays in `.second-brain/receipts/`. `rollback --receipt` with that receipt ID removes those files, which was measured, but `verify` does not show that connection. There is no lock across processes.
 
 `NO_RECEIPT` is the one state the tool cannot undo, because its receipt is missing and there is nothing to roll back. The only way to make `verify` stop listing that connection is to delete its entry from `.second-brain/connections.json` by hand. That does not delete the staged files in the repository, which stay until you remove them.
 

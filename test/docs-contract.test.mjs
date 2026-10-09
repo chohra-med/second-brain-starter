@@ -210,7 +210,7 @@ const PRIVACY_AMENDED = [
   'Connection records, connect receipts and connect pending records also hold the absolute path of the workspace and of each repository you explicitly connected with `connect`',
   'The remote is the `origin` URL with credentials, query and fragment removed',
   'the rule-file names found',
-  'It never reads a sibling folder, a parent folder or another repository',
+  'It never lists or reads the contents of a sibling or parent folder, or of another repository',
   'reads the `origin` URL from it',
   'It never prints or stores those bytes',
 ];
@@ -232,18 +232,36 @@ test('the PRIVACY check fires when the amendment is removed or the false stateme
   assert.ok(privacyProblems(`${amended}\nRecords ${PRIVACY_FALSE}.\n`).length > 0);
 });
 
-// T07-8: PRIVACY and README say a remote the parser does not recognise is recorded as `unknown`. This runs the real reader.
-test('a remote URL with a fragment, which git quotes in .git/config, is recorded as unknown; a plain one keeps its host and path only (T07-8)', async (t) => {
+// T07-8 and N1: the remote rules, through the real loader. Git writes a URL with '#' in quotes, which the loader does not
+// read, so it is `unknown`. A hand-written unquoted URL is parsed, and credentials and query are stripped.
+test('the remote rules hold through the real loader: a git-written URL with a fragment is unknown, an unquoted one is stripped, a non-regular .git/config is refused (N1, T07-8)', async (t) => {
   const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
+  const { execFileSync } = await import('node:child_process');
   const { readRemote } = await import('../lib/connect.mjs');
   const root = await mkdtemp(path.join(tmpdir(), 'sb-remote-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  await mkdir(path.join(root, '.git'));
-  await writeFile(path.join(root, '.git', 'config'), '[remote "origin"]\n\turl = "https://user:secret@example.com/acme/app.git?token=q1#frag"\n');
-  assert.equal(await readRemote({ repoReal: root }), 'unknown');
-  await writeFile(path.join(root, '.git', 'config'), '[remote "origin"]\n\turl = https://user:secret@example.com/acme/app.git?token=q1\n');
-  assert.equal(await readRemote({ repoReal: root }), 'https://example.com/acme/app.git');
+  const repo = path.join(root, 'git-written');
+  await mkdir(repo);
+  execFileSync('git', ['init', '-q', repo]);
+  execFileSync('git', ['-C', repo, 'remote', 'add', 'origin', 'https://u:p@example.com/acme/app.git#frag']);
+  assert.match(await readFile(path.join(repo, '.git', 'config'), 'utf8'), /url = "https:\/\/u:p@example\.com\/acme\/app\.git#frag"/, 'git quotes the URL');
+  assert.equal(await readRemote({ repoReal: repo }), 'unknown');
+  const hand = path.join(root, 'hand-written');
+  await mkdir(path.join(hand, '.git'), { recursive: true });
+  await writeFile(path.join(hand, '.git', 'config'), '[remote "origin"]\n\turl = https://u:p@example.com/acme/app.git?x=1#frag\n');
+  assert.equal(await readRemote({ repoReal: hand }), 'https://example.com/acme/app.git');
+  const dir = path.join(root, 'dir-config');
+  await mkdir(path.join(dir, '.git', 'config'), { recursive: true });
+  await assert.rejects(readRemote({ repoReal: dir }), (error) => error.code === 'NON_REGULAR_FILE');
+});
+
+test('N1 planted input: the false fragment sentence is gone from PRIVACY.md, and the check fires on its old text (positive control)', async () => {
+  const { execFileSync } = await import('node:child_process');
+  const OLD = 'A remote with a fragment is one case: git quotes that URL in `.git/config`, so it is recorded as `unknown`.';
+  assert.equal((await read('PRIVACY.md')).includes(OLD), false, 'the sentence is not in the file');
+  const previous = execFileSync('git', ['-C', sourceRoot, 'show', 'HEAD:PRIVACY.md'], { encoding: 'utf8' });
+  assert.equal(previous.includes(OLD), true, 'positive control: the check reads the sentence where it was');
 });
 
 // The starter's product code (lib and bin) starts no process and opens no network connection. Documents rely on this:
