@@ -8,6 +8,10 @@ Before proposing a feature, check whether the documented initializer and the man
 
 Do not include credentials, client data, private journals, unpublished product material, or private application files in a suggestion or shared copy.
 
+## Guidelines for code changes
+
+Behavioural guidelines for code changes (think before coding, simplicity first, surgical changes, goal-driven execution): see the upstream rules at https://github.com/multica-ai/andrej-karpathy-skills. Apply them only where they do not conflict with this file.
+
 ## Re-pinning the vendored Spec Harness
 
 The bundled copy lives in `vendor/spec-harness/`. It is a byte-for-byte copy of one upstream commit. [vendor/SPEC-HARNESS-PIN.json](vendor/SPEC-HARNESS-PIN.json) records that commit, its tree, the harness version, the SHA-256 of `LICENSE`, and for every vendored file its path, byte count and SHA-256. Files with the executable bit also carry `"executable": true`. `test/vendor.test.mjs` checks the folder against the pin. `lib/connect.mjs` refuses a pin that lacks `schemaVersion: 1`, a full commit, a full tree, or the manifest's `harnessVersion`.
