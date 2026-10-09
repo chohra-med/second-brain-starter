@@ -224,7 +224,7 @@ test('connect without --apply prints the complete two-root plan, the digest, and
   assert.ok(hasLine(out, 'Nothing is committed. These files are uncommitted in the repository; the team decides whether they go in by pull request.'));
   assert.match(out, /^Harness: spec-harness \S+ at [0-9a-f]{40}$/m);
   assert.match(out, /^Plan digest: [a-f0-9]{64}$/m);
-  assert.ok(hasLine(out, 'Plan not applied.'), 'without --apply, the non-terminal run only plans');
+  assert.ok(hasLine(out, 'Plan only: nothing was applied.'), 'without --apply, the non-terminal run only plans');
   assert.ok(hasLine(out, `Apply this exact plan with: node ${cliScript} connect --target ${w.hub} --repo ${w.repo} --name app --apply ${planDigest(out)}`), 'the plan prints the exact apply command');
   const again = await runCli(connectArgs(w));
   assert.equal(planDigest(again.stdout), planDigest(out), 'the same inputs give the same digest');
@@ -380,6 +380,42 @@ test('R06-19: every CONNECTION line ends with its connection id, which is the re
   assert.ok(hasLine(refused.stdout, 'Receipt ids are printed on the Applied receipt: line of connect or init, shown on each CONNECTION line of verify, and named by the files in .second-brain/receipts/.'), refused.stdout);
 });
 
+// R07-4: a symlinked workspace path is refused by every command that takes --target, and each refusal names a next command with the real path.
+test('R07-4: a symlinked workspace path is refused by init, upgrade, verify and rollback, each with a Next line that names the real path', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
+  const w = await workspace(t);
+  const link = path.join(w.root, 'hub-link');
+  await symlink(w.hub, link);
+  const cases = [
+    ['init', ['init', '--target', link], `node ${cliScript} init --target ${ph(w.hub)}`],
+    ['upgrade', ['upgrade', '--target', link], `node ${cliScript} upgrade --target ${ph(w.hub)}`],
+    ['verify', ['verify', '--target', link], `node ${cliScript} verify --target ${ph(w.hub)}`],
+    ['rollback', ['rollback', '--target', link, '--receipt', w.initReceipt], `node ${cliScript} rollback --target ${ph(w.hub)} --receipt ${w.initReceipt}`],
+  ];
+  for (const [name, args, next] of cases) {
+    const refused = await runCli(args);
+    assert.equal(refused.code, 1, `${name} must exit 1: ${refused.stdout}`);
+    assert.match(refused.stdout, /^SYMLINK_PATH: /m, name);
+    assert.ok(hasLine(refused.stdout, `Next: ${next}`), `${name} names its next command: ${refused.stdout}`);
+  }
+});
+
+// R07-5: a connection that cannot be read safely needs attention, and the summary says so.
+test('R07-5: an unreadable repository is counted as needing attention, the label says why, and the exit code stays 0', { skip: !isPosix && 'symlinks need privileges on win32' }, async (t) => {
+  const w = await workspace(t);
+  const connected = await connectInProcess(w);
+  const elsewhere = path.join(w.root, 'elsewhere');
+  await mkdir(elsewhere);
+  await rename(w.repo, `${w.repo}-real`);
+  await symlink(elsewhere, w.repo);
+  const verified = await runCli(['verify', '--target', w.hub]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.ok(hasLine(verified.stdout, `CONNECTION\tapp\t${w.repo}\tUNREADABLE (SYMLINK_PATH)\t${connected.receiptId}`), verified.stdout);
+  assert.ok(hasLine(verified.stdout, 'Connections: 1 of 1 need attention (see UNREADABLE above). This does not affect the workspace\'s own files.'), verified.stdout);
+  assert.ok(verified.stdout.includes('UNREADABLE: verify could not read this repository safely, so its state is not known.'), verified.stdout);
+  assert.ok(!verified.stdout.includes('all as recorded'), 'an unreadable connection is never reported as all as recorded');
+  assert.ok(hasLine(verified.stdout, 'Verification: OK'));
+});
+
 // R06-21: the drift guard must see a code passed as the second argument of usageError, not only a literal first argument.
 function codesIn(source) {
   const found = new Set();
@@ -406,7 +442,7 @@ test('the test-only hooks are refused as flags and ignored as environment variab
   }
   const env = Object.fromEntries(HOOKS.map((hook) => [hook, '1']));
   const asEnv = await run(process.execPath, [bin, ...connectArgs(w)], { cwd: sourceRoot, env: { ...process.env, ...env }, windowsHide: true });
-  assert.ok(hasLine(asEnv.stdout, 'Plan not applied.'), 'the plan prints as usual');
+  assert.ok(hasLine(asEnv.stdout, 'Plan only: nothing was applied.'), 'the plan prints as usual');
   assert.ok(!asEnv.stdout.includes('INJECTED'), 'no injected failure appears');
   assert.deepEqual(await snapshot(w), before);
 });
@@ -443,6 +479,12 @@ test('ROLLBACK_FAILED: an undo that cannot finish prints the leftover list in fu
   assert.match(failed.stdout, /^ROLLBACK_FAILED: undoing this connect did not finish\. Some of its files are still in place\.$/m);
   assert.ok(hasLine(failed.stdout, 'Left in the workspace: none'));
   assert.ok(hasLine(failed.stdout, `Left in the repository: ${edited}`));
+  // T07-1: the heading and the sentence agree; nothing is called "Not changed" when files were removed.
+  assert.ok(hasLine(failed.stdout, 'Removed: every file the connect wrote that still held its original bytes.'), failed.stdout);
+  assert.ok(hasLine(failed.stdout, 'Left untouched: the files listed above.'), failed.stdout);
+  assert.ok(!failed.stdout.includes('Not changed: files that are not listed'), 'the contradictory sentence is gone');
+  assert.ok(failed.stdout.includes('The connect stays interrupted'), 'the connect stays pending');
+  assert.ok(failed.stdout.includes('connect for this repository is refused'), 'connect for the repository is refused');
   assert.ok(failed.stdout.includes('left untouched'), 'says the listed files were left untouched');
   assert.ok(failed.stdout.includes('move the file out of the repository (do not delete it)'), 'says to move a file of yours out, not delete it');
   assert.ok(failed.stdout.includes('If you do not need it, you may delete it yourself.'));

@@ -12,7 +12,7 @@ const isWindows = process.platform === 'win32';
 const bin = path.join(sourceRoot, 'bin', 'second-brain.mjs');
 
 // The approval prompt needs a terminal on both ends. A pseudo-terminal is made by python3 (standard library only,
-// run with -I), because node has no terminal without a native dependency. The Windows leg skips this file: it has no pty.
+// run with -I), because node has no terminal without a native dependency. Each prompt test skips on win32, which has no pty.
 const DRIVER = `
 import os, pty, sys, select, time
 action = sys.argv[1]
@@ -105,6 +105,38 @@ test('upgrade: Ctrl-C at the approval prompt prints Plan not applied. and exits 
   assert.ok(result.text.includes('Plan not applied.'), result.text);
 });
 
+// Ruling G: an empty answer exits 0 for all three commands; Ctrl-C and end of input exit 1 for all three.
+test('connect: an empty answer at the prompt prints Plan not applied. and exits 0 (ruling G)', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { root, target } = await initialised(t, 'sb-approval-connect-enter-');
+  const repo = path.join(root, 'app');
+  await mkdir(repo);
+  const result = await prompted('enter', ['connect', '--target', target, '--repo', repo]);
+  assert.equal(result.code, 0, result.text);
+  assert.ok(result.text.includes('Plan not applied.'), result.text);
+});
+
+test('connect: end of input at the approval prompt prints Plan not applied. and exits 1 (ruling G)', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { root, target } = await initialised(t, 'sb-approval-connect-eof-');
+  const repo = path.join(root, 'app');
+  await mkdir(repo);
+  const result = await prompted('eof', ['connect', '--target', target, '--repo', repo]);
+  assert.equal(result.code, 1, result.text);
+  assert.ok(result.text.includes('Plan not applied.'), result.text);
+});
+
+test('upgrade: an empty answer at the prompt prints Plan not applied. and exits 0 (ruling G)', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await initialised(t, 'sb-approval-upgrade-enter-');
+  const result = await prompted('enter', ['upgrade', '--target', target]);
+  assert.equal(result.code, 0, result.text);
+  assert.ok(result.text.includes('Plan not applied.'), result.text);
+});
+
+test('init: end of input at the approval prompt prints Plan not applied. and exits 1 (ruling G)', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await fresh(t, 'sb-approval-init-eof2-');
+  const result = await prompted('eof', ['init', '--target', target]);
+  assert.equal(result.code, 1, result.text);
+});
+
 test('init: an empty answer at the prompt prints Plan not applied. and keeps exit code 0 (unchanged)', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
   const { target } = await fresh(t, 'sb-approval-init-enter-');
   const result = await prompted('enter', ['init', '--target', target]);
@@ -148,3 +180,21 @@ test('upgrade: the plan prints the exact upgrade command after the digest', asyn
   const expected = `Apply this exact plan with: node ${cliScript(bin)} upgrade --target ${cliScript(target)} --apply ${digest}`;
   assert.ok(planned.stdout.split('\n').includes(expected), planned.stdout.slice(-400));
 });
+
+// T07-3: a non-interactive run that only plans is not an error, so it does not print "Plan not applied.".
+test('T07-3: a non-interactive run that only plans prints "Plan only: nothing was applied." for init, upgrade and connect, and exits 0', async (t) => {
+  const { root, target } = await initialised(t, 'sb-approval-plan-only-');
+  const repo = path.join(root, 'app');
+  await mkdir(repo);
+  for (const args of [['init', '--target', await freshTarget(t)], ['upgrade', '--target', target], ['connect', '--target', target, '--repo', repo]]) {
+    const planned = await runCli(args);
+    assert.equal(planned.code, undefined, `${args[0]} exits 0: ${planned.stdout}`);
+    assert.ok(planned.stdout.split('\n').includes('Plan only: nothing was applied.'), `${args[0]}: ${planned.stdout.slice(-300)}`);
+    assert.ok(!planned.stdout.includes('Plan not applied.'), `${args[0]} does not print the refusal line`);
+  }
+});
+
+async function freshTarget(t) {
+  const { target } = await fresh(t, 'sb-approval-plan-only-init-');
+  return target;
+}

@@ -43,7 +43,7 @@ const LABEL_SENTENCES = {
   CHANGED: CHANGED_SENTENCE,
   NO_RECEIPT: 'NO_RECEIPT: the receipt for this connection is missing, so the tool cannot roll it back.',
   REGISTERED: 'REGISTERED: this repository was registered without writing files into it; its harness state is read from disk now.',
-  UNREADABLE: 'UNREADABLE: verify could not read this repository safely.',
+  UNREADABLE: 'UNREADABLE: verify could not read this repository safely, so its state is not known. The reason is in brackets on its CONNECTION line.',
 };
 
 // Every printed command is built here, once. Words that are not plain are double-quoted; each flag is
@@ -86,7 +86,7 @@ supplies that exact digest. Differing files are conflicts; --force is not
 available in V1.
 
 connect stages Spec Harness into the named repository and registers it here; it never runs git. Files it creates are uncommitted; your team decides whether they go in by pull request.
-Run one connect at a time per workspace; two running together can fail one of them with a missing-file error.
+Run one connect at a time per workspace. Two at once are not supported: both can finish, and then only one connection is kept in the workspace records.
 Commands this CLI prints use the absolute path of this script, so they run from any folder.`;
 }
 
@@ -137,7 +137,8 @@ async function runPlan(command, targetPath, suppliedDigest) {
   }
   const approvedDigest = answer;
   if (!approvedDigest) {
-    output.write('Plan not applied.\n');
+    // T07-3: a plan-only run is not a refusal. A declined terminal prompt still prints "Plan not applied.".
+    output.write(input.isTTY && output.isTTY ? 'Plan not applied.\n' : 'Plan only: nothing was applied.\n');
     return;
   }
   if (approvedDigest !== plan.digest) throw usageError('Plan digest did not match. No files were changed.');
@@ -227,7 +228,7 @@ function printConnectHandoff(plan, receiptId) {
   } else {
     lines.push('Nothing is committed: connect ran no git command and wrote no repository files.');
   }
-  lines.push('Optional: spec-harness index needs Python 3.11 or newer and does not run on native Windows. See vendor/spec-harness/docs/GETTING-STARTED.md in the starter copy.');
+  lines.push('Optional: spec-harness index needs Python 3.11 or newer. Its vendored script is Bash, untested on native Windows here. See vendor/spec-harness/docs/GETTING-STARTED.md in the starter copy.');
   lines.push(`To undo this connect: ${cliCommand('rollback', { target: plan.hub, receipt: receiptId })}`);
   output.write(`${lines.join('\n')}\n`);
   const preserved = plan.entries.filter((entry) => entry.status === 'PRESERVED' && entry.root === 'repo' && ROOT_INSTRUCTION_FILES.includes(entry.destination));
@@ -241,17 +242,18 @@ function printConnectHandoff(plan, receiptId) {
 // connect owns its prompt: Ctrl-C, end of input and a broken prompt are all a cancel, so the terminal run says
 // "Plan not applied." and exits 1 instead of ending silently. init keeps its own prompt, unchanged.
 async function approvalForConnect(plan, suppliedDigest) {
-  if (!input.isTTY || !output.isTTY) return suppliedDigest;
+  if (!input.isTTY || !output.isTTY) return { answer: suppliedDigest, interrupted: false };
   if (suppliedDigest) throw usageError('Use the terminal prompt for approval; --apply is for non-interactive use.');
   const prompt = createInterface({ input, output, terminal: true });
-  const cancelled = new Promise((resolve) => {
-    prompt.once('SIGINT', () => resolve(null));
-    prompt.once('close', () => resolve(null));
+  const interrupted = new Promise((resolve) => {
+    prompt.once('SIGINT', () => resolve({ answer: null, interrupted: true }));
+    prompt.once('close', () => resolve({ answer: null, interrupted: true }));
   });
   try {
-    return await Promise.race([prompt.question('Type the exact plan digest to apply, or press Enter to cancel: '), cancelled]) ?? null;
+    const answer = prompt.question('Type the exact plan digest to apply, or press Enter to cancel: ').then((text) => ({ answer: text, interrupted: false }));
+    return await Promise.race([answer, interrupted]);
   } catch {
-    return null;
+    return { answer: null, interrupted: true };
   } finally {
     prompt.close();
   }
@@ -261,10 +263,15 @@ async function runConnect({ targetPath, repoPath, name, approvedDigest }) {
   const payload = await source();
   const plan = await planConnect({ ...payload, targetPath, repoPath, name });
   printConnectPlan(plan);
-  const approved = await approvalForConnect(plan, approvedDigest);
-  if (!approved) {
+  const { answer: approved, interrupted } = await approvalForConnect(plan, approvedDigest);
+  // Ruling G: Ctrl-C and end of input exit 1; an empty answer prints the same line and exits 0, as init and upgrade do.
+  if (interrupted) {
     output.write('Plan not applied.\n');
-    if (input.isTTY && output.isTTY) process.exitCode = 1;
+    process.exitCode = 1;
+    return;
+  }
+  if (!approved) {
+    output.write(input.isTTY && output.isTTY ? 'Plan not applied.\n' : 'Plan only: nothing was applied.\n');
     return;
   }
   if (approved !== plan.digest) throw usageError('Plan digest did not match. No files were changed.', 'PLAN_DIGEST_MISMATCH');
@@ -376,7 +383,7 @@ async function runVerify(targetPath) {
   for (const line of await inertResidueLines(targetPath, pendingIds)) output.write(`${line}\n`);
   // D18-a: connections never change the exit code. The summary says what needs attention, so "Verification: OK" is not misread.
   if (connections.length > 0) {
-    const attention = [...new Set(labels.filter((label) => ['CHANGED', 'MISSING', 'NO_RECEIPT'].includes(label)))];
+    const attention = [...new Set(labels.filter((label) => ['CHANGED', 'MISSING', 'NO_RECEIPT', 'UNREADABLE'].includes(label)))];
     if (attention.length > 0) {
       const named = attention.length > 1 ? `${attention.slice(0, -1).join(', ')} and ${attention.at(-1)}` : attention[0];
       const count = labels.filter((label) => attention.includes(label)).length;
@@ -518,7 +525,9 @@ async function explain(error, context) {
         'ROLLBACK_FAILED: undoing this connect did not finish. Some of its files are still in place.',
         `Left in the workspace: ${list(leftovers.hub)}`,
         `Left in the repository: ${list(leftovers.repo)}`,
-        'Not changed: files that are not listed were removed by the undo. The connect stays interrupted, and connect for this repository is refused until the listed files are dealt with.',
+        'Removed: every file the connect wrote that still held its original bytes.',
+        'Left untouched: the files listed above.',
+        'The connect stays interrupted, and connect for this repository is refused until the listed files are dealt with.',
         'These files no longer hold what the connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
         next(id ? rollbackCmd(id) : verifyCmd()),
       );
@@ -571,7 +580,12 @@ async function explain(error, context) {
         next(connectCmd({ repo: '<a repository folder outside the workspace>' })),
       );
     case 'SYMLINK_PATH': {
-      if (context.command !== 'connect') return generic();
+      if (context.command !== 'connect') {
+        // R07-4: the refusal names the real path, so the next command runs without the symlink.
+        const real = await realpath(hub).catch(() => null);
+        const again = real ? cliCommand(context.command, { target: real, receipt: context.command === 'rollback' ? context.receiptId : undefined }) : verifyCmd();
+        return lines(`SYMLINK_PATH: ${message}`, notChanged(), next(again));
+      }
       const given = await lstat(context.repoPath).catch(() => null);
       const real = await realpath(context.repoPath).catch(() => null);
       const head = given?.isSymbolicLink()
