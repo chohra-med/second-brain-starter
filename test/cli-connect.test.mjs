@@ -419,6 +419,48 @@ test('R07-5: an unreadable repository is counted as needing attention, the label
   assert.ok(hasLine(verified.stdout, 'Verification: OK'));
 });
 
+// R08-1: the state a two-connect race leaves: both receipts on disk, connections.json lists only the first. The second
+// connection must still roll back by its receipt, and the first must be untouched.
+async function raceState(w) {
+  const other = path.join(w.root, 'other');
+  await mkdir(other);
+  const first = await connectInProcess(w);
+  const second = await connectInProcess(w, { repoPath: other, name: 'other' });
+  const file = rel(w.hub, '.second-brain/connections.json');
+  const state = JSON.parse(await readFile(file, 'utf8'));
+  delete state.connections[second.receiptId];
+  await writeFile(file, `${JSON.stringify(state)}\n`);
+  return { other, first, second, file };
+}
+
+test('R08-1: a connection whose record is gone rolls back by its receipt; the other connection stays listed and its files stay (N4)', async (t) => {
+  const w = await workspace(t);
+  const { other, first, second, file } = await raceState(w);
+  const firstFiles = await inventory(w.repo);
+  const rolled = await runCli(['rollback', '--target', w.hub, '--receipt', second.receiptId]);
+  assert.equal(rolled.code, undefined, rolled.stdout);
+  assert.ok(hasLine(rolled.stdout, `Rolled back receipt: ${second.receiptId}`), rolled.stdout);
+  assert.deepEqual(await inventory(other), {}, 'the second repository is back to its state before the connect');
+  assert.deepEqual(await inventory(w.repo), firstFiles, 'the first repository is untouched');
+  assert.deepEqual(Object.keys(JSON.parse(await readFile(file, 'utf8')).connections), [first.receiptId], 'connections.json still lists the first connection');
+});
+
+test('R08-1 positive control: a planted second receipt for the same repository still refuses the rollback (RECEIPT_SUPERSEDED)', async (t) => {
+  const w = await workspace(t);
+  const { other, second } = await raceState(w);
+  const planted = `tx-${randomUUID()}`;
+  const copy = JSON.parse(await readFile(rel(w.hub, second.receiptPath), 'utf8'));
+  copy.receiptId = planted;
+  await writeFile(rel(w.hub, `.second-brain/receipts/${planted}.json`), `${JSON.stringify(copy)}\n`);
+  const frozen = await snapshot(w);
+  const refused = await runCli(['rollback', '--target', w.hub, '--receipt', second.receiptId]);
+  assert.equal(refused.code, 1, refused.stdout);
+  assert.match(refused.stdout, /^RECEIPT_SUPERSEDED: /m);
+  assert.ok(refused.stdout.includes(planted), refused.stdout);
+  assert.deepEqual(await snapshot(w), frozen, 'nothing was removed');
+  assert.ok(other);
+});
+
 // R06-21: the drift guard must see a code passed as the second argument of usageError, not only a literal first argument.
 function codesIn(source) {
   const found = new Set();

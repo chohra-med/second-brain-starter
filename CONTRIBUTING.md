@@ -14,7 +14,7 @@ The bundled copy lives in `vendor/spec-harness/`. It is a byte-for-byte copy of 
 
 The pin file itself stays on the allowlist. It is listed as `vendor/SPEC-HARNESS-PIN.json`, next to one `vendor/spec-harness/<path>` line for each file in the inventory.
 
-Run the steps in order from the repository root, in bash or zsh (step 6 uses `<(...)`). Every scratch path lives under one folder, so nothing is written inside the repository except the three vendored files.
+Run the steps in order from the repository root, in bash or zsh (step 6 uses `<(...)`). Every scratch path lives under one folder, so nothing is written inside the repository except the vendored folder, its pin, and the ATTRIBUTION.md and FILE-ALLOWLIST.txt lines it names.
 
 1. Choose one full 40-character commit `C` on `chohra-med/spec-harness-oss`.
 2. Name one scratch folder, once: `S=$(mktemp -d)`. Every path below starts with `$S/`.
@@ -75,3 +75,7 @@ Finder creates a `.DS_Store` file in any folder it opens. The root `.gitignore` 
 ```sh
 find . -name .DS_Store -not -path './.git/*' -delete
 ```
+
+## Counting the suite
+
+`node --test` also runs `test/helpers/consumer-cli.mjs` as a test file. It has no tests of its own, but it reports one passing test, so a full run counts one more than the test files add up to. The change that keeps the count honest is to say so here rather than change the test glob.
