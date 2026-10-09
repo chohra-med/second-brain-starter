@@ -256,13 +256,13 @@ test('the remote rules hold through the real loader: a git-written URL with a fr
   await assert.rejects(readRemote({ repoReal: dir }), (error) => error.code === 'NON_REGULAR_FILE');
 });
 
-test('N1 planted input: the false fragment sentence is gone from PRIVACY.md, and the check fires on its old text (positive control)', async () => {
-  const { execFileSync } = await import('node:child_process');
+test('N1 planted input: the false fragment sentence is gone from PRIVACY.md, and the check fires when it is planted (positive control)', async () => {
   const OLD = 'A remote with a fragment is one case: git quotes that URL in `.git/config`, so it is recorded as `unknown`.';
-  assert.equal((await read('PRIVACY.md')).includes(OLD), false, 'the sentence is not in the file');
-  // 7de5f78 is the commit that still carried the false sentence; the control must read it there.
-  const previous = execFileSync('git', ['-C', sourceRoot, 'show', '7de5f78:PRIVACY.md'], { encoding: 'utf8' });
-  assert.equal(previous.includes(OLD), true, 'positive control: the check reads the sentence where it was');
+  const falseSentenceIn = (text) => text.includes(OLD);
+  const current = await read('PRIVACY.md');
+  assert.equal(falseSentenceIn(current), false, 'the sentence is not in the file');
+  // The control plants the old sentence into the current text. It needs no git history, so a shallow CI checkout runs it too.
+  assert.equal(falseSentenceIn(`${current}\n${OLD}\n`), true, 'positive control: the check fires on the planted sentence');
 });
 
 // The starter's product code (lib and bin) starts no process and opens no network connection. Documents rely on this:
