@@ -43,7 +43,7 @@ After the upgrade is applied, `verify` prints `Verification: OK` and exits 0.
 - A connect receipt covers both the workspace and the repository. Rolling it back removes exactly the files that receipt created, in both folders. It refuses if one of those files changed since, and it removes nothing.
 - Files that `/sdd init` writes in the repository afterwards are not in the receipt. Rollback does not remove them.
 - `verify` lists each connection with its state and its receipt ID. An interrupted connect makes `verify` exit non-zero, and it prints the rollback command for that connect.
-- If you edited a file that an interrupted connect wrote, its rollback stops with `ROLLBACK_FAILED` and keeps the edit. The README Recovery section describes what to do.
+- If you edited a file that an interrupted connect wrote, its rollback stops with `ROLLBACK_FAILED` and keeps the edit. For a completed connect (`STAGED` or `CHANGED`), the same edit is refused with `POSTIMAGE_MISMATCH` instead, and the refusal says `Nothing was removed in either root.` The README Recovery section describes what to do.
 - Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
 
 ### The vendored Spec Harness
@@ -64,7 +64,7 @@ It also adds the bundled `icm-architect` skill in both client skill folders and 
 
 1. Read [CHANGELOG.md](CHANGELOG.md). A source [VERSION](VERSION) is not proof that a matching archive is published; use the Releases page for publication status.
 2. Duplicate your personalized target workspace and label the copy with the date.
-3. Get a fresh source root through Git or a published ZIP release. Confirm its `VERSION`, `template-manifest.json`, and Node.js version (`node --version`, Node `>=22`) before applying any update.
+3. Get a fresh source root by cloning the repository. A published ZIP release is an alternative when a release that contains `connect` is published. Confirm its `VERSION`, `template-manifest.json`, and Node.js version (`node --version`, Node `>=22`) before applying any update.
 4. From the fresh source root, keep the same absolute target path and run:
 
    ```sh
