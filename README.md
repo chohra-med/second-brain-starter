@@ -84,7 +84,7 @@ This starter is licensed under the [MIT License](LICENSE). You may use, copy, mo
 
 This is the free Second Brain foundation. It contains PARA, CODE, the per-project workflow, manual procedures, the local initializer and the `connect` command below. It does not include Builder AI OS, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
-This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license. The `connect` command stages its files into a repository you name. The starter never runs its shell scripts. See [ATTRIBUTION.md](ATTRIBUTION.md).
+This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license. The `connect` command stages its files into a repository you name. No code in `lib` or `bin` starts a process, so the starter never runs the vendored shell scripts. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
@@ -122,7 +122,7 @@ node .\bin\second-brain.mjs init --target $PROJECT
 
 In an interactive terminal, `init` prints the complete plan and asks you to type its exact plan digest before it writes. Read the listed `CREATE`, `IDENTICAL`, `MANAGED-UPDATE`, `CONFLICT`, and `DEPRECATED` entries first. A conflicting plan is not applied.
 
-In a non-interactive shell, the same command prints a plan only. After reviewing that exact output, rerun it with its exact digest:
+In a non-interactive shell, the same command prints a plan only, and it ends with `Plan only: nothing was applied.`. That line is the normal end of a plan-only run, not an error. A declined terminal prompt prints `Plan not applied.` instead. After reviewing that exact output, rerun it with its exact digest:
 
 ```sh
 node ./bin/second-brain.mjs init --target "$PROJECT" --apply YOUR_PLAN_DIGEST
@@ -130,7 +130,7 @@ node ./bin/second-brain.mjs init --target "$PROJECT" --apply YOUR_PLAN_DIGEST
 
 Do not substitute a digest from another target or a previous plan. `--force` does not exist in V1.
 
-The target may already contain your project files. Differing managed files remain conflicts. A nonempty unmanaged root `AGENTS.md` or `CLAUDE.md` also stops for manual resolution. The only loader merge surface is an existing compatible `second-brain` managed block; keep your project-specific instructions outside that block. The initializer never grants an AI client file access or proves that a client follows the files.
+The target may already contain your project files. Differing managed files remain conflicts. A nonempty unmanaged root `AGENTS.md` or `CLAUDE.md` also stops for manual resolution. The plan marks it `CONFLICT` and prints `Manual resolution required: AGENTS.md has unmanaged or malformed loader markers.` That message is the same for a plain file with no harness block and for a file whose block is broken, so the plan names the file and you check which case you have. The only loader merge surface is an existing compatible `second-brain` managed block; keep your project-specific instructions outside that block. The initializer never grants an AI client file access or proves that a client follows the files.
 
 ### 3. Start one project
 
@@ -165,11 +165,11 @@ To start a second project, copy the installed `03-Resources/_templates/project/`
 node ./bin/second-brain.mjs connect --target "$PROJECT" --repo "$REPOSITORY"
 ```
 
-Add `--name NAME` when you want a folder name other than the repository's own. The name becomes the folder `01-Projects/NAME/` in the workspace. If the default name cannot be used, the refusal says so and asks for `--name`.
+Add `--name NAME` when you want a folder name other than the repository's own. The `Connection.md` record holds the repository path and the remote. A remote the parser does not recognise is recorded as `unknown`. The name becomes the folder `01-Projects/NAME/` in the workspace. If the default name cannot be used, the refusal says so and asks for `--name`.
 
 The command prints one plan for both folders and writes nothing. Without `--apply`, it is read-only in both folders. Read these lines first:
 
-- `CREATE` lines are files that connect will write: the connection folder and its `Connection.md` record in the workspace, and the harness files in the repository.
+- `CREATE` lines are files and folders that connect will write: the connection folder and its `Connection.md` record in the workspace, and the harness files in the repository.
 - `PRESERVED` lines are files the repository already has. connect creates a file in the repository only where none exists, keeps the existing ones unchanged and lists them. If a preserved `AGENTS.md`, `CLAUDE.md` or `RULES.md` is listed, the plan prints a loader block for you to add by hand. Until you add it, your client does not load the harness.
 - `Detection` says what the repository already has. A repository with no Spec Harness files is `NONE`, and connect stages the harness files there. A repository with a harness receipt, `.claude/agents/.init-synthesis.json`, or with older Spec Harness files, is registered only, and connect writes nothing into it.
 
@@ -179,7 +179,7 @@ The plan ends with the exact apply command, with the plan digest. Approve that p
 node ./bin/second-brain.mjs connect --target "$PROJECT" --repo "$REPOSITORY" --apply YOUR_PLAN_DIGEST
 ```
 
-The printed commands use the absolute path of the script, so you can paste them from any folder. A successful apply prints one of these statuses:
+The printed commands use the absolute path of the script, so you can paste them from any folder. They are quoted by platform: single quotes on macOS and Linux, and double quotes on Windows, where the CLI does not escape `%`, so a path that contains `%` may not paste into `cmd.exe` as written. A successful apply prints one of these statuses:
 
 - `Status: STAGED`. The harness files are written and waiting for `/sdd init`. The repository is STAGED until `.claude/agents/.init-synthesis.json` exists, and it is not initialised before that.
 - `Status: INITIALISED, registered` or `Status: already has harness files, registered`. The repository is register only. No file was written into it.
@@ -188,13 +188,13 @@ For a STAGED repository, open it in Claude Code or Codex and run `/sdd init` the
 
 Nothing is committed. connect runs no git command. The files it creates are uncommitted, and your team decides whether they go in by pull request. The staged `loop.sh` is copied as bytes, so it is not executable on this route.
 
-The Spec Harness `index` step is optional and is not run by connect. It needs Python 3.11 or newer, and it does not run on native Windows. See `vendor/spec-harness/docs/GETTING-STARTED.md` in the starter copy.
+The Spec Harness `index` step is optional and is not run by connect. It needs Python 3.11 or newer. The vendored script is Bash and uses POSIX-only file APIs, so this project has not tested it on native Windows and does not guarantee it there. See `vendor/spec-harness/docs/GETTING-STARTED.md` in the starter copy.
 
 What connect does not do:
 
 - It does not find repositories. You name each one, and each connect covers one repository.
 - It does not commit, push, branch or stash.
-- It does not run `/sdd init`, the `index` step or any shell script from the vendored copy.
+- It does not run `/sdd init` or the `index` step. No code in `lib` or `bin` starts a process, so no vendored shell script runs.
 - It does not write into a repository that already has harness files.
 - It does not add a loader block to your files. You add it, when the plan asks.
 - It does not work from ordinary web chat. Your client still needs local file access.
@@ -209,7 +209,7 @@ node ./bin/second-brain.mjs verify --target "$PROJECT"
 
 Verification reports each managed path and exits nonzero if an installed managed file is missing or has changed. It does not inspect unrelated project files. It also lists each connection, if the workspace has any, and the connections do not change the exit code. `verify` only reads: it writes nothing in either folder. Editable seed records are expected to change after setup; once the v1.1.0 seed policy is installed, verification reports those existing contained records as `PERSONALIZED` and still succeeds. Missing, unsafe, or escaping seed paths still fail.
 
-Personalize editable seed records such as project facts, decisions, roadmap and progress as you work; those changes remain valid. Personalizing a managed record intentionally creates baseline drift: this includes managed procedures and loaders, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green.
+Personalize editable seed records such as project facts, decisions, roadmap and progress as you work; those changes remain valid. Personalizing a managed record intentionally creates baseline drift: this includes managed procedures and loaders, so `verify` names that path and exits nonzero. That expected result is not proof of damage: review the named paths against the changes you intended. Do not alter installed state merely to make `verify` green. The one exception is a `NO_RECEIPT` connection, which the Recovery section describes.
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest; non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](UPGRADING.md) before upgrading.
 
@@ -219,18 +219,19 @@ Every applied transaction prints a receipt ID and stores its receipt inside the 
 node ./bin/second-brain.mjs rollback --target "$PROJECT" --receipt RECEIPT_ID
 ```
 
-The rollback checks that receipt's current preconditions and does not undo unrelated project work. A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
+The rollback checks that receipt's current preconditions and does not undo unrelated project work. Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place. The trunk behaves the same way. A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
 
 `verify` prints one line for each connection:
 
 | Label | Meaning |
 |---|---|
 | `STAGED` | The harness files connect wrote are present and unchanged. `/sdd init` has not written its receipt yet. |
-| `INITIALISED` | The repository has `.claude/agents/.init-synthesis.json`. |
+| `INITIALISED` | The repository has the harness receipt `.claude/agents/.init-synthesis.json`. Connect wrote nothing into it. |
 | `CHANGED` | Some staged files are missing or differ now. The line gives the count and the first names. You can roll the connection back, or keep the files. |
 | `MISSING` | The repository folder is not at the path the connection recorded. |
-| `REGISTERED (now: ...)` | A register-only connection, with what detection finds now. |
-| `NO_RECEIPT` | The receipt is missing, so the tool cannot roll the connection back. The line says what you can do. |
+| `REGISTERED (now: ...)` | The repository has Spec Harness files but no `.claude/agents/.init-synthesis.json` receipt, so connect registered it without writing. The bracket shows what detection finds on disk now: harness present, or no harness files found. |
+| `UNREADABLE (...)` | verify could not read the repository safely, for example because its folder is now a symlink. The bracket gives the reason. It needs attention, and it does not change the exit code. |
+| `NO_RECEIPT` | The receipt is missing, so the tool cannot roll the connection back. See Recovery. |
 
 After the connection lines, one summary line says how many connections need attention, or that all are as recorded. Two more labels can appear:
 
@@ -239,13 +240,38 @@ After the connection lines, one summary line says how many connections need atte
 
 The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
+Every line that `verify` can print starts with one of these prefixes:
+
+| Prefix | Meaning | Makes the exit code 1 |
+|---|---|---|
+| `VERIFIED` | A managed file matches its installed hash. | No |
+| `PERSONALIZED` | An editable seed record that you may change. Expected after setup. | No |
+| `UNMANAGED` | The installed state does not manage the path. You see this for a file that a newer source adds, such as `00-Meta/Profile.md` before an upgrade. | Yes |
+| `MISSING` | A managed file is missing. | Yes |
+| `CORRUPT` | A managed file differs from its installed hash. | Yes |
+| `MISSING_STATE` | The installed state record is missing. | Yes |
+| `SOURCE_MANIFEST_MISMATCH` | The installed state was made from a different source manifest. A newer source reports this until you upgrade. | Yes |
+| `CONNECTION` | One connection: its name, repository path, state and receipt ID. | No |
+| `PENDING` | An interrupted connect, or a finished one whose marker was not cleared. | Yes |
+| `RESIDUE` | A leftover temporary file or folder from a connect. | No |
+| `Connections` | The summary line: how many connections need attention, or that all are as recorded. | No |
+| `Verification` | `OK` or `FAILED`. | Follows the lines above |
+
+A path-check error can also print as its own code, such as `SYMLINK_PATH` or `NON_REGULAR_FILE`, for a path that verify cannot read safely. Each such line makes the exit code 1.
+
 ## Recovery and removal
 
 If a change goes wrong, stop editing the target. Use the relevant receipt rollback when its preconditions hold, or return to the dated copy made before the update. Your records remain plain Markdown and readable without Obsidian.
 
-If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. It restores both folders. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
+If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. When no file was edited, it restores both folders. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
 
-Two leftovers are known and accepted. A stop before any pending record exists can leave an empty `.second-brain/connect-pending/` folder, and at most one temporary engine file in it, in the workspace. Nothing is left in the repository. `verify` lists this as `RESIDUE`, and the next approved connect, rollback or recovery removes it. Only one connect should run at a time per workspace. There is no lock across processes, and two connects running together can fail one of them with a missing-file error.
+If you edited a file that the connect wrote, the rollback stops with `ROLLBACK_FAILED` and exits 1. The edit is kept, and the connect stays `PENDING`, so connect refuses that repository until the file is dealt with. Move the edited file out of the repository, or delete it yourself, then run the same rollback command again.
+
+Two leftovers are known and accepted. A stop before any pending record exists can leave an empty `.second-brain/connect-pending/` folder, and at most one temporary engine file in it, in the workspace. The design writes the pending record before any repository file, so this leaves nothing in the repository. `verify` lists this as `RESIDUE`, and the next approved connect, rollback or recovery removes it.
+
+Run one connect at a time per workspace. Two connects at the same time are not supported. In a test, both finished with exit 0 and both repositories were staged, but the workspace kept only one connection record, so `verify` listed one. There is no lock across processes.
+
+`NO_RECEIPT` is the one state the tool cannot undo, because its receipt is missing and there is nothing to roll back. The only way to make `verify` stop listing that connection is to delete its entry from `.second-brain/connections.json` by hand. That does not delete the staged files in the repository, which stay until you remove them.
 
 Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
 

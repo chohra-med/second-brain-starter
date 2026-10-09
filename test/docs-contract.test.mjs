@@ -27,27 +27,72 @@ function namedCommands(text) {
   return [...text.matchAll(COMMAND_PATTERN)].map((match) => match[1]);
 }
 
-test('every command named in README, ONBOARDING and UPGRADING exists in the CLI', async () => {
+// The check itself, as a function, so the positive control runs the real check on a planted document.
+function commandProblems(document, text, exposed) {
+  return namedCommands(text).filter((command) => !exposed.has(command)).map((command) => `${document} names a command the CLI does not expose: ${command}`);
+}
+
+// Flags the documents name must exist in the argument module. --force is named on purpose, to say it does not exist in V1.
+// --version is Node's own flag (`node --version`, UPGRADING's Node check), not this CLI's.
+const DELIBERATELY_ABSENT_FLAGS = ['--force', '--version'];
+const FLAG_PATTERN = /(?<![\w-])--[a-z][a-z-]*/g;
+
+function flagProblems(document, text, flags) {
+  return [...new Set(text.match(FLAG_PATTERN) ?? [])].filter((flag) => !flags.has(flag) && !DELIBERATELY_ABSENT_FLAGS.includes(flag)).map((flag) => `${document} names a flag the CLI does not accept: ${flag}`);
+}
+
+test('every command and flag named in README, ONBOARDING and UPGRADING exists in the CLI', async () => {
   const exposed = new Set(exposedCommands(await read('lib/cli-arguments.mjs')));
+  const flags = new Set([...(await read('lib/cli-arguments.mjs')).matchAll(/'(--[a-z-]+)'/g)].map((match) => match[1]));
   const printed = await execFile(process.execPath, [path.join(sourceRoot, 'bin', 'second-brain.mjs'), '--help'], { cwd: sourceRoot, windowsHide: true });
   for (const command of exposed) {
     assert.match(printed.stdout, new RegExp(`second-brain ${command} `), `the help prints the ${command} usage`);
   }
   let named = 0;
+  const problems = [];
   for (const document of COMMAND_DOCUMENTS) {
-    for (const command of namedCommands(await read(document))) {
-      named += 1;
-      assert.ok(exposed.has(command), `${document} names a command the CLI does not expose: ${command}`);
-    }
+    const text = await read(document);
+    named += namedCommands(text).length;
+    problems.push(...commandProblems(document, text, exposed), ...flagProblems(document, text, flags));
   }
   assert.ok(named >= 10, `the scan found the command mentions (${named}), so the check is not a no-op`);
+  assert.deepEqual(problems, []);
 });
 
-test('the command check fires on a planted command the CLI does not expose (positive control)', () => {
+test('the command and flag checks fire on a planted document (positive control)', () => {
   const exposed = new Set(exposedCommands('export const COMMANDS = new Set([\'init\', \'connect\']);'));
-  const planted = namedCommands('Run `node ./bin/second-brain.mjs frobnicate --target /absolute/path`.');
-  assert.deepEqual(planted, ['frobnicate']);
-  assert.equal(exposed.has('frobnicate'), false, 'the planted command is not exposed, so the check would report it');
+  const flags = new Set(['--target', '--apply']);
+  const planted = 'Run `node ./bin/second-brain.mjs frobnicate --target /absolute/path --bogus-flag x`.';
+  assert.deepEqual(commandProblems('PLANTED.md', planted, exposed), ['PLANTED.md names a command the CLI does not expose: frobnicate']);
+  assert.deepEqual(flagProblems('PLANTED.md', planted, flags), ['PLANTED.md names a flag the CLI does not accept: --bogus-flag']);
+  assert.deepEqual(flagProblems('PLANTED.md', 'See --force.', flags), [], 'a deliberately absent flag is not reported');
+});
+
+// T07-6: every line prefix verify can print is in the README table. The prefixes are read from the code.
+function verifyPrefixes(binSource, installerSource) {
+  const verifyBody = installerSource.slice(installerSource.indexOf('export async function verifyInstall'));
+  const fromEntries = [...verifyBody.slice(0, verifyBody.indexOf('\n}\n')).matchAll(/status = '([A-Z_]+)'/g)].map((match) => match[1]);
+  const fromIssues = [...verifyBody.slice(0, verifyBody.indexOf('\n}\n')).matchAll(/code: '([A-Z_]+)'/g)].map((match) => match[1]);
+  const fromCli = [...binSource.matchAll(/output\.write\(`([A-Z]+)\\t/g)].map((match) => match[1]);
+  return new Set([...fromEntries, ...fromIssues, ...fromCli, 'Connections', 'Verification']);
+}
+
+function tablePrefixes(readme) {
+  return new Set([...readme.matchAll(/^\| `([^`]+)` \|/gm)].map((match) => match[1].replace(/ .*$/, '').replace(/:$/, '')));
+}
+
+test('every line prefix verify can print has a row in the README verify table (T07-6)', async () => {
+  const prefixes = verifyPrefixes(await read('bin/second-brain.mjs'), await read('lib/installer.mjs'));
+  const documented = tablePrefixes(await read('README.md'));
+  const missing = [...prefixes].filter((prefix) => !documented.has(prefix));
+  assert.ok(prefixes.size >= 10, `the scan found the prefixes (${prefixes.size}), so the check is not a no-op`);
+  assert.deepEqual(missing, [], 'verify prints a prefix the README table does not name');
+});
+
+test('the verify prefix check fires when verify gains a prefix the table lacks (positive control)', () => {
+  const planted = verifyPrefixes('output.write(`NEWPREFIX\\t${x}`);', '');
+  assert.ok(planted.has('NEWPREFIX'));
+  assert.ok(!tablePrefixes('| `VERIFIED` | ok |').has('NEWPREFIX'));
 });
 
 // ---------------------------------------------------------------------------
@@ -163,10 +208,10 @@ test('the link check fires on a planted missing file and a planted missing ancho
 
 const PRIVACY_AMENDED = [
   'Connection records, connect receipts and connect pending records also hold the absolute path of the workspace and of each repository you explicitly connected with `connect`',
-  'holds the remote URL, with credentials, query and fragment removed, or `unknown`',
-  'It holds the names of the rule files found, but no file contents from the repository',
+  'The remote is the `origin` URL with credentials, query and fragment removed',
+  'the rule-file names found',
   'It never reads a sibling folder, a parent folder or another repository',
-  'the `origin` URL from `.git/config`',
+  'reads the `origin` URL from it',
   'It never prints or stores those bytes',
 ];
 const PRIVACY_FALSE = 'should not contain home paths';
@@ -185,4 +230,50 @@ test('the PRIVACY check fires when the amendment is removed or the false stateme
   const amended = await read('PRIVACY.md');
   assert.ok(privacyProblems(amended.replace(PRIVACY_AMENDED[0], 'omitted')).length > 0);
   assert.ok(privacyProblems(`${amended}\nRecords ${PRIVACY_FALSE}.\n`).length > 0);
+});
+
+// T07-8: PRIVACY and README say a remote the parser does not recognise is recorded as `unknown`. This runs the real reader.
+test('a remote URL with a fragment, which git quotes in .git/config, is recorded as unknown; a plain one keeps its host and path only (T07-8)', async (t) => {
+  const { mkdtemp, mkdir, writeFile, rm } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { readRemote } = await import('../lib/connect.mjs');
+  const root = await mkdtemp(path.join(tmpdir(), 'sb-remote-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, '.git'));
+  await writeFile(path.join(root, '.git', 'config'), '[remote "origin"]\n\turl = "https://user:secret@example.com/acme/app.git?token=q1#frag"\n');
+  assert.equal(await readRemote({ repoReal: root }), 'unknown');
+  await writeFile(path.join(root, '.git', 'config'), '[remote "origin"]\n\turl = https://user:secret@example.com/acme/app.git?token=q1\n');
+  assert.equal(await readRemote({ repoReal: root }), 'https://example.com/acme/app.git');
+});
+
+// The starter's product code (lib and bin) starts no process and opens no network connection. Documents rely on this:
+// "the vendored shell scripts are never executed" and "sends nothing anywhere". The scan reads every shipped source file.
+const PROCESS_OR_NETWORK = /(?:from|import\(|require\()\s*['"](?:node:)?(child_process|net|http|https|dgram|tls|dns)['"]|\bfetch\(|\bexecFile\b|\bspawn\(|\bexec\(/;
+
+async function sourceFiles(directory) {
+  const { readdir } = await import('node:fs/promises');
+  const found = [];
+  for (const entry of await readdir(path.join(sourceRoot, directory), { withFileTypes: true })) {
+    if (entry.isFile() && /\.mjs$/.test(entry.name)) found.push(path.join(directory, entry.name));
+  }
+  return found;
+}
+
+test('no code in lib or bin starts a process or opens a network connection (the vendored scripts are never executed)', async () => {
+  const offenders = [];
+  let scanned = 0;
+  for (const file of [...(await sourceFiles('lib')), ...(await sourceFiles('bin'))]) {
+    scanned += 1;
+    const text = await read(file);
+    if (PROCESS_OR_NETWORK.test(text)) offenders.push(file);
+  }
+  assert.ok(scanned >= 4, `the scan read the shipped source files (${scanned}), so the check is not a no-op`);
+  assert.deepEqual(offenders, []);
+});
+
+test('the process and network scan fires on a planted import (positive control)', () => {
+  assert.ok(PROCESS_OR_NETWORK.test("import { spawn } from 'node:child_process';"));
+  assert.ok(PROCESS_OR_NETWORK.test("import http from 'node:http';"));
+  assert.ok(PROCESS_OR_NETWORK.test('await fetch(url);'));
+  assert.equal(PROCESS_OR_NETWORK.test("import { readFile } from 'node:fs/promises';"), false);
 });

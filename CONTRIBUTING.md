@@ -10,23 +10,66 @@ Do not include credentials, client data, private journals, unpublished product m
 
 ## Re-pinning the vendored Spec Harness
 
-The bundled copy lives in `vendor/spec-harness/`. It is a byte-for-byte copy of one upstream commit, and [vendor/SPEC-HARNESS-PIN.json](vendor/SPEC-HARNESS-PIN.json) records that commit. `test/vendor.test.mjs` checks the folder against the pin. To move the pin:
+The bundled copy lives in `vendor/spec-harness/`. It is a byte-for-byte copy of one upstream commit. [vendor/SPEC-HARNESS-PIN.json](vendor/SPEC-HARNESS-PIN.json) records that commit, its tree, the harness version, the SHA-256 of `LICENSE`, and for every vendored file its path, byte count and SHA-256. Files with the executable bit also carry `"executable": true`. `test/vendor.test.mjs` checks the folder against the pin. `lib/connect.mjs` refuses a pin that lacks `schemaVersion: 1`, a full commit, a full tree, or the manifest's `harnessVersion`.
 
-1. Pick one upstream commit `C` on `chohra-med/spec-harness-oss`, and export its tracked tree with `git archive C` into an empty temporary folder. Do not copy from a working tree that has local edits.
-2. Replace `vendor/spec-harness/` with that export, so the folder holds the full tracked tree of `C` and nothing else.
-3. Regenerate `vendor/SPEC-HARNESS-PIN.json` from `C`: `commit` is `C`, `tree` is `git rev-parse C^{tree}`, `harnessVersion` is the harness version in the vendored `install-manifest.json`, `license` holds the SHA-256 of the vendored `LICENSE`, and `sourceInventory` lists each file with its byte count, SHA-256, and `"executable": true` for each file whose mode is `100755` (`git ls-tree -r C` shows the mode).
-4. Update the Spec Harness section of [ATTRIBUTION.md](ATTRIBUTION.md) to name the new commit and version. That section may name only the pinned commit.
-5. Update the `vendor/` block of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt) so it lists exactly the files in the new inventory.
-6. Run `node --test test/vendor.test.mjs`, then the full suite.
+The pin file itself stays on the allowlist. It is listed as `vendor/SPEC-HARNESS-PIN.json`, next to one `vendor/spec-harness/<path>` line for each file in the inventory.
+
+Follow these steps in order, from the repository root. Keep the upstream clone and the export in scratch folders, never inside the repository.
+
+1. Choose one full 40-character commit `C` on `chohra-med/spec-harness-oss`.
+2. Clone the upstream repository: `git clone https://github.com/chohra-med/spec-harness-oss UPSTREAM`.
+3. Record the tracked files and the tree: `git -C UPSTREAM ls-tree -r C > LS-TREE.txt`, then `git -C UPSTREAM rev-parse C^{tree}`. The second value is `TREE`.
+4. Export `C` into an empty folder: `mkdir EXPORT && git -C UPSTREAM archive C | tar -x -C EXPORT`.
+5. Prove the export holds exactly the tracked files: `diff <(cut -f2 LS-TREE.txt | sort) <(cd EXPORT && find . -type f | sed 's|^\./||' | sort)`. It must print nothing. If it prints anything, stop.
+6. Replace the vendored folder: `rm -rf vendor/spec-harness && mkdir vendor/spec-harness && cp -R EXPORT/. vendor/spec-harness/`.
+7. Write the pin with the script below, saved outside the repository as `pin.mjs`: `node pin.mjs EXPORT LS-TREE.txt C TREE https://github.com/chohra-med/spec-harness-oss > vendor/SPEC-HARNESS-PIN.json`. Do not edit the pin by hand.
+8. If the commit or the harness version changed, update the Spec Harness section of [ATTRIBUTION.md](ATTRIBUTION.md). That section may name only the pinned commit.
+9. Update the `vendor/` lines of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt). Keep `vendor/SPEC-HARNESS-PIN.json`. Keep one `vendor/spec-harness/<path>` line for each file in the new inventory, remove the lines of files that are gone, and change nothing else.
+10. Run `node --test test/vendor.test.mjs`. It must report `# fail 0`. Then run `node --test` for the whole suite.
+
+The script `pin.mjs`:
+
+```js
+// Writes vendor/SPEC-HARNESS-PIN.json for one upstream commit.
+// usage: node pin.mjs EXPORT_DIR LS_TREE_LISTING COMMIT TREE REPOSITORY_URL > vendor/SPEC-HARNESS-PIN.json
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+const [exportDir, listing, commit, tree, repository] = process.argv.slice(2);
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const modes = new Map();
+for (const line of readFileSync(listing, 'utf8').split('\n').filter(Boolean)) {
+  const [meta, file] = line.split('\t');
+  modes.set(file, meta.split(' ')[0]);
+}
+const paths = [...modes.keys()].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
+const sourceInventory = paths.map((file) => {
+  const bytes = readFileSync(path.join(exportDir, ...file.split('/')));
+  const entry = { path: file, bytes: bytes.length, sha256: sha256(bytes) };
+  if (modes.get(file) === '100755') entry.executable = true;
+  return entry;
+});
+const manifest = JSON.parse(readFileSync(path.join(exportDir, 'install-manifest.json'), 'utf8'));
+const pin = {
+  schemaVersion: 1,
+  repository,
+  commit,
+  tree,
+  harnessVersion: manifest.harnessVersion,
+  license: { spdx: 'MIT', path: 'LICENSE', sha256: sha256(readFileSync(path.join(exportDir, 'LICENSE'))) },
+  sourceInventory,
+};
+process.stdout.write(`${JSON.stringify(pin, null, 2)}\n`);
+```
 
 Two traps apply inside this repository:
 
-- **Nested ignore and attribute files are live.** `vendor/spec-harness/.gitignore` ignores `.DS_Store`, `*.log`, `_run-logs/` and `node_modules/`. Git skips an untracked file that matches it without any message. After copying, run `git status --ignored vendor/spec-harness` and confirm that no file from the upstream tree is missing.
-- **Line endings are normalised on add.** The root and vendored `.gitattributes` both say `* text=auto eol=lf`. A file that arrives with CRLF bytes is stored as LF, so a fresh clone holds different bytes from the upstream commit and the pin test fails there. Check with `git ls-files --eol vendor/spec-harness` before committing. Every vendored file must show `i/lf`.
+- **Nested ignore and attribute files are live.** `vendor/spec-harness/.gitignore` ignores `.DS_Store`, `*.log`, `_run-logs/` and `node_modules/`. A blanket `git add` skips an untracked file that matches it, without a message. After copying, run `git status --ignored vendor/spec-harness` and confirm that no file from the upstream tree is missing.
+- **Line endings are normalised on add.** The root and vendored `.gitattributes` both say `* text=auto eol=lf`. A file that arrives with CRLF bytes is stored as LF, so the copy in the repository no longer matches the upstream bytes. Check with `git ls-files --eol vendor/spec-harness` before committing. Every vendored file must show `i/lf`.
 
 ## Local files that break the real-tree tests
 
-Finder creates a `.DS_Store` file in any folder it opens. Git ignores it, and the repository ignores it too, but the tests do not. A stray `.DS_Store` at the repository root turns the test "the real source root, vendored bytes included, passes the package scanner" red, because the scanner rejects every file that is not in the allowlist. A stray `.DS_Store` inside `vendor/spec-harness/` also turns red the test that checks the vendored inventory. Delete it before you run `node --test`:
+Finder creates a `.DS_Store` file in any folder it opens. The root `.gitignore` lists it, so git does not track it, but the tests do not skip it. A stray `.DS_Store` at the repository root turns the test "the real source root, vendored bytes included, passes the package scanner" red, because the scanner rejects every file that is not in the allowlist. A stray `.DS_Store` inside `vendor/spec-harness/` also turns red the test that checks the vendored inventory. Delete it before you run `node --test`:
 
 ```sh
 find . -name .DS_Store -not -path './.git/*' -delete
