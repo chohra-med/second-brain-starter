@@ -296,3 +296,72 @@ test('the process and network scan fires on a planted import (positive control)'
   assert.ok(PROCESS_OR_NETWORK.test('await fetch(url);'));
   assert.equal(PROCESS_OR_NETWORK.test("import { readFile } from 'node:fs/promises';"), false);
 });
+
+// ---------------------------------------------------------------------------
+// (v) README "Start in one sentence" step 1 names cloning first, and the Releases ZIP is not presented before it.
+// ---------------------------------------------------------------------------
+
+function startRouteProblems(readme) {
+  const start = readme.indexOf('## Start in one sentence');
+  if (start === -1) return ['README.md has no "Start in one sentence" section'];
+  const step = readme.slice(start).match(/^1\. .*$/m)?.[0] ?? '';
+  const cloneAt = step.search(/\bclone\b/i);
+  const zipAt = step.search(/\bZIP\b/);
+  const problems = [];
+  if (cloneAt === -1) problems.push('step 1 does not name cloning');
+  if (zipAt !== -1 && (cloneAt === -1 || zipAt < cloneAt)) problems.push('step 1 presents the Releases ZIP before cloning');
+  return problems;
+}
+
+test('README "Start in one sentence" step 1 names cloning first and does not present the Releases ZIP as the first route', async () => {
+  assert.deepEqual(startRouteProblems(await read('README.md')), []);
+});
+
+test('the start-route check fires on the 250cfe5 wording, which offers the ZIP first (positive control)', async () => {
+  const OLD_STEP = '1. Get a source copy: download and extract a ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases), or clone the [repository](https://github.com/chohra-med/second-brain-starter).';
+  const current = await read('README.md');
+  assert.deepEqual(startRouteProblems(current), [], 'the branch wording passes');
+  const planted = current.replace(/^1\. Get a source copy:.*$/m, OLD_STEP);
+  assert.notEqual(planted, current, 'the planted step replaced the branch step');
+  assert.deepEqual(startRouteProblems(planted), ['step 1 presents the Releases ZIP before cloning']);
+});
+
+// ---------------------------------------------------------------------------
+// (vi) PRIVACY.md and SECURITY.md name `node --test` as the way to run the package scan, and each scan test title they
+// quote is a real title in test/vendor.test.mjs (matched with its closing quote, so a truncated title does not pass).
+// ---------------------------------------------------------------------------
+
+const SCAN_DOCUMENTS = ['PRIVACY.md', 'SECURITY.md'];
+const SCAN_TITLE = /`(the real source root[^`]*)`/g;
+const SCAN_COMMAND = /`node --test`[^.]*scan|scan[^.]*`node --test`/;
+
+function scanDocumentProblems(document, text, vendorTest) {
+  const problems = [];
+  if (!SCAN_COMMAND.test(text)) problems.push(`${document} does not name node --test as the way to run the scan`);
+  for (const [, title] of text.matchAll(SCAN_TITLE)) {
+    if (!vendorTest.includes(`test('${title}'`)) problems.push(`${document} quotes a test title that test/vendor.test.mjs does not carry: ${title}`);
+  }
+  return problems;
+}
+
+test('PRIVACY.md and SECURITY.md name node --test for the package scan, and the quoted scan test title exists verbatim in test/vendor.test.mjs', async () => {
+  const vendorTest = await read('test/vendor.test.mjs');
+  const quoted = [];
+  const problems = [];
+  for (const document of SCAN_DOCUMENTS) {
+    const text = await read(document);
+    quoted.push(...[...text.matchAll(SCAN_TITLE)].map((match) => match[1]));
+    problems.push(...scanDocumentProblems(document, text, vendorTest));
+  }
+  assert.ok(quoted.length >= 1, `a scan test title is quoted (${quoted.length}), so the check is not a no-op`);
+  assert.deepEqual(problems, []);
+});
+
+test('the scan-document check fires on a truncated quoted title and on a missing node --test sentence (positive control)', async () => {
+  const vendorTest = await read('test/vendor.test.mjs');
+  const full = 'the real source root, vendored bytes included, passes the package scanner against FILE-ALLOWLIST.txt';
+  const truncated = 'the real source root, vendored bytes included, passes the package scanner';
+  assert.deepEqual(scanDocumentProblems('PLANTED.md', `Run \`node --test\` to scan, then \`${full}\`.`, vendorTest), []);
+  assert.equal(scanDocumentProblems('PLANTED.md', `Run \`node --test\` to scan, then \`${truncated}\`.`, vendorTest).length, 1);
+  assert.equal(scanDocumentProblems('PLANTED.md', 'Run the scan some other way.', vendorTest).length, 1);
+});
