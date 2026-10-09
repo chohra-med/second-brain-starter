@@ -260,7 +260,8 @@ test('N1 planted input: the false fragment sentence is gone from PRIVACY.md, and
   const { execFileSync } = await import('node:child_process');
   const OLD = 'A remote with a fragment is one case: git quotes that URL in `.git/config`, so it is recorded as `unknown`.';
   assert.equal((await read('PRIVACY.md')).includes(OLD), false, 'the sentence is not in the file');
-  const previous = execFileSync('git', ['-C', sourceRoot, 'show', 'HEAD:PRIVACY.md'], { encoding: 'utf8' });
+  // 7de5f78 is the commit that still carried the false sentence; the control must read it there.
+  const previous = execFileSync('git', ['-C', sourceRoot, 'show', '7de5f78:PRIVACY.md'], { encoding: 'utf8' });
   assert.equal(previous.includes(OLD), true, 'positive control: the check reads the sentence where it was');
 });
 
