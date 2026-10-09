@@ -6,7 +6,7 @@ This is a guide for a local coding client. It does not grant filesystem, shell, 
 
 ## 1. Confirm the setup request
 
-Say what will happen: select one project folder, inspect only the needed project rules and runtime, show a complete initializer plan, wait for the user's target-bound approval, apply that exact plan, verify it, and open or point to Home.
+Say what will happen: select one project folder, inspect only the needed project rules and runtime, show a complete initializer plan, wait for the user's target-bound approval, apply that exact plan, verify it, and open or point to Home. Repositories are connected afterwards, one at a time, in stage 9.
 
 Do not hijack repository maintenance, source edits, tests, release work, or an unrelated request. If intent is unclear, ask whether the user wants setup before using this route.
 
@@ -55,3 +55,21 @@ Report the initializer receipt ID and the verification result. A stale digest, c
 After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before its approval gate.
 
 On repeated or interrupted setup, inspect the receipt and current installed state, verify, then fill only actual gaps through the same first-use owner. Do not replay completed writes or claim authenticated client discovery or universal client compatibility without separate observed evidence.
+
+Connecting a repository is optional. It is stage 9, and it starts only after this stage has verified.
+
+## 9. Connect a repository
+
+This stage registers one repository you already work in with the workspace. Run it once per repository. It is not a scan.
+
+1. Ask for one exact existing repository path, and nothing else. Repeat the exact path and ask the user to confirm it before reading or writing inside it. The user names each repository, and you must never list or search for repositories, siblings, parents, home directories or hidden directories to find one.
+2. Read that repository's rule files before planning, in this order when present: `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, and `README.md`. Follow those rules for any later work in that repository. If they conflict with this contract, stop and explain the conflict before proceeding. Do not open `.env` files, credentials or unrelated files.
+3. Run `node ./bin/second-brain.mjs connect --target ABSOLUTE_WORKSPACE --repo ABSOLUTE_REPOSITORY` from the starter copy. It prints one complete plan for the workspace and the repository, and it writes nothing. If the default name is refused, add `--name NAME` with a plain folder name, and use the same name in every later command.
+4. Translate the plan into plain language. `CREATE` lines are files and folders that do not exist yet. A `PRESERVED` line is a file the repository already has, which connect keeps unchanged. If a preserved `AGENTS.md`, `CLAUDE.md` or `RULES.md` is listed, give the user the loader block that the plan prints, to add by hand. A `Detection` other than `NONE` means the repository already has Spec Harness files or a harness receipt. Then the repository is register only: connect records it in the workspace and writes nothing into it.
+5. Obtain approval for that exact plan. Name the exact workspace, repository and digest in one question. The user, not the agent, approves the plan. A changed path, name or digest needs a new plan.
+6. Apply the approved plan with `node ./bin/second-brain.mjs connect --target ABSOLUTE_WORKSPACE --repo ABSOLUTE_REPOSITORY --apply EXACT_PLAN_DIGEST`, adding the same `--name` if one was used. Report the receipt ID and the status the command prints. `Status: STAGED` means the harness files were written and the repository is STAGED until `.claude/agents/.init-synthesis.json` exists. A register-only repository reports its existing status and is not changed.
+7. Say plainly that nothing was committed. The optional Spec Harness `index` step is not run by connect. It needs Python 3.11 or newer. The vendored script is Bash and uses POSIX-only file APIs, so this project has not tested it on native Windows and does not guarantee it there. The connect command runs no git command. The files it created are uncommitted, and the team decides whether they go in by pull request.
+8. For a STAGED repository, hand the next step to the user: open that repository in the client and run `/sdd init` inside it, under that repository's own rules. Do not run it from the starter copy. For a register-only repository, `/sdd init` is needed only if `/sdd` commands do not work there.
+9. If an apply stops, do not retry blindly. Run `node ./bin/second-brain.mjs verify --target ABSOLUTE_WORKSPACE`. It lists each connection. Only a CHANGED connection and a PENDING interrupted connect print a command, and each such line names it. A NO_RECEIPT connection prints none. Use `rollback --receipt` only with the receipt ID it names.
+
+Keep one connect per repository. Do not put several repository paths into one command.

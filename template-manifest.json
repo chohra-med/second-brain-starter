@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.2.0",
+    "templateVersion": "1.3.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {

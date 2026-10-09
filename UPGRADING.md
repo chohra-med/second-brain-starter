@@ -1,5 +1,59 @@
 # Upgrading the free starter
 
+## Upgrading to v1.3.0
+
+Before you upgrade, make the dated copy described in [Before an initializer upgrade](#before-an-initializer-upgrade). This version adds the `connect` command, which registers one repository you name with a workspace, and a Profile interview that fills the `00-Meta/Profile.md` seed. Both are optional. An existing install keeps its files and its records. Nothing in this version forces a move to the hub shape.
+
+### What an installed v1.2.0 workspace sees
+
+The plan below is what this version prints when it upgrades a real v1.2.0 install. That install was created by the v1.2.0 CLI from commit `6fc244e`. The other 69 lines of the plan are `IDENTICAL`. The plan has no `CONFLICT` and no `DEPRECATED` line.
+
+```text
+MANAGED-UPDATE	00-Meta/AGENTS.md	undo=restore-preimage
+CREATE	00-Meta/Profile.md	undo=remove-created-file
+MANAGED-UPDATE	01-Projects/README.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/context.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/first-use.md	undo=restore-preimage
+MANAGED-UPDATE	Home.md	undo=restore-preimage
+```
+
+- `CREATE 00-Meta/Profile.md` adds the Profile seed. The Profile interview fills it under the same exact-plan approval as your other records.
+- The five `MANAGED-UPDATE` lines are managed files whose wording changed for the hub shape. Your records are not in this list.
+- If you already created `00-Meta/Profile.md` yourself, the plan shows `CONFLICT` for it and the apply is refused. Move your file aside, or keep it outside the workspace, and plan again. The upgrade never overwrites it.
+
+Until you upgrade, `verify` run from the 1.3.0 source reports `SOURCE_MANIFEST_MISMATCH` and also `UNMANAGED 00-Meta/Profile.md`, and it exits non-zero. Measured on a copy of the real v1.2.0 install, before the upgrade:
+
+```text
+UNMANAGED	00-Meta/Profile.md
+SOURCE_MANIFEST_MISMATCH	.second-brain/installed-state.json	Installed state was created from a different source manifest: .second-brain/installed-state.json
+UNMANAGED	00-Meta/Profile.md	Installed state does not manage 00-Meta/Profile.md
+Verification: FAILED
+```
+
+After the upgrade is applied, `verify` prints `Verification: OK` and exits 0.
+
+### Approval prompt and exit codes
+
+`init`, `upgrade` and `connect` all print the exact apply command after the plan digest. Pressing Enter (empty input) at the approval prompt exits 0 for all three commands, printing `Plan not applied.`. Ctrl-C or end of input at the approval prompt exits 1 with `Plan not applied.` for all three commands. Before this version, `init` and `upgrade` exited 0 on Ctrl-C with no message, so that exit code is the one change. A run without a terminal prints `Plan only: nothing was applied.` and exits 0; that line is the normal end of a plan-only run.
+
+### connect is optional
+
+`connect` is a separate command. Run it once for each repository you want the workspace to know about. Each run prints its own plan and needs its own digest. [ONBOARDING.md](ONBOARDING.md) stage 9 and [README.md](README.md) describe it.
+
+- A connect receipt covers both the workspace and the repository. Rolling it back removes exactly the files that receipt created, in both folders. It refuses if one of those files changed since, and it removes nothing.
+- Files that `/sdd init` writes in the repository afterwards are not in the receipt. Rollback does not remove them.
+- `verify` lists each connection with its state and its receipt ID. An interrupted connect makes `verify` exit non-zero, and it prints the rollback command for that connect.
+- If you edited a file that an interrupted connect wrote, its rollback stops with `ROLLBACK_FAILED` and keeps the edit. The README Recovery section describes what to do.
+- Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
+
+### The vendored Spec Harness
+
+A pinned copy of Spec Harness ships under `vendor/spec-harness/`. It is not installed into the workspace. `connect` reads it and copies the files it names into a repository you name. No code in `lib` or `bin` starts a process, so the vendored shell scripts are never executed.
+
+### Rolling back an upgrade
+
+Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place.
+
 ## Upgrading to v1.2.0
 
 This version adds managed first-use/navigation files. Upgrade from a baseline-seeded workspace preserves safe personalized seed records. Review the exact new plan and verify afterward; later personalization and artifacts have separate recovery preimages. A failed transaction into a missing target may leave an empty directory. Inspect the receipt and current state, produce a fresh plan and obtain current approval before retrying; do not blindly replay an earlier digest.
@@ -17,7 +71,7 @@ It also adds the bundled `icm-architect` skill in both client skill folders and 
    node ./bin/second-brain.mjs upgrade --target "$PROJECT"
    ```
 
-   The command prints a complete plan. In a terminal, review it and type the exact plan digest when prompted. In a non-interactive shell it changes nothing unless you rerun the command with `--apply` and that exact digest.
+   The command prints a complete plan. In a terminal, review it and type the exact plan digest when prompted. In a non-interactive shell it changes nothing unless you rerun the command with `--apply` and that exact digest. That run ends with `Plan only: nothing was applied.`, which is normal and not an error.
 
 ## Read the three-way plan
 

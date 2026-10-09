@@ -21,6 +21,20 @@ const stages = [
   'Obtain human approval',
   'Apply and verify',
   'Draft records and hand off',
+  'Connect a repository',
+];
+
+// Wave 07: the stage that connects a repository, and each pinned promise it makes. Each one is removed in turn below.
+const connectRequirements = [
+  'one exact existing repository path',
+  'never list or search for repositories',
+  'one connect per repository',
+  "Read that repository's rule files before planning",
+  'exact workspace, repository and digest',
+  'register only',
+  'STAGED until',
+  '/sdd init',
+  'nothing was committed',
 ];
 
 async function contractReport(root) {
@@ -57,6 +71,7 @@ async function contractReport(root) {
     'Mark unknown facts as unknown',
     'installed `Home.md`',
   ]) assert.match(onboarding, new RegExp(requirement.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `missing contract requirement: ${requirement}`);
+  for (const requirement of connectRequirements) assert.ok(onboarding.includes(requirement), `missing connect requirement: ${requirement}`);
   return report;
 }
 
@@ -88,6 +103,19 @@ test('static onboarding contract rejects each independently removed router or se
     const bytes = await readFile(contract, 'utf8');
     await writeFile(contract, bytes.replace(stage, `removed ${stage}`));
     await assert.rejects(() => contractReport(root), new RegExp(`missing or unordered stage: ${stage}`));
+  }
+});
+
+test('every connect requirement rejects an omitted promise and passes after restoring it (wave 07)', async (t) => {
+  const root = await disposableCopy(t);
+  const owner = path.join(root, 'ONBOARDING.md');
+  const original = await readFile(owner, 'utf8');
+  await contractReport(root);
+  for (const requirement of connectRequirements) {
+    await writeFile(owner, original.split(requirement).join('omitted promise'));
+    await assert.rejects(() => contractReport(root), /missing connect requirement/, requirement);
+    await writeFile(owner, original);
+    await contractReport(root);
   }
 });
 
