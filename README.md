@@ -96,7 +96,7 @@ Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTI
 
 Use either route to get the source:
 
-- **Clone** the repository to a location you control. Use this route for later source updates, because Git lets you inspect and pull them.
+- **Clone** the repository to a location you control.
 - **Download and extract the v1.3.0 ZIP** from [Releases](https://github.com/chohra-med/second-brain-starter/releases). The v1.3.0 release is published and contains `connect`.
 
 Keep the source copy as your untouched base copy.
@@ -242,7 +242,7 @@ After the connection lines, one summary line says how many connections need atte
 
 The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
-Most status lines that `verify` can print start with one of these prefixes. The exceptions are the path-check codes described below, such as `SYMLINK_PATH` and `NON_REGULAR_FILE`, which print as their own code. Explanation lines printed under a `CONNECTION` line are indented by two spaces, such as `  STAGED: ...`, `  To roll the connection back: ...` or `  Next: ...`. They are not status lines and are not in this table.
+Most status lines that `verify` can print start with one of these prefixes. The exceptions print as their own code, with no prefix. They include the path-check codes, such as `SYMLINK_PATH` and `NON_REGULAR_FILE`, and `INVALID_STATE`, which reports an installed state file that cannot be parsed or fails its checks. The list is not exhaustive: any error code that `verify` reads from a managed file or from the installed state prints the same way. Explanation lines printed under a `CONNECTION` line are indented by two spaces, such as `  STAGED: ...`, `  To roll the connection back: ...` or `  Next: ...`. They are not status lines and are not in this table.
 
 | Prefix | Meaning | Makes the exit code 1 |
 |---|---|---|
@@ -259,7 +259,7 @@ Most status lines that `verify` can print start with one of these prefixes. The 
 | `Connections` | The summary line: how many connections need attention, or that all are as recorded. | No |
 | `Verification` | `OK` or `FAILED`. | Follows the lines above |
 
-A path-check error can also print as its own code, such as `SYMLINK_PATH` or `NON_REGULAR_FILE`, for a path that verify cannot read safely. Each such line makes the exit code 1.
+A read error can also print as its own code, such as `SYMLINK_PATH`, `NON_REGULAR_FILE` or `INVALID_STATE`, for a path or installed state that verify cannot read. Each such line makes the exit code 1.
 
 ## Recovery and removal
 
