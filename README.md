@@ -21,7 +21,7 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ## Start in one sentence
 
-1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter). A ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases) is an alternative when a release that contains `connect` is published.
+1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), or download and extract the v1.3.0 ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases). The v1.3.0 release is published and contains `connect`.
 2. Open the extracted or cloned source folder in Claude Code, Codex CLI or the Codex app with local file access.
 3. Type:
 
@@ -94,9 +94,12 @@ Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTI
 
 ### 1. Get a source copy
 
-Clone the repository to a location you control. This is the current route. Git is useful when you want to inspect or pull later source updates. Keep the clone as your untouched base copy.
+Use either route to get the source:
 
-A ZIP download from Releases is an alternative when a release that contains `connect` is published. Until then, use the clone.
+- **Clone** the repository to a location you control. Use this route for later source updates, because Git lets you inspect and pull them.
+- **Download and extract the v1.3.0 ZIP** from [Releases](https://github.com/chohra-med/second-brain-starter/releases). The v1.3.0 release is published and contains `connect`.
+
+Keep the source copy as your untouched base copy.
 
 If you use a source checkout, keep its structure intact. Its `bin/`, `lib/`, `template/`, and `template-manifest.json` files are the initializer source. Your project is a separate target directory, not an edited installer checkout.
 
@@ -239,7 +242,7 @@ After the connection lines, one summary line says how many connections need atte
 
 The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
-Every status line that `verify` can print starts with one of these prefixes. Explanation lines printed under a `CONNECTION` line are indented by two spaces, such as `  STAGED: ...`, `  To roll the connection back: ...` or `  Next: ...`. They are not status lines and are not in this table.
+Most status lines that `verify` can print start with one of these prefixes. The exceptions are the path-check codes described below, such as `SYMLINK_PATH` and `NON_REGULAR_FILE`, which print as their own code. Explanation lines printed under a `CONNECTION` line are indented by two spaces, such as `  STAGED: ...`, `  To roll the connection back: ...` or `  Next: ...`. They are not status lines and are not in this table.
 
 | Prefix | Meaning | Makes the exit code 1 |
 |---|---|---|
