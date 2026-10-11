@@ -21,7 +21,7 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ## Start in one sentence
 
-1. Get a source copy: download and extract a ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases), or clone the [repository](https://github.com/chohra-med/second-brain-starter).
+1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), or download and extract the v1.3.0 ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases). The v1.3.0 release is published and contains `connect`.
 2. Open the extracted or cloned source folder in Claude Code, Codex CLI or the Codex app with local file access.
 3. Type:
 
@@ -94,12 +94,14 @@ Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTI
 
 ### 1. Get a source copy
 
-For a published release, choose one route:
+Use either route to get the source:
 
-- **Git:** clone the repository to a location you control. Git is optional and useful when you want to inspect or pull later source updates.
-- **ZIP:** download a published release ZIP, extract it, and keep the extracted folder as your untouched base copy.
+- **Clone** the repository to a location you control.
+- **Download and extract the v1.3.0 ZIP** from [Releases](https://github.com/chohra-med/second-brain-starter/releases). The v1.3.0 release is published and contains `connect`.
 
-If you use a source checkout rather than a release ZIP, keep its structure intact. Its `bin/`, `lib/`, `template/`, and `template-manifest.json` files are the initializer source. Your project is a separate target directory, not an edited installer checkout.
+Keep the source copy as your untouched base copy.
+
+If you use a source checkout, keep its structure intact. Its `bin/`, `lib/`, `template/`, and `template-manifest.json` files are the initializer source. Your project is a separate target directory, not an edited installer checkout.
 
 ### 2. Initialize a project safely
 
@@ -240,7 +242,7 @@ After the connection lines, one summary line says how many connections need atte
 
 The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
-Every line that `verify` can print starts with one of these prefixes:
+Most status lines that `verify` can print start with one of these prefixes. The exceptions print as their own code, with no prefix. They include the path-check codes, such as `SYMLINK_PATH` and `NON_REGULAR_FILE`, and `INVALID_STATE`, which reports an installed state file that cannot be parsed or fails its checks. The list is not exhaustive: any error code that `verify` reads from a managed file or from the installed state prints the same way. Explanation lines printed under a `CONNECTION` line are indented by two spaces, such as `  STAGED: ...`, `  To roll the connection back: ...` or `  Next: ...`. They are not status lines and are not in this table.
 
 | Prefix | Meaning | Makes the exit code 1 |
 |---|---|---|
@@ -257,7 +259,7 @@ Every line that `verify` can print starts with one of these prefixes:
 | `Connections` | The summary line: how many connections need attention, or that all are as recorded. | No |
 | `Verification` | `OK` or `FAILED`. | Follows the lines above |
 
-A path-check error can also print as its own code, such as `SYMLINK_PATH` or `NON_REGULAR_FILE`, for a path that verify cannot read safely. Each such line makes the exit code 1.
+A read error can also print as its own code, such as `SYMLINK_PATH`, `NON_REGULAR_FILE` or `INVALID_STATE`, for a path or installed state that verify cannot read. Each such line makes the exit code 1.
 
 ## Recovery and removal
 
@@ -265,7 +267,7 @@ If a change goes wrong, stop editing the target. Use the relevant receipt rollba
 
 If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. When no file was edited, it restores both folders. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
 
-If you edited a file that the connect wrote, the rollback stops with `ROLLBACK_FAILED` and exits 1. The edit is kept, and the connect stays `PENDING`, so connect refuses that repository until the file is dealt with. Move the edited file out of the repository, or delete it yourself, then run the same rollback command again.
+If you edited a file that the connect wrote, the rollback stops with `ROLLBACK_FAILED` and exits 1. The edit is kept, and the connect stays `PENDING`, so connect refuses that repository until the file is dealt with. Move the edited file out of the repository, or delete it yourself, then run the same rollback command again. This applies to an interrupted connect; for a completed connect (`STAGED` or `CHANGED`), the same edit is refused with `POSTIMAGE_MISMATCH` instead, which exits 1 and says `Nothing was removed in either root.`
 
 Two leftovers are known and accepted. A stop before any pending record exists can leave an empty `.second-brain/connect-pending/` folder, and at most one temporary engine file in it, in the workspace. The design writes the pending record before any repository file, so this leaves nothing in the repository. `verify` lists this as `RESIDUE`, and the next approved connect, rollback or recovery removes it.
 
