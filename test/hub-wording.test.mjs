@@ -5,12 +5,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { planInstall, stableStringify } from '../lib/installer.mjs';
 import { cleanup, consumerRoot, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
-const profileQuestions = [
-  'What is your role?',
-  'What is your stack?',
-  'How do you want answers given?',
-  'What must never be touched (paths or systems)?',
-];
+// init.md owns the Profile questions. Each Profile section it fills is named here. Stack is asked by first use and complete init.
+const profileSectionsInInit = ['section `## Role`', 'section `## How I want answers`', 'section `## Never touch`'];
 
 function profileEntries(manifest) {
   return manifest.entries.filter((entry) => entry.destination === '00-Meta/Profile.md');
@@ -23,9 +19,13 @@ function assertProfileSeed(manifest) {
 }
 
 function assertFirstUseProfile(text) {
-  for (const question of profileQuestions) assert.ok(text.includes(question), `first-use is missing the Profile question: ${question}`);
-  assert.ok(text.includes('Unknown'), 'first-use must record unknowns as Unknown');
   assert.ok(text.includes('## 2a. Profile: only what is missing'), 'first-use is missing the Profile section');
+  assert.ok(text.includes('Unknown'), 'first-use must record unknowns as Unknown');
+  assert.ok(text.includes('`init.md`'), 'first-use must point at init.md, which owns the Profile questions');
+}
+
+function assertInitProfile(text) {
+  for (const section of profileSectionsInInit) assert.ok(text.includes(section), `init.md is missing the Profile question for ${section}`);
 }
 
 test('manifest ships Profile.md exactly once as a seed file', async () => {
@@ -43,18 +43,21 @@ test('a Profile.md entry marked managed-file or duplicated is rejected', async (
   assert.throws(() => assertProfileSeed(duplicated), /exactly one/);
 });
 
-test('first-use asks the four Profile questions and records unknowns', async () => {
+test('first-use points at init for the Profile questions and records unknowns; init owns the questions', async () => {
   assertFirstUseProfile(await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/first-use.md'), 'utf8'));
+  assertInitProfile(await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/init.md'), 'utf8'));
 });
 
-test('first-use without the Profile section or any question is rejected', async () => {
+test('first-use without the Profile section, or init without a Profile question, is rejected', async () => {
   const text = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/first-use.md'), 'utf8');
   const start = text.indexOf('## 2a. Profile');
   const end = text.indexOf('## 3. Approve');
   assert.ok(start > 0 && end > start);
   assert.throws(() => assertFirstUseProfile(text.slice(0, start) + text.slice(end)), /missing the Profile/);
-  for (const question of profileQuestions) {
-    assert.throws(() => assertFirstUseProfile(text.replace(question, 'omitted')), /missing the Profile question/);
+  assert.throws(() => assertFirstUseProfile(text.replace('`init.md`', 'omitted')), /must point at init.md/);
+  const init = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/init.md'), 'utf8');
+  for (const section of profileSectionsInInit) {
+    assert.throws(() => assertInitProfile(init.replace(section, 'omitted')), /missing the Profile question/);
   }
 });
 

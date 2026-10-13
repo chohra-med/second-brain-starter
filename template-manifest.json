@@ -56,7 +56,7 @@
     {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "3374a76917423a49e3cd922773fdd6f6f3887ab757c73d186583e9b5d2a0e789",
+      "sha256": "695bf3c45854fa86bcfbd469574637a8ba6948e0643c3790fff025d1bdcdebe9",
       "mergeKind": "managed-file"
     },
     {
@@ -74,7 +74,7 @@
     {
       "source": "template/00-Meta/Profile.md",
       "destination": "00-Meta/Profile.md",
-      "sha256": "b07e238b0cbf1f90c4a4dee06823c5bf0b8ca9480280438a953a75cfc136fa7a",
+      "sha256": "8e0a6009bc970ea7bb2abeb946c6e41ef4a22a242b155b54fffc61f5ab3d5bff",
       "mergeKind": "seed-file"
     },
     {
@@ -242,13 +242,13 @@
     {
       "source": "template/03-Resources/Procedures/README.md",
       "destination": "03-Resources/Procedures/README.md",
-      "sha256": "ba8ceb8bd7ada94179a486c0bf3f3011159447dea9077a6cecb7551aa05b26b9",
+      "sha256": "43b2455d5a19807b335140a8c0a16ceb43e424a8098a5af7bd24aac9a8abcffa",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/first-use.md",
       "destination": "03-Resources/Procedures/first-use.md",
-      "sha256": "c895f7eede46b297a9b2b6f69be297bd96c260f88369f6582060e3dc049d5ae7",
+      "sha256": "e2ce3d8af33c0364b75683474859cf2fb0540123b7390083d064a078c65ccb8c",
       "mergeKind": "managed-file"
     },
     {
@@ -279,6 +279,24 @@
       "source": "template/03-Resources/Procedures/showcase-readme.md",
       "destination": "03-Resources/Procedures/showcase-readme.md",
       "sha256": "021e2ea1b2dfa12f4541d7bb2ba2ad51fa699480f3946bf584d7ae099cda2488",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/quick-start.md",
+      "destination": "03-Resources/Procedures/quick-start.md",
+      "sha256": "12417ec36036ed5151e10df1e0cb45a3e0ccf0bda4945e86d7a4ce97353299cd",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/init.md",
+      "destination": "03-Resources/Procedures/init.md",
+      "sha256": "cf014e9e375da847fd6d31412253158ba730239f4e3dd427b3431581a04f7eff",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/complete-init.md",
+      "destination": "03-Resources/Procedures/complete-init.md",
+      "sha256": "a4098e9dbfbaa17af9b6d374655509a6f9fd69087491f88e7f36a08b45a00970",
       "mergeKind": "managed-file"
     },
     {

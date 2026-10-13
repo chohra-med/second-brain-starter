@@ -1,22 +1,22 @@
 # Profile
 
-Who the assistant is working for. The first-use interview fills this in with the person's own words, asking only what is missing. Anything not answered stays `Unknown`. Read this before changing anything.
+Who the assistant is working for. The init interview (`03-Resources/Procedures/init.md`) fills in Role, How I want answers and Never touch. The first-use procedure asks only what is still missing, and it asks Stack. Both use the person's own words. Anything not answered stays `Unknown`. Read this before changing anything.
 
 ## Role
 
-Unknown. The first-use interview fills this with the person's words.
+Unknown. The init interview fills this with the person's words.
 
 ## Stack
 
-Unknown. The first-use interview fills this with the person's words.
+Unknown. The first-use procedure asks this, with the words of complete-init, section 1, question 2.
 
 ## How I want answers
 
-Unknown. The first-use interview fills this with the person's words.
+Unknown. The init interview fills this with the person's words.
 
 ## Never touch
 
-Unknown. The first-use interview fills this with the person's words: paths or systems the assistant must not change.
+Unknown. The init interview fills this with the person's words: paths or systems the assistant must not change.
 
 ## Unknown
 

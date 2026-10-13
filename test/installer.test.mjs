@@ -256,6 +256,9 @@ test('installed Home is a complete operating dashboard with valid contained link
     '03-Resources/Procedures/close.md',
     '03-Resources/Procedures/review.md',
     '03-Resources/Procedures/learning-and-scaling.md',
+    '03-Resources/Procedures/quick-start.md',
+    '03-Resources/Procedures/init.md',
+    '03-Resources/Procedures/complete-init.md',
     '04-Archives/Projects/Archive-Guide.md',
     '05-Daily/daily-template.md',
   ];

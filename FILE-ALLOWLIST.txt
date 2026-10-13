@@ -51,6 +51,7 @@ template/shared-skills/second-brain-learning/SKILL.md
 template/shared-skills/second-brain-review/SKILL.md
 test/cli-approval.test.mjs
 test/docs-contract.test.mjs
+test/easy-start.test.mjs
 test/cli-connect.test.mjs
 test/append-and-privacy.test.mjs
 test/cli.test.mjs
@@ -77,6 +78,9 @@ template/shared-skills/second-brain-icm/SKILL.md
 template/03-Resources/Extensions.md
 template/03-Resources/Procedures/extend.md
 template/03-Resources/Procedures/showcase-readme.md
+template/03-Resources/Procedures/quick-start.md
+template/03-Resources/Procedures/init.md
+template/03-Resources/Procedures/complete-init.md
 template/shared-skills/icm-architect/LICENSE
 template/shared-skills/icm-architect/README.md
 template/shared-skills/icm-architect/SKILL.md

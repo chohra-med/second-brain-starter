@@ -52,7 +52,7 @@ Report the initializer receipt ID and the verification result. A stale digest, c
 
 ## 8. Draft records and hand off
 
-After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before its approval gate.
+After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before the approval gate of the way the user chooses. Home lists three ways to start, from fastest to fullest: quick start, init and complete init. Their procedures are in `03-Resources/Procedures/`.
 
 On repeated or interrupted setup, inspect the receipt and current installed state, verify, then fill only actual gaps through the same first-use owner. Do not replay completed writes or claim authenticated client discovery or universal client compatibility without separate observed evidence.
 
