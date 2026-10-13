@@ -15,6 +15,8 @@ const WAYS = [
   { file: 'complete-init.md', maxLines: 150 },
 ];
 const CREDENTIAL_WORDS = /\b(password|passcode|api key|token|secret|credential)s?\b/i;
+// Built from its code point so that this file holds no literal em dash.
+const EM_DASH = '\u2014';
 
 // Numbered question blocks: each numbered line and the lines under it, up to the next numbered line or heading.
 export function questionBlocks(text) {
@@ -55,7 +57,7 @@ export function credentialProblems(text) {
 }
 
 export function dashProblems(text) {
-  return text.split('\n').filter((line) => line.includes('—')).map((line) => `em dash: ${line.trim()}`);
+  return text.split('\n').filter((line) => line.includes(EM_DASH)).map((line) => `em dash: ${line.trim()}`);
 }
 
 export function limitProblems(text, maxLines, name) {
@@ -141,7 +143,138 @@ test('the closing prompt check fires on a planted procedure (positive control)',
 test('the credential, dash and limit checks fire on planted text (positive control)', () => {
   assert.equal(credentialProblems('What is your password?\n').length, 1);
   assert.equal(credentialProblems('Paste your token here.\n').length, 0, 'a sentence without a question mark is a rule, not a question');
-  assert.equal(dashProblems('Plain words — with a dash.\n').length, 1);
+  assert.equal(dashProblems(`Plain words ${EM_DASH} with a dash.\n`).length, 1);
   assert.equal(limitProblems('a\nb\nc\n', 3, 'planted').length, 1);
   assert.equal(limitProblems('a\nb\n', 3, 'planted').length, 0);
+});
+
+// Round 1 corrections. Each check reads the owner file and fails on the old wording or a missing guarantee.
+const FALSE_QUICK_START = 'If the plan says the repository already has agent files, connect only registers it.';
+const PRIVACY_FALSE_LINE = 'nothing from a repository is recorded, and no file contents are';
+const QUICK_START_READS = ['`AGENTS.md`', '`RULES.md`', '`CONTRIBUTING.md`', '`ai_rules/`', '`.memory/`', '`README.md`'];
+const QUICK_START_WRITES = ['`FACTS.md`', '`roadmap.md`', '`progress.md`'];
+const DRAFT_FILES = ['FACTS.md', 'roadmap.md', 'progress.md'];
+const CHANGED_FILES = ['PRIVACY.md', 'UPGRADING.md', 'CHANGELOG.md', 'README.md', 'template/00-Meta/Profile.md', 'template/03-Resources/Procedures/first-use.md'];
+
+export function quickStartProblems(text) {
+  const problems = [];
+  if (text.includes(FALSE_QUICK_START)) problems.push('quick-start says agent files mean register only; the rule is the Detection line');
+  for (const phrase of ['`Repository writes`', '`Detection: NONE`', 'uncommitted', '`ONBOARDING.md`, stage 9, step 4', 'Move that file aside by hand']) {
+    if (!text.includes(phrase)) problems.push(`quick-start is missing: ${phrase}`);
+  }
+  return problems;
+}
+
+export function quickStartWarningProblems(text) {
+  const problems = [];
+  if (!text.includes('git tracks them')) problems.push('quick-start does not say that git tracks the three drafts');
+  if (!text.includes('should not be approved if the repository is private and the workspace will be shared')) problems.push('quick-start does not say when not to approve');
+  if (!text.includes('below the privacy block in `.gitignore`')) problems.push('quick-start does not say where to add the three paths');
+  for (const name of DRAFT_FILES) {
+    if (!text.includes(`01-Projects/<name>/${name}`)) problems.push(`quick-start does not list 01-Projects/<name>/${name}`);
+  }
+  return problems;
+}
+
+export function privacyQuickStartProblems(text) {
+  const paragraph = text.split('\n').find((line) => line.startsWith('**Quick start.**'));
+  if (!paragraph) return ['PRIVACY.md has no Quick start paragraph'];
+  const problems = [...QUICK_START_READS, ...QUICK_START_WRITES]
+    .filter((item) => !paragraph.includes(item))
+    .map((item) => `Quick start paragraph does not name ${item}`);
+  for (const phrase of ['sends nothing', 'not in the privacy block, so git tracks them', 'after you approve the exact text']) {
+    if (!paragraph.toLowerCase().includes(phrase)) problems.push(`Quick start paragraph is missing: ${phrase}`);
+  }
+  return problems;
+}
+
+export function ignoredDrafts(block) {
+  return DRAFT_FILES.filter((name) => block.includes(name));
+}
+
+export function skipProblems(text) {
+  const problems = [];
+  if (!/`skip`[^\n]*needs no yes/.test(text)) problems.push('a skip is not stated to need no yes');
+  if (!text.includes('under `## Unknown` in `00-Meta/Profile.md`')) problems.push('a skipped question is not listed under ## Unknown in Profile.md');
+  return problems;
+}
+
+export function nextActionProblems(text) {
+  const question3 = questionBlocks(text).find((block) => block.startsWith('3. '));
+  if (!question3) return ['init.md has no question 3'];
+  const problems = [];
+  if (!question3.includes('Next action')) problems.push('question 3 does not save a Next action');
+  if (!question3.includes('only after the user says yes')) problems.push('question 3 does not save the Next action only after a yes');
+  if (!question3.includes('not a sixth question')) problems.push('question 3 does not say the step is a proposal, not a sixth question');
+  if (!text.includes('the Next action saved in question 3')) problems.push('the closing prompt does not name the saved Next action');
+  return problems;
+}
+
+export function numberingProblems(text) {
+  const numbers = text.split('\n').map((line) => line.match(/^(\d+)\. /)).filter(Boolean).map((match) => Number(match[1]));
+  const consecutive = numbers.every((number, index) => number === index + 1);
+  return consecutive ? [] : [`numbers run ${numbers.join(', ')}, not 1 to ${numbers.length}`];
+}
+
+export function upgradeProblems(text) {
+  const problems = [];
+  if (text.includes('It changes four managed files')) problems.push('UPGRADING still says four managed files change');
+  if (!text.includes('It changes three managed files, which show as `MANAGED-UPDATE`')) problems.push('UPGRADING does not name the three managed files that change');
+  if (!text.includes('The new seed text reaches new installs only.')) problems.push('UPGRADING does not say the new Profile seed reaches new installs only');
+  if (!text.includes('`PERSONALIZED`')) problems.push('UPGRADING does not say the Profile seed shows PERSONALIZED');
+  return problems;
+}
+
+test('quick start states the real connect rule and no longer the false one', async () => {
+  assert.deepEqual(quickStartProblems(await read(`${PROCEDURES}/quick-start.md`)), []);
+});
+
+test('quick start says before the yes that git tracks the drafts, and where the three paths go', async () => {
+  assert.deepEqual(quickStartWarningProblems(await read(`${PROCEDURES}/quick-start.md`)), []);
+});
+
+test('PRIVACY.md has a Quick start paragraph naming what is read and written, and no longer the false sentence', async () => {
+  const privacy = await read('PRIVACY.md');
+  assert.deepEqual(privacyQuickStartProblems(privacy), []);
+  assert.equal(privacy.includes(PRIVACY_FALSE_LINE), false, 'the false sentence about repository records is gone');
+});
+
+test('the privacy block ignores none of the three quick-start drafts, as PRIVACY says', async () => {
+  assert.deepEqual(ignoredDrafts(await read('template/privacy-gitignore.txt')), []);
+});
+
+test('init and complete-init say a skip needs no yes and is listed under Unknown', async () => {
+  for (const file of ['init.md', 'complete-init.md']) assert.deepEqual(skipProblems(await read(`${PROCEDURES}/${file}`)), [], file);
+});
+
+test('init question 3 saves a Next action only after a yes, and the closing prompt names it', async () => {
+  assert.deepEqual(nextActionProblems(await read(`${PROCEDURES}/init.md`)), []);
+});
+
+test('the numbered questions and steps run 1 to N in every procedure', async () => {
+  for (const { file } of WAYS) assert.deepEqual(numberingProblems(await read(`${PROCEDURES}/${file}`)), [], file);
+});
+
+test('complete-init keeps its twelve questions, so a removed question fails here', async () => {
+  assert.equal(questionBlocks(await read(`${PROCEDURES}/complete-init.md`)).length, 12);
+});
+
+test('UPGRADING names the three managed files and says the new Profile seed reaches new installs only', async () => {
+  assert.deepEqual(upgradeProblems(await read('UPGRADING.md')), []);
+});
+
+test('the files this round changed have no em dash', async () => {
+  for (const file of CHANGED_FILES) assert.deepEqual(dashProblems(await read(file)), [], file);
+});
+
+test('the new checks fire on planted text (positive control)', () => {
+  assert.ok(quickStartProblems(`${FALSE_QUICK_START}\n`).length >= 2);
+  assert.ok(quickStartWarningProblems('Nothing here.\n').length >= 4);
+  assert.deepEqual(privacyQuickStartProblems('no paragraph here\n'), ['PRIVACY.md has no Quick start paragraph']);
+  assert.ok(privacyQuickStartProblems('**Quick start.** Nothing.\n').length >= 4);
+  assert.deepEqual(ignoredDrafts('01-Projects/**/roadmap.md\n'), ['roadmap.md']);
+  assert.equal(skipProblems('`skip` saves `Unknown`.\n').length, 2);
+  assert.equal(nextActionProblems('1. Ask a question.\n').length, 1);
+  assert.equal(numberingProblems('1. a\n3. b\n').length, 1);
+  assert.equal(upgradeProblems('It changes four managed files\n').length >= 1, true);
 });

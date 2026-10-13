@@ -1,23 +1,23 @@
 # Profile
 
-Who the assistant is working for. The init interview (`03-Resources/Procedures/init.md`) fills in Role, How I want answers and Never touch. The first-use procedure asks only what is still missing, and it asks Stack. Both use the person's own words. Anything not answered stays `Unknown`. Read this before changing anything.
+Who the assistant is working for. Each field has one owner. `03-Resources/Procedures/init.md` asks Role, How I want answers and Never touch. `03-Resources/Procedures/complete-init.md` asks Stack. The first-use procedure asks only what is still `Unknown`, with the owner's exact question. Anything not answered stays `Unknown`. Read this before changing anything.
 
 ## Role
 
-Unknown. The init interview fills this with the person's words.
+Unknown. Asked by `init.md`, question 1.
 
 ## Stack
 
-Unknown. The first-use procedure asks this, with the words of complete-init, section 1, question 2.
+Unknown. Asked by `complete-init.md`, section 1, question 1.
 
 ## How I want answers
 
-Unknown. The init interview fills this with the person's words.
+Unknown. Asked by `init.md`, question 4.
 
 ## Never touch
 
-Unknown. The init interview fills this with the person's words: paths or systems the assistant must not change.
+Unknown. Asked by `init.md`, question 5: paths or systems the assistant must not change.
 
 ## Unknown
 
-List here every question above that was not answered, so a later session asks again instead of guessing.
+List here every question that was skipped or not answered, by its number and text, so a later session asks again instead of guessing. A skip writes `Unknown` at once, with no separate yes.

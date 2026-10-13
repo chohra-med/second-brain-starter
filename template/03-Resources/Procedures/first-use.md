@@ -20,7 +20,7 @@ If the user is undecided, offer the existing learn-one-idea example below: ask f
 
 ## 2a. Profile: only what is missing
 
-Read `00-Meta/Profile.md` first. Ask only what is still `Unknown`. `init.md` owns the Profile questions and their wording. The Stack section is the one init does not ask, so ask it here with the question in `complete-init.md`, section 1, question 2, when Stack is still `Unknown`.
+Read `00-Meta/Profile.md` first. Ask only what is still `Unknown`. `init.md` owns the questions for Role, How I want answers and Never touch. `complete-init.md` owns the question for Stack (section 1, question 1). Ask each still-`Unknown` field with its owner's exact question, and do not write a new question for a Profile field.
 
 Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`. Do not invent a role, stack, preference or boundary. Write `00-Meta/Profile.md` under the same exact-plan approval and preimage rule as the next section. The read order in `00-Meta/AGENTS.md` puts Profile first, so read the `Never touch` entries before changing anything. Do not assume the client loads it automatically.
 

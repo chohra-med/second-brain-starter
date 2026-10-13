@@ -5,7 +5,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { planInstall, stableStringify } from '../lib/installer.mjs';
 import { cleanup, consumerRoot, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
-// init.md owns the Profile questions. Each Profile section it fills is named here. Stack is asked by first use and complete init.
+// init.md owns the Profile questions for Role, How I want answers and Never touch. complete-init.md owns the question for Stack.
 const profileSectionsInInit = ['section `## Role`', 'section `## How I want answers`', 'section `## Never touch`'];
 
 function profileEntries(manifest) {
@@ -22,6 +22,7 @@ function assertFirstUseProfile(text) {
   assert.ok(text.includes('## 2a. Profile: only what is missing'), 'first-use is missing the Profile section');
   assert.ok(text.includes('Unknown'), 'first-use must record unknowns as Unknown');
   assert.ok(text.includes('`init.md`'), 'first-use must point at init.md, which owns the Profile questions');
+  assert.ok(text.includes('`complete-init.md`'), 'first-use must point at complete-init.md, which owns the Stack question');
 }
 
 function assertInitProfile(text) {
@@ -187,4 +188,81 @@ test('the context procedure names the seeded project, not an example (R03-11)', 
   const context = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/context.md'), 'utf8');
   assert.ok(context.includes('the seeded project lives under `01-Projects/Selected-Project/`'), 'context names the seeded project');
   assert.equal(context.includes('the seeded example lives under'), false, 'the example wording is gone');
+});
+
+// Each Profile question, with its exact wording and the procedure that owns the field. The old four-string pin
+// moved here when the questions moved to init.md and complete-init.md; the guarantee is the same, in the owner files.
+const profileQuestions = [
+  { file: 'init.md', line: '1. What do you do?', field: 'Role' },
+  { file: 'init.md', line: '4. How do you want answers: length, language, how much explanation?', field: 'How I want answers' },
+  { file: 'init.md', line: '5. What must the assistant never touch or share: paths, systems, client work, anything private?', field: 'Never touch' },
+  { file: 'complete-init.md', line: '1. Which tools and shared places do you use every day? Names only.', field: 'Stack' },
+];
+const profileOwner = Object.fromEntries(profileQuestions.map(({ field, file }) => [field, file]));
+const PROFILE_SAVE = /Saved to:.*`00-Meta\/Profile\.md`, section `## ([^`]+)`/;
+
+async function procedureFiles() {
+  return {
+    'init.md': await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/init.md'), 'utf8'),
+    'complete-init.md': await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/complete-init.md'), 'utf8'),
+  };
+}
+
+function profileQuestionProblems(files) {
+  return profileQuestions
+    .filter(({ file, line }) => !files[file].split('\n').includes(line))
+    .map(({ file, field }) => `${file} does not ask the Profile question for ${field} with its exact wording`);
+}
+
+// Every "Saved to" line that names a Profile section, with the procedure file it came from.
+function profileSaves(files) {
+  return Object.entries(files).flatMap(([file, text]) => text.split('\n')
+    .map((line) => line.match(PROFILE_SAVE))
+    .filter(Boolean)
+    .map((match) => ({ file, field: match[1] })));
+}
+
+function profileOwnerProblems(files) {
+  const saves = profileSaves(files);
+  const problems = [];
+  for (const field of Object.keys(profileOwner)) {
+    const owners = saves.filter((save) => save.field === field).map((save) => save.file);
+    if (owners.length !== 1 || owners[0] !== profileOwner[field]) problems.push(`${field} is saved by ${owners.join(', ') || 'nothing'}; expected only ${profileOwner[field]}`);
+  }
+  for (const save of saves) {
+    if (!(save.field in profileOwner)) problems.push(`${save.field} is a Profile section with no owner (${save.file})`);
+  }
+  return problems;
+}
+
+test('each Profile question is asked with its exact wording in the procedure that owns the field', async () => {
+  const files = await procedureFiles();
+  assert.deepEqual(profileQuestionProblems(files), []);
+  const renamed = { ...files, 'init.md': files['init.md'].replace('1. What do you do?', '1. What is your role?') };
+  assert.deepEqual(profileQuestionProblems(renamed), ['init.md does not ask the Profile question for Role with its exact wording']);
+});
+
+test('each Profile field is saved by exactly one question, in its owner procedure', async () => {
+  assert.deepEqual(profileOwnerProblems(await procedureFiles()), []);
+});
+
+test('the owner check fires when a second question saves a Profile field (positive control)', async () => {
+  const files = await procedureFiles();
+  const doubled = { ...files, 'complete-init.md': `${files['complete-init.md']}\n   - Saved to: \`00-Meta/Profile.md\`, section \`## Role\`.\n` };
+  assert.ok(profileOwnerProblems(doubled).some((problem) => problem.startsWith('Role is saved by')));
+});
+
+test('Profile.md names the procedure that fills each field', async () => {
+  const profile = await readFile(path.join(sourceRoot, 'template/00-Meta/Profile.md'), 'utf8');
+  for (const { field, file } of profileQuestions) {
+    const body = profile.split(`## ${field}\n`)[1]?.split('\n## ')[0] ?? '';
+    assert.ok(body.includes(file), `Profile.md section ${field} names ${file}`);
+  }
+});
+
+test('first-use section 2a names both init.md and complete-init.md, and a missing pointer is rejected', async () => {
+  const text = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/first-use.md'), 'utf8');
+  const section = text.slice(text.indexOf('## 2a. Profile'), text.indexOf('## 3. Approve'));
+  assert.ok(section.includes('`init.md`') && section.includes('`complete-init.md`'));
+  assert.throws(() => assertFirstUseProfile(text.replace('`complete-init.md`', 'omitted')), /must point at complete-init.md/);
 });

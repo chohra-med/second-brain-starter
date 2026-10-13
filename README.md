@@ -43,7 +43,7 @@ The starter gives one workspace:
 
 - one official home for current facts, decisions, roadmap and progress;
 - a `Home.md` dashboard that points to the next useful action;
-- a `00-Meta/Profile.md` seed, which the first-use interview fills in for role, stack, answer style and boundaries, leaving anything you do not answer as `Unknown`;
+- a `00-Meta/Profile.md` seed, which the init interview fills in for role, answer style and boundaries, and the complete-init interview fills in for stack, leaving anything you do not answer as `Unknown`;
 - thirteen local skills: context, capture, close, review, learning, the local ICM bindings, the bundled `icm-architect` method and `humanizer` and `skill-creator` (an assistant that uses this skill may run its local scripts, which send content to your model provider; see [PRIVACY.md](PRIVACY.md)), plus the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`;
 - a project template folder to copy when a second project starts, and a `connect` command that creates the same kind of folder for each repository you name;
 - a `connect` command that stages Spec Harness into a repository you name and registers that repository with the workspace;
@@ -139,7 +139,7 @@ The target may already contain your project files. Differing managed files remai
 1. Open the installed `Home.md` in your target. It is the dashboard for the project you will run. The source template is [template/Home.md](template/Home.md); it is not the workspace you will edit.
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
 3. Follow Home's [First use](template/03-Resources/Procedures/first-use.md) route in the installed target. Agree the missing goal and constraints, approve the exact record edits, then approve and finish one small artifact with a check. Preserve existing personalized records. Close the result and start a new chat in that target to recover the next action.
-4. The Profile interview is part of that route. It asks only the four questions whose answers are still missing in `00-Meta/Profile.md`: your role, your stack, how you want answers given, and what must never be touched. An answer you do not give stays `Unknown`, so a later session asks again instead of guessing.
+4. The Profile interview is part of that route. It asks only the four questions whose answers are still missing in `00-Meta/Profile.md`: your role, how you want answers given and what must never be touched (asked by `init.md`), and your stack (asked by `complete-init.md`). An answer you do not give stays `Unknown`, so a later session asks again instead of guessing.
 5. The initializer writes compatible root loader and skill files for supported-client discovery: thirteen skills (context, capture, close, review, learning, `second-brain-icm`, the bundled `icm-architect`, `humanizer` and `skill-creator`, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
 6. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
