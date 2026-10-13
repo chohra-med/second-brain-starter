@@ -602,7 +602,7 @@
     {
       "source": "template/shared-skills/usage-dashboard/SKILL.md",
       "destination": ".agents/skills/usage-dashboard/SKILL.md",
-      "sha256": "f69356596b2c534a6bcf57ca56d4afa1da31da394c31d346230e50ea6482d955",
+      "sha256": "df33860f01c83cd4d4e634b32dd1a07e12ab3a403fe2763ee32ae73fd4fdcf40",
       "mergeKind": "managed-file"
     },
     {
@@ -620,7 +620,7 @@
     {
       "source": "template/shared-skills/usage-dashboard/SKILL.md",
       "destination": ".claude/skills/usage-dashboard/SKILL.md",
-      "sha256": "f69356596b2c534a6bcf57ca56d4afa1da31da394c31d346230e50ea6482d955",
+      "sha256": "df33860f01c83cd4d4e634b32dd1a07e12ab3a403fe2763ee32ae73fd4fdcf40",
       "mergeKind": "managed-file"
     },
     {
