@@ -131,20 +131,20 @@ test('the version is the same in every carrier: VERSION, package.json, the manif
 
 test('the version check fires when one carrier disagrees (positive control)', async () => {
   const base = {
-    version: 'v1.3.0',
-    packageVersion: '1.3.0',
-    templateVersion: '1.3.0',
-    helpFirstLine: 'Second Brain Starter 1.3.0',
-    readme: 'identifies these source bytes as `v1.3.0`',
-    changelog: '## v1.3.0 (2026-10-09)\n',
-    upgrading: '## Upgrading to v1.3.0\n',
+    version: 'v1.4.0',
+    packageVersion: '1.4.0',
+    templateVersion: '1.4.0',
+    helpFirstLine: 'Second Brain Starter 1.4.0',
+    readme: 'identifies these source bytes as `v1.4.0`',
+    changelog: '## v1.4.0 (2026-10-13)\n',
+    upgrading: '## Upgrading to v1.4.0\n',
   };
   assert.deepEqual(versionCarriers(base), []);
-  assert.notDeepEqual(versionCarriers({ ...base, packageVersion: '1.2.0' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, templateVersion: '1.2.0' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, helpFirstLine: 'Second Brain Starter 1.2.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, packageVersion: '1.3.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, templateVersion: '1.3.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, helpFirstLine: 'Second Brain Starter 1.3.0' }), []);
   assert.notDeepEqual(versionCarriers({ ...base, changelog: '## Unreleased\n' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, upgrading: '## Upgrading to v1.2.0\n' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, upgrading: '## Upgrading to v1.3.0\n' }), []);
 });
 
 // ---------------------------------------------------------------------------

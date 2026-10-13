@@ -1,12 +1,12 @@
 # Changelog
 
-## Unreleased
+## v1.4.0 (2026-10-13)
 
 - `init` and `upgrade` append the managed block to a root `AGENTS.md` or `CLAUDE.md` that has your text and no loader markers, when this tool has no install record for that file. The plan shows `APPEND`. Your bytes stay in front of the block, and rollback restores the file byte for byte. A root file with a broken comment shows `CONFLICT`, with the line number and the reason: a comment that is never closed, or a comment that names the tool and is not the one clean managed block. A plain sentence that names the tool does not. The same rule covers `.gitignore`, with `#` lines. The tool cannot recognise every possible damage, so read the plan before you approve it. An installed file whose markers were removed also shows `CONFLICT`. Known limit, not fixed here: appending to a file with CRLF line endings leaves mixed line endings, because the block is LF and your bytes are kept as they are.
 - `verify` checks only the managed block of a root `AGENTS.md` or `CLAUDE.md`, and of `.gitignore`. Text you add above or below the block passes. A change inside the block, or a damaged or missing marker, is reported. Every other managed file is still compared whole.
 - A root `AGENTS.md`, `CLAUDE.md` or `.gitignore` that is not UTF-8 text (a null byte, or a UTF-16 or UTF-32 byte-order mark) shows `CONFLICT` with a reason that says so, because the marker scan reads bytes. A UTF-8 byte-order mark is kept, and the block goes after the text.
 - In `.gitignore`, only a `#` line shaped like a privacy marker outside the block counts as a damaged marker. A `#` comment such as `# second-brain notes` is your own text and does not stop the install.
-- An installed `AGENTS.md`, `CLAUDE.md` or `.gitignore` that has lost a marker line, or its whole block, or that is empty, shows `CONFLICT` in the plan and fails `verify`. Each message names the damage, the line when there is one, and the one way out. [Install and recovery](docs/install-and-recovery.md#repair-a-damaged-loader-or-ignore-file) lists the way out for each case.
+- An installed `AGENTS.md`, `CLAUDE.md` or `.gitignore` that has lost a marker line, or its whole block, shows `CONFLICT` in the plan and fails `verify`. An installed file that is empty is different: `upgrade` stops before any plan, with one message that names the damage and the one way out, and exits 1. The plan has no `CONFLICT` line. `verify` prints `CORRUPT` for that file, with the same message, and exits 1. Each message names the damage, the line when there is one, and the one way out. [Install and recovery](docs/install-and-recovery.md#repair-a-damaged-loader-or-ignore-file) lists the way out for each case.
 - A typed `no` at the approval prompt declines the plan in any folder and prints `Plan not applied.`, with exit code 0. Before, a typed `no` in a folder that was not empty printed a digest mismatch.
 - Two refusal lines are clearer. An edited installed block says that its text differs from the block this tool installed, not that its markers are malformed. A refused rollback says the files differ from what this receipt wrote, not what `connect` wrote.
 - At the terminal prompt, a new folder or an empty folder accepts a plain `yes` (or `y`, in any case, with spaces ignored) in place of the digest. Every other target still needs the exact digest. `--apply yes` is refused, and Enter, Ctrl-C and end of input are refusals as before.
@@ -25,6 +25,8 @@
 - `UPGRADING.md` now says that an install from an unreleased build with a `skill-creator` folder shows those files as `DEPRECATED` on upgrade, that nothing is deleted, and that a rollback may leave empty folders behind.
 - `PRIVACY.md` now limits the non-UTF-8 refusal to what the code detects, a null byte or a UTF-16 or UTF-32 byte-order mark, and says that a legacy single-byte encoding is appended to like plain text. It also says `connect` is the one exception to the read limit, and that `connect` sends nothing.
 - `test/append-and-privacy.test.mjs` has a table of the seven damaged states for `AGENTS.md`, `CLAUDE.md` and `.gitignore`. Each row checks the message in `verify` and in the plan, then the one way out, applied by hand, passes `verify`.
+
+This entry describes source bytes at `v1.4.0`. It does not create or assert a tag or a published release. The repository's Releases page is the authority for tagged archive availability.
 
 ## v1.3.0 (2026-10-09)
 

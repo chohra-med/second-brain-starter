@@ -1,12 +1,56 @@
 # Upgrading the free starter
 
-## Unreleased
+## Upgrading to v1.4.0
 
-This change adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
+This version adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
+
+### What a v1.3.0 install sees
+
+The lines below are from a real upgrade. The v1.3.0 install was made from `main` at `7d46fe6`, with that tree's `init`. This branch's `upgrade` planned it, and the plan had 27 `CREATE`, 6 `MANAGED-UPDATE`, 2 `PERSONALIZED` and 67 `IDENTICAL` lines. The plan has no `CONFLICT` and no `DEPRECATED` line. The `IDENTICAL` lines are not listed.
+
+```text
+CREATE	.agents/skills/graphify/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/grill-me/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/humanizer/evals/evals.json	undo=remove-created-file
+CREATE	.agents/skills/humanizer/LICENSE	undo=remove-created-file
+CREATE	.agents/skills/humanizer/README.md	undo=remove-created-file
+CREATE	.agents/skills/humanizer/references/always-on-templates.md	undo=remove-created-file
+CREATE	.agents/skills/humanizer/references/patterns.md	undo=remove-created-file
+CREATE	.agents/skills/humanizer/references/patterns.zh.md	undo=remove-created-file
+CREATE	.agents/skills/humanizer/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/readme-generator/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/writing-skills/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/graphify/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/grill-me/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/humanizer/evals/evals.json	undo=remove-created-file
+CREATE	.claude/skills/humanizer/LICENSE	undo=remove-created-file
+CREATE	.claude/skills/humanizer/README.md	undo=remove-created-file
+CREATE	.claude/skills/humanizer/references/always-on-templates.md	undo=remove-created-file
+CREATE	.claude/skills/humanizer/references/patterns.md	undo=remove-created-file
+CREATE	.claude/skills/humanizer/references/patterns.zh.md	undo=remove-created-file
+CREATE	.claude/skills/humanizer/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/readme-generator/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/writing-skills/SKILL.md	undo=remove-created-file
+CREATE	.gitignore	undo=remove-created-file
+PERSONALIZED	00-Meta/Daily-Task-Plan.md	undo=none
+PERSONALIZED	00-Meta/Profile.md	undo=none
+MANAGED-UPDATE	00-Meta/README.md	undo=restore-preimage
+CREATE	03-Resources/Procedures/complete-init.md	undo=remove-created-file
+MANAGED-UPDATE	03-Resources/Procedures/first-use.md	undo=restore-preimage
+CREATE	03-Resources/Procedures/init.md	undo=remove-created-file
+CREATE	03-Resources/Procedures/quick-start.md	undo=remove-created-file
+MANAGED-UPDATE	03-Resources/Procedures/README.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/review.md	undo=restore-preimage
+CREATE	03-Resources/Procedures/showcase-readme.md	undo=remove-created-file
+MANAGED-UPDATE	04-Archives/Projects/Archive-Guide.md	undo=restore-preimage
+MANAGED-UPDATE	Home.md	undo=restore-preimage
+```
+
+After `upgrade --apply` with the exact plan digest, `verify` printed `Verification: OK` and exited 0.
 
 - An upgrade adds one plan line. If the workspace has no `.gitignore`, the plan shows `CREATE .gitignore`. If it has one, the plan shows `APPEND .gitignore`. Your lines stay in front of the block.
 - The block makes git ignore `.second-brain/`, the notes in `05-Daily/` (the shipped `05-Daily/daily-template.md` stays tracked), `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and `01-Projects/**/Connection.md`. To keep one of those paths in version control, leave the block alone and add an exception line (`!path`) below it, for example `!00-Meta/Profile.md`. Do not delete the block: `upgrade` and `verify` need it. A clone of your workspace made with git will not contain `00-Meta/Profile.md` or `00-Meta/Daily-Task-Plan.md`, so the links to them on Home will not resolve in that clone until you add an exception line or copy the files.
-- A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`, when this tool has no install record for that file. An installed file whose markers were removed still shows `CONFLICT`. A broken comment in one of these files also stops the upgrade: a comment that is never closed, or a comment that names the tool and is not the one clean managed block. A plain sentence that names the tool does not stop it. A root `AGENTS.md`, `CLAUDE.md` or `.gitignore` that is not UTF-8 text (it has a null byte, or starts with a UTF-16 or UTF-32 byte-order mark) also stops the upgrade: convert it to UTF-8 first. An installed file with a missing marker line, or with its whole block gone or its file empty, stops the upgrade too. The plan names the damage and the one way out: put back the missing marker line exactly as shipped, or paste the whole shipped file from the starter copy, keeping your own text. [Install and recovery](docs/install-and-recovery.md#repair-a-damaged-loader-or-ignore-file) lists each case. Only you can restore them. The tool cannot recognise every possible damage, so read the plan before you approve it. Rollback removes the appended block and restores the file byte for byte.
+- A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`, when this tool has no install record for that file. An installed file whose markers were removed still shows `CONFLICT`. A broken comment in one of these files also stops the upgrade: a comment that is never closed, or a comment that names the tool and is not the one clean managed block. A plain sentence that names the tool does not stop it. A root `AGENTS.md`, `CLAUDE.md` or `.gitignore` that is not UTF-8 text (it has a null byte, or starts with a UTF-16 or UTF-32 byte-order mark) also stops the upgrade: convert it to UTF-8 first. An installed file with a missing marker line, or with its whole block gone or its file empty, stops the upgrade too. The plan names the damage and the one way out: put back the missing marker line exactly as shipped, or paste the whole shipped file from the starter copy, keeping your own text. [Install and recovery](docs/install-and-recovery.md#repair-a-damaged-loader-or-ignore-file) lists each case. Only you can restore them. The tool cannot recognise every possible damage, so read the plan before you approve it. Rollback of a file you have not edited since the install removes the appended block and restores the file byte for byte. If you edited the file after the install, even outside the block, rollback refuses with `POSTIMAGE_MISMATCH`, exits 1 and removes nothing.
 - This change adds five skills (`grill-me`, `readme-generator`, `graphify`, `writing-skills` and `humanizer`) and one procedure, `03-Resources/Procedures/showcase-readme.md`. An upgrade from v1.3.0 shows their 11 skill files as 22 `CREATE` lines, one in each of `.agents/skills/` and `.claude/skills/`, plus the procedure's `CREATE` line. It shows `03-Resources/Procedures/README.md` as `MANAGED-UPDATE` because its list gained the new procedure. No existing file is removed.
 - This change adds three managed procedures, `03-Resources/Procedures/quick-start.md`, `init.md` and `complete-init.md`. Each one shows as `CREATE` in the plan.
 - It changes three managed files, which show as `MANAGED-UPDATE`: `Home.md` (a new first section, "Start here"), `03-Resources/Procedures/first-use.md` (its Profile section now points to `init.md` and `complete-init.md`) and `03-Resources/Procedures/README.md` (the index lists the three ways). `00-Meta/Profile.md` is a seed file, not a managed file. An existing install keeps its file, and the plan shows `PERSONALIZED` for it, even if you never edited it. The new seed text reaches new installs only. A `00-Meta/Profile.md` that you already filled in is kept as it is.
