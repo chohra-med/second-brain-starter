@@ -44,7 +44,7 @@ The starter gives one workspace:
 - one official home for current facts, decisions, roadmap and progress;
 - a `Home.md` dashboard that points to the next useful action;
 - a `00-Meta/Profile.md` seed, which the first-use interview fills in for role, stack, answer style and boundaries, leaving anything you do not answer as `Unknown`;
-- thirteen local skills: context, capture, close, review, learning, the local ICM bindings, the bundled `icm-architect` method and `humanizer` and `skill-creator` (its optional scripts run only if you run them; see [PRIVACY.md](PRIVACY.md)), plus the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`;
+- thirteen local skills: context, capture, close, review, learning, the local ICM bindings, the bundled `icm-architect` method and `humanizer` and `skill-creator` (an assistant that uses this skill may run its local scripts, which send content to your model provider; see [PRIVACY.md](PRIVACY.md)), plus the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`;
 - a project template folder to copy when a second project starts, and a `connect` command that creates the same kind of folder for each repository you name;
 - a `connect` command that stages Spec Harness into a repository you name and registers that repository with the workspace;
 - a safe initializer with plan approval, verification, receipts and rollback;
@@ -71,7 +71,7 @@ PARA gives each record a home. CODE moves information from capture to finished w
 | Second Brain Starter | Builder AI OS |
 |---|---|
 | Public foundation for one workspace and the repositories you connect to it. The starter's own files are MIT. | Paid operating layer for builders |
-| Home dashboard and thirteen shared skills: context, capture, close, review, learning, ICM bindings, the bundled `icm-architect`, `humanizer` and `skill-creator` methods, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` | A premium Home page, more skills and adapters |
+| Home dashboard and thirteen shared skills: context, capture, close, review, learning, ICM bindings, the bundled `icm-architect`, `humanizer` and `skill-creator` methods (an assistant that uses `skill-creator` may run its local scripts, which send content to your model provider; see [PRIVACY.md](PRIVACY.md)), and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` | A premium Home page, more skills and adapters |
 | Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
 | Community source updates | Paid product updates and private repository access |

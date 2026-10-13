@@ -2,7 +2,7 @@
 
 PARA and CODE are methods created by Tiago Forte. This starter explains them in its own words and does not reproduce his course material.
 
-James Croft's MIT-licensed second-brain template helped establish the idea that a readable Markdown template can be shared openly. This package contains original files, copies no code or template content from it, and does not imply endorsement by James Croft.
+James Croft's MIT-licensed second-brain template helped establish the idea that a readable Markdown template can be shared openly. This package contains the starter's own files and the bundled third-party folders listed below. The starter's own files are original. They copy no code or template content from James Croft's template, and they do not imply endorsement by James Croft.
 
 See [PARA-CODE.md](template/03-Resources/PARA-CODE.md) for the working definitions used here.
 
@@ -20,7 +20,7 @@ The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-ski
 
 ## Bundled third-party skill: skill-creator
 
-The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) was written by Anthropic, the owner of its upstream repository. It comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill. Its optional scripts start a process, serve a page on your own machine and load fonts from Google when you run them. They run only if you run them. The list is in [PRIVACY.md](PRIVACY.md).
+The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) was published by Anthropic in its public skills repository. It comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill. Its optional scripts call your Claude client, serve a review page on your own machine and load fonts from Google. An assistant that uses the skill may run them as normal steps. [PRIVACY.md](PRIVACY.md) lists what they do and how to remove them.
 
 ## Optional companion: graphify
 

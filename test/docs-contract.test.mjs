@@ -367,21 +367,31 @@ test('the scan-document check fires on a truncated quoted title and on a missing
 });
 
 // ---------------------------------------------------------------------------
-// (vii) While the bundled skill-creator scripts ship, PRIVACY.md discloses their four behaviours and says they run only
-// when a person or an agent runs them. The check is skipped only when run_eval.py is not shipped.
+// (vii) While the bundled skill-creator scripts ship, PRIVACY.md names each behaviour on its own and says that an
+// assistant using the skill may run them. Each token below is a phrase that must be present, so removing any one of
+// them fails the check. The check only confirms that the words are there. It does not check that the sentence is true.
+// A person must still read the PRIVACY paragraph against the scripts. The check is skipped only when run_eval.py is not shipped.
 // ---------------------------------------------------------------------------
 
 const SKILL_CREATOR_SCRIPT = 'template/shared-skills/skill-creator/scripts/run_eval.py';
 const SKILL_CREATOR_DISCLOSED = [
   ['claude -p', 'starts a claude -p process'],
-  ['127.0.0.1', 'serves a page on 127.0.0.1'],
-  ['Google', 'loads fonts from Google'],
-  ['3117', 'stops processes on port 3117'],
-  ['These scripts run only if you run them.', 'says the scripts run only when run'],
+  ['to your model provider', 'sends test prompts and skill text to the model provider'],
+  ['127.0.0.1', 'serves a review page on 127.0.0.1'],
+  ['3117', 'uses port 3117'],
+  ['stop signal to every process listening on that port', 'stops the process that holds the port'],
+  ['open your browser', 'opens the browser'],
+  ['fonts from Google', 'loads fonts from Google'],
+  ['in the background', 'runs in the background'],
+  ['An assistant that uses the `skill-creator` skill', 'says an assistant using the skill may run them'],
 ];
+// The sentence that said the scripts run only when a person runs them. It is false for an agent and must not come back.
+const SKILL_CREATOR_FALSE = 'run only if you run them';
 
 function skillCreatorDisclosureProblems(text) {
-  return SKILL_CREATOR_DISCLOSED.filter(([token]) => !text.includes(token)).map(([, behaviour]) => `PRIVACY.md does not disclose that the skill-creator scripts ${behaviour}`);
+  const problems = SKILL_CREATOR_DISCLOSED.filter(([token]) => !text.includes(token)).map(([, behaviour]) => `PRIVACY.md does not disclose that the skill-creator scripts ${behaviour}`);
+  if (text.includes(SKILL_CREATOR_FALSE)) problems.push(`PRIVACY.md still says the scripts ${SKILL_CREATOR_FALSE}`);
+  return problems;
 }
 
 async function isShipped(relative) {
@@ -393,15 +403,17 @@ async function isShipped(relative) {
   }
 }
 
-test('PRIVACY.md discloses the four skill-creator script behaviours while run_eval.py is shipped', async () => {
+test('PRIVACY.md names each skill-creator script behaviour and an assistant may run them, while run_eval.py is shipped', async () => {
   const shipped = await isShipped(SKILL_CREATOR_SCRIPT);
   assert.deepEqual(shipped ? skillCreatorDisclosureProblems(await read('PRIVACY.md')) : [], []);
 });
 
-test('the skill-creator disclosure check fires when a behaviour is left out of PRIVACY.md (positive control)', async () => {
+test('the skill-creator disclosure check fires when any one named phrase is removed from PRIVACY.md (positive control)', async () => {
   const current = await read('PRIVACY.md');
   assert.deepEqual(skillCreatorDisclosureProblems(current), [], 'the current PRIVACY.md passes');
-  assert.ok(skillCreatorDisclosureProblems(current.replaceAll('3117', 'a port')).length > 0, 'a removed port fires the check');
-  assert.ok(skillCreatorDisclosureProblems(current.replaceAll('claude -p', 'a helper')).length > 0, 'a removed process fires the check');
+  for (const [token, behaviour] of SKILL_CREATOR_DISCLOSED) {
+    assert.ok(skillCreatorDisclosureProblems(current.replaceAll(token, 'a removed phrase')).length > 0, `removing the phrase for "${behaviour}" fires the check`);
+  }
+  assert.ok(skillCreatorDisclosureProblems(`${current}\nThese scripts ${SKILL_CREATOR_FALSE}.\n`).length > 0, 'the false sentence coming back fires the check');
   assert.ok(await isShipped(SKILL_CREATOR_SCRIPT), 'the scripts are shipped in this checkout, so the real check ran');
 });

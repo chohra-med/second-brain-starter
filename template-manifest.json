@@ -278,7 +278,7 @@
     {
       "source": "template/03-Resources/Procedures/showcase-readme.md",
       "destination": "03-Resources/Procedures/showcase-readme.md",
-      "sha256": "4e58f582ba43a2942257715a7ac31d4950e80e0094367beec656fdafe095ab81",
+      "sha256": "021e2ea1b2dfa12f4541d7bb2ba2ad51fa699480f3946bf584d7ae099cda2488",
       "mergeKind": "managed-file"
     },
     {

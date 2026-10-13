@@ -6,7 +6,7 @@ Read the `writing-skills` skill next if you want to write or change a skill of y
 
 Each stage names what it reads, what it writes, and what you check before the next stage starts. Do not skip a check.
 
-## Stage 1: Pin down what the project is (`grill-me`)
+## 1. Pin down what the project is (`grill-me`)
 
 Use this stage only when two or more files describe the project differently. If one file says what the project is and nothing contradicts it, skip `grill-me`: write the three answers yourself, with the date, and go to stage 2.
 
@@ -30,7 +30,7 @@ A short set of dated answers in the decisions file.
 
 In one sentence each, say what the project is, who it is for, and what it does not do. A second reader must give the same three answers.
 
-## Stage 2: Draft the README (`readme-generator`)
+## 2. Draft the README (`readme-generator`)
 
 ### Inputs
 
@@ -51,7 +51,7 @@ A draft `README.md` in the project folder. Mark it as a draft.
 
 Run each quickstart command in an empty folder. Each one must work, and its output must match what the README says. Search the source for every name in the README. Each name must exist.
 
-## Stage 3: Remove machine-sounding writing (`humanizer`)
+## 3. Remove machine-sounding writing (`humanizer`)
 
 ### Inputs
 
