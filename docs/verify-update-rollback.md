@@ -86,6 +86,8 @@ For a later starter version, obtain a fresh source copy first, then run its `upg
 
 ## Roll back
 
+If a change goes wrong, stop editing the target. Use the relevant receipt rollback when its preconditions hold, or return to the dated copy made before the update.
+
 Every applied transaction prints a receipt ID and stores its receipt inside the target's `.second-brain` state. A connect prints its receipt ID too. Each `CONNECTION` line of `verify` ends with that ID. To undo only that receipt's writes:
 
 ```sh

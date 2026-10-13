@@ -17,6 +17,8 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ---
 
+> **Need the learning layer too?** Start free here. **[Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=builder-ai-os)** is the optional paid version. It adds prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog. [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md) sets the two side by side.
+
 ## What it is
 
 Second Brain Starter sets up a workspace. A workspace is a folder of plain Markdown files. It keeps your facts, decisions, progress and next steps. An AI assistant can read them, so a new chat picks up where the last one stopped.
@@ -27,7 +29,7 @@ It is for people who build software and people who do other work. You need a fol
 
 ## Start
 
-1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), or download and extract the latest release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases).
+1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter). Cloning gives the newest files. Or download and extract a release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases). A release ZIP gives the last published release, which can be older than this page.
 2. Open the source folder in Claude Code, Codex CLI or the Codex app, with local file access.
 3. Type:
 
@@ -43,7 +45,7 @@ Three ways to start, from fastest to fullest. Each one drafts first and writes n
 - [Init](template/03-Resources/Procedures/init.md): five questions, saved one at a time.
 - [Complete init](template/03-Resources/Procedures/complete-init.md): the full question set, in sections.
 
-Prefer the command line? These three commands do the same setup. `$PROJECT` is the absolute path of your project folder.
+Prefer the command line? These three commands do the same setup. Run them from the source copy. `$PROJECT` stands for the folder you want set up, as an absolute path.
 
 ```sh
 node ./bin/second-brain.mjs init --target "$PROJECT"
@@ -62,7 +64,7 @@ The first command prints the plan and its digest. The second applies that exact 
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
 | Skills | The starter ships twelve shared skills. The initializer installs them as twelve local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
-| Safety | Plan first. Typed approval for an existing folder. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
+| Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
 The twelve skills:
 
@@ -89,7 +91,7 @@ The twelve skills:
 
 ## Verify, update and roll back
 
-Verify checks the files the starter manages. Run it after setup and after any update. Personalizing a managed record intentionally creates baseline drift, so verify names that path and exits nonzero. That is not proof of damage: review the named paths. To undo one applied change, run `rollback` with its receipt ID. The output labels and the recovery steps are in [verify, update and roll back](docs/verify-update-rollback.md).
+Verify checks the files the starter manages. Run it after setup and after any update. Personalizing a managed record intentionally creates baseline drift. A managed record is a file the starter installs and verify checks, and baseline drift is the difference you leave in it on purpose. Verify names that path and exits nonzero. That is not proof of damage: review the named paths. To undo one applied change, run `rollback` with its receipt ID. The output labels and the recovery steps are in [verify, update and roll back](docs/verify-update-rollback.md).
 
 ## Glossary
 
@@ -120,8 +122,9 @@ To remove the starter, first keep any Markdown files you want to retain. Then de
 
 ## More
 
-- [Install and recovery](docs/install-and-recovery.md): full setup, plan approval and loader repair.
+- [Install and recovery](docs/install-and-recovery.md): full setup, plan approval and repair of a damaged loader (the managed block in the root `AGENTS.md` or `CLAUDE.md`, which points an assistant at the workspace's rules).
 - [Verify, update and roll back](docs/verify-update-rollback.md): what verify compares, its output and rollback.
 - [Connect a repository](docs/connect-a-repository.md): one repository at a time.
 - [First loop and projects](docs/first-loop-and-projects.md): your first project, the working loop and a second project.
+- [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md): the free starter next to the optional paid layer.
 - [ONBOARDING.md](ONBOARDING.md), [UPGRADING.md](UPGRADING.md), [CHANGELOG.md](CHANGELOG.md), [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [ATTRIBUTION.md](ATTRIBUTION.md).

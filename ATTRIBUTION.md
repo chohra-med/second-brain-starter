@@ -18,6 +18,10 @@ This starter's own differences from the method live in the separate `second-brai
 
 The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
 
+## Original skills: grill-me, readme-generator, graphify and writing-skills
+
+The skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. For `graphify`, the outside tool it describes is separate software, as the note below explains.
+
 ## Optional companion: graphify
 
 The `graphify` skill in [template/shared-skills/graphify/](template/shared-skills/graphify/SKILL.md) is written for this starter. It describes how to use an outside tool at https://github.com/Graphify-Labs/graphify. That tool is separate software. It is not bundled and not installed by this starter, and its licence is set by its own project. Check that licence before you install the tool. The skill works only if you install the tool yourself.

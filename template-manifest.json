@@ -218,7 +218,7 @@
     {
       "source": "template/00-Meta/README.md",
       "destination": "00-Meta/README.md",
-      "sha256": "9c71dbc40e2561390880329f4d8544bc63c349d9de4070db725da506e1fa9615",
+      "sha256": "2c60f3560f115dd51d26d5fb3969d13ab6778c1b5e894df4a778012159e86b59",
       "mergeKind": "managed-file"
     },
     {

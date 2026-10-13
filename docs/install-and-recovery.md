@@ -6,8 +6,8 @@ This page holds the full setup steps and the repair steps for a damaged loader. 
 
 Use either route:
 
-- **Clone** the repository to a location you control.
-- **Download and extract the latest release ZIP** from [Releases](https://github.com/chohra-med/second-brain-starter/releases).
+- **Clone** the repository to a location you control. Cloning gives the newest files.
+- **Download and extract a release ZIP** from [Releases](https://github.com/chohra-med/second-brain-starter/releases). A release ZIP gives the last published release, which can be older than this page.
 
 Keep the source copy as your untouched base copy. If you use a source checkout, keep its structure intact. Its `bin/`, `lib/`, `template/`, and `template-manifest.json` files are the initializer source. Your project is a separate target directory, not an edited installer checkout.
 
@@ -54,13 +54,14 @@ The target may already contain your project files. Differing managed files remai
 
 A nonempty root `AGENTS.md` or `CLAUDE.md` with no harness markers is not rejected. For a file this tool has no install record for, the plan marks it `APPEND`. The initializer adds the managed block after your existing text, and your text stays byte for byte in front of it.
 
-Other cases stop for manual resolution:
+Other cases need manual resolution:
 
-- An installed file whose markers were removed is a `CONFLICT`.
-- A file with a broken comment stops the install. A comment that is never closed stops it. So does a comment that names the tool and is not the one clean managed block, such as a half-present marker, two blocks, or a marker whose name is spelled differently.
+- An installed file whose markers were removed is a `CONFLICT`. The apply is refused until you fix it.
+- A file with a broken comment shows `CONFLICT` in the plan, and the apply is refused. A comment that is never closed counts. So does a comment that names the tool and is not the one clean managed block, such as a half-present marker, two blocks, or a marker whose name is spelled differently.
+- An installed file that is empty stops before any plan is printed.
 - A plain sentence that names the tool, outside any comment, does not stop it.
 - The same rule covers `.gitignore`. The comment there is a line that starts with `#`, and only a `#` line shaped like a marker counts.
-- A root `AGENTS.md`, `CLAUDE.md` or `.gitignore` that is not UTF-8 text stops the install. It is not UTF-8 text when it has a null byte or starts with a UTF-16 or UTF-32 byte-order mark. Convert it to UTF-8 first. A UTF-8 byte-order mark is allowed. The block goes after your text, and the mark stays at the start.
+- A root `AGENTS.md`, `CLAUDE.md` or `.gitignore` that is not UTF-8 text shows `CONFLICT` in the plan, and the install cannot apply. It is not UTF-8 text when it has a null byte or starts with a UTF-16 or UTF-32 byte-order mark. Convert it to UTF-8 first. A UTF-8 byte-order mark is allowed. The block goes after your text, and the mark stays at the start.
 
 The plan prints the line number and the reason. For example: `Manual resolution required: AGENTS.md line 4 has an HTML comment that is never closed, so the install stops; write the comment in full, ending with -->, or remove it, then plan again.`
 
@@ -82,7 +83,7 @@ and these two in `.gitignore`:
 # second-brain:privacy:end
 ```
 
-The start line comes first in the block and the end line comes last.
+The start line comes first in the block and the end line comes last. The privacy block makes git ignore `00-Meta/Profile.md` and `00-Meta/Daily-Task-Plan.md`, so a clone of your workspace made with git does not contain them, and the links to them on Home will not resolve there until you add an exception line or copy the files.
 
 ## Repair a damaged loader or ignore file
 

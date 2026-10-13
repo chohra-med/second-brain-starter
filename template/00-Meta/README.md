@@ -12,7 +12,7 @@ Read this map when finding workspace policy or today’s focus.
 
 These rules apply to you and to any assistant that works in this workspace. Check them when you add, move or finish something.
 
-1. Put new things inside the folder they belong to, because the top level holds only the numbered folders, `Home.md` and the assistant rule files (`AGENTS.md`, `CLAUDE.md`) and `.gitignore`.
+1. Put new things inside the folder they belong to, because the top level holds only the numbered folders, `Home.md`, the assistant rule files (`AGENTS.md`, `CLAUDE.md`), `.gitignore`, and three folders the tool writes: `.claude/` (skills for Claude Code), `.agents/` (skills for Codex) and `.second-brain/` (the installer's own records).
 2. Keep scratch files, downloads, build output and test output out of the workspace, because they pile up and hide the records you need.
 3. Before an assistant changes or moves a file you care about, it keeps one copy of the old version, and only one per change, so a bad edit can be undone.
 4. Never delete a record: move it to `04-Archives/`, in the same folder path it had, because a move can be undone and a delete cannot.

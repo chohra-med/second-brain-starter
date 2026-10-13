@@ -15,7 +15,7 @@ const read = (relative) => readFile(path.join(sourceRoot, relative), 'utf8');
 // ---------------------------------------------------------------------------
 
 const COMMAND_PATTERN = /\bsecond-brain(?:\.mjs)?\s+([a-z][a-z-]*)/g;
-const COMMAND_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'UPGRADING.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md'];
+const COMMAND_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'UPGRADING.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md'];
 
 function exposedCommands(argumentsSource) {
   const declared = argumentsSource.match(/COMMANDS = new Set\(\[([^\]]*)\]\)/);
@@ -151,7 +151,7 @@ test('the version check fires when one carrier disagrees (positive control)', as
 // (iii) every relative link in the changed documents resolves to a file, and every in-page anchor resolves to a heading.
 // ---------------------------------------------------------------------------
 
-const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md'];
+const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md'];
 
 // GitHub's heading slug: lower case, punctuation removed, spaces become hyphens.
 function slug(heading) {
