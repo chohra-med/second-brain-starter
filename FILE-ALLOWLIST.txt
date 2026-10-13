@@ -75,6 +75,7 @@ test/plan.test.mjs
 test/security.test.mjs
 test/transaction.test.mjs
 test/upgrade.test.mjs
+test/usage-dashboard.test.mjs
 template/00-Meta/README.md
 template/01-Projects/README.md
 template/01-Projects/Selected-Project/README.md
@@ -115,6 +116,9 @@ template/shared-skills/humanizer/references/always-on-templates.md
 template/shared-skills/humanizer/references/patterns.md
 template/shared-skills/humanizer/references/patterns.zh.md
 template/shared-skills/readme-generator/SKILL.md
+template/shared-skills/usage-dashboard/SKILL.md
+template/shared-skills/usage-dashboard/usage-dashboard.mjs
+template/shared-skills/usage-dashboard/usage-prices.json
 template/shared-skills/writing-skills/SKILL.md
 template/03-Resources/_templates/project/README.md
 template/03-Resources/_templates/project/FACTS.md

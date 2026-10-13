@@ -5,6 +5,8 @@ import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
 const expectedSeedDestinations = [
+  '.agents/skills/usage-dashboard/usage-prices.json',
+  '.claude/skills/usage-dashboard/usage-prices.json',
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
@@ -516,6 +518,7 @@ const installedSkills = [
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'usage-dashboard',
   'writing-skills',
 ];
 
