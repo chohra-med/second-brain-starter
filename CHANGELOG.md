@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.5.0 (2026-10-13)
+
+- Adds the shared skill `usage-dashboard`, installed to `.agents/skills/` and `.claude/skills/`. It is one script, `usage-dashboard.mjs`, that reads the Claude Code transcript files on this machine and prints, per session, the tokens used, an estimated cost at list prices, the peak context, and how often each skill and slash command was used. The skill is written for this repository, see [ATTRIBUTION.md](ATTRIBUTION.md).
+- `usage-prices.json` beside the script is a seed file. Each install writes it once. It is yours to edit, and an upgrade keeps your copy and shows it as `PERSONALIZED`.
+- The installed skill set is fifteen, not fourteen. The README, the two docs that count the skills and the installer test now say fifteen.
+- Design decision, usage dashboard (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): this is the first file in the template that is meant to be run. It is a script and not a procedure an assistant follows, because the counting must be exact and the same every time: the same transcripts give the same numbers, and a bad line is named by file and line instead of being skipped by a reader's judgement. Its limits: it reads only Claude Code transcript files, in the `.claude/projects` folder of your home folder or the folder you name with `--projects-dir`; it prints aggregates and names of a fixed shape, never prompt, answer, tool input or tool result text; it opens no network connection, starts no other program, writes no file and needs no dependency beyond Node.js 22 or newer; and the package itself never runs it. Prices are a seed file the user owns, and every money figure is an estimate at list prices, not a bill. It does not do these things: no chart, no web page, no background job, no telemetry.
+- `PRIVACY.md` has a new paragraph that says what the script reads and prints, that it opens no network connection and writes no file, and that an AI client which runs it sends the printed output to its model provider under the client's own settings.
+- `test/usage-dashboard.test.mjs` runs the script's tests against this repository's copy and adds three: a fresh install that verifies, a verify after the installed price file is edited, and the installed script run on a planted transcript folder (exit 0, then exit 1 naming the file and line, then exit 0 once restored). The symbolic link test skips with a message when the system will not create a link.
+- `test/installer.test.mjs` lists the new skill, and the two installed price files as seed files, in its exact lists.
+- Version: the source moves from `v1.4.1` to `v1.5.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
+This entry describes source bytes at `v1.5.0`. It does not create or assert a tag or a published release. The repository's Releases page is the authority for tagged archive availability.
+
 ## v1.4.1 (2026-10-14)
 
 - Adds two procedures under `03-Resources/Procedures/`. `context-modes.md` loads workspace context in one of three named modes: the default, which reads the route and the operating map only; a scoped run for one named project or task; and a full run, which happens only when it is asked for by name. `end-session.md` closes a work session by writing the corrections back to the workspace, not only reporting them. It is bounded by default, and `end-session full` is the audited mode.
