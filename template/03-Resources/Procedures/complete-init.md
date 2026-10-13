@@ -6,7 +6,7 @@ Use this when you want a ready second brain: records that already hold your work
 
 Read what init saved, if it ran. Read `00-Meta/Profile.md` and each `01-Projects/*/FACTS.md`. Never ask again a question that already has a real answer. Ask only the questions whose saved answer is `Unknown` or missing.
 
-`init.md` asks Role, How I want answers and Never touch. This procedure does not ask them again. It asks Stack, and the questions about your work, your projects and your rules.
+`init.md` asks Role, How I want answers and Never touch. Read `00-Meta/Profile.md` first. For each of those three that is still `Unknown`, ask its question from `init.md` first (questions 1, 4 and 5), and save the answer under the save rule in `init.md`. Then continue. This procedure asks Stack, and the questions about your work, your projects and your rules.
 
 Some questions fit an employee, a freelancer and a founder alike. Answer with the words that fit you. Nothing here assumes that you own a company.
 
@@ -27,11 +27,15 @@ Some questions fit an employee, a freelancer and a founder alike. Answer with th
 
 ## Section 2: Who you answer to and who depends on you
 
-2. Who do you answer to: a manager, a client, a board, or nobody?
-   - Saved to: `02-Areas/Areas.md`, one row for your main area. Put the answer in Current note.
+2. Describe your job or business in one paragraph.
+   - Saved to: `02-Areas/Areas.md`, the row for your main area, in Current note.
+   - Example answer: `I run client reporting for a small consulting firm. Each client gets one report a month.`
+
+3. Who do you answer to: a manager, a client, a board, or nobody?
+   - Saved to: the same row in `02-Areas/Areas.md`. Add the answer in Current note, after the paragraph from question 2.
    - Example answer: `My operations director.`
 
-3. Who depends on your work, and what do they need from you?
+4. Who depends on your work, and what do they need from you?
    - Saved to: the same row in `02-Areas/Areas.md`, in Standard to maintain.
    - Example answer: `The three managers need the report by Monday noon.`
 
@@ -39,47 +43,51 @@ Some questions fit an employee, a freelancer and a founder alike. Answer with th
 
 Repeat these five questions for each project, one project at a time. Use the project folder that init or quick start made. If there is none, ask for the project's name, then copy `03-Resources/_templates/project/` into `01-Projects/` only after the user says yes.
 
-4. What is the goal, in one sentence?
+5. What is the goal, in one sentence?
    - Saved to: that project's `FACTS.md`, row Goal.
    - Example answer: `Send the quarterly client report by the tenth.`
 
-5. Who is on it?
+6. Who is on it?
    - Saved to: that project's `FACTS.md`, row Scope, and the Owner column of its `roadmap.md`.
-   - Optional follow-up, part of question 5: who decides. Ask it only if the answer does not say. Save it in the same place.
+   - Optional follow-up, part of question 6: who decides. Ask it only if the answer does not say. Save it in the same place.
    - Example answer: `Dana prepares the data. I decide the final numbers.`
 
-6. Is there a deadline? If there is none, say none.
+7. Is there a deadline? If there is none, say none.
    - Saved to: that project's `FACTS.md`, row Constraint.
    - Example answer: `The tenth of each quarter, as the contract says.`
 
-7. What does done look like? Name the proof a reviewer would check.
+8. What does done look like? Name the proof a reviewer would check.
    - Saved to: that project's `roadmap.md`, Evidence for done.
    - Example answer: `The client confirms receipt, and the totals match the finance export.`
 
-8. Where do its files live? A folder or system name is enough.
+9. Where do its files live? A folder or system name is enough.
    - Saved to: that project's `FACTS.md`, row Source of truth.
    - Example answer: `The shared drive, folder Q3 reports.`
 
 ## Section 4: Recurring work and its rhythm
 
-9. What do you do every week or every month without a new request? Name each one.
-   - Saved to: `02-Areas/Areas.md`, one row for each recurring area.
-   - Example answer: `The weekly status report, the monthly budget check.`
+10. What do you do every week or every month without a new request? Name each one.
+    - Saved to: `02-Areas/Areas.md`, one row for each recurring area.
+    - Example answer: `The weekly status report, the monthly budget check.`
 
-10. When does each one happen? Give the day or the date.
+11. When does each one happen? Give the day or the date.
     - Saved to: the Standard to maintain column of the same row.
     - Example answer: `Status report every Monday. Budget check on the last Friday.`
 
 ## Section 5: Rules and red lines
 
-11. What needs a human yes before the assistant acts?
+12. What is confidential, and what must never leave your machine?
+    - Saved to: `00-Meta/Decisions.md`, one row. Name the kind of material in Decision, and the reason in Why.
+    - Example answer: `Client contracts and payroll files never leave my machine.`
+
+13. What needs a human yes before the assistant acts?
     - Saved to: `00-Meta/Decisions.md`, one row for each rule that affects more than one project. A rule for one project goes to that project's `Decisions.md`.
     - Example answer: `Any message sent to a client needs my yes first.`
 
 ## Section 6: How you review progress
 
-12. How do you want to review progress, and how often: a weekly check, a monthly check, or only when you ask?
-    - Saved to: `00-Meta/Decisions.md`, one row, with the reason and the condition for a new review.
+14. How do you want to review progress, and how often: a weekly check, a monthly check, or only when you ask?
+    - Saved to: `00-Meta/Decisions.md`, one row. Put the reason and the condition for a new review in the Why column.
     - Example answer: `A short weekly review on Friday. Revisit it if the team size changes.`
 
 ## After each section

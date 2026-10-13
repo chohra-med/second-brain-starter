@@ -296,7 +296,7 @@
     {
       "source": "template/03-Resources/Procedures/complete-init.md",
       "destination": "03-Resources/Procedures/complete-init.md",
-      "sha256": "8a4e453bfd79413533e8b43f37b15733da4d8a648d63181608e0b383f1f4c9ab",
+      "sha256": "b53e2c6ad5815e42cc177d63741d5eab4551f8a2ac74dd427a452bcfdaf5cecd",
       "mergeKind": "managed-file"
     },
     {

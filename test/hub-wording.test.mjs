@@ -205,6 +205,7 @@ async function procedureFiles() {
   return {
     'init.md': await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/init.md'), 'utf8'),
     'complete-init.md': await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/complete-init.md'), 'utf8'),
+    'first-use.md': await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/first-use.md'), 'utf8'),
   };
 }
 
@@ -265,4 +266,18 @@ test('first-use section 2a names both init.md and complete-init.md, and a missin
   const section = text.slice(text.indexOf('## 2a. Profile'), text.indexOf('## 3. Approve'));
   assert.ok(section.includes('`init.md`') && section.includes('`complete-init.md`'));
   assert.throws(() => assertFirstUseProfile(text.replace('`complete-init.md`', 'omitted')), /must point at complete-init.md/);
+});
+
+// Round 2 (E): first-use.md is one of the files the owner check reads. Its section 2a pointer names the owners but is not a save.
+test('the owner check reads first-use.md, and the section 2a pointer is not counted as a save (E)', async () => {
+  const files = await procedureFiles();
+  assert.deepEqual(profileSaves({ 'first-use.md': files['first-use.md'] }), [], 'the 2a pointer must not count as a question');
+  assert.deepEqual(profileOwnerProblems(files), []);
+});
+
+test('a second Profile question in first-use.md is caught by the owner check (E positive control)', async () => {
+  const files = await procedureFiles();
+  const second = '4. How do you want answers: length, language, how much explanation?\n   - Saved to: `00-Meta/Profile.md`, section `## How I want answers`.\n';
+  const planted = { ...files, 'first-use.md': `${files['first-use.md']}\n${second}` };
+  assert.ok(profileOwnerProblems(planted).some((problem) => problem.startsWith('How I want answers is saved by')), 'a second profile question in first-use is caught');
 });

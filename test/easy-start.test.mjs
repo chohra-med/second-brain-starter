@@ -255,8 +255,8 @@ test('the numbered questions and steps run 1 to N in every procedure', async () 
   for (const { file } of WAYS) assert.deepEqual(numberingProblems(await read(`${PROCEDURES}/${file}`)), [], file);
 });
 
-test('complete-init keeps its twelve questions, so a removed question fails here', async () => {
-  assert.equal(questionBlocks(await read(`${PROCEDURES}/complete-init.md`)).length, 12);
+test('complete-init keeps its fourteen questions, so a removed question fails here', async () => {
+  assert.equal(questionBlocks(await read(`${PROCEDURES}/complete-init.md`)).length, 14);
 });
 
 test('UPGRADING names the three managed files and says the new Profile seed reaches new installs only', async () => {
@@ -277,4 +277,71 @@ test('the new checks fire on planted text (positive control)', () => {
   assert.equal(nextActionProblems('1. Ask a question.\n').length, 1);
   assert.equal(numberingProblems('1. a\n3. b\n').length, 1);
   assert.equal(upgradeProblems('It changes four managed files\n').length >= 1, true);
+});
+
+// Round 2 corrections for complete-init: the two questions the owner list requires, the Unknown path in the opening, and the line limit.
+const NEW_QUESTIONS = [
+  { question: 'Describe your job or business in one paragraph.', owner: '`02-Areas/Areas.md`', from: '## Section 2:', to: '## Section 3:', first: true },
+  { question: 'What is confidential, and what must never leave your machine?', owner: '`00-Meta/Decisions.md`', from: '## Section 5:', to: '## Section 6:', first: false },
+];
+const OPENING_COPIES = ['What do you do?', 'How do you want answers', 'What must the assistant never touch'];
+
+export function newQuestionProblems(text) {
+  const blocks = questionBlocks(text);
+  return NEW_QUESTIONS.flatMap(({ question, owner, from, to, first }) => {
+    const block = blocks.find((item) => item.split('\n')[0].endsWith(question));
+    if (!block) return [`complete-init does not ask: ${question}`];
+    const start = text.indexOf(from);
+    const end = text.indexOf(to);
+    const problems = [];
+    if (start < 0 || end < start || text.indexOf(question) < start || text.indexOf(question) > end) {
+      problems.push(`question is not in its section (${from} to ${to}): ${question}`);
+    }
+    const sectionBlocks = blocks.filter((item) => text.indexOf(item) > start && text.indexOf(item) < end);
+    if (first && sectionBlocks[0] !== block) problems.push(`question is not the first in its section: ${question}`);
+    if (!block.includes(`Saved to: ${owner}`)) problems.push(`question is not saved to ${owner}: ${question}`);
+    return problems;
+  });
+}
+
+export function openingProblems(text) {
+  const start = text.indexOf('## Before the first question');
+  const end = text.indexOf('## Rules for the assistant');
+  if (start < 0 || end < start) return ['complete-init has no opening section before the rules'];
+  const opening = text.slice(start, end);
+  const problems = [];
+  if (opening.includes('This procedure does not ask them again.')) problems.push('opening still has the old sentence that gives no path for Unknown fields');
+  if (!opening.includes('Read `00-Meta/Profile.md` first.')) problems.push('opening does not say to read Profile.md first');
+  if (!opening.includes('`Unknown`') || !opening.includes('`init.md`') || !opening.includes('(questions 1, 4 and 5)')) {
+    problems.push('opening does not name init.md questions 1, 4 and 5 for Unknown fields');
+  }
+  for (const copied of OPENING_COPIES) {
+    if (opening.includes(copied)) problems.push(`opening copies an init question instead of pointing to it: ${copied}`);
+  }
+  return problems;
+}
+
+test('complete-init asks the job question first in section 2 and the confidentiality question in section 5, each with its owner file', async () => {
+  assert.deepEqual(newQuestionProblems(await read(`${PROCEDURES}/complete-init.md`)), []);
+});
+
+test('complete-init opening sends each Unknown Profile field to init.md questions 1, 4 and 5, without copying them', async () => {
+  assert.deepEqual(openingProblems(await read(`${PROCEDURES}/complete-init.md`)), []);
+});
+
+test('complete-init stays under 150 lines after the round 2 additions', async () => {
+  assert.deepEqual(limitProblems(await read(`${PROCEDURES}/complete-init.md`), 150, 'complete-init.md'), []);
+});
+
+test('the round 2 checks fire on planted text (positive control)', async () => {
+  const complete = await read(`${PROCEDURES}/complete-init.md`);
+  assert.deepEqual(newQuestionProblems(complete), []);
+  assert.ok(newQuestionProblems(complete.replace('Describe your job or business in one paragraph.', 'Tell me about your work.')).length >= 1, 'a missing job question is caught');
+  assert.ok(newQuestionProblems(complete.replace('What is confidential, and what must never leave your machine?', 'What is private?')).length >= 1, 'a missing confidentiality question is caught');
+  const wrongOwner = complete.replace('Saved to: `00-Meta/Decisions.md`, one row. Name the kind', 'Saved to: `02-Areas/Areas.md`, one row. Name the kind');
+  assert.ok(newQuestionProblems(wrongOwner).some((problem) => problem.includes('not saved to `00-Meta/Decisions.md`')), 'a wrong owner file is caught');
+  assert.deepEqual(openingProblems(complete), []);
+  assert.ok(openingProblems(complete.replace('`init.md` asks Role, How I want answers and Never touch. Read', 'This procedure does not ask them again. Read')).length >= 1, 'the old no-path sentence is caught');
+  assert.ok(openingProblems(complete.replace('(questions 1, 4 and 5)', '(questions 1 to 5)')).length >= 1, 'a wrong question list is caught');
+  assert.ok(openingProblems(complete.replace('ask its question from `init.md` first', 'ask: What do you do?')).some((problem) => problem.includes('copies')), 'copied question text is caught');
 });
