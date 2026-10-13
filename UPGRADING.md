@@ -1,5 +1,29 @@
 # Upgrading the free starter
 
+## Upgrading to v1.5.0
+
+This version adds one shared skill, `usage-dashboard`, to the two skill folders. It changes no existing managed file. Its price file is a seed file, so it is yours to edit.
+
+### What a v1.4.0 install sees
+
+The lines below are from a real upgrade. The v1.4.0 install was made from commit `3f2e899` (a clean export of `main`), with that tree's `init`. This branch's `upgrade` planned it. The plan has six `CREATE` lines, 102 `IDENTICAL` lines, and no `CONFLICT`, `MANAGED-UPDATE` or `DEPRECATED` line. The `IDENTICAL` lines are not listed.
+
+```text
+CREATE	.agents/skills/usage-dashboard/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
+CREATE	.agents/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+CREATE	.claude/skills/usage-dashboard/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
+CREATE	.claude/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+```
+
+After `upgrade --apply` with the exact plan digest, `verify` printed `Verification: OK` and exited 0. Rolling back the upgrade receipt printed `ROLLED_BACK` for each of the six files and exited 0. `verify` run from the v1.4.0 source then printed `Verification: OK` again.
+
+- Each `CREATE` line is a new file. Three go in `.agents/skills/usage-dashboard/` and three in `.claude/skills/usage-dashboard/`. Nothing existing is removed, and nothing in the upgrade runs the script.
+- `usage-prices.json` is a seed file. An install made from this version writes it once. An existing install keeps its file, and the plan shows `PERSONALIZED` for it even if you never edited it. An upgrade does not overwrite your copy.
+- Until you apply this upgrade, `verify` run from the v1.5.0 source exits non-zero. It reports `SOURCE_MANIFEST_MISMATCH`, and an `UNMANAGED` line for each of the six files. Those lines go away after the upgrade.
+- Rolling back this upgrade removes the six files and leaves the two empty `usage-dashboard` folders in place, as earlier versions describe.
+
 ## Upgrading to v1.4.0
 
 This version adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
