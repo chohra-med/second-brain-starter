@@ -385,6 +385,7 @@ const AGENTS_RULE_TABLE = [
   ['an end marker before the start marker', `${USER_RULES}${LOADER_END}\nmine\n${LOADER_START}\n`, 'CONFLICT', 'comment', 4],
   ['two clean blocks', `${USER_RULES}${LOADER_START}\na\n${LOADER_END}\n${LOADER_START}\nb\n${LOADER_END}\n`, 'CONFLICT', 'comment', 7],
   ['an unrelated closed comment', `${USER_RULES}<!-- my note -->\n`, 'APPEND'],
+  ['an empty comment that HTML closes early', `${USER_RULES}<!-->\n`, 'CONFLICT', 'unclosed', 4],
 ];
 
 const REASON_PHRASE = {
@@ -429,8 +430,9 @@ test('the marker rule for AGENTS.md: one clean block plans IDENTICAL when it is 
   await writeFile(path.join(edited.target, 'AGENTS.md'), changed);
   const plan = await planOnly(['init', '--target', edited.target]);
   assert.match(plan, /^CONFLICT\tAGENTS\.md\t/m);
-  assert.match(plan, /Manual resolution required: AGENTS\.md has a managed block whose text differs from the block this tool installed/);
+  assert.match(plan, /Manual resolution required: AGENTS\.md has a loader block whose text differs from the block this tool ships, and this tool has no install record/);
   assert.doesNotMatch(plan, /malformed/);
+  assert.doesNotMatch(plan, /installed/);
   const rejected = await runCli(['init', '--target', edited.target, '--apply', planDigest(plan)]);
   assert.equal(rejected.code, 1, rejected.stdout);
   assert.deepEqual(await readFile(path.join(edited.target, 'AGENTS.md')), Buffer.from(changed));
@@ -455,7 +457,8 @@ test('the marker rule for CLAUDE.md: an unclosed comment is a CONFLICT and a pla
 const GITIGNORE_RULE_TABLE = [
   ['user lines only', 'node_modules/\n.env\n', 'APPEND'],
   ['a plain line that names the tool, outside any comment', 'node_modules/\nsecond-brain:privacy:start\n', 'APPEND'],
-  ['a user comment that names the tool', 'node_modules/\n# second-brain notes\n', 'CONFLICT', 'comment', 2],
+  ['a user comment that names the tool is not a marker', 'node_modules/\n# second-brain notes\n', 'APPEND'],
+  ['a comment shaped like a privacy marker, not exact', 'node_modules/\n# second-brain:privacy: notes\n', 'CONFLICT', 'comment', 2],
   ['a start marker alone', `node_modules/\n${PRIVACY_START}\n.second-brain/\n`, 'CONFLICT', 'comment', 2],
   ['a start marker with extra spaces after the hash', 'node_modules/\n#  second-brain:privacy:start\n', 'CONFLICT', 'comment', 2],
   ['an upper-case start marker and a full end', `node_modules/\n# SECOND-BRAIN:PRIVACY:START\n${PRIVACY_END}\n`, 'CONFLICT', 'comment', 2],
@@ -486,7 +489,7 @@ test('the marker rule for .gitignore: each row plans the kind it names, and a CO
   }
 });
 
-test('the marker rule for .gitignore: the shipped block is IDENTICAL, and a user comment after it is a CONFLICT on its own line', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+test('the marker rule for .gitignore: the shipped block is IDENTICAL, a user comment after it is not a marker, and a marker-shaped line after it is a CONFLICT', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
   const shipped = await readFile(path.join(sourceRoot, 'template', 'privacy-gitignore.txt'), 'utf8');
   const same = await fresh(t, 'second-brain-rule-gitignore-shipped-');
   await mkdir(same.target);
@@ -495,13 +498,20 @@ test('the marker rule for .gitignore: the shipped block is IDENTICAL, and a user
 
   const after = await fresh(t, 'second-brain-rule-gitignore-after-');
   await mkdir(after.target);
-  await writeFile(path.join(after.target, '.gitignore'), `${shipped}# second_brain notes\n`);
-  const plan = await planOnly(['init', '--target', after.target]);
+  await writeFile(path.join(after.target, '.gitignore'), `${shipped}# second-brain notes: keep\n`);
+  const comment = await planOnly(['init', '--target', after.target]);
+  assert.match(comment, /^IDENTICAL\t\.gitignore\t/m);
+  assert.doesNotMatch(comment, /^CONFLICT\t/m);
+
+  const shaped = await fresh(t, 'second-brain-rule-gitignore-shaped-');
+  await mkdir(shaped.target);
+  await writeFile(path.join(shaped.target, '.gitignore'), `${shipped}# second_brain:privacy: notes\n`);
+  const plan = await planOnly(['init', '--target', shaped.target]);
   assert.match(plan, /^CONFLICT\t\.gitignore\t/m);
   assert.ok(plan.includes(`Manual resolution required: .gitignore line ${shipped.split('\n').length} ${REASON_PHRASE.comment}`), plan);
 });
 
-test('a plain sentence that names the tool in an installed AGENTS.md is no marker: upgrade plans no conflict, and verify reports the changed file as CORRUPT', async (t) => {
+test('a plain sentence that names the tool in an installed AGENTS.md is no marker: upgrade plans IDENTICAL and verify passes', async (t) => {
   const { target } = await fresh(t, 'second-brain-installed-mention-');
   await mkdir(target);
   await planAndApply(target);
@@ -512,14 +522,12 @@ test('a plain sentence that names the tool in an installed AGENTS.md is no marke
   assert.match(plan, /^IDENTICAL\tAGENTS\.md\t/m);
   assert.doesNotMatch(plan, /^CONFLICT\t/m);
 
-  // Verify compares AGENTS.md whole, so any changed byte is CORRUPT. The reason is the changed file, not a marker.
   const verified = await runCli(['verify', '--target', target]);
-  assert.equal(verified.code, 1, verified.stdout);
-  assert.match(verified.stdout, /CORRUPT\tAGENTS\.md/);
-  assert.doesNotMatch(verified.stdout, /loader|marker/i);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
 });
 
-test('verify compares AGENTS.md whole: a line above or below the block is CORRUPT, for a created file and an appended one', async (t) => {
+test('verify checks only the AGENTS.md block: text above or below it passes for a created file and an appended one', async (t) => {
   const created = await fresh(t, 'second-brain-verify-created-');
   await mkdir(created.target);
   await planAndApply(created.target);
@@ -527,8 +535,9 @@ test('verify compares AGENTS.md whole: a line above or below the block is CORRUP
   assert.equal((await runCli(['verify', '--target', created.target])).code, undefined, 'the untouched created file verifies');
   await writeFile(path.join(created.target, 'AGENTS.md'), `${createdBytes}mine\n`);
   const createdBelow = await runCli(['verify', '--target', created.target]);
-  assert.equal(createdBelow.code, 1, createdBelow.stdout);
-  assert.match(createdBelow.stdout, /CORRUPT\tAGENTS\.md/);
+  assert.equal(createdBelow.code, undefined, createdBelow.stdout);
+  assert.match(createdBelow.stdout, /Verification: OK/);
+  assert.match(await planOnly(['upgrade', '--target', created.target]), /^IDENTICAL\tAGENTS\.md\t/m);
 
   const appended = await fresh(t, 'second-brain-verify-appended-');
   await mkdir(appended.target);
@@ -538,8 +547,46 @@ test('verify compares AGENTS.md whole: a line above or below the block is CORRUP
   assert.equal((await runCli(['verify', '--target', appended.target])).code, undefined, 'the untouched appended file verifies');
   await writeFile(path.join(appended.target, 'AGENTS.md'), `mine\n${appendedBytes}`);
   const appendedAbove = await runCli(['verify', '--target', appended.target]);
-  assert.equal(appendedAbove.code, 1, appendedAbove.stdout);
-  assert.match(appendedAbove.stdout, /CORRUPT\tAGENTS\.md/);
+  assert.equal(appendedAbove.code, undefined, appendedAbove.stdout);
+  assert.match(appendedAbove.stdout, /Verification: OK/);
+  assert.match(await planOnly(['upgrade', '--target', appended.target]), /^IDENTICAL\tAGENTS\.md\t/m);
+});
+
+test('verify reports a change inside the AGENTS.md block, and a deleted end marker, as CORRUPT', async (t) => {
+  const edited = await fresh(t, 'second-brain-verify-inside-');
+  await mkdir(edited.target);
+  await planAndApply(edited.target);
+  const shippedBlock = await readFile(path.join(edited.target, 'AGENTS.md'), 'utf8');
+  await writeFile(path.join(edited.target, 'AGENTS.md'), shippedBlock.replace('Keep project-specific instructions', 'Keep my own instructions'));
+  const inside = await runCli(['verify', '--target', edited.target]);
+  assert.equal(inside.code, 1, inside.stdout);
+  assert.match(inside.stdout, /CORRUPT\tAGENTS\.md/);
+
+  const deleted = await fresh(t, 'second-brain-verify-end-deleted-');
+  await mkdir(deleted.target);
+  await planAndApply(deleted.target);
+  const bytes = await readFile(path.join(deleted.target, 'AGENTS.md'), 'utf8');
+  await writeFile(path.join(deleted.target, 'AGENTS.md'), bytes.replace(`${LOADER_END}\n`, ''));
+  const endGone = await runCli(['verify', '--target', deleted.target]);
+  assert.equal(endGone.code, 1, endGone.stdout);
+  assert.match(endGone.stdout, /CORRUPT\tAGENTS\.md/);
+});
+
+test('verify checks .gitignore by its block, and a comment that is not marker-shaped below it passes', async (t) => {
+  const { target } = await fresh(t, 'second-brain-verify-gitignore-comment-');
+  await mkdir(target);
+  await planAndApply(target);
+  const block = await readFile(path.join(target, '.gitignore'), 'utf8');
+  await writeFile(path.join(target, '.gitignore'), `${block}# second-brain notes: keep\n`);
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+  assert.match(await planOnly(['upgrade', '--target', target]), /^IDENTICAL\t\.gitignore\t/m);
+
+  await writeFile(path.join(target, '.gitignore'), `${block}# second-brain:privacy: notes\n`);
+  const shaped = await runCli(['verify', '--target', target]);
+  assert.equal(shaped.code, 1, shaped.stdout);
+  assert.match(shaped.stdout, /CORRUPT\t\.gitignore/);
 });
 
 test('verify compares .gitignore by its block only: a user line above or below the block still verifies', async (t) => {
@@ -588,4 +635,90 @@ test('a refused install rollback names this receipt, not connect', async (t) => 
   assert.match(rolledBack.stdout, /differ from what this receipt wrote/);
   assert.doesNotMatch(rolledBack.stdout, /connect wrote/);
   assert.equal(await readFile(path.join(target, '.gitignore'), 'utf8').then((text) => text.endsWith('mine/\n')), true, 'the user line stays');
+});
+
+// A root file that is not plain UTF-8 text. The marker scan reads bytes, so a UTF-16 file can hide an unclosed comment.
+// Each CONFLICT row must refuse apply and keep every byte. The UTF-8 byte-order mark is allowed: the block goes after the text.
+const UTF16_LE_BOM = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(`${USER_RULES}<!-- my note\n`, 'utf16le')]);
+const UTF16_BE_BOM = Buffer.concat([Buffer.from([0xfe, 0xff]), Buffer.from(`${USER_RULES}<!-- my note\n`, 'utf16le').swap16()]);
+const UTF16_NO_BOM = Buffer.from(`${USER_RULES}<!-- my note\n`, 'utf16le');
+const UTF8_BOM = Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(USER_RULES, 'utf8')]);
+
+test('a root AGENTS.md that is UTF-16 with a byte-order mark, or has null bytes, is a CONFLICT and apply changes no byte', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  for (const [label, bytes] of [['UTF-16LE with a byte-order mark', UTF16_LE_BOM], ['UTF-16BE with a byte-order mark', UTF16_BE_BOM], ['UTF-16 without a byte-order mark', UTF16_NO_BOM]]) {
+    const { target } = await fresh(t, 'second-brain-utf-conflict-');
+    await mkdir(target);
+    await writeFile(path.join(target, 'AGENTS.md'), bytes);
+    const plan = await planOnly(['init', '--target', target]);
+    assert.match(plan, /^CONFLICT\tAGENTS\.md\tundo=none$/m, label);
+    assert.doesNotMatch(plan, /^APPEND\t/m, label);
+    assert.ok(plan.includes('AGENTS.md is not UTF-8 text'), `${label}: ${plan}`);
+    assert.ok(plan.includes('convert the file to UTF-8 text first'), `${label}: ${plan}`);
+    const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+    assert.equal(rejected.code, 1, label);
+    assert.match(rejected.stdout, /PLAN_CONFLICT/, label);
+    assert.deepEqual(await readFile(path.join(target, 'AGENTS.md')), bytes, `${label}: the file is byte-identical`);
+  }
+});
+
+test('a root .gitignore that is UTF-16 is a CONFLICT too', async (t) => {
+  const { target } = await fresh(t, 'second-brain-utf-gitignore-');
+  await mkdir(target);
+  const bytes = Buffer.from('node_modules/\n', 'utf16le');
+  await writeFile(path.join(target, '.gitignore'), bytes);
+  const plan = await planOnly(['init', '--target', target]);
+  assert.match(plan, /^CONFLICT\t\.gitignore\tundo=none$/m);
+  assert.ok(plan.includes('.gitignore is not UTF-8 text'), plan);
+  const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+  assert.equal(rejected.code, 1, rejected.stdout);
+  assert.deepEqual(await readFile(path.join(target, '.gitignore')), bytes);
+});
+
+test('a root AGENTS.md with a UTF-8 byte-order mark is APPENDed: the mark stays first, the block goes after the text, and verify passes', async (t) => {
+  const { target } = await fresh(t, 'second-brain-utf8-bom-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'AGENTS.md'), UTF8_BOM);
+  const plan = await planOnly(['init', '--target', target]);
+  assert.match(plan, /^APPEND\tAGENTS\.md\tundo=restore-preimage$/m);
+  const applied = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const bytes = await readFile(path.join(target, 'AGENTS.md'));
+  assert.deepEqual(bytes.subarray(0, 3), Buffer.from([0xef, 0xbb, 0xbf]), 'the byte-order mark is kept at the start');
+  assert.deepEqual(bytes.subarray(3, 3 + USER_RULES.length), Buffer.from(USER_RULES), 'the user text follows, unchanged');
+  assert.ok(bytes.toString('utf8').endsWith(`${LOADER_END}\n`), 'the block ends the file');
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+});
+
+test('an installed AGENTS.md whose marker lines were removed is refused with the line to put back, and restoring them plans IDENTICAL', async (t) => {
+  const { target } = await fresh(t, 'second-brain-markers-removed-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'AGENTS.md'), USER_RULES);
+  await planAndApply(target);
+  const installed = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
+  const block = installed.slice(installed.indexOf(LOADER_START));
+  const withoutMarkers = `${USER_RULES}my own text\n`;
+  await writeFile(path.join(target, 'AGENTS.md'), withoutMarkers);
+
+  const plan = await planOnly(['upgrade', '--target', target]);
+  assert.match(plan, /^CONFLICT\tAGENTS\.md\t/m);
+  assert.ok(plan.includes('Manual resolution required: AGENTS.md has no loader marker lines, but this tool installed the file'), plan);
+  assert.ok(plan.includes('put back the two loader marker lines exactly as shipped, keeping your own text'), plan);
+  const rejected = await runCli(['upgrade', '--target', target, '--apply', planDigest(plan)]);
+  assert.equal(rejected.code, 1, rejected.stdout);
+  assert.equal(await readFile(path.join(target, 'AGENTS.md'), 'utf8'), withoutMarkers, 'the file is unchanged');
+
+  await writeFile(path.join(target, 'AGENTS.md'), `${withoutMarkers}${block}`);
+  assert.match(await planOnly(['upgrade', '--target', target]), /^IDENTICAL\tAGENTS\.md\t/m);
+});
+
+test('an unclosed comment that is written as <!--> is told to write the comment in full', async (t) => {
+  const { target } = await fresh(t, 'second-brain-empty-comment-wording-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'AGENTS.md'), `${USER_RULES}<!-->\n`);
+  const plan = await planOnly(['init', '--target', target]);
+  assert.ok(plan.includes('AGENTS.md line 4 has an HTML comment that is never closed'), plan);
+  assert.ok(plan.includes('write the comment in full, ending with -->'), plan);
+  assert.doesNotMatch(plan, /close the comment/);
 });
