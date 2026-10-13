@@ -8,6 +8,10 @@ ATTRIBUTION.md
 CLAUDE.md
 CHANGELOG.md
 CONTRIBUTING.md
+docs/connect-a-repository.md
+docs/first-loop-and-projects.md
+docs/install-and-recovery.md
+docs/verify-update-rollback.md
 FILE-ALLOWLIST.txt
 LICENSE
 ONBOARDING.md
