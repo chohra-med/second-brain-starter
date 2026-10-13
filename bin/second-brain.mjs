@@ -100,7 +100,8 @@ async function printPlan(plan) {
   for (const entry of plan.entries) {
     output.write(`${entry.status}\t${entry.destination}\tundo=${entry.undo.action}\n`);
     if (entry.status === 'CONFLICT' && entry.mergeKind === 'managed-block') {
-      output.write(`Manual resolution required: ${entry.destination} has unmanaged or malformed loader markers.\n`);
+      // A marker conflict names its line and its reason. Any other loader conflict keeps the general wording.
+      output.write(`Manual resolution required: ${entry.conflictReason ?? `${entry.destination} has unmanaged or malformed loader markers.`}\n`);
     }
   }
   // The privacy block is read from its template source, so the plan names exactly the paths git will ignore.
@@ -155,7 +156,8 @@ async function confirmInteractive(plan, suppliedDigest) {
       answer: text,
       interrupted: false,
       yesAccepted: newOrEmpty && YES_ANSWERS.has(text.trim().toLowerCase()),
-      declined: newOrEmpty && NO_ANSWERS.has(text.trim().toLowerCase()),
+      // A typed no declines the plan in any folder, as Enter does.
+      declined: NO_ANSWERS.has(text.trim().toLowerCase()),
     }));
     return await Promise.race([answer, interrupted]);
   } finally {
@@ -737,7 +739,7 @@ async function explain(error, context) {
     case 'POSTIMAGE_MISMATCH':
       return lines(
         `POSTIMAGE_MISMATCH: ${message}`,
-        'The files named above differ from what connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
+        'The files named above differ from what this receipt wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
         next(rollbackCmd(context.receiptId)),
       );
     case 'TARGET_TRAVERSAL':

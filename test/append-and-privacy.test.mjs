@@ -367,3 +367,225 @@ test('the privacy block keeps the shipped daily template tracked and still ignor
   assert.equal(await gitIgnores(target, '05-Daily/daily-template.md'), false, 'the shipped template is not ignored');
   assert.equal(await gitIgnores(target, '05-Daily/2026-10-13.md'), true, 'a dated daily note is ignored');
 });
+
+// The marker rule for a root AGENTS.md, one row per case. The row names the plan kind. A CONFLICT row names the reason
+// ('unclosed' or 'comment') and the line of the comment that caused it. Apply refuses every CONFLICT, and the file keeps
+// every byte.
+const AGENTS_RULE_TABLE = [
+  ['user prose only', USER_RULES, 'APPEND'],
+  ['prose that mentions second-brain:loader in a sentence', `${USER_RULES}The loader is second-brain:loader in prose.\n`, 'APPEND'],
+  ['a YAML-style line second-brain: notes', `${USER_RULES}second-brain: notes\n`, 'APPEND'],
+  ['an unclosed comment with any text', `${USER_RULES}<!-- my note with no end\n`, 'CONFLICT', 'unclosed', 4],
+  ['a comment cut off after second-brain', `${USER_RULES}<!-- second-brain\n`, 'CONFLICT', 'unclosed', 4],
+  ['a start marker with a space for the hyphen', `${USER_RULES}<!-- second brain:loader:start -->\nmine\n`, 'CONFLICT', 'comment', 4],
+  ['a start marker with an underscore', `${USER_RULES}<!-- second_brain:loader:start -->\nmine\n`, 'CONFLICT', 'comment', 4],
+  ['an upper-case start marker alone', `${USER_RULES}<!-- SECOND-BRAIN:LOADER:START -->\nmine\n`, 'CONFLICT', 'comment', 4],
+  ['a start marker without an end', `${USER_RULES}${LOADER_START}\nmine\n`, 'CONFLICT', 'comment', 4],
+  ['an end marker without a start', `${USER_RULES}${LOADER_END}\nmine\n`, 'CONFLICT', 'comment', 4],
+  ['an end marker before the start marker', `${USER_RULES}${LOADER_END}\nmine\n${LOADER_START}\n`, 'CONFLICT', 'comment', 4],
+  ['two clean blocks', `${USER_RULES}${LOADER_START}\na\n${LOADER_END}\n${LOADER_START}\nb\n${LOADER_END}\n`, 'CONFLICT', 'comment', 7],
+  ['an unrelated closed comment', `${USER_RULES}<!-- my note -->\n`, 'APPEND'],
+];
+
+const REASON_PHRASE = {
+  unclosed: 'has an HTML comment that is never closed',
+  comment: 'has a comment that names second-brain but is not the one clean managed block',
+};
+
+test('the marker rule for AGENTS.md: each row plans the kind it names, and a CONFLICT refuses apply and changes no byte', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  for (const [label, content, kind, cause, line] of AGENTS_RULE_TABLE) {
+    const { target } = await fresh(t, 'second-brain-rule-agents-');
+    await mkdir(target);
+    await writeFile(path.join(target, 'AGENTS.md'), content);
+
+    const plan = await planOnly(['init', '--target', target]);
+    assert.match(plan, new RegExp(`^${kind}\\tAGENTS\\.md\\t`, 'm'), label);
+    if (kind === 'APPEND') {
+      const applied = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+      assert.equal(applied.code, undefined, `${label}: ${applied.stdout}`);
+      assert.ok((await readFile(path.join(target, 'AGENTS.md'), 'utf8')).startsWith(content), `${label}: the user bytes stay in front`);
+      continue;
+    }
+    assert.ok(plan.includes(`Manual resolution required: AGENTS.md line ${line} ${REASON_PHRASE[cause]}`), `${label}: ${plan}`);
+    const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+    assert.equal(rejected.code, 1, label);
+    assert.match(rejected.stdout, /PLAN_CONFLICT/, label);
+    assert.deepEqual(await readFile(path.join(target, 'AGENTS.md')), Buffer.from(content), `${label}: the file is unchanged`);
+  }
+});
+
+test('the marker rule for AGENTS.md: one clean block plans IDENTICAL when it is the shipped text, and CONFLICT when its text differs', async (t) => {
+  const shipped = await readFile(path.join(sourceRoot, 'template', 'AGENTS.md'), 'utf8');
+  const { target } = await fresh(t, 'second-brain-rule-agents-clean-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'AGENTS.md'), shipped);
+  const same = await planOnly(['init', '--target', target]);
+  assert.match(same, /^IDENTICAL\tAGENTS\.md\t/m);
+
+  const edited = await fresh(t, 'second-brain-rule-agents-edited-');
+  await mkdir(edited.target);
+  const changed = shipped.replace('Keep project-specific instructions', 'Keep my own instructions');
+  assert.notEqual(changed, shipped);
+  await writeFile(path.join(edited.target, 'AGENTS.md'), changed);
+  const plan = await planOnly(['init', '--target', edited.target]);
+  assert.match(plan, /^CONFLICT\tAGENTS\.md\t/m);
+  assert.match(plan, /Manual resolution required: AGENTS\.md has a managed block whose text differs from the block this tool installed/);
+  assert.doesNotMatch(plan, /malformed/);
+  const rejected = await runCli(['init', '--target', edited.target, '--apply', planDigest(plan)]);
+  assert.equal(rejected.code, 1, rejected.stdout);
+  assert.deepEqual(await readFile(path.join(edited.target, 'AGENTS.md')), Buffer.from(changed));
+});
+
+test('the marker rule for CLAUDE.md: an unclosed comment is a CONFLICT and a plain mention is an APPEND', async (t) => {
+  const { target } = await fresh(t, 'second-brain-rule-claude-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'CLAUDE.md'), `${USER_RULES}<!-- second-brain\n`);
+  const plan = await planOnly(['init', '--target', target]);
+  assert.match(plan, /^CONFLICT\tCLAUDE\.md\t/m);
+  assert.ok(plan.includes('Manual resolution required: CLAUDE.md line 4 has an HTML comment that is never closed'), plan);
+
+  const mention = await fresh(t, 'second-brain-rule-claude-mention-');
+  await mkdir(mention.target);
+  await writeFile(path.join(mention.target, 'CLAUDE.md'), `${USER_RULES}Written by second-brain: see AGENTS.md.\n`);
+  assert.match(await planOnly(['init', '--target', mention.target]), /^APPEND\tCLAUDE\.md\t/m);
+});
+
+// The same rule for .gitignore, with # lines. The shipped block has one line that names the tool, and it is inside the
+// block, so it is allowed. Any other # line that names the tool is a CONFLICT. Other lines never block.
+const GITIGNORE_RULE_TABLE = [
+  ['user lines only', 'node_modules/\n.env\n', 'APPEND'],
+  ['a plain line that names the tool, outside any comment', 'node_modules/\nsecond-brain:privacy:start\n', 'APPEND'],
+  ['a user comment that names the tool', 'node_modules/\n# second-brain notes\n', 'CONFLICT', 'comment', 2],
+  ['a start marker alone', `node_modules/\n${PRIVACY_START}\n.second-brain/\n`, 'CONFLICT', 'comment', 2],
+  ['a start marker with extra spaces after the hash', 'node_modules/\n#  second-brain:privacy:start\n', 'CONFLICT', 'comment', 2],
+  ['an upper-case start marker and a full end', `node_modules/\n# SECOND-BRAIN:PRIVACY:START\n${PRIVACY_END}\n`, 'CONFLICT', 'comment', 2],
+  ['an end marker before the start marker', `node_modules/\n${PRIVACY_END}\n${PRIVACY_START}\n`, 'CONFLICT', 'comment', 2],
+  ['two clean blocks', `node_modules/\n${PRIVACY_START}\na/\n${PRIVACY_END}\n${PRIVACY_START}\nb/\n${PRIVACY_END}\n`, 'CONFLICT', 'comment', 5],
+  ['an unrelated comment', 'node_modules/\n# my note\n', 'APPEND'],
+];
+
+test('the marker rule for .gitignore: each row plans the kind it names, and a CONFLICT refuses apply and changes no byte', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  for (const [label, content, kind, cause, line] of GITIGNORE_RULE_TABLE) {
+    const { target } = await fresh(t, 'second-brain-rule-gitignore-');
+    await mkdir(target);
+    await writeFile(path.join(target, '.gitignore'), content);
+
+    const plan = await planOnly(['init', '--target', target]);
+    assert.match(plan, new RegExp(`^${kind}\\t\\.gitignore\\t`, 'm'), label);
+    if (kind === 'APPEND') {
+      const applied = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+      assert.equal(applied.code, undefined, `${label}: ${applied.stdout}`);
+      assert.ok((await readFile(path.join(target, '.gitignore'), 'utf8')).startsWith(content), `${label}: the user lines stay in front`);
+      continue;
+    }
+    assert.ok(plan.includes(`Manual resolution required: .gitignore line ${line} ${REASON_PHRASE[cause]}`), `${label}: ${plan}`);
+    const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+    assert.equal(rejected.code, 1, label);
+    assert.match(rejected.stdout, /PLAN_CONFLICT/, label);
+    assert.deepEqual(await readFile(path.join(target, '.gitignore')), Buffer.from(content), `${label}: the file is unchanged`);
+  }
+});
+
+test('the marker rule for .gitignore: the shipped block is IDENTICAL, and a user comment after it is a CONFLICT on its own line', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const shipped = await readFile(path.join(sourceRoot, 'template', 'privacy-gitignore.txt'), 'utf8');
+  const same = await fresh(t, 'second-brain-rule-gitignore-shipped-');
+  await mkdir(same.target);
+  await writeFile(path.join(same.target, '.gitignore'), shipped);
+  assert.match(await planOnly(['init', '--target', same.target]), /^IDENTICAL\t\.gitignore\t/m);
+
+  const after = await fresh(t, 'second-brain-rule-gitignore-after-');
+  await mkdir(after.target);
+  await writeFile(path.join(after.target, '.gitignore'), `${shipped}# second_brain notes\n`);
+  const plan = await planOnly(['init', '--target', after.target]);
+  assert.match(plan, /^CONFLICT\t\.gitignore\t/m);
+  assert.ok(plan.includes(`Manual resolution required: .gitignore line ${shipped.split('\n').length} ${REASON_PHRASE.comment}`), plan);
+});
+
+test('a plain sentence that names the tool in an installed AGENTS.md is no marker: upgrade plans no conflict, and verify reports the changed file as CORRUPT', async (t) => {
+  const { target } = await fresh(t, 'second-brain-installed-mention-');
+  await mkdir(target);
+  await planAndApply(target);
+  const agents = path.join(target, 'AGENTS.md');
+  await writeFile(agents, `${await readFile(agents, 'utf8')}Notes: config lives under second-brain: see below.\n`);
+
+  const plan = await planOnly(['upgrade', '--target', target]);
+  assert.match(plan, /^IDENTICAL\tAGENTS\.md\t/m);
+  assert.doesNotMatch(plan, /^CONFLICT\t/m);
+
+  // Verify compares AGENTS.md whole, so any changed byte is CORRUPT. The reason is the changed file, not a marker.
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, 1, verified.stdout);
+  assert.match(verified.stdout, /CORRUPT\tAGENTS\.md/);
+  assert.doesNotMatch(verified.stdout, /loader|marker/i);
+});
+
+test('verify compares AGENTS.md whole: a line above or below the block is CORRUPT, for a created file and an appended one', async (t) => {
+  const created = await fresh(t, 'second-brain-verify-created-');
+  await mkdir(created.target);
+  await planAndApply(created.target);
+  const createdBytes = await readFile(path.join(created.target, 'AGENTS.md'), 'utf8');
+  assert.equal((await runCli(['verify', '--target', created.target])).code, undefined, 'the untouched created file verifies');
+  await writeFile(path.join(created.target, 'AGENTS.md'), `${createdBytes}mine\n`);
+  const createdBelow = await runCli(['verify', '--target', created.target]);
+  assert.equal(createdBelow.code, 1, createdBelow.stdout);
+  assert.match(createdBelow.stdout, /CORRUPT\tAGENTS\.md/);
+
+  const appended = await fresh(t, 'second-brain-verify-appended-');
+  await mkdir(appended.target);
+  await writeFile(path.join(appended.target, 'AGENTS.md'), USER_RULES);
+  await planAndApply(appended.target);
+  const appendedBytes = await readFile(path.join(appended.target, 'AGENTS.md'), 'utf8');
+  assert.equal((await runCli(['verify', '--target', appended.target])).code, undefined, 'the untouched appended file verifies');
+  await writeFile(path.join(appended.target, 'AGENTS.md'), `mine\n${appendedBytes}`);
+  const appendedAbove = await runCli(['verify', '--target', appended.target]);
+  assert.equal(appendedAbove.code, 1, appendedAbove.stdout);
+  assert.match(appendedAbove.stdout, /CORRUPT\tAGENTS\.md/);
+});
+
+test('verify compares .gitignore by its block only: a user line above or below the block still verifies', async (t) => {
+  const { target } = await fresh(t, 'second-brain-verify-gitignore-block-');
+  await mkdir(target);
+  await planAndApply(target);
+  const block = await readFile(path.join(target, '.gitignore'), 'utf8');
+  await writeFile(path.join(target, '.gitignore'), `mine/\n${block}!00-Meta/Profile.md\n`);
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+});
+
+test('an edit inside an installed .gitignore block is named as an edited block, not as malformed markers', async (t) => {
+  const { target } = await fresh(t, 'second-brain-inblock-wording-');
+  await mkdir(target);
+  await planAndApply(target);
+  const block = await readFile(path.join(target, '.gitignore'), 'utf8');
+  await writeFile(path.join(target, '.gitignore'), block.replace('.second-brain/', '.second-brain-edited/'));
+  const plan = await planOnly(['upgrade', '--target', target]);
+  assert.match(plan, /^CONFLICT\t\.gitignore\t/m);
+  assert.ok(plan.includes('Manual resolution required: .gitignore has a managed block whose text differs from the block this tool installed'), plan);
+  assert.doesNotMatch(plan, /malformed/);
+});
+
+test('a typed no at the prompt in a non-empty folder prints Plan not applied. and writes nothing', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await fresh(t, 'second-brain-typed-no-nonempty-');
+  await mkdir(target);
+  await writeFile(path.join(target, 'notes.txt'), 'mine\n');
+  const run = await prompted('no', ['init', '--target', target]);
+  assert.equal(run.code, 0, run.text);
+  assert.match(run.text, /Plan not applied\./);
+  assert.doesNotMatch(run.text, /Plan digest did not match/);
+  assert.equal(await exists(path.join(target, 'AGENTS.md')), false);
+  assert.equal(await readFile(path.join(target, 'notes.txt'), 'utf8'), 'mine\n');
+});
+
+test('a refused install rollback names this receipt, not connect', async (t) => {
+  const { target } = await fresh(t, 'second-brain-rollback-wording-');
+  await mkdir(target);
+  const receipt = await planAndApply(target);
+  await writeFile(path.join(target, '.gitignore'), `${await readFile(path.join(target, '.gitignore'), 'utf8')}mine/\n`);
+  const rolledBack = await runCli(['rollback', '--target', target, '--receipt', receipt]);
+  assert.equal(rolledBack.code, 1, rolledBack.stdout);
+  assert.match(rolledBack.stdout, /POSTIMAGE_MISMATCH/);
+  assert.match(rolledBack.stdout, /differ from what this receipt wrote/);
+  assert.doesNotMatch(rolledBack.stdout, /connect wrote/);
+  assert.equal(await readFile(path.join(target, '.gitignore'), 'utf8').then((text) => text.endsWith('mine/\n')), true, 'the user line stays');
+});
