@@ -278,7 +278,7 @@
     {
       "source": "template/03-Resources/Procedures/showcase-readme.md",
       "destination": "03-Resources/Procedures/showcase-readme.md",
-      "sha256": "bb9614b6e50523c873361a31f16dbc421718616e40b5833bee9f226b730dde71",
+      "sha256": "4e58f582ba43a2942257715a7ac31d4950e80e0094367beec656fdafe095ab81",
       "mergeKind": "managed-file"
     },
     {
@@ -464,13 +464,13 @@
     {
       "source": "template/shared-skills/graphify/SKILL.md",
       "destination": ".agents/skills/graphify/SKILL.md",
-      "sha256": "181dd463492f767df0165af58cb16c36f20a308793f24d36ef1b83a8861a2d8d",
+      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/graphify/SKILL.md",
       "destination": ".claude/skills/graphify/SKILL.md",
-      "sha256": "181dd463492f767df0165af58cb16c36f20a308793f24d36ef1b83a8861a2d8d",
+      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
       "mergeKind": "managed-file"
     },
     {
@@ -800,13 +800,13 @@
     {
       "source": "template/shared-skills/writing-skills/SKILL.md",
       "destination": ".agents/skills/writing-skills/SKILL.md",
-      "sha256": "45d6812a3f4a1568738b4345fc8f88568194283469ee4eace5b898897120a421",
+      "sha256": "53adb7e295dce83b285dc88cfd1c020b50ef677b051094d52992b2378f29c6e2",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/writing-skills/SKILL.md",
       "destination": ".claude/skills/writing-skills/SKILL.md",
-      "sha256": "45d6812a3f4a1568738b4345fc8f88568194283469ee4eace5b898897120a421",
+      "sha256": "53adb7e295dce83b285dc88cfd1c020b50ef677b051094d52992b2378f29c6e2",
       "mergeKind": "managed-file"
     },
     {

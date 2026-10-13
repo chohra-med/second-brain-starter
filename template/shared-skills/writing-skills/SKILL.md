@@ -7,7 +7,7 @@ description: Explains how to write a good skill for an AI coding assistant. Cove
 
 A skill is a folder that holds one file, `SKILL.md`. The file tells an AI assistant how to do one kind of task. The assistant reads the header first, decides whether the task matches, and reads the rest only after it has chosen the skill.
 
-For the full method, including how to test a skill, read the `skill-creator` skill that ships in this folder. This page covers the basics. It does not copy that method.
+For the full method, including how to test a skill, read the `skill-creator` skill. It is a sibling folder, installed next to this one. This page covers the basics. It does not copy that method.
 
 ## Do not use this when
 

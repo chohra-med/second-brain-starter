@@ -365,3 +365,43 @@ test('the scan-document check fires on a truncated quoted title and on a missing
   assert.equal(scanDocumentProblems('PLANTED.md', `Run \`node --test\` to scan, then \`${truncated}\`.`, vendorTest).length, 1);
   assert.equal(scanDocumentProblems('PLANTED.md', 'Run the scan some other way.', vendorTest).length, 1);
 });
+
+// ---------------------------------------------------------------------------
+// (vii) While the bundled skill-creator scripts ship, PRIVACY.md discloses their four behaviours and says they run only
+// when a person or an agent runs them. The check is skipped only when run_eval.py is not shipped.
+// ---------------------------------------------------------------------------
+
+const SKILL_CREATOR_SCRIPT = 'template/shared-skills/skill-creator/scripts/run_eval.py';
+const SKILL_CREATOR_DISCLOSED = [
+  ['claude -p', 'starts a claude -p process'],
+  ['127.0.0.1', 'serves a page on 127.0.0.1'],
+  ['Google', 'loads fonts from Google'],
+  ['3117', 'stops processes on port 3117'],
+  ['These scripts run only if you run them.', 'says the scripts run only when run'],
+];
+
+function skillCreatorDisclosureProblems(text) {
+  return SKILL_CREATOR_DISCLOSED.filter(([token]) => !text.includes(token)).map(([, behaviour]) => `PRIVACY.md does not disclose that the skill-creator scripts ${behaviour}`);
+}
+
+async function isShipped(relative) {
+  try {
+    await lstat(path.join(sourceRoot, relative));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('PRIVACY.md discloses the four skill-creator script behaviours while run_eval.py is shipped', async () => {
+  const shipped = await isShipped(SKILL_CREATOR_SCRIPT);
+  assert.deepEqual(shipped ? skillCreatorDisclosureProblems(await read('PRIVACY.md')) : [], []);
+});
+
+test('the skill-creator disclosure check fires when a behaviour is left out of PRIVACY.md (positive control)', async () => {
+  const current = await read('PRIVACY.md');
+  assert.deepEqual(skillCreatorDisclosureProblems(current), [], 'the current PRIVACY.md passes');
+  assert.ok(skillCreatorDisclosureProblems(current.replaceAll('3117', 'a port')).length > 0, 'a removed port fires the check');
+  assert.ok(skillCreatorDisclosureProblems(current.replaceAll('claude -p', 'a helper')).length > 0, 'a removed process fires the check');
+  assert.ok(await isShipped(SKILL_CREATOR_SCRIPT), 'the scripts are shipped in this checkout, so the real check ran');
+});

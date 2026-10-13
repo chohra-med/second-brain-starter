@@ -20,11 +20,11 @@ The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-ski
 
 ## Bundled third-party skill: skill-creator
 
-The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill.
+The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) was written by Anthropic, the owner of its upstream repository. It comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill. Its optional scripts start a process, serve a page on your own machine and load fonts from Google when you run them. They run only if you run them. The list is in [PRIVACY.md](PRIVACY.md).
 
 ## Optional companion: graphify
 
-The `graphify` skill in [template/shared-skills/graphify/](template/shared-skills/graphify/SKILL.md) is written for this starter. It describes how to use the outside tool at https://github.com/Graphify-Labs/graphify, which is licensed under Apache 2.0. That tool is not bundled and not installed by this starter. The skill works only if you install the tool yourself.
+The `graphify` skill in [template/shared-skills/graphify/](template/shared-skills/graphify/SKILL.md) is written for this starter. It describes how to use an outside tool at https://github.com/Graphify-Labs/graphify. That tool is separate software. It is not bundled and not installed by this starter, and its licence is set by its own project. Check that licence before you install the tool. The skill works only if you install the tool yourself.
 
 ## Bundled third-party system: Spec Harness
 

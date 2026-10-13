@@ -5,7 +5,7 @@ description: Query a knowledge graph of your notes to find candidate links, then
 
 # Graphify: graph queries
 
-Graphify is an optional outside tool. It builds a graph of the links between your Markdown notes. This starter does not bundle or install it. This skill says how to use a graph if you already have one. The tool is licensed under Apache 2.0. See ATTRIBUTION.md.
+Graphify is an optional outside tool. It builds a graph of the links between your Markdown notes. This starter does not bundle or install it. This skill says how to use a graph if you already have one. The tool is separate software, at https://github.com/Graphify-Labs/graphify. Check its own licence before you install it. See ATTRIBUTION.md.
 
 ## Do not use this when
 
@@ -26,7 +26,7 @@ Before you rely on a result, open the file the result names and read the text th
 
 ## Step 1: Check the tool
 
-Run the tool's help command to confirm it is installed and to see its current flags. If the tool is missing, stop here. Use a plain text search instead.
+Run `graphify --help` to confirm the tool is installed and to see its current flags. If the tool is missing, stop here. Use a plain text search instead.
 
 ## Step 2: Query the graph
 
@@ -34,7 +34,7 @@ Run the tool's help command to confirm it is installed and to see its current fl
 graphify query "<topic or concept>" --budget 2000 --graph "<path to the graph JSON file>"
 ```
 
-`--budget` limits the output by counting characters and formatting. It is not a token limit, and it does not limit how much of a file you read.
+`--budget N` caps the output at N tokens. The default is 2000. `--graph` names the graph file; if you leave it out, the tool reads `graphify-out/graph.json`. Checked against graphify 0.8.25 (`graphify --help`).
 
 ## Step 3: Check each result
 

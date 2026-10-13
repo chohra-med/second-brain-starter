@@ -10,6 +10,15 @@ The installed target stores state, backups, and transaction-scoped rollback rece
 
 Sharing a copy of the workspace folder shares those paths and the `Connection.md` files with whoever receives it. The privacy block makes git ignore `Connection.md` by default, but a copy or an archive still includes it. Roll a connection back before you share a copy, or share the workspace only with people who may know those paths.
 
-This package has no telemetry, analytics, network service, global install, background process, or permission change. Node.js runs the initializer from the source copy you choose. This package runs locally and sends nothing anywhere. Once your AI client reads a repository's files, what it sends to its model provider is governed by that client and its settings, not by this package. Before sharing a modified copy, run `node --test`, which includes the package scan. If the scan fails, the test named `the real source root, vendored bytes included, passes the package scanner against FILE-ALLOWLIST.txt` lists each finding as a rule and a relative path, for example `UNALLOWLISTED_MEMBER .DS_Store`. Review that complete list before you share anything. The scan reports rules and relative paths only, never matched secret text.
+The starter's own code has no telemetry, analytics, network service, global install, background process, or permission change. Node.js runs the initializer from the source copy you choose. The starter's own code runs locally and sends nothing anywhere. The optional scripts in the bundled `skill-creator` folder are the one exception, described in the next paragraph. Once your AI client reads a repository's files, what it sends to its model provider is governed by that client and its settings, not by this package. Before sharing a modified copy, run `node --test`, which includes the package scan. If the scan fails, the test named `the real source root, vendored bytes included, passes the package scanner against FILE-ALLOWLIST.txt` lists each finding as a rule and a relative path, for example `UNALLOWLISTED_MEMBER .DS_Store`. Review that complete list before you share anything. The scan reports rules and relative paths only, never matched secret text.
+
+**Optional skill-creator scripts.** The installer copies the bundled `skill-creator` folder into your workspace unchanged. That folder holds optional Python scripts. When you run them, they do four things:
+
+- They start a local `claude -p` process, which is the Claude command-line tool (`scripts/run_eval.py` and `scripts/improve_description.py`).
+- They serve a review page on `127.0.0.1`, which is your own machine only (`eval-viewer/generate_review.py`).
+- They load fonts from Google in the report page, so your browser contacts Google when you open that page (`scripts/generate_report.py`).
+- Before the review page starts, they stop every process listening on its port, which is 3117 by default. The stop signal goes to each process on that port, not only to this tool (`eval-viewer/generate_review.py`).
+
+These scripts run only if you run them. Choose the port of the review page with care if another service uses 3117.
 
 Keep local projects private when they contain private information. A plain Markdown workspace can be copied as easily as any other local files.
