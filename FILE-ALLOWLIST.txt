@@ -43,6 +43,7 @@ template/05-Daily/daily-template.md
 template/AGENTS.md
 template/CLAUDE.md
 template/Home.md
+template/privacy-gitignore.txt
 template/shared-skills/second-brain-capture/SKILL.md
 template/shared-skills/second-brain-close/SKILL.md
 template/shared-skills/second-brain-context/SKILL.md
@@ -51,6 +52,7 @@ template/shared-skills/second-brain-review/SKILL.md
 test/cli-approval.test.mjs
 test/docs-contract.test.mjs
 test/cli-connect.test.mjs
+test/append-and-privacy.test.mjs
 test/cli.test.mjs
 test/connect.test.mjs
 test/fixture-v1.2.0.test.mjs

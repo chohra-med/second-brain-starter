@@ -1,5 +1,13 @@
 # Upgrading the free starter
 
+## Unreleased
+
+This change adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
+
+- An upgrade adds one plan line. If the workspace has no `.gitignore`, the plan shows `CREATE .gitignore`. If it has one, the plan shows `APPEND .gitignore`. Your lines stay in front of the block.
+- The block makes git ignore `.second-brain/`, `05-Daily/`, `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and `01-Projects/**/Connection.md`. Remove the block if you want those paths in version control.
+- A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`. Rollback removes the appended block and restores the file byte for byte.
+
 ## Upgrading to v1.3.0
 
 Before you upgrade, make the dated copy described in [Before an initializer upgrade](#before-an-initializer-upgrade). This version adds the `connect` command, which registers one repository you name with a workspace, and a Profile interview that fills the `00-Meta/Profile.md` seed. Both are optional. An existing install keeps its files and its records. Nothing in this version forces a move to the hub shape.

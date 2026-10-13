@@ -319,7 +319,7 @@ test('installed Home is a complete operating dashboard with valid contained link
   assert.match(restored.stdout, /Verification: OK/);
 });
 
-test('consumer rejects unmanaged CRLF loaders and existing collisions without changing selected files', async (t) => {
+test('consumer appends to an unmanaged CRLF loader, but a conflicting Home.md still rejects the whole plan', async (t) => {
   const root = await consumerRoot();
   cleanup(t, root);
   const target = path.join(root, 'existing-project');
@@ -331,9 +331,9 @@ test('consumer rejects unmanaged CRLF loaders and existing collisions without ch
 
   const planned = await runCli(['init', '--target', target]);
   assert.equal(planned.code, undefined, planned.stdout);
-  assert.match(planned.stdout, /^CONFLICT\tAGENTS\.md\tundo=none$/m);
+  assert.match(planned.stdout, /^APPEND\tAGENTS\.md\tundo=restore-preimage$/m);
   assert.match(planned.stdout, /^CONFLICT\tHome\.md\tundo=none$/m);
-  assert.match(planned.stdout, /Manual resolution required: AGENTS\.md/);
+  assert.doesNotMatch(planned.stdout, /Manual resolution required: AGENTS\.md/);
   const digest = planDigest(planned.stdout);
   assert.ok(digest, planned.stdout);
 

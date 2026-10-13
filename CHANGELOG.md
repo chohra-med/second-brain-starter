@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `init` and `upgrade` append the managed block to a root `AGENTS.md` or `CLAUDE.md` that has your text and no loader markers. The plan shows `APPEND`. Your bytes stay in front of the block, and rollback restores the file byte for byte. A file with broken markers still shows `CONFLICT`.
+- At the terminal prompt, a new folder or an empty folder accepts a plain `yes` (or `y`, in any case, with spaces ignored) in place of the digest. Every other target still needs the exact digest. `--apply yes` is refused, and Enter, Ctrl-C and end of input are refusals as before.
+- The install writes a managed `.gitignore` block, or appends it to your existing `.gitignore`. Git ignores the installer state, the daily notes folder, the Profile and Daily-Task-Plan seeds, and each project `Connection.md`. The plan prints these paths.
 ## v1.3.0 (2026-10-09)
 
 - Design decision, multi-repository layer (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): `connect` is one digest-approved transaction over two roots, the workspace and one repository the person names. One plan and one digest cover both roots. Files in the repository are create-only: an existing file is preserved and listed, never overwritten, and never blocks the plan. Each applied connect writes a receipt that lists its files, and rolling back a receipt removes exactly the files it created in both roots, refusing if any of them changed. `connect` runs no subprocess and no git command. Connection records live in a new versioned `.second-brain/connections.json` beside the unchanged `installed-state.json`, so an install made by v1.x keeps its files and records, and nothing forces the hub shape. A v1.x install reports `SOURCE_MANIFEST_MISMATCH` from the 1.3.0 source until it is upgraded. There is still no discovery: each `connect` covers one repository that the person names.

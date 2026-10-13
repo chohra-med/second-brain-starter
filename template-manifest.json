@@ -48,6 +48,12 @@
       "mergeKind": "managed-block"
     },
     {
+      "source": "template/privacy-gitignore.txt",
+      "destination": ".gitignore",
+      "sha256": "87e91cd5b879ec15dd465fbfe90c3abf90379437556016d73d23eb1b83651da6",
+      "mergeKind": "managed-block"
+    },
+    {
       "source": "template/Home.md",
       "destination": "Home.md",
       "sha256": "3374a76917423a49e3cd922773fdd6f6f3887ab757c73d186583e9b5d2a0e789",

@@ -122,7 +122,7 @@ $PROJECT = [IO.Path]::GetFullPath((Join-Path $PWD '..\my-project'))
 node .\bin\second-brain.mjs init --target $PROJECT
 ```
 
-In an interactive terminal, `init` prints the complete plan and asks you to type its exact plan digest before it writes. Read the listed `CREATE`, `IDENTICAL`, `MANAGED-UPDATE`, `CONFLICT`, and `DEPRECATED` entries first. A conflicting plan is not applied.
+In an interactive terminal, `init` prints the complete plan and asks you to type its exact plan digest before it writes. For a new folder or an empty folder, a plain `yes` also approves the plan. Read the listed `CREATE`, `APPEND`, `IDENTICAL`, `MANAGED-UPDATE`, `CONFLICT`, and `DEPRECATED` entries first. A conflicting plan is not applied.
 
 In a non-interactive shell, the same command prints a plan only, and it ends with `Plan only: nothing was applied.`. That line is the normal end of a plan-only run, not an error. A declined terminal prompt prints `Plan not applied.` instead. After reviewing that exact output, rerun it with its exact digest:
 
@@ -132,7 +132,7 @@ node ./bin/second-brain.mjs init --target "$PROJECT" --apply YOUR_PLAN_DIGEST
 
 Do not substitute a digest from another target or a previous plan. `--force` does not exist in V1.
 
-The target may already contain your project files. Differing managed files remain conflicts. A nonempty unmanaged root `AGENTS.md` or `CLAUDE.md` also stops for manual resolution. The plan marks it `CONFLICT` and prints `Manual resolution required: AGENTS.md has unmanaged or malformed loader markers.` That message is the same for a plain file with no harness block and for a file whose block is broken, so the plan names the file and you check which case you have. The only loader merge surface is an existing compatible `second-brain` managed block; keep your project-specific instructions outside that block. The initializer never grants an AI client file access or proves that a client follows the files.
+The target may already contain your project files. Differing managed files remain conflicts. A nonempty root `AGENTS.md` or `CLAUDE.md` with no harness markers is not rejected. The plan marks it `APPEND`, and the initializer adds the managed block after your existing text, which stays byte for byte in front of it. A file with broken markers, one half present or two blocks, still stops for manual resolution. The plan marks it `CONFLICT` and prints `Manual resolution required: AGENTS.md has unmanaged or malformed loader markers.` Check which case you have before you change the file. The only loader merge surface is an existing compatible `second-brain` managed block; keep your project-specific instructions outside that block. The initializer never grants an AI client file access or proves that a client follows the files.
 
 ### 3. Start one project
 

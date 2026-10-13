@@ -1,0 +1,9 @@
+# second-brain:privacy:start
+# Added by Second Brain Starter. Git ignores these paths: installer state, personal daily notes, your profile and
+# task plan, and connection records. Remove this block only if you want those paths in version control.
+.second-brain/
+05-Daily/
+00-Meta/Profile.md
+00-Meta/Daily-Task-Plan.md
+01-Projects/**/Connection.md
+# second-brain:privacy:end
