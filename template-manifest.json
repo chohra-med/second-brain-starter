@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.4.0",
+    "templateVersion": "1.5.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -598,6 +598,42 @@
       "destination": ".claude/skills/readme-generator/SKILL.md",
       "sha256": "8d3e2755d55cff3b96d6d47583531571287287f44ba9ce411675b599284f3417",
       "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/SKILL.md",
+      "destination": ".agents/skills/usage-dashboard/SKILL.md",
+      "sha256": "9cbef5301616d138d8987c4e7d97085c39b63cd1107bae053307b0e51149fa94",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/usage-dashboard.mjs",
+      "destination": ".agents/skills/usage-dashboard/usage-dashboard.mjs",
+      "sha256": "f650606e9cbbd09582cbe83a3e670c280ffa4f66a4bd511ee5d1a035c1602544",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/usage-prices.json",
+      "destination": ".agents/skills/usage-dashboard/usage-prices.json",
+      "sha256": "9de23784c09f36120a7c4335feb3115fc28404f6fa9ef47880c362a4784beb5c",
+      "mergeKind": "seed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/SKILL.md",
+      "destination": ".claude/skills/usage-dashboard/SKILL.md",
+      "sha256": "9cbef5301616d138d8987c4e7d97085c39b63cd1107bae053307b0e51149fa94",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/usage-dashboard.mjs",
+      "destination": ".claude/skills/usage-dashboard/usage-dashboard.mjs",
+      "sha256": "f650606e9cbbd09582cbe83a3e670c280ffa4f66a4bd511ee5d1a035c1602544",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/usage-dashboard/usage-prices.json",
+      "destination": ".claude/skills/usage-dashboard/usage-prices.json",
+      "sha256": "9de23784c09f36120a7c4335feb3115fc28404f6fa9ef47880c362a4784beb5c",
+      "mergeKind": "seed-file"
     },
     {
       "source": "template/shared-skills/writing-skills/SKILL.md",

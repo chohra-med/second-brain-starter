@@ -5,6 +5,8 @@ import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
 const expectedSeedDestinations = [
+  '.agents/skills/usage-dashboard/usage-prices.json',
+  '.claude/skills/usage-dashboard/usage-prices.json',
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
@@ -514,6 +516,7 @@ const installedSkills = [
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'usage-dashboard',
   'writing-skills',
 ];
 
@@ -539,8 +542,8 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /twelve local skills/);
-  assert.match(readme, /twelve shared skills/);
+  assert.match(readme, /thirteen local skills/);
+  assert.match(readme, /thirteen shared skills/);
   assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 
