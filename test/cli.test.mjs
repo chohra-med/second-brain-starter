@@ -62,7 +62,7 @@ test('non-interactive init plans without writing, applies only the exact target-
   await assert.rejects(readFile(path.join(target, 'Home.md')));
 });
 
-test('a nonempty unmanaged loader warns for manual resolution and preserves the target inventory', async (t) => {
+test('a nonempty unmanaged loader is appended to, and its own bytes stay in front of the block', async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-loader-'));
   const target = path.join(root, 'target');
   await mkdir(target);
@@ -71,14 +71,15 @@ test('a nonempty unmanaged loader warns for manual resolution and preserves the 
 
   const result = await cli(['init', '--target', target]);
   assert.equal(result.code, undefined);
-  assert.match(result.stdout, /CONFLICT\tAGENTS.md/);
-  assert.match(result.stdout, /Manual resolution required: AGENTS.md/);
+  assert.match(result.stdout, /APPEND\tAGENTS.md/);
+  assert.doesNotMatch(result.stdout, /CONFLICT\tAGENTS.md/);
   const plannedDigest = digest(result.stdout);
   assert.ok(plannedDigest);
-  const rejected = await cli(['init', '--target', target, '--apply', plannedDigest]);
-  assert.equal(rejected.code, 1);
-  assert.match(rejected.stdout, /PLAN_CONFLICT/);
-  assert.equal(await readFile(path.join(target, 'AGENTS.md'), 'utf8'), '# Existing project rules\n');
+  const applied = await cli(['init', '--target', target, '--apply', plannedDigest]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const loader = await readFile(path.join(target, 'AGENTS.md'), 'utf8');
+  assert.ok(loader.startsWith('# Existing project rules\n'));
+  assert.match(loader, /<!-- second-brain:loader:start -->/);
 });
 
 

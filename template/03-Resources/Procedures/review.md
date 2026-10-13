@@ -6,7 +6,8 @@ Run this weekly or before a handoff.
 2. Compare each `Done` claim with its roadmap item and required evidence.
 3. If progress says complete while the roadmap is Open, record a conflict. Repair the record or collect the missing evidence. Do not report ready.
 4. Promote a confirmed rule to the project's `Decisions.md`, or to `00-Meta/Decisions.md` only when it affects multiple projects.
-5. End with one `Next` action.
+5. Check the [keeping-it-clean rules](../../00-Meta/README.md#keeping-it-clean) and fix any file that breaks one.
+6. End with one `Next` action.
 
 Use [learning and scaling](learning-and-scaling.md) when a correction is worth keeping.
 

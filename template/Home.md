@@ -1,5 +1,18 @@
 # Home
 
+## Start here
+
+Three ways to start, from fastest to fullest. Each one shows you a draft and writes nothing until you say yes.
+
+1. [Quick start](03-Resources/Procedures/quick-start.md): the assistant reads the one to three repositories you name and drafts a first record for each.
+   > Read Home and Quick start. Help me index the repositories I name, one at a time, and show each draft before anything is written.
+2. [Init](03-Resources/Procedures/init.md): five questions, one at a time, each saved as soon as you approve it.
+   > Read Home and Init. Ask me the five questions, one at a time, and save each answer after I approve it.
+3. [Complete init](03-Resources/Procedures/complete-init.md): the full set of questions, in sections, for a ready second brain.
+   > Read Home and Complete init. Start from what Init saved, and ask the rest one section at a time.
+
+You can stop any of them at any point and continue later with the same prompt.
+
 ## Start my first result
 
 > Read Home and First use. Help me agree one small saved result, ask only what is missing, and show the exact plan before edits.

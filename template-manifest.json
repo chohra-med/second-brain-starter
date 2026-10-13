@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.3.0",
+    "templateVersion": "1.4.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -48,15 +48,21 @@
       "mergeKind": "managed-block"
     },
     {
+      "source": "template/privacy-gitignore.txt",
+      "destination": ".gitignore",
+      "sha256": "47649a4d35b8d9b4a8f517d571b62ad06a583174c82782ca2f3f05a5489d125b",
+      "mergeKind": "managed-block"
+    },
+    {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "3374a76917423a49e3cd922773fdd6f6f3887ab757c73d186583e9b5d2a0e789",
+      "sha256": "695bf3c45854fa86bcfbd469574637a8ba6948e0643c3790fff025d1bdcdebe9",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/00-Meta/Daily-Task-Plan.md",
       "destination": "00-Meta/Daily-Task-Plan.md",
-      "sha256": "c0f70137cad4ba8708a92b5eb7c2ad4c339b752bbecb2baf794252fb2f11461d",
+      "sha256": "1a4e39dc928f7e534b372c7b54c638e48a77b822f847323dfc091670c4f9ac5c",
       "mergeKind": "seed-file"
     },
     {
@@ -68,7 +74,7 @@
     {
       "source": "template/00-Meta/Profile.md",
       "destination": "00-Meta/Profile.md",
-      "sha256": "b07e238b0cbf1f90c4a4dee06823c5bf0b8ca9480280438a953a75cfc136fa7a",
+      "sha256": "717a1a42ec0ff34cf97342d002a352313449c95c5fb23fbb9c46e7f56675c083",
       "mergeKind": "seed-file"
     },
     {
@@ -134,13 +140,13 @@
     {
       "source": "template/03-Resources/Procedures/review.md",
       "destination": "03-Resources/Procedures/review.md",
-      "sha256": "73e498c3d4744e10a63bcf7e6f5d13be1ea260cb2a8c5dff934bdbf7ba18350b",
+      "sha256": "1207dbb8807aa5740f35f72ef1166dfb24775d1bc36d17be13a4402d2b17728f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/04-Archives/Projects/Archive-Guide.md",
       "destination": "04-Archives/Projects/Archive-Guide.md",
-      "sha256": "7c5dd21a5985a0d8647e254539a97577f6dddbea557023bfa1281d442326ad4d",
+      "sha256": "85bf597c9ffdb013fa426624a462cfb350376deaf1dfc9358e2ce0215f14a218",
       "mergeKind": "managed-file"
     },
     {
@@ -212,7 +218,7 @@
     {
       "source": "template/00-Meta/README.md",
       "destination": "00-Meta/README.md",
-      "sha256": "c118eb82d7bfe4c5aa4445b606d392986f7e4c537e55e9eac60363512f0ad82d",
+      "sha256": "2c60f3560f115dd51d26d5fb3969d13ab6778c1b5e894df4a778012159e86b59",
       "mergeKind": "managed-file"
     },
     {
@@ -236,13 +242,13 @@
     {
       "source": "template/03-Resources/Procedures/README.md",
       "destination": "03-Resources/Procedures/README.md",
-      "sha256": "a50fc6e17bd2823f053ada45aab29c09ef6a6ad94defd5439b120b0b80af0ef3",
+      "sha256": "43b2455d5a19807b335140a8c0a16ceb43e424a8098a5af7bd24aac9a8abcffa",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/first-use.md",
       "destination": "03-Resources/Procedures/first-use.md",
-      "sha256": "c895f7eede46b297a9b2b6f69be297bd96c260f88369f6582060e3dc049d5ae7",
+      "sha256": "47b0ca1e8e76acca4f4b0fdff69c724c073250f8bfb155b39a82930d29a38ef0",
       "mergeKind": "managed-file"
     },
     {
@@ -267,6 +273,30 @@
       "source": "template/03-Resources/Procedures/extend.md",
       "destination": "03-Resources/Procedures/extend.md",
       "sha256": "fcc2654a1240ee5b6eebac7cc4c03b0eaace05f681a0b6f38bcba7c161d2efce",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/showcase-readme.md",
+      "destination": "03-Resources/Procedures/showcase-readme.md",
+      "sha256": "021e2ea1b2dfa12f4541d7bb2ba2ad51fa699480f3946bf584d7ae099cda2488",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/quick-start.md",
+      "destination": "03-Resources/Procedures/quick-start.md",
+      "sha256": "606617dd6a4e75d60698ac1cb490404a40b7a90a51505f7bf1caf3aa59ed09a5",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/init.md",
+      "destination": "03-Resources/Procedures/init.md",
+      "sha256": "f36ebc1b7d9b0439107707252f0b504203d138a5219de11de1e542f25463da2a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/complete-init.md",
+      "destination": "03-Resources/Procedures/complete-init.md",
+      "sha256": "b53e2c6ad5815e42cc177d63741d5eab4551f8a2ac74dd427a452bcfdaf5cecd",
       "mergeKind": "managed-file"
     },
     {
@@ -447,6 +477,138 @@
       "source": "template/shared-skills/icm-architect/references/system-map.md",
       "destination": ".claude/skills/icm-architect/references/system-map.md",
       "sha256": "d8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/graphify/SKILL.md",
+      "destination": ".agents/skills/graphify/SKILL.md",
+      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/graphify/SKILL.md",
+      "destination": ".claude/skills/graphify/SKILL.md",
+      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/grill-me/SKILL.md",
+      "destination": ".agents/skills/grill-me/SKILL.md",
+      "sha256": "d8ecbd824b467298b422686bcc13f83fc138ccaa6d9278e25bbb103c9cd7a6fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/grill-me/SKILL.md",
+      "destination": ".claude/skills/grill-me/SKILL.md",
+      "sha256": "d8ecbd824b467298b422686bcc13f83fc138ccaa6d9278e25bbb103c9cd7a6fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/LICENSE",
+      "destination": ".agents/skills/humanizer/LICENSE",
+      "sha256": "192fce177e861e3b0e6888edbd74fcd42b6e05da542d55c62f1cf8070af81528",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/LICENSE",
+      "destination": ".claude/skills/humanizer/LICENSE",
+      "sha256": "192fce177e861e3b0e6888edbd74fcd42b6e05da542d55c62f1cf8070af81528",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/README.md",
+      "destination": ".agents/skills/humanizer/README.md",
+      "sha256": "7639358b4443f53d93a944df5177df4a3ffa80646d8c799b0e0888bfeaf0876c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/README.md",
+      "destination": ".claude/skills/humanizer/README.md",
+      "sha256": "7639358b4443f53d93a944df5177df4a3ffa80646d8c799b0e0888bfeaf0876c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/SKILL.md",
+      "destination": ".agents/skills/humanizer/SKILL.md",
+      "sha256": "71f0825d5ccc3b466d78b1656c71b35332931dc653271e1ab6b04f787299d9c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/SKILL.md",
+      "destination": ".claude/skills/humanizer/SKILL.md",
+      "sha256": "71f0825d5ccc3b466d78b1656c71b35332931dc653271e1ab6b04f787299d9c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/evals/evals.json",
+      "destination": ".agents/skills/humanizer/evals/evals.json",
+      "sha256": "655b9823fc4afa08d64f8ae7306733efd5ae72c75130cc6f3b2906f36853d42a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/evals/evals.json",
+      "destination": ".claude/skills/humanizer/evals/evals.json",
+      "sha256": "655b9823fc4afa08d64f8ae7306733efd5ae72c75130cc6f3b2906f36853d42a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/always-on-templates.md",
+      "destination": ".agents/skills/humanizer/references/always-on-templates.md",
+      "sha256": "549a763cf9fb13bcf761f1a460152d1af254ccce7fe7aaa0d95c5238c045f949",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/always-on-templates.md",
+      "destination": ".claude/skills/humanizer/references/always-on-templates.md",
+      "sha256": "549a763cf9fb13bcf761f1a460152d1af254ccce7fe7aaa0d95c5238c045f949",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.md",
+      "destination": ".agents/skills/humanizer/references/patterns.md",
+      "sha256": "62bf554f7edbf4d2fd95b6c6cde6509e4536de5cee55f5cb4c2b09a0b26c7156",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.md",
+      "destination": ".claude/skills/humanizer/references/patterns.md",
+      "sha256": "62bf554f7edbf4d2fd95b6c6cde6509e4536de5cee55f5cb4c2b09a0b26c7156",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.zh.md",
+      "destination": ".agents/skills/humanizer/references/patterns.zh.md",
+      "sha256": "dcfa4ba92eb5cc75061d67d739bd35feefdda93e19b7ee8a7835b0e44073af1b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.zh.md",
+      "destination": ".claude/skills/humanizer/references/patterns.zh.md",
+      "sha256": "dcfa4ba92eb5cc75061d67d739bd35feefdda93e19b7ee8a7835b0e44073af1b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/readme-generator/SKILL.md",
+      "destination": ".agents/skills/readme-generator/SKILL.md",
+      "sha256": "8d3e2755d55cff3b96d6d47583531571287287f44ba9ce411675b599284f3417",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/readme-generator/SKILL.md",
+      "destination": ".claude/skills/readme-generator/SKILL.md",
+      "sha256": "8d3e2755d55cff3b96d6d47583531571287287f44ba9ce411675b599284f3417",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-skills/SKILL.md",
+      "destination": ".agents/skills/writing-skills/SKILL.md",
+      "sha256": "8328bb5fd54689e3e10d6b1f5c54ccf3afc5a95415d4d12302b8646e3964c23a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-skills/SKILL.md",
+      "destination": ".claude/skills/writing-skills/SKILL.md",
+      "sha256": "8328bb5fd54689e3e10d6b1f5c54ccf3afc5a95415d4d12302b8646e3964c23a",
       "mergeKind": "managed-file"
     },
     {

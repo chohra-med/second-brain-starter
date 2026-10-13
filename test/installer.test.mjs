@@ -256,6 +256,9 @@ test('installed Home is a complete operating dashboard with valid contained link
     '03-Resources/Procedures/close.md',
     '03-Resources/Procedures/review.md',
     '03-Resources/Procedures/learning-and-scaling.md',
+    '03-Resources/Procedures/quick-start.md',
+    '03-Resources/Procedures/init.md',
+    '03-Resources/Procedures/complete-init.md',
     '04-Archives/Projects/Archive-Guide.md',
     '05-Daily/daily-template.md',
   ];
@@ -319,7 +322,7 @@ test('installed Home is a complete operating dashboard with valid contained link
   assert.match(restored.stdout, /Verification: OK/);
 });
 
-test('consumer rejects unmanaged CRLF loaders and existing collisions without changing selected files', async (t) => {
+test('consumer appends to an unmanaged CRLF loader, but a conflicting Home.md still rejects the whole plan', async (t) => {
   const root = await consumerRoot();
   cleanup(t, root);
   const target = path.join(root, 'existing-project');
@@ -331,9 +334,9 @@ test('consumer rejects unmanaged CRLF loaders and existing collisions without ch
 
   const planned = await runCli(['init', '--target', target]);
   assert.equal(planned.code, undefined, planned.stdout);
-  assert.match(planned.stdout, /^CONFLICT\tAGENTS\.md\tundo=none$/m);
+  assert.match(planned.stdout, /^APPEND\tAGENTS\.md\tundo=restore-preimage$/m);
   assert.match(planned.stdout, /^CONFLICT\tHome\.md\tundo=none$/m);
-  assert.match(planned.stdout, /Manual resolution required: AGENTS\.md/);
+  assert.doesNotMatch(planned.stdout, /Manual resolution required: AGENTS\.md/);
   const digest = planDigest(planned.stdout);
   assert.ok(digest, planned.stdout);
 
@@ -500,13 +503,18 @@ const bundledMethodFiles = new Map([
   ['references/system-map.md', 'd8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739'],
 ]);
 const installedSkills = [
+  'graphify',
+  'grill-me',
+  'humanizer',
   'icm-architect',
+  'readme-generator',
   'second-brain-capture',
   'second-brain-close',
   'second-brain-context',
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'writing-skills',
 ];
 
 function assertBundledMethodProjection(manifest) {
@@ -531,8 +539,9 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /seven local skills/);
-  assert.match(readme, /seven shared skills/);
+  assert.match(readme, /twelve local skills/);
+  assert.match(readme, /twelve shared skills/);
+  assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 
   const license = await readFile(path.join(sourceRoot, bundledMethodSource, 'LICENSE'), 'utf8');

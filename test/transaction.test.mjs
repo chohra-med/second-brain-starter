@@ -608,14 +608,15 @@ test('a symlink inserted after planning is rejected without writing an outside s
   assert.equal(await readFile(sentinel, 'utf8'), 'unchanged');
 });
 
-test('nonempty unmanaged loaders and malformed markers fail closed without a receipt', async (t) => {
+test('a nonempty unmanaged loader is appended to, and malformed markers fail closed', async (t) => {
   const subject = await loaderFixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));
   await writeFile(path.join(subject.target, 'AGENTS.md'), '# Existing project rules\n');
   const unmanaged = await planInstall({ ...subject, targetPath: subject.target });
-  assert.equal(unmanaged.entries.find((entry) => entry.destination === 'AGENTS.md').status, 'CONFLICT');
-  await rejects('PLAN_CONFLICT', () => applyInstall({ ...subject, targetPath: subject.target, approvedDigest: unmanaged.digest }));
-  assert.equal(await readFile(path.join(subject.target, 'AGENTS.md'), 'utf8'), '# Existing project rules\n');
+  assert.equal(unmanaged.entries.find((entry) => entry.destination === 'AGENTS.md').status, 'APPEND');
+  const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: unmanaged.digest });
+  assert.equal(applied.applied, true);
+  assert.ok((await readFile(path.join(subject.target, 'AGENTS.md'), 'utf8')).startsWith('# Existing project rules\n'));
 
   for (const malformed of [
     '<!-- second-brain:loader:start -->\nmissing end\n',

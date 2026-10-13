@@ -71,7 +71,7 @@ function cliCommand(subcommand, { target, repo, name, receipt, apply } = {}) {
 }
 
 function help() {
-  return `Second Brain Starter 1.3.0
+  return `Second Brain Starter 1.4.0
 
 Usage:
   second-brain init --target /absolute/path [--apply PLAN_DIGEST]
@@ -95,30 +95,70 @@ async function source() {
   return { manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot };
 }
 
-function printPlan(plan) {
+async function printPlan(plan) {
   output.write(`Plan: ${plan.operation}\nTarget: ${plan.target}\n`);
   for (const entry of plan.entries) {
     output.write(`${entry.status}\t${entry.destination}\tundo=${entry.undo.action}\n`);
     if (entry.status === 'CONFLICT' && entry.mergeKind === 'managed-block') {
-      output.write(`Manual resolution required: ${entry.destination} has unmanaged or malformed loader markers.\n`);
+      // A marker conflict names its line and its reason. Any other loader conflict keeps the general wording.
+      output.write(`Manual resolution required: ${entry.conflictReason ?? `${entry.destination} has unmanaged or malformed loader markers.`}\n`);
     }
+  }
+  // The privacy block is read from its template source, so the plan names exactly the paths git will ignore.
+  const privacy = plan.entries.find((entry) => entry.destination === '.gitignore' && entry.mergeKind === 'managed-block');
+  if (privacy) {
+    const block = await readFile(path.join(plan.sourceRoot, ...privacy.source.split('/')), 'utf8');
+    // An exception line (!path) re-includes a path, so it is not one of the paths git ignores.
+    const ignored = block.split('\n').filter((line) => line !== '' && !line.startsWith('#') && !line.startsWith('!'));
+    output.write(`Privacy: the .gitignore block (${privacy.status}) makes git ignore: ${ignored.join(', ')}\n`);
   }
   output.write(`Plan digest: ${plan.digest}\n`);
   output.write(`Apply this exact plan with: ${cliCommand(plan.operation, { target: plan.target, apply: plan.digest })}\n`);
 }
 
+// A new folder, or a folder with nothing in it, has nothing to overwrite. At the terminal prompt there, a plain yes
+// (yes or y, any case, surrounding spaces ignored) approves the plan. Every other target needs the exact digest.
+const YES_ANSWERS = new Set(['yes', 'y']);
+// At the yes prompt, a typed no (or n) declines the plan the same way Enter does.
+const NO_ANSWERS = new Set(['no', 'n']);
+
+async function isNewOrEmptyFolder(targetPath) {
+  try {
+    return (await readdir(targetPath)).length === 0;
+  } catch (error) {
+    if (error?.code === 'ENOENT') return true;
+    throw error;
+  }
+}
+
+// The yes shortcut is decided before the prompt, so the folder is checked again once the answer is read. Anything
+// that is not a plain empty folder now, including a folder that cannot be read, is not empty for this purpose.
+async function stillNewOrEmpty(targetPath) {
+  return isNewOrEmptyFolder(targetPath).catch(() => false);
+}
+
 // Ctrl-C and end of input at the prompt are a cancel that exits 1, as connect's prompt does. An empty answer is the
 // cancel init always had, and it keeps exit code 0. Only the interruption changes exit code.
 async function confirmInteractive(plan, suppliedDigest) {
-  if (!input.isTTY || !output.isTTY) return { answer: suppliedDigest, interrupted: false };
+  if (!input.isTTY || !output.isTTY) return { answer: suppliedDigest, interrupted: false, yesAccepted: false, declined: false };
   if (suppliedDigest) throw usageError('Use the terminal prompt for approval; --apply is for non-interactive use.');
+  const newOrEmpty = await isNewOrEmptyFolder(plan.target);
   const prompt = createInterface({ input, output, terminal: true });
   const interrupted = new Promise((resolve) => {
     prompt.once('SIGINT', () => resolve({ answer: null, interrupted: true }));
     prompt.once('close', () => resolve({ answer: null, interrupted: true }));
   });
   try {
-    const answer = prompt.question('Type the exact plan digest to apply, or press Enter to cancel: ').then((text) => ({ answer: text, interrupted: false }));
+    const question = newOrEmpty
+      ? 'Type the exact plan digest, or yes for a new or empty folder, to apply, or press Enter to cancel: '
+      : 'Type the exact plan digest to apply, or press Enter to cancel: ';
+    const answer = prompt.question(question).then((text) => ({
+      answer: text,
+      interrupted: false,
+      yesAccepted: newOrEmpty && YES_ANSWERS.has(text.trim().toLowerCase()),
+      // A typed no declines the plan in any folder, as Enter does.
+      declined: NO_ANSWERS.has(text.trim().toLowerCase()),
+    }));
     return await Promise.race([answer, interrupted]);
   } finally {
     prompt.close();
@@ -128,14 +168,21 @@ async function confirmInteractive(plan, suppliedDigest) {
 async function runPlan(command, targetPath, suppliedDigest) {
   const payload = await source();
   const plan = await planInstall({ ...payload, targetPath, operation: command });
-  printPlan(plan);
-  const { answer, interrupted } = await confirmInteractive(plan, suppliedDigest);
+  await printPlan(plan);
+  const { answer, interrupted, yesAccepted, declined } = await confirmInteractive(plan, suppliedDigest);
   if (interrupted) {
     output.write('Plan not applied.\n');
     process.exitCode = 1;
     return;
   }
-  const approvedDigest = answer;
+  if (declined) {
+    output.write('Plan not applied.\n');
+    return;
+  }
+  if (yesAccepted && !(await stillNewOrEmpty(plan.target))) {
+    throw usageError('The folder is no longer empty, so yes is not accepted. No files were changed. Type the exact plan digest from a new plan.');
+  }
+  const approvedDigest = yesAccepted ? plan.digest : answer;
   if (!approvedDigest) {
     // T07-3: a plan-only run is not a refusal. A declined terminal prompt still prints "Plan not applied.".
     output.write(input.isTTY && output.isTTY ? 'Plan not applied.\n' : 'Plan only: nothing was applied.\n');
@@ -692,7 +739,7 @@ async function explain(error, context) {
     case 'POSTIMAGE_MISMATCH':
       return lines(
         `POSTIMAGE_MISMATCH: ${message}`,
-        'The files named above differ from what connect wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
+        'The files named above differ from what this receipt wrote, so they were left untouched. If the change is yours and you want to keep it, move the file out of the repository (do not delete it), then run the same rollback command again. If you do not need it, you may delete it yourself.',
         next(rollbackCmd(context.receiptId)),
       );
     case 'TARGET_TRAVERSAL':

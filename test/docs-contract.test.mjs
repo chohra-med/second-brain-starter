@@ -15,7 +15,7 @@ const read = (relative) => readFile(path.join(sourceRoot, relative), 'utf8');
 // ---------------------------------------------------------------------------
 
 const COMMAND_PATTERN = /\bsecond-brain(?:\.mjs)?\s+([a-z][a-z-]*)/g;
-const COMMAND_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'UPGRADING.md'];
+const COMMAND_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'UPGRADING.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md'];
 
 function exposedCommands(argumentsSource) {
   const declared = argumentsSource.match(/COMMANDS = new Set\(\[([^\]]*)\]\)/);
@@ -41,7 +41,7 @@ function flagProblems(document, text, flags) {
   return [...new Set(text.match(FLAG_PATTERN) ?? [])].filter((flag) => !flags.has(flag) && !DELIBERATELY_ABSENT_FLAGS.includes(flag)).map((flag) => `${document} names a flag the CLI does not accept: ${flag}`);
 }
 
-test('every command and flag named in README, ONBOARDING and UPGRADING exists in the CLI', async () => {
+test('every command and flag named in README, ONBOARDING, UPGRADING and docs/ exists in the CLI', async () => {
   const exposed = new Set(exposedCommands(await read('lib/cli-arguments.mjs')));
   const flags = new Set([...(await read('lib/cli-arguments.mjs')).matchAll(/'(--[a-z-]+)'/g)].map((match) => match[1]));
   const printed = await execFile(process.execPath, [path.join(sourceRoot, 'bin', 'second-brain.mjs'), '--help'], { cwd: sourceRoot, windowsHide: true });
@@ -83,7 +83,8 @@ function tablePrefixes(readme) {
 
 test('every line prefix verify can print has a row in the README verify table (T07-6)', async () => {
   const prefixes = verifyPrefixes(await read('bin/second-brain.mjs'), await read('lib/installer.mjs'));
-  const documented = tablePrefixes(await read('README.md'));
+  // The verify table moved from README.md to docs/verify-update-rollback.md (S-D commit 2); the assertion is unchanged.
+  const documented = tablePrefixes(await read('docs/verify-update-rollback.md'));
   const missing = [...prefixes].filter((prefix) => !documented.has(prefix));
   assert.ok(prefixes.size >= 10, `the scan found the prefixes (${prefixes.size}), so the check is not a no-op`);
   assert.deepEqual(missing, [], 'verify prints a prefix the README table does not name');
@@ -130,27 +131,27 @@ test('the version is the same in every carrier: VERSION, package.json, the manif
 
 test('the version check fires when one carrier disagrees (positive control)', async () => {
   const base = {
-    version: 'v1.3.0',
-    packageVersion: '1.3.0',
-    templateVersion: '1.3.0',
-    helpFirstLine: 'Second Brain Starter 1.3.0',
-    readme: 'identifies these source bytes as `v1.3.0`',
-    changelog: '## v1.3.0 (2026-10-09)\n',
-    upgrading: '## Upgrading to v1.3.0\n',
+    version: 'v1.4.0',
+    packageVersion: '1.4.0',
+    templateVersion: '1.4.0',
+    helpFirstLine: 'Second Brain Starter 1.4.0',
+    readme: 'identifies these source bytes as `v1.4.0`',
+    changelog: '## v1.4.0 (2026-10-13)\n',
+    upgrading: '## Upgrading to v1.4.0\n',
   };
   assert.deepEqual(versionCarriers(base), []);
-  assert.notDeepEqual(versionCarriers({ ...base, packageVersion: '1.2.0' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, templateVersion: '1.2.0' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, helpFirstLine: 'Second Brain Starter 1.2.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, packageVersion: '1.3.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, templateVersion: '1.3.0' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, helpFirstLine: 'Second Brain Starter 1.3.0' }), []);
   assert.notDeepEqual(versionCarriers({ ...base, changelog: '## Unreleased\n' }), []);
-  assert.notDeepEqual(versionCarriers({ ...base, upgrading: '## Upgrading to v1.2.0\n' }), []);
+  assert.notDeepEqual(versionCarriers({ ...base, upgrading: '## Upgrading to v1.3.0\n' }), []);
 });
 
 // ---------------------------------------------------------------------------
 // (iii) every relative link in the changed documents resolves to a file, and every in-page anchor resolves to a heading.
 // ---------------------------------------------------------------------------
 
-const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md'];
+const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md'];
 
 // GitHub's heading slug: lower case, punctuation removed, spaces become hyphens.
 function slug(heading) {
@@ -298,12 +299,12 @@ test('the process and network scan fires on a planted import (positive control)'
 });
 
 // ---------------------------------------------------------------------------
-// (v) README "Start in one sentence" step 1 names cloning first, and the Releases ZIP is not presented before it.
+// (v) README "Start" step 1 names cloning first, and the Releases ZIP is not presented before it.
 // ---------------------------------------------------------------------------
 
 function startRouteProblems(readme) {
-  const start = readme.indexOf('## Start in one sentence');
-  if (start === -1) return ['README.md has no "Start in one sentence" section'];
+  const start = readme.indexOf('## Start\n');
+  if (start === -1) return ['README.md has no "Start" section'];
   const step = readme.slice(start).match(/^1\. .*$/m)?.[0] ?? '';
   const cloneAt = step.search(/\bclone\b/i);
   const zipAt = step.search(/\bZIP\b/);
@@ -313,7 +314,7 @@ function startRouteProblems(readme) {
   return problems;
 }
 
-test('README "Start in one sentence" step 1 names cloning first and does not present the Releases ZIP as the first route', async () => {
+test('README "Start" step 1 names cloning first and does not present the Releases ZIP as the first route', async () => {
   assert.deepEqual(startRouteProblems(await read('README.md')), []);
 });
 

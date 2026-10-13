@@ -36,7 +36,7 @@ When Node is missing or too old, explain the need in plain language and ask for 
 
 Run the copied starter's canonical initializer only for the confirmed target: `node ./bin/second-brain.mjs init --target ABSOLUTE_TARGET`.
 
-Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. Preserve existing loader instructions for manual review, or let the user separately select an empty workspace and produce a fresh plan and digest. Never rename, delete or append managed markers to instructions to bypass rejection. If the target changes or the plan changes, produce a new plan and discard the old digest.
+Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. Preserve existing loader instructions for manual review, or let the user separately select an empty workspace and produce a fresh plan and digest. Never rename, delete or hand-write managed markers to get past a conflict. The initializer adds its own block when a root file has no markers and this tool has no install record for it, and an installed file whose markers were removed is a conflict. A person may repair the damage the plan names, keeping their own text: put back the missing marker line exactly as shipped, or paste the whole shipped file from the starter copy when the block is gone. If the target changes or the plan changes, produce a new plan and discard the old digest.
 
 ## 6. Obtain human approval
 
@@ -52,7 +52,7 @@ Report the initializer receipt ID and the verification result. A stale digest, c
 
 ## 8. Draft records and hand off
 
-After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before its approval gate.
+After successful verification, open or point the user to the installed `Home.md` and follow `03-Resources/Procedures/first-use.md` inside that target. That installed procedure owns missing-only questions, the exact personalization approval, the first useful artifact, its check, close and new-chat continuation. Mark unknown facts as unknown. Do not draft or overwrite records before the approval gate of the way the user chooses. Home lists three ways to start, from fastest to fullest: quick start, init and complete init. Their procedures are in `03-Resources/Procedures/`.
 
 On repeated or interrupted setup, inspect the receipt and current installed state, verify, then fill only actual gaps through the same first-use owner. Do not replay completed writes or claim authenticated client discovery or universal client compatibility without separate observed evidence.
 
