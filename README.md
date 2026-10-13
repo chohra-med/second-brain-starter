@@ -109,7 +109,7 @@ Verify checks the files the starter manages. Run it after setup and after any up
 
 The starter's own files are licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies of those files under those terms. Keep the copyright and license notices with substantial copies. Bundled third-party folders keep their own licences, listed in [ATTRIBUTION.md](ATTRIBUTION.md): `icm-architect` and `humanizer` are MIT-licensed by other authors, and the vendored Spec Harness is MIT-licensed too.
 
-This is the free Second Brain foundation. It contains the folder layout, the per-project workflow, manual procedures, the local initializer and the `connect` command. It does not include any paid layer, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
+This is the free Second Brain foundation. It contains the folder layout, the per-project workflow, manual procedures, the local initializer and the `connect` command. It does not include any paid layer, a private application, discovery of your repositories, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
 This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license. The `connect` command stages its files into a repository you name. No code in `lib` or `bin` starts a process, so the starter never runs the vendored shell scripts. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
