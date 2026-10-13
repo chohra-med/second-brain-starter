@@ -122,7 +122,7 @@ It also adds the bundled `icm-architect` skill in both client skill folders and 
 
 1. Read [CHANGELOG.md](CHANGELOG.md). A source [VERSION](VERSION) is not proof that a matching archive is published; use the Releases page for publication status.
 2. Duplicate your personalized target workspace and label the copy with the date.
-3. Get a fresh source root by cloning the repository, or by downloading and extracting the v1.3.0 ZIP from Releases. That release is published and contains `connect`. Confirm its `VERSION`, `template-manifest.json`, and Node.js version (`node --version`, Node `>=22`) before applying any update.
+3. Get a fresh source root by cloning the repository, or by downloading and extracting the latest release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases). Releases from v1.3.0 onward contain `connect`. Confirm its `VERSION`, `template-manifest.json`, and Node.js version (`node --version`, Node `>=22`) before applying any update.
 4. From the fresh source root, keep the same absolute target path and run:
 
    ```sh
