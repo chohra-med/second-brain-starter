@@ -18,10 +18,6 @@ This starter's own differences from the method live in the separate `second-brai
 
 The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
 
-## Bundled third-party skill: skill-creator
-
-The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) was published by Anthropic in its public skills repository. It comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill. Its optional scripts call your Claude client, serve a review page on your own machine and load fonts from Google. An assistant that uses the skill may run them as normal steps. [PRIVACY.md](PRIVACY.md) lists what they do and how to remove them.
-
 ## Optional companion: graphify
 
 The `graphify` skill in [template/shared-skills/graphify/](template/shared-skills/graphify/SKILL.md) is written for this starter. It describes how to use an outside tool at https://github.com/Graphify-Labs/graphify. That tool is separate software. It is not bundled and not installed by this starter, and its licence is set by its own project. Check that licence before you install the tool. The skill works only if you install the tool yourself.
