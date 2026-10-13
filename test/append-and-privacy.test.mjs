@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
-import { access, mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, realpath, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
@@ -459,6 +459,12 @@ const GITIGNORE_RULE_TABLE = [
   ['a plain line that names the tool, outside any comment', 'node_modules/\nsecond-brain:privacy:start\n', 'APPEND'],
   ['a user comment that names the tool is not a marker', 'node_modules/\n# second-brain notes\n', 'APPEND'],
   ['a comment shaped like a privacy marker, not exact', 'node_modules/\n# second-brain:privacy: notes\n', 'CONFLICT', 'comment', 2],
+  ['a start marker cut short after the colon', 'node_modules/\n# second-brain:priv\n', 'CONFLICT', 'comment', 2],
+  ['an end marker cut short inside the name', 'node_modules/\n.second-brain/\n# second-brain:privacy:sta\n', 'CONFLICT', 'comment', 3],
+  ['a start marker with no space after the hash', 'node_modules/\n#second-brain:privacy:start\n', 'CONFLICT', 'comment', 2],
+  ['an upper-case marker cut short', 'node_modules/\n# SECOND-BRAIN:PRIV\n', 'CONFLICT', 'comment', 2],
+  ['a user comment that names the tool with a colon is not a marker', 'node_modules/\n# second-brain notes: keep\n', 'APPEND'],
+  ['a user comment that names the tool after my is not a marker', 'node_modules/\n# my second-brain setup\n', 'APPEND'],
   ['a start marker alone', `node_modules/\n${PRIVACY_START}\n.second-brain/\n`, 'CONFLICT', 'comment', 2],
   ['a start marker with extra spaces after the hash', 'node_modules/\n#  second-brain:privacy:start\n', 'CONFLICT', 'comment', 2],
   ['an upper-case start marker and a full end', `node_modules/\n# SECOND-BRAIN:PRIVACY:START\n${PRIVACY_END}\n`, 'CONFLICT', 'comment', 2],
@@ -691,7 +697,7 @@ test('a root AGENTS.md with a UTF-8 byte-order mark is APPENDed: the mark stays 
   assert.match(verified.stdout, /Verification: OK/);
 });
 
-test('an installed AGENTS.md whose marker lines were removed is refused with the line to put back, and restoring them plans IDENTICAL', async (t) => {
+test('an installed AGENTS.md whose whole block is gone is refused with the template file to paste, and pasting it plans IDENTICAL', async (t) => {
   const { target } = await fresh(t, 'second-brain-markers-removed-');
   await mkdir(target);
   await writeFile(path.join(target, 'AGENTS.md'), USER_RULES);
@@ -703,8 +709,7 @@ test('an installed AGENTS.md whose marker lines were removed is refused with the
 
   const plan = await planOnly(['upgrade', '--target', target]);
   assert.match(plan, /^CONFLICT\tAGENTS\.md\t/m);
-  assert.ok(plan.includes('Manual resolution required: AGENTS.md has no loader marker lines, but this tool installed the file'), plan);
-  assert.ok(plan.includes('put back the two loader marker lines exactly as shipped, keeping your own text'), plan);
+  assert.ok(plan.includes('Manual resolution required: AGENTS.md has no managed block, so the install stops; paste every line of template/AGENTS.md from the starter copy into the file, both marker lines included'), plan);
   const rejected = await runCli(['upgrade', '--target', target, '--apply', planDigest(plan)]);
   assert.equal(rejected.code, 1, rejected.stdout);
   assert.equal(await readFile(path.join(target, 'AGENTS.md'), 'utf8'), withoutMarkers, 'the file is unchanged');
@@ -721,4 +726,125 @@ test('an unclosed comment that is written as <!--> is told to write the comment 
   assert.ok(plan.includes('AGENTS.md line 4 has an HTML comment that is never closed'), plan);
   assert.ok(plan.includes('write the comment in full, ending with -->'), plan);
   assert.doesNotMatch(plan, /close the comment/);
+});
+
+// The three root loader files that carry a managed block, with the marker text and the shipped file each one is made from.
+const LOADER_FILES = [
+  { destination: 'AGENTS.md', template: 'template/AGENTS.md', start: LOADER_START, end: LOADER_END, user: USER_RULES },
+  { destination: 'CLAUDE.md', template: 'template/CLAUDE.md', start: LOADER_START, end: LOADER_END, user: USER_RULES },
+  { destination: '.gitignore', template: 'template/privacy-gitignore.txt', start: PRIVACY_START, end: PRIVACY_END, user: 'node_modules/\n' },
+];
+
+const escapedName = (name) => name.replace(/[.]/g, '\\.');
+
+// Installs one loader file over the user text it had, then reads the installed bytes and the shipped file.
+async function installedLoader(t, file) {
+  const { target } = await fresh(t, 'second-brain-loader-state-');
+  await mkdir(target);
+  await writeFile(path.join(target, file.destination), file.user);
+  await planAndApply(target);
+  return {
+    target,
+    installed: await readFile(path.join(target, file.destination), 'utf8'),
+    shipped: await readFile(path.join(sourceRoot, ...file.template.split('/')), 'utf8'),
+  };
+}
+
+// The seven damaged states of an installed loader file. Each row has the damaged bytes, the bytes after the one way out
+// (null means the state is fixed by approving the plan that creates the file), and the phrases that must appear.
+function loaderStates(file, installed, shipped) {
+  const { destination, start, end, user, template } = file;
+  const withoutEnd = installed.replace(`${end}\n`, '');
+  const withoutStart = installed.replace(`${start}\n`, '');
+  const withoutBoth = withoutStart.replace(`${end}\n`, '');
+  const lineOf = (text, marker) => text.slice(0, text.indexOf(marker)).split('\n').length;
+  const paste = `paste every line of ${template} from the starter copy into the file, both marker lines included`;
+  return [
+    { id: 'a', damaged: withoutEnd, fixed: installed, phrases: [`${destination} line ${lineOf(withoutEnd, start)} has the start marker ${start} but no end marker`, `put back the end marker ${end} on its own line below the block`] },
+    { id: 'b', damaged: withoutStart, fixed: installed, phrases: [`${destination} line ${lineOf(withoutStart, end)} has the end marker ${end} but no start marker`, `put back the start marker ${start} on its own line above the block`] },
+    { id: 'c', damaged: withoutBoth, fixed: installed, phrases: [`${destination} has no start marker and no end marker, but the block text is still there`, `put back both marker lines, ${start} above the block text and ${end} below it`] },
+    { id: 'd', damaged: user, fixed: `${user}${shipped}`, phrases: [`${destination} has no managed block`, paste] },
+    { id: 'e', damaged: '', fixed: shipped, phrases: [`${destination} is empty, so its managed block is gone`, paste] },
+    { id: 'f', damaged: null, fixed: null, phrases: [`${destination} is missing, so verify stops`, `approve its plan, which shows CREATE ${destination}`] },
+    { id: 'g', damaged: Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(installed, 'utf16le')]), fixed: installed, phrases: [`${destination} is not UTF-8 text`, 'convert the file to UTF-8 text first'] },
+  ];
+}
+
+test('each damaged state of an installed AGENTS.md names the damage and its one way out, and the way out passes verify', async (t) => {
+  await assertEveryLoaderState(t, LOADER_FILES[0]);
+});
+
+test('each damaged state of an installed CLAUDE.md names the damage and its one way out, and the way out passes verify', async (t) => {
+  await assertEveryLoaderState(t, LOADER_FILES[1]);
+});
+
+test('each damaged state of an installed .gitignore names the damage and its one way out, and the way out passes verify', async (t) => {
+  await assertEveryLoaderState(t, LOADER_FILES[2]);
+});
+
+async function assertEveryLoaderState(t, file) {
+  for (const id of 'abcdefg') {
+    const { target, installed, shipped } = await installedLoader(t, file);
+    const state = loaderStates(file, installed, shipped).find((row) => row.id === id);
+    const label = `${file.destination} state ${id}`;
+    const filePath = path.join(target, file.destination);
+    if (state.damaged === null) await unlink(filePath);
+    else await writeFile(filePath, state.damaged);
+
+    const verified = await runCli(['verify', '--target', target]);
+    assert.equal(verified.code, 1, `${label}: ${verified.stdout}`);
+    assert.match(verified.stdout, /Verification: FAILED/, label);
+    for (const phrase of state.phrases) assert.ok(verified.stdout.includes(phrase), `${label} verify: ${phrase}\n${verified.stdout}`);
+
+    const plan = await runCli(['upgrade', '--target', target]);
+    if (id === 'f') {
+      assert.match(plan.stdout, new RegExp(`^CREATE\\t${escapedName(file.destination)}\\t`, 'm'), label);
+      const created = await runCli(['upgrade', '--target', target, '--apply', planDigest(plan.stdout)]);
+      assert.equal(created.code, undefined, `${label}: ${created.stdout}`);
+    } else {
+      for (const phrase of state.phrases) assert.ok(plan.stdout.includes(phrase), `${label} plan: ${phrase}\n${plan.stdout}`);
+      assert.ok(plan.stdout.includes('Manual resolution required: '), label);
+      assert.ok(plan.stdout.includes('plan again'), `${label} plan: ${plan.stdout}`);
+      assert.ok(verified.stdout.includes('run verify again'), `${label} verify wording: ${verified.stdout}`);
+      const digest = planDigest(plan.stdout);
+      if (digest !== null) {
+        const before = await readFile(filePath);
+        const rejected = await runCli(['upgrade', '--target', target, '--apply', digest]);
+        assert.equal(rejected.code, 1, `${label}: ${rejected.stdout}`);
+        assert.deepEqual(await readFile(filePath), before, `${label}: a refused plan changes no byte`);
+      }
+      await writeFile(filePath, state.fixed);
+    }
+
+    const verifiedAgain = await runCli(['verify', '--target', target]);
+    assert.equal(verifiedAgain.code, undefined, `${label} after the way out: ${verifiedAgain.stdout}`);
+    assert.match(verifiedAgain.stdout, /Verification: OK/, label);
+    const after = await runCli(['upgrade', '--target', target]);
+    assert.doesNotMatch(after.stdout, /^CONFLICT\t/m, label);
+    assert.match(after.stdout, new RegExp(`^IDENTICAL\\t${escapedName(file.destination)}\\t`, 'm'), label);
+  }
+}
+
+test('a UTF-8 byte-order mark before the block is allowed in AGENTS.md, CLAUDE.md and .gitignore: install, verify and upgrade all pass', async (t) => {
+  const { target } = await fresh(t, 'second-brain-bom-block-');
+  await mkdir(target);
+  const bom = Buffer.from([0xef, 0xbb, 0xbf]);
+  const withBom = new Map();
+  for (const file of LOADER_FILES) {
+    const bytes = Buffer.concat([bom, await readFile(path.join(sourceRoot, ...file.template.split('/')))]);
+    withBom.set(file.destination, bytes);
+    await writeFile(path.join(target, file.destination), bytes);
+  }
+  const plan = await planOnly(['init', '--target', target]);
+  for (const file of LOADER_FILES) assert.match(plan, new RegExp(`^IDENTICAL\\t${escapedName(file.destination)}\\t`, 'm'), file.destination);
+  const applied = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+  for (const file of LOADER_FILES) {
+    assert.deepEqual(await readFile(path.join(target, file.destination)), withBom.get(file.destination), `${file.destination}: the bytes, mark included, are unchanged`);
+  }
+  const upgradePlan = await planOnly(['upgrade', '--target', target]);
+  for (const file of LOADER_FILES) assert.match(upgradePlan, new RegExp(`^IDENTICAL\\t${escapedName(file.destination)}\\t`, 'm'), file.destination);
 });
