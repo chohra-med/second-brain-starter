@@ -20,7 +20,7 @@ CREATE	.claude/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
 After `upgrade --apply` with the exact plan digest, `verify` printed `Verification: OK` and exited 0. Rolling back the upgrade receipt printed `ROLLED_BACK` for each of the six files and exited 0. `verify` run from the v1.4.0 source then printed `Verification: OK` again.
 
 - Each `CREATE` line is a new file. Three go in `.agents/skills/usage-dashboard/` and three in `.claude/skills/usage-dashboard/`. Nothing existing is removed, and nothing in the upgrade runs the script.
-- `usage-prices.json` is a seed file. An install made from this version writes it once. An existing install keeps its file, and the plan shows `PERSONALIZED` for it even if you never edited it. An upgrade does not overwrite your copy.
+- `usage-prices.json` is a seed file. An install made from this version writes it once. An existing install keeps its file. The plan shows `IDENTICAL` for an unedited copy under an unchanged template, and `PERSONALIZED` once you have edited it or a later template changes it. An upgrade does not overwrite your copy.
 - Until you apply this upgrade, `verify` run from the v1.5.0 source exits non-zero. It reports `SOURCE_MANIFEST_MISMATCH`, and an `UNMANAGED` line for each of the six files. Those lines go away after the upgrade.
 - Rolling back this upgrade removes the six files and leaves the two empty `usage-dashboard` folders in place, as earlier versions describe.
 
