@@ -107,7 +107,8 @@ async function printPlan(plan) {
   const privacy = plan.entries.find((entry) => entry.destination === '.gitignore' && entry.mergeKind === 'managed-block');
   if (privacy) {
     const block = await readFile(path.join(plan.sourceRoot, ...privacy.source.split('/')), 'utf8');
-    const ignored = block.split('\n').filter((line) => line !== '' && !line.startsWith('#'));
+    // An exception line (!path) re-includes a path, so it is not one of the paths git ignores.
+    const ignored = block.split('\n').filter((line) => line !== '' && !line.startsWith('#') && !line.startsWith('!'));
     output.write(`Privacy: the .gitignore block (${privacy.status}) makes git ignore: ${ignored.join(', ')}\n`);
   }
   output.write(`Plan digest: ${plan.digest}\n`);
@@ -117,6 +118,8 @@ async function printPlan(plan) {
 // A new folder, or a folder with nothing in it, has nothing to overwrite. At the terminal prompt there, a plain yes
 // (yes or y, any case, surrounding spaces ignored) approves the plan. Every other target needs the exact digest.
 const YES_ANSWERS = new Set(['yes', 'y']);
+// At the yes prompt, a typed no (or n) declines the plan the same way Enter does.
+const NO_ANSWERS = new Set(['no', 'n']);
 
 async function isNewOrEmptyFolder(targetPath) {
   try {
@@ -127,10 +130,16 @@ async function isNewOrEmptyFolder(targetPath) {
   }
 }
 
+// The yes shortcut is decided before the prompt, so the folder is checked again once the answer is read. Anything
+// that is not a plain empty folder now, including a folder that cannot be read, is not empty for this purpose.
+async function stillNewOrEmpty(targetPath) {
+  return isNewOrEmptyFolder(targetPath).catch(() => false);
+}
+
 // Ctrl-C and end of input at the prompt are a cancel that exits 1, as connect's prompt does. An empty answer is the
 // cancel init always had, and it keeps exit code 0. Only the interruption changes exit code.
 async function confirmInteractive(plan, suppliedDigest) {
-  if (!input.isTTY || !output.isTTY) return { answer: suppliedDigest, interrupted: false, yesAccepted: false };
+  if (!input.isTTY || !output.isTTY) return { answer: suppliedDigest, interrupted: false, yesAccepted: false, declined: false };
   if (suppliedDigest) throw usageError('Use the terminal prompt for approval; --apply is for non-interactive use.');
   const newOrEmpty = await isNewOrEmptyFolder(plan.target);
   const prompt = createInterface({ input, output, terminal: true });
@@ -146,6 +155,7 @@ async function confirmInteractive(plan, suppliedDigest) {
       answer: text,
       interrupted: false,
       yesAccepted: newOrEmpty && YES_ANSWERS.has(text.trim().toLowerCase()),
+      declined: newOrEmpty && NO_ANSWERS.has(text.trim().toLowerCase()),
     }));
     return await Promise.race([answer, interrupted]);
   } finally {
@@ -157,11 +167,18 @@ async function runPlan(command, targetPath, suppliedDigest) {
   const payload = await source();
   const plan = await planInstall({ ...payload, targetPath, operation: command });
   await printPlan(plan);
-  const { answer, interrupted, yesAccepted } = await confirmInteractive(plan, suppliedDigest);
+  const { answer, interrupted, yesAccepted, declined } = await confirmInteractive(plan, suppliedDigest);
   if (interrupted) {
     output.write('Plan not applied.\n');
     process.exitCode = 1;
     return;
+  }
+  if (declined) {
+    output.write('Plan not applied.\n');
+    return;
+  }
+  if (yesAccepted && !(await stillNewOrEmpty(plan.target))) {
+    throw usageError('The folder is no longer empty, so yes is not accepted. No files were changed. Type the exact plan digest from a new plan.');
   }
   const approvedDigest = yesAccepted ? plan.digest : answer;
   if (!approvedDigest) {

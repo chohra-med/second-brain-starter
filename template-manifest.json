@@ -50,7 +50,7 @@
     {
       "source": "template/privacy-gitignore.txt",
       "destination": ".gitignore",
-      "sha256": "87e91cd5b879ec15dd465fbfe90c3abf90379437556016d73d23eb1b83651da6",
+      "sha256": "47649a4d35b8d9b4a8f517d571b62ad06a583174c82782ca2f3f05a5489d125b",
       "mergeKind": "managed-block"
     },
     {

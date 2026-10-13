@@ -5,8 +5,8 @@
 This change adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
 
 - An upgrade adds one plan line. If the workspace has no `.gitignore`, the plan shows `CREATE .gitignore`. If it has one, the plan shows `APPEND .gitignore`. Your lines stay in front of the block.
-- The block makes git ignore `.second-brain/`, `05-Daily/`, `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and `01-Projects/**/Connection.md`. Remove the block if you want those paths in version control.
-- A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`. Rollback removes the appended block and restores the file byte for byte.
+- The block makes git ignore `.second-brain/`, the notes in `05-Daily/` (the shipped `05-Daily/daily-template.md` stays tracked), `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and `01-Projects/**/Connection.md`. To keep one of those paths in version control, leave the block alone and add an exception line (`!path`) below it, for example `!00-Meta/Profile.md`. Do not delete the block: `upgrade` and `verify` need it.
+- A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`, when this tool has no install record for that file. An installed file whose markers were removed still shows `CONFLICT`. Rollback removes the appended block and restores the file byte for byte.
 - This change adds six skills (`grill-me`, `readme-generator`, `graphify`, `writing-skills`, `humanizer` and `skill-creator`) and one procedure, `03-Resources/Procedures/showcase-readme.md`. An upgrade from v1.3.0 shows their 59 files as `CREATE` lines: 29 skill files, each in both `.agents/skills/` and `.claude/skills/`, plus the procedure. It shows `03-Resources/Procedures/README.md` as `MANAGED-UPDATE` because its list gained the new procedure. No existing file is removed.
 
 ## Upgrading to v1.3.0
@@ -87,6 +87,7 @@ It also adds the bundled `icm-architect` skill in both client skill folders and 
 The upgrader compares the previous installed template digest, the current target bytes, and the fresh template digest. It reports the complete path-by-path outcome before writing:
 
 - `IDENTICAL` needs no work.
+- `APPEND` adds the managed block after your own bytes in a root `AGENTS.md` or `CLAUDE.md` that has no loader markers and no install record. Your bytes stay in front of the block.
 - `MANAGED-UPDATE` has a safe update path defined by the installed state.
 - `CONFLICT` requires manual resolution and prevents application.
 - `DEPRECATED` identifies a formerly managed path that needs an explicit decision.

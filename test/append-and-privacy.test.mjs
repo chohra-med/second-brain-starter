@@ -18,9 +18,20 @@ const USER_RULES = '# My rules\n\nBe brief.\n';
 // Same pseudo-terminal driver as cli-approval.test.mjs, with one more answer: a plain yes. The driver answers the
 // first prompt that contains "Type the exact plan digest", which both prompt wordings contain.
 const DRIVER = `
-import os, pty, sys, select, time
+import os, pty, re, sys, select, time
 action = sys.argv[1]
 cmd = sys.argv[sys.argv.index('--') + 1:]
+
+def answer(action, buf, cmd):
+    if action == 'digest':
+        return re.search(rb'Plan digest: ([a-f0-9]{64})', buf).group(1) + b'\\n'
+    if action == 'file-then-yes':
+        target = cmd[cmd.index('--target') + 1]
+        with open(os.path.join(target, 'notes.txt'), 'w') as handle:
+            handle.write('written while the prompt was open\\n')
+        return b'yes\\n'
+    return {'ctrl-c': b'\\x03', 'eof': b'\\x04', 'enter': b'\\n', 'yes': b'yes\\n', 'no': b'no\\n'}[action]
+
 pid, fd = pty.fork()
 if pid == 0:
     os.execvp(cmd[0], cmd)
@@ -41,7 +52,7 @@ while time.time() < deadline:
     if not sent and b'Type the exact plan digest' in buf:
         sent = True
         time.sleep(0.3)
-        os.write(fd, {'ctrl-c': b'\\x03', 'eof': b'\\x04', 'enter': b'\\n', 'yes': b'yes\\n'}[action])
+        os.write(fd, answer(action, buf, cmd))
 _, status = os.waitpid(pid, 0)
 sys.stdout.write(buf.decode('utf8', 'replace').replace('\\r', ''))
 sys.stdout.write('\\nEXIT=%d PROMPT=%s\\n' % (os.waitstatus_to_exitcode(status), sent))
@@ -152,7 +163,7 @@ test('a new .gitignore is created with the privacy block, and the plan names the
 
   const plan = await planOnly(['init', '--target', target]);
   assert.match(plan, /^CREATE\t\.gitignore\tundo=remove-created-file$/m);
-  assert.match(plan, /^Privacy: the \.gitignore block \(CREATE\) makes git ignore: \.second-brain\/, 05-Daily\/, /m);
+  assert.match(plan, /^Privacy: the \.gitignore block \(CREATE\) makes git ignore: \.second-brain\/, 05-Daily\/\*, /m);
   await planAndApply(target);
   const gitignore = await readFile(path.join(target, '.gitignore'), 'utf8');
   assert.ok(gitignore.startsWith(`${PRIVACY_START}\n`) && gitignore.endsWith(`${PRIVACY_END}\n`));
@@ -226,4 +237,133 @@ test('the non-interactive path does not accept yes: --apply yes is refused and n
   assert.equal(run.code, 1, run.stdout);
   assert.match(run.stdout, /Plan digest did not match/);
   assert.equal(await exists(path.join(target, 'AGENTS.md')), false);
+});
+
+// Each of these has the loader stem (or a cut-off part of it) in a form that is not exactly one well-formed block.
+// Every one is a CONFLICT, and a CONFLICT is never appended to.
+const DAMAGED_LOADERS = [
+  ['a truncated end marker', `${USER_RULES}<!-- second-brain:loader:end\n`],
+  ['a lone full end marker', `${USER_RULES}${LOADER_END}\n`],
+  ['a start marker with no end, and text after it', `${USER_RULES}${LOADER_START}\nmine\n`],
+  ['an upper-case marker with a full end', `${USER_RULES}<!-- SECOND-BRAIN:LOADER:START -->\nmine\n${LOADER_END}\n`],
+  ['a mixed-case start marker with a full end', `${USER_RULES}<!-- Second-Brain:loader:start -->\nmine\n${LOADER_END}\n`],
+  ['a lower-case marker with the end marker missing', `${USER_RULES}<!-- second-brain:loader:start -->\nmine\n`],
+  ['a marker with extra spaces', `${USER_RULES}<!--  second-brain:loader:start  -->\nmine\n`],
+  ['two start markers and one end', `${USER_RULES}${LOADER_START}\nmine\n${LOADER_START}\n${LOADER_END}\n`],
+];
+
+test('a damaged loader marker in a root AGENTS.md is a CONFLICT, never an APPEND, and the plan refuses to apply', async (t) => {
+  for (const [label, content] of DAMAGED_LOADERS) {
+    const { target } = await fresh(t, 'second-brain-damaged-');
+    await mkdir(target);
+    await writeFile(path.join(target, 'AGENTS.md'), content);
+
+    const plan = await planOnly(['init', '--target', target]);
+    assert.match(plan, /^CONFLICT\tAGENTS\.md\tundo=none$/m, label);
+    assert.doesNotMatch(plan, /^APPEND\t/m, label);
+
+    const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+    assert.equal(rejected.code, 1, label);
+    assert.match(rejected.stdout, /PLAN_CONFLICT/, label);
+    assert.deepEqual(await readFile(path.join(target, 'AGENTS.md')), Buffer.from(content), `${label}: the file is unchanged`);
+  }
+});
+
+test('a damaged privacy marker in an existing .gitignore is a CONFLICT too', async (t) => {
+  const { target } = await fresh(t, 'second-brain-damaged-gitignore-');
+  await mkdir(target);
+  const content = `node_modules/\n${PRIVACY_START}\n.second-brain/\n`;
+  await writeFile(path.join(target, '.gitignore'), content);
+
+  const plan = await planOnly(['init', '--target', target]);
+  assert.match(plan, /^CONFLICT\t\.gitignore\tundo=none$/m);
+  assert.doesNotMatch(plan, /^APPEND\t\.gitignore/m);
+  const rejected = await runCli(['init', '--target', target, '--apply', planDigest(plan)]);
+  assert.equal(rejected.code, 1, rejected.stdout);
+  assert.match(rejected.stdout, /PLAN_CONFLICT/);
+  assert.deepEqual(await readFile(path.join(target, '.gitignore')), Buffer.from(content));
+});
+
+test('a typed no at the yes prompt on an empty folder prints Plan not applied. and writes nothing', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await fresh(t, 'second-brain-typed-no-');
+  await mkdir(target);
+  const run = await prompted('no', ['init', '--target', target]);
+  assert.equal(run.code, 0, run.text);
+  assert.match(run.text, /Plan not applied\./);
+  assert.doesNotMatch(run.text, /Plan digest did not match/);
+  assert.equal(await exists(path.join(target, 'AGENTS.md')), false);
+});
+
+test('the typed digest still applies on an empty folder', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await fresh(t, 'second-brain-typed-digest-empty-');
+  await mkdir(target);
+  const run = await prompted('digest', ['init', '--target', target]);
+  assert.equal(run.code, 0, run.text);
+  assert.match(run.text, /Applied receipt: tx-/);
+  assert.match(await readFile(path.join(target, 'AGENTS.md'), 'utf8'), /second-brain:loader:start/);
+});
+
+test('a file created while the yes prompt is open refuses yes, and nothing is written by the install', { skip: isWindows && 'no pseudo-terminal on win32' }, async (t) => {
+  const { target } = await fresh(t, 'second-brain-yes-race-');
+  await mkdir(target);
+  const run = await prompted('file-then-yes', ['init', '--target', target]);
+  assert.equal(run.code, 1, run.text);
+  assert.match(run.text, /no longer empty/);
+  assert.match(run.text, /exact plan digest/);
+  assert.equal(await exists(path.join(target, 'AGENTS.md')), false, 'the install wrote nothing');
+  assert.equal(await readFile(path.join(target, 'notes.txt'), 'utf8'), 'written while the prompt was open\n');
+});
+
+test('a .gitignore with user lines and an exception below the block still plans, upgrades and verifies clean', async (t) => {
+  const { target } = await fresh(t, 'second-brain-gitignore-exception-');
+  await mkdir(target);
+  await planAndApply(target);
+  const block = await readFile(path.join(target, '.gitignore'), 'utf8');
+  await writeFile(path.join(target, '.gitignore'), `${block}node_modules/\n!00-Meta/Profile.md\n`);
+
+  const plan = await planOnly(['init', '--target', target]);
+  assert.match(plan, /^IDENTICAL\t\.gitignore\t/m);
+  const upgradePlan = await planOnly(['upgrade', '--target', target]);
+  assert.match(upgradePlan, /^IDENTICAL\t\.gitignore\t/m);
+  assert.doesNotMatch(upgradePlan, /^CONFLICT\t/m);
+  const upgraded = await runCli(['upgrade', '--target', target, '--apply', planDigest(upgradePlan)]);
+  assert.equal(upgraded.code, undefined, upgraded.stdout);
+
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, undefined, verified.stdout);
+  assert.match(verified.stdout, /Verification: OK/);
+  assert.match(await readFile(path.join(target, '.gitignore'), 'utf8'), /\n!00-Meta\/Profile\.md\n$/);
+});
+
+test('verify still fails when a line inside the privacy block is edited', async (t) => {
+  const { target } = await fresh(t, 'second-brain-gitignore-edited-block-');
+  await mkdir(target);
+  await planAndApply(target);
+  const block = await readFile(path.join(target, '.gitignore'), 'utf8');
+  await writeFile(path.join(target, '.gitignore'), block.replace('.second-brain/', '.second-brain-edited/'));
+
+  const verified = await runCli(['verify', '--target', target]);
+  assert.equal(verified.code, 1, verified.stdout);
+  assert.match(verified.stdout, /CORRUPT\t\.gitignore/);
+  assert.match(verified.stdout, /Verification: FAILED/);
+});
+
+async function gitIgnores(target, relative) {
+  try {
+    await execFile('git', ['-C', target, 'check-ignore', '-q', relative]);
+    return true;
+  } catch (error) {
+    if (error.code === 1) return false;
+    throw error;
+  }
+}
+
+test('the privacy block keeps the shipped daily template tracked and still ignores other daily notes', async (t) => {
+  const { target } = await fresh(t, 'second-brain-gitignore-daily-');
+  await mkdir(target);
+  await planAndApply(target);
+  await execFile('git', ['init', '-q', target]);
+
+  assert.equal(await gitIgnores(target, '05-Daily/daily-template.md'), false, 'the shipped template is not ignored');
+  assert.equal(await gitIgnores(target, '05-Daily/2026-10-13.md'), true, 'a dated daily note is ignored');
 });

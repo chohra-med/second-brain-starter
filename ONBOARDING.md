@@ -36,7 +36,7 @@ When Node is missing or too old, explain the need in plain language and ask for 
 
 Run the copied starter's canonical initializer only for the confirmed target: `node ./bin/second-brain.mjs init --target ABSOLUTE_TARGET`.
 
-Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. Preserve existing loader instructions for manual review, or let the user separately select an empty workspace and produce a fresh plan and digest. Never rename, delete or hand-write managed markers to get past a conflict. The initializer adds its own block when a root file has no markers. If the target changes or the plan changes, produce a new plan and discard the old digest.
+Translate its complete target-bound plan into plain language. Keep the full displayed plan digest unchanged. Do not write any workspace file before approval. If the plan reports a conflict, explain the named path and stop for a manual decision. Preserve existing loader instructions for manual review, or let the user separately select an empty workspace and produce a fresh plan and digest. Never rename, delete or hand-write managed markers to get past a conflict. The initializer adds its own block when a root file has no markers and this tool has no install record for it, and an installed file whose markers were removed is a conflict. If the target changes or the plan changes, produce a new plan and discard the old digest.
 
 ## 6. Obtain human approval
 
