@@ -18,7 +18,7 @@ This skill runs one local script, `usage-dashboard.mjs`, that reads the Claude C
 
 - The Claude Code transcript files, one `*.jsonl` file per session, in the `.claude/projects` folder of your home folder. Each project has its own folder inside it. Sub-agent transcripts are in a `subagents` folder inside the session folder.
 - The price file beside the script, `usage-prices.json`, or the file you name with `--prices`.
-- The projects folder is outside the workspace. The script reads nothing else.
+- The default projects folder is outside the workspace, and a folder you name with `--projects-dir` may not be. The script reads nothing else.
 
 It never follows a symbolic link below the projects folder. A linked project folder, session folder, `subagents` folder or transcript file is skipped and counted in the header as a skipped link. The projects folder you name is read even when it is itself a link, because you named it.
 
@@ -79,7 +79,7 @@ It never follows a symbolic link below the projects folder. A linked project fol
 ## Exit codes
 
 - **0.** The run finished and every transcript line was read.
-- **1.** The run finished, but a transcript had bad input: a line that is not valid JSON, a token count that is not a whole number of zero or more (or is `null`), or a file or folder that could not be read. The report lists each one.
+- **1.** The run finished, but a transcript had bad input: a line that is not valid JSON, except a last line with no line ending, which the script skips as a session still being written and does not report, a token count that is not a whole number of zero or more (or is `null`), or a file or folder that could not be read. The report lists each one.
 - **2.** Wrong use. Nothing is printed on standard output. One line on standard error says what is wrong. The cases are: an unknown option; a flag given twice (including `--json`); a flag with no value, an empty value, or a value that starts with two dashes; a date that is not a real `YYYY-MM-DD` date; `--since` later than `--until`; a `--top` that is not a whole number of zero or more; a projects folder that does not exist, is not a folder, or cannot be listed; a price file that cannot be read, is not JSON, has no `models` object, has a model row that is not an object, or has a price that is missing, not a number, or negative.
 
 ## What it never does
