@@ -1,12 +1,14 @@
 # Daily task plan
 
+Each task is one line: a checkbox, a priority from P0 to P4, then the task. Tools may read these lines, so keep the shape. The rules are in [keeping it clean](README.md#keeping-it-clean).
+
 ## Today
 
-- [ ] [Fill in one outcome for today]
+- [ ] P1 [Fill in one outcome for today]
 
 ## Open decisions or blockers
 
-- [ ] [Link to an item that needs a decision]
+- [ ] P2 [Link to an item that needs a decision]
 
 ## End-of-day handoff
 

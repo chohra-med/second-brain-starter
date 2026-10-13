@@ -62,7 +62,7 @@
     {
       "source": "template/00-Meta/Daily-Task-Plan.md",
       "destination": "00-Meta/Daily-Task-Plan.md",
-      "sha256": "c0f70137cad4ba8708a92b5eb7c2ad4c339b752bbecb2baf794252fb2f11461d",
+      "sha256": "1a4e39dc928f7e534b372c7b54c638e48a77b822f847323dfc091670c4f9ac5c",
       "mergeKind": "seed-file"
     },
     {
@@ -140,13 +140,13 @@
     {
       "source": "template/03-Resources/Procedures/review.md",
       "destination": "03-Resources/Procedures/review.md",
-      "sha256": "73e498c3d4744e10a63bcf7e6f5d13be1ea260cb2a8c5dff934bdbf7ba18350b",
+      "sha256": "1207dbb8807aa5740f35f72ef1166dfb24775d1bc36d17be13a4402d2b17728f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/04-Archives/Projects/Archive-Guide.md",
       "destination": "04-Archives/Projects/Archive-Guide.md",
-      "sha256": "7c5dd21a5985a0d8647e254539a97577f6dddbea557023bfa1281d442326ad4d",
+      "sha256": "85bf597c9ffdb013fa426624a462cfb350376deaf1dfc9358e2ce0215f14a218",
       "mergeKind": "managed-file"
     },
     {
@@ -218,7 +218,7 @@
     {
       "source": "template/00-Meta/README.md",
       "destination": "00-Meta/README.md",
-      "sha256": "c118eb82d7bfe4c5aa4445b606d392986f7e4c537e55e9eac60363512f0ad82d",
+      "sha256": "9c71dbc40e2561390880329f4d8544bc63c349d9de4070db725da506e1fa9615",
       "mergeKind": "managed-file"
     },
     {
