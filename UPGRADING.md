@@ -7,6 +7,7 @@ This change adds one managed file, `.gitignore`, and it changes how a root `AGEN
 - An upgrade adds one plan line. If the workspace has no `.gitignore`, the plan shows `CREATE .gitignore`. If it has one, the plan shows `APPEND .gitignore`. Your lines stay in front of the block.
 - The block makes git ignore `.second-brain/`, `05-Daily/`, `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and `01-Projects/**/Connection.md`. Remove the block if you want those paths in version control.
 - A root `AGENTS.md` or `CLAUDE.md` with your text and no markers now shows `APPEND` instead of `CONFLICT`. Rollback removes the appended block and restores the file byte for byte.
+- This change adds six skills (`grill-me`, `readme-generator`, `graphify`, `writing-skills`, `humanizer` and `skill-creator`) and one procedure, `03-Resources/Procedures/showcase-readme.md`. An upgrade from v1.3.0 shows their 59 files as `CREATE` lines: 29 skill files, each in both `.agents/skills/` and `.claude/skills/`, plus the procedure. It shows `03-Resources/Procedures/README.md` as `MANAGED-UPDATE` because its list gained the new procedure. No existing file is removed.
 
 ## Upgrading to v1.3.0
 

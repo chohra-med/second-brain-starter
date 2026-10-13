@@ -14,6 +14,18 @@ The skill applies the Interpretable Context Methodology described in the ICM pap
 
 This starter's own differences from the method live in the separate `second-brain-icm` skill, so the bundled files stay identical to upstream. Bundling the skill does not imply endorsement of this starter by Jake Van Clief or the paper's authors.
 
+## Bundled third-party skill: humanizer
+
+The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
+
+## Bundled third-party skill: skill-creator
+
+The `skill-creator` skill in [template/shared-skills/skill-creator/](template/shared-skills/skill-creator/SKILL.md) comes from https://github.com/anthropics/skills, subpath `skills/skill-creator`. The files here were copied unmodified from commit `dbd4588f9e1033efb41dad4bef2f7947c8993d44`. Its upstream [LICENSE.txt](template/shared-skills/skill-creator/LICENSE.txt) (Apache License 2.0) ships inside the bundled folder and is installed with the skill.
+
+## Optional companion: graphify
+
+The `graphify` skill in [template/shared-skills/graphify/](template/shared-skills/graphify/SKILL.md) is written for this starter. It describes how to use the outside tool at https://github.com/Graphify-Labs/graphify, which is licensed under Apache 2.0. That tool is not bundled and not installed by this starter. The skill works only if you install the tool yourself.
+
 ## Bundled third-party system: Spec Harness
 
 [Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `a663397c2aafa35071fb1fe899bd6a174cd423e6`, harness version 0.2.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.

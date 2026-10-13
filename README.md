@@ -44,7 +44,7 @@ The starter gives one workspace:
 - one official home for current facts, decisions, roadmap and progress;
 - a `Home.md` dashboard that points to the next useful action;
 - a `00-Meta/Profile.md` seed, which the first-use interview fills in for role, stack, answer style and boundaries, leaving anything you do not answer as `Unknown`;
-- seven local skills: context, capture, close, review, learning, the local ICM bindings and the bundled `icm-architect` method;
+- thirteen local skills: context, capture, close, review, learning, the local ICM bindings, the bundled `icm-architect` method and `humanizer` and `skill-creator`, plus the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`;
 - a project template folder to copy when a second project starts, and a `connect` command that creates the same kind of folder for each repository you name;
 - a `connect` command that stages Spec Harness into a repository you name and registers that repository with the workspace;
 - a safe initializer with plan approval, verification, receipts and rollback;
@@ -71,7 +71,7 @@ PARA gives each record a home. CODE moves information from capture to finished w
 | Second Brain Starter | Builder AI OS |
 |---|---|
 | Public MIT foundation for one workspace and the repositories you connect to it | Paid operating layer for builders |
-| Home dashboard and seven shared skills: context, capture, close, review, learning, ICM bindings and the bundled `icm-architect` method | A premium Home page, more skills and adapters |
+| Home dashboard and thirteen shared skills: context, capture, close, review, learning, ICM bindings, the bundled `icm-architect`, `humanizer` and `skill-creator` methods, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` | A premium Home page, more skills and adapters |
 | Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
 | Community source updates | Paid product updates and private repository access |
@@ -140,7 +140,7 @@ The target may already contain your project files. Differing managed files remai
 2. Choose one active project. Do not turn this into a life archive on day one. That way lies tasteful digital archaeology.
 3. Follow Home's [First use](template/03-Resources/Procedures/first-use.md) route in the installed target. Agree the missing goal and constraints, approve the exact record edits, then approve and finish one small artifact with a check. Preserve existing personalized records. Close the result and start a new chat in that target to recover the next action.
 4. The Profile interview is part of that route. It asks only the four questions whose answers are still missing in `00-Meta/Profile.md`: your role, your stack, how you want answers given, and what must never be touched. An answer you do not give stays `Unknown`, so a later session asks again instead of guessing.
-5. The initializer writes compatible root loader and skill files for supported-client discovery: seven skills (context, capture, close, review, learning, `second-brain-icm` and the bundled `icm-architect`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
+5. The initializer writes compatible root loader and skill files for supported-client discovery: thirteen skills (context, capture, close, review, learning, `second-brain-icm`, the bundled `icm-architect`, `humanizer` and `skill-creator`, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills`) to `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
 6. A text editor remains enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
 ### 4. Run the free first loop

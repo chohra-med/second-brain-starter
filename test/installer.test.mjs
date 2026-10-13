@@ -500,13 +500,19 @@ const bundledMethodFiles = new Map([
   ['references/system-map.md', 'd8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739'],
 ]);
 const installedSkills = [
+  'graphify',
+  'grill-me',
+  'humanizer',
   'icm-architect',
+  'readme-generator',
   'second-brain-capture',
   'second-brain-close',
   'second-brain-context',
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'skill-creator',
+  'writing-skills',
 ];
 
 function assertBundledMethodProjection(manifest) {
@@ -531,8 +537,9 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /seven local skills/);
-  assert.match(readme, /seven shared skills/);
+  assert.match(readme, /thirteen local skills/);
+  assert.match(readme, /thirteen shared skills/);
+  assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 
   const license = await readFile(path.join(sourceRoot, bundledMethodSource, 'LICENSE'), 'utf8');

@@ -242,7 +242,7 @@
     {
       "source": "template/03-Resources/Procedures/README.md",
       "destination": "03-Resources/Procedures/README.md",
-      "sha256": "a50fc6e17bd2823f053ada45aab29c09ef6a6ad94defd5439b120b0b80af0ef3",
+      "sha256": "ba8ceb8bd7ada94179a486c0bf3f3011159447dea9077a6cecb7551aa05b26b9",
       "mergeKind": "managed-file"
     },
     {
@@ -273,6 +273,12 @@
       "source": "template/03-Resources/Procedures/extend.md",
       "destination": "03-Resources/Procedures/extend.md",
       "sha256": "fcc2654a1240ee5b6eebac7cc4c03b0eaace05f681a0b6f38bcba7c161d2efce",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/showcase-readme.md",
+      "destination": "03-Resources/Procedures/showcase-readme.md",
+      "sha256": "bb9614b6e50523c873361a31f16dbc421718616e40b5833bee9f226b730dde71",
       "mergeKind": "managed-file"
     },
     {
@@ -453,6 +459,354 @@
       "source": "template/shared-skills/icm-architect/references/system-map.md",
       "destination": ".claude/skills/icm-architect/references/system-map.md",
       "sha256": "d8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/graphify/SKILL.md",
+      "destination": ".agents/skills/graphify/SKILL.md",
+      "sha256": "181dd463492f767df0165af58cb16c36f20a308793f24d36ef1b83a8861a2d8d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/graphify/SKILL.md",
+      "destination": ".claude/skills/graphify/SKILL.md",
+      "sha256": "181dd463492f767df0165af58cb16c36f20a308793f24d36ef1b83a8861a2d8d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/grill-me/SKILL.md",
+      "destination": ".agents/skills/grill-me/SKILL.md",
+      "sha256": "d8ecbd824b467298b422686bcc13f83fc138ccaa6d9278e25bbb103c9cd7a6fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/grill-me/SKILL.md",
+      "destination": ".claude/skills/grill-me/SKILL.md",
+      "sha256": "d8ecbd824b467298b422686bcc13f83fc138ccaa6d9278e25bbb103c9cd7a6fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/LICENSE",
+      "destination": ".agents/skills/humanizer/LICENSE",
+      "sha256": "192fce177e861e3b0e6888edbd74fcd42b6e05da542d55c62f1cf8070af81528",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/LICENSE",
+      "destination": ".claude/skills/humanizer/LICENSE",
+      "sha256": "192fce177e861e3b0e6888edbd74fcd42b6e05da542d55c62f1cf8070af81528",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/README.md",
+      "destination": ".agents/skills/humanizer/README.md",
+      "sha256": "7639358b4443f53d93a944df5177df4a3ffa80646d8c799b0e0888bfeaf0876c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/README.md",
+      "destination": ".claude/skills/humanizer/README.md",
+      "sha256": "7639358b4443f53d93a944df5177df4a3ffa80646d8c799b0e0888bfeaf0876c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/SKILL.md",
+      "destination": ".agents/skills/humanizer/SKILL.md",
+      "sha256": "71f0825d5ccc3b466d78b1656c71b35332931dc653271e1ab6b04f787299d9c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/SKILL.md",
+      "destination": ".claude/skills/humanizer/SKILL.md",
+      "sha256": "71f0825d5ccc3b466d78b1656c71b35332931dc653271e1ab6b04f787299d9c6",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/evals/evals.json",
+      "destination": ".agents/skills/humanizer/evals/evals.json",
+      "sha256": "655b9823fc4afa08d64f8ae7306733efd5ae72c75130cc6f3b2906f36853d42a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/evals/evals.json",
+      "destination": ".claude/skills/humanizer/evals/evals.json",
+      "sha256": "655b9823fc4afa08d64f8ae7306733efd5ae72c75130cc6f3b2906f36853d42a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/always-on-templates.md",
+      "destination": ".agents/skills/humanizer/references/always-on-templates.md",
+      "sha256": "549a763cf9fb13bcf761f1a460152d1af254ccce7fe7aaa0d95c5238c045f949",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/always-on-templates.md",
+      "destination": ".claude/skills/humanizer/references/always-on-templates.md",
+      "sha256": "549a763cf9fb13bcf761f1a460152d1af254ccce7fe7aaa0d95c5238c045f949",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.md",
+      "destination": ".agents/skills/humanizer/references/patterns.md",
+      "sha256": "62bf554f7edbf4d2fd95b6c6cde6509e4536de5cee55f5cb4c2b09a0b26c7156",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.md",
+      "destination": ".claude/skills/humanizer/references/patterns.md",
+      "sha256": "62bf554f7edbf4d2fd95b6c6cde6509e4536de5cee55f5cb4c2b09a0b26c7156",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.zh.md",
+      "destination": ".agents/skills/humanizer/references/patterns.zh.md",
+      "sha256": "dcfa4ba92eb5cc75061d67d739bd35feefdda93e19b7ee8a7835b0e44073af1b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/humanizer/references/patterns.zh.md",
+      "destination": ".claude/skills/humanizer/references/patterns.zh.md",
+      "sha256": "dcfa4ba92eb5cc75061d67d739bd35feefdda93e19b7ee8a7835b0e44073af1b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/readme-generator/SKILL.md",
+      "destination": ".agents/skills/readme-generator/SKILL.md",
+      "sha256": "8d3e2755d55cff3b96d6d47583531571287287f44ba9ce411675b599284f3417",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/readme-generator/SKILL.md",
+      "destination": ".claude/skills/readme-generator/SKILL.md",
+      "sha256": "8d3e2755d55cff3b96d6d47583531571287287f44ba9ce411675b599284f3417",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/LICENSE.txt",
+      "destination": ".agents/skills/skill-creator/LICENSE.txt",
+      "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/LICENSE.txt",
+      "destination": ".claude/skills/skill-creator/LICENSE.txt",
+      "sha256": "bc6b3af2f331cbc7fb0da1344efb2cbe5877a31498b4d70dbc7000f3405a1362",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/SKILL.md",
+      "destination": ".agents/skills/skill-creator/SKILL.md",
+      "sha256": "dcd4803e61e913e6fc27294184cd3a71f09f5e924ff20c8a9a20173e7b3c2bcf",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/SKILL.md",
+      "destination": ".claude/skills/skill-creator/SKILL.md",
+      "sha256": "dcd4803e61e913e6fc27294184cd3a71f09f5e924ff20c8a9a20173e7b3c2bcf",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/analyzer.md",
+      "destination": ".agents/skills/skill-creator/agents/analyzer.md",
+      "sha256": "bf68f4cac5a56c673a928c2e6d619586c5b93ea364026ab37547772cb45a663a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/analyzer.md",
+      "destination": ".claude/skills/skill-creator/agents/analyzer.md",
+      "sha256": "bf68f4cac5a56c673a928c2e6d619586c5b93ea364026ab37547772cb45a663a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/comparator.md",
+      "destination": ".agents/skills/skill-creator/agents/comparator.md",
+      "sha256": "fe1fc9787c495d864c5d6eada47396478572325fde1b33a96d78bf4b849b7a3e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/comparator.md",
+      "destination": ".claude/skills/skill-creator/agents/comparator.md",
+      "sha256": "fe1fc9787c495d864c5d6eada47396478572325fde1b33a96d78bf4b849b7a3e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/grader.md",
+      "destination": ".agents/skills/skill-creator/agents/grader.md",
+      "sha256": "57134da0c1a4eea33fbd74a1c9c44aa814f07d6bc64de303edb586f941e5d21a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/agents/grader.md",
+      "destination": ".claude/skills/skill-creator/agents/grader.md",
+      "sha256": "57134da0c1a4eea33fbd74a1c9c44aa814f07d6bc64de303edb586f941e5d21a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/assets/eval_review.html",
+      "destination": ".agents/skills/skill-creator/assets/eval_review.html",
+      "sha256": "ce477dcc74dc1c0d1d3352646a79167b5a63634e936b1019160025065974e452",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/assets/eval_review.html",
+      "destination": ".claude/skills/skill-creator/assets/eval_review.html",
+      "sha256": "ce477dcc74dc1c0d1d3352646a79167b5a63634e936b1019160025065974e452",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/eval-viewer/generate_review.py",
+      "destination": ".agents/skills/skill-creator/eval-viewer/generate_review.py",
+      "sha256": "fc9d1b9243fe5ab6012ebd579bd76d0035de1b79fd3b969de114defab26478fb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/eval-viewer/generate_review.py",
+      "destination": ".claude/skills/skill-creator/eval-viewer/generate_review.py",
+      "sha256": "fc9d1b9243fe5ab6012ebd579bd76d0035de1b79fd3b969de114defab26478fb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/eval-viewer/viewer.html",
+      "destination": ".agents/skills/skill-creator/eval-viewer/viewer.html",
+      "sha256": "a53213426ee1100441d701a3a0d49cda7a842f992d2c36463f4d3cc0258575fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/eval-viewer/viewer.html",
+      "destination": ".claude/skills/skill-creator/eval-viewer/viewer.html",
+      "sha256": "a53213426ee1100441d701a3a0d49cda7a842f992d2c36463f4d3cc0258575fa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/references/schemas.md",
+      "destination": ".agents/skills/skill-creator/references/schemas.md",
+      "sha256": "8e8876180a8989b406a4d3edddf875b04cdfd5805cc8616686d552b11ce4455f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/references/schemas.md",
+      "destination": ".claude/skills/skill-creator/references/schemas.md",
+      "sha256": "8e8876180a8989b406a4d3edddf875b04cdfd5805cc8616686d552b11ce4455f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/__init__.py",
+      "destination": ".agents/skills/skill-creator/scripts/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/__init__.py",
+      "destination": ".claude/skills/skill-creator/scripts/__init__.py",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/aggregate_benchmark.py",
+      "destination": ".agents/skills/skill-creator/scripts/aggregate_benchmark.py",
+      "sha256": "123ef128ea5ccc01a4b1ac212ef5567f21e9c13d3d240609780beeb3200c49aa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/aggregate_benchmark.py",
+      "destination": ".claude/skills/skill-creator/scripts/aggregate_benchmark.py",
+      "sha256": "123ef128ea5ccc01a4b1ac212ef5567f21e9c13d3d240609780beeb3200c49aa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/generate_report.py",
+      "destination": ".agents/skills/skill-creator/scripts/generate_report.py",
+      "sha256": "13df7118a3c50c83c4c3250a606d5f2b20b25a3d44cbc392b3d669ec75281453",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/generate_report.py",
+      "destination": ".claude/skills/skill-creator/scripts/generate_report.py",
+      "sha256": "13df7118a3c50c83c4c3250a606d5f2b20b25a3d44cbc392b3d669ec75281453",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/improve_description.py",
+      "destination": ".agents/skills/skill-creator/scripts/improve_description.py",
+      "sha256": "87d864570220b699fac52da309d2d6efdb060647bfebc74f768128e646accf80",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/improve_description.py",
+      "destination": ".claude/skills/skill-creator/scripts/improve_description.py",
+      "sha256": "87d864570220b699fac52da309d2d6efdb060647bfebc74f768128e646accf80",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/package_skill.py",
+      "destination": ".agents/skills/skill-creator/scripts/package_skill.py",
+      "sha256": "1a33059b0db1ef73375d46d513e5ea81369d2e8838c970597b0d52ddef8d1c0f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/package_skill.py",
+      "destination": ".claude/skills/skill-creator/scripts/package_skill.py",
+      "sha256": "1a33059b0db1ef73375d46d513e5ea81369d2e8838c970597b0d52ddef8d1c0f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/quick_validate.py",
+      "destination": ".agents/skills/skill-creator/scripts/quick_validate.py",
+      "sha256": "67cf5703402013936c8fb75ad6a1afecd8841d45cc5e606b634eb05825fde365",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/quick_validate.py",
+      "destination": ".claude/skills/skill-creator/scripts/quick_validate.py",
+      "sha256": "67cf5703402013936c8fb75ad6a1afecd8841d45cc5e606b634eb05825fde365",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/run_eval.py",
+      "destination": ".agents/skills/skill-creator/scripts/run_eval.py",
+      "sha256": "43e3b8f80dbf69c343967ba77e268fae991d9fa3ed68b32a0ff02532cd48657f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/run_eval.py",
+      "destination": ".claude/skills/skill-creator/scripts/run_eval.py",
+      "sha256": "43e3b8f80dbf69c343967ba77e268fae991d9fa3ed68b32a0ff02532cd48657f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/run_loop.py",
+      "destination": ".agents/skills/skill-creator/scripts/run_loop.py",
+      "sha256": "7bd6f674203168520517eec94c55f493c0d154339b061b4d7c0f0dad187d0f21",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/run_loop.py",
+      "destination": ".claude/skills/skill-creator/scripts/run_loop.py",
+      "sha256": "7bd6f674203168520517eec94c55f493c0d154339b061b4d7c0f0dad187d0f21",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/utils.py",
+      "destination": ".agents/skills/skill-creator/scripts/utils.py",
+      "sha256": "3af8ae62c40c73ab712207436a0d9a981e845f25c5a7040229eb189cc8e45bb1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-creator/scripts/utils.py",
+      "destination": ".claude/skills/skill-creator/scripts/utils.py",
+      "sha256": "3af8ae62c40c73ab712207436a0d9a981e845f25c5a7040229eb189cc8e45bb1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-skills/SKILL.md",
+      "destination": ".agents/skills/writing-skills/SKILL.md",
+      "sha256": "45d6812a3f4a1568738b4345fc8f88568194283469ee4eace5b898897120a421",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-skills/SKILL.md",
+      "destination": ".claude/skills/writing-skills/SKILL.md",
+      "sha256": "45d6812a3f4a1568738b4345fc8f88568194283469ee4eace5b898897120a421",
       "mergeKind": "managed-file"
     },
     {

@@ -11,3 +11,5 @@ Read this map to choose the method needed for the current task. Read only the se
 - [First use](first-use.md): personalize missing context, finish a checked result and continue in a new chat.
 
 - [Extend your workspace](extend.md): add and check a user-owned reference or method.
+
+- [Write a README for one project](showcase-readme.md): an example of three skills used in order, to copy and change.

@@ -4,6 +4,8 @@
 
 - `init` and `upgrade` append the managed block to a root `AGENTS.md` or `CLAUDE.md` that has your text and no loader markers. The plan shows `APPEND`. Your bytes stay in front of the block, and rollback restores the file byte for byte. A file with broken markers still shows `CONFLICT`.
 - At the terminal prompt, a new folder or an empty folder accepts a plain `yes` (or `y`, in any case, with spaces ignored) in place of the digest. Every other target still needs the exact digest. `--apply yes` is refused, and Enter, Ctrl-C and end of input are refusals as before.
+- Adds six shared skills, installed to `.agents/skills/` and `.claude/skills/`: `humanizer` and `skill-creator` copied unmodified from pinned upstream commits (see [ATTRIBUTION.md](ATTRIBUTION.md)); `grill-me`, `readme-generator` and `graphify` rewritten as generic skills; and `writing-skills`, a short guide to writing a skill. The `graphify` skill describes an optional outside tool that is not bundled. The installed set is thirteen skills.
+- Adds the procedure `03-Resources/Procedures/showcase-readme.md`, an example of three skills used in order to write a README for one project. The procedures index links to it.
 - The install writes a managed `.gitignore` block, or appends it to your existing `.gitignore`. Git ignores the installer state, the daily notes folder, the Profile and Daily-Task-Plan seeds, and each project `Connection.md`. The plan prints these paths.
 ## v1.3.0 (2026-10-09)
 
