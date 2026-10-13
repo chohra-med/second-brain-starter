@@ -2,7 +2,7 @@
 // Usage dashboard: reads the Claude Code transcript files on this machine and prints,
 // per session, the tokens used, an estimated cost at list prices, the peak context,
 // and how often each skill and each slash command was used.
-// It only reads. Standard library only. Specification: 00-Meta/SDD/packs/2026-10-13-usage-dashboard-design-note.md
+// It only reads. Standard library only.
 
 import fs from 'node:fs';
 import os from 'node:os';
@@ -19,7 +19,7 @@ const SYNTHETIC = '<synthetic>';
 const CLASSES = ['input', 'output', 'cacheRead', 'cacheWrite5m', 'cacheWrite1h'];
 const ESTIMATE_NOTE = 'Spend figures are estimates at list prices for the same tokens on the pay-per-token API. They are not a bill and not your subscription allowance.';
 
-const USAGE = `Usage: node scripts/usage-dashboard.mjs [options]
+const USAGE = `Usage: node <path to>/usage-dashboard.mjs [options]
 
 Reads the Claude Code transcript files on this machine and prints, per session, the
 tokens used, an estimated cost at list prices, the peak context, and skill and command

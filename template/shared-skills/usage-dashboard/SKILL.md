@@ -1,6 +1,6 @@
 ---
 name: usage-dashboard
-description: Summarise how much Claude Code was used on this machine, from its transcript files. It prints tokens per session, an estimated cost at list prices, peak context, and how often each skill and slash command was used. Use when a user asks what Claude Code sessions used, what they would cost at list prices, which skills or commands get used, or how full the context got. It only reads and prints numbers and names of a fixed shape.
+description: Summarise how much Claude Code was used on this machine, from its transcript files. It prints tokens per session, an estimated cost at list prices, peak context, and how often each skill and slash command was used. Use when a user asks what Claude Code sessions used, what they would cost at list prices, which skills or commands get used, or how full the context got. It only reads and prints numbers, session ids, project folder names, disk paths and names of a fixed shape.
 ---
 
 # Usage dashboard
@@ -47,7 +47,7 @@ It never follows a symbolic link below the projects folder. A linked project fol
    | `--json` | Print one JSON object instead of text. It carries the same numbers and an `estimateNote` field when it shows money. |
    | `--help` | Print the options and exit. |
 
-4. Read the report from the top. Check: the header line gives the folder read, the number of files read and the number of calls counted. A count of zero files, or zero calls, means the folder was empty or the path is wrong. Fix the path before you read any number.
+4. Read the report from the top. Check: the header line gives the folder read, the number of files read and the number of calls counted. A count of zero files, or zero calls, means the folder was empty, the path is wrong, or the filters kept nothing. Fix the path before you read any number.
 5. If the report has a `Bad input` section, go to that section before you trust the totals. Check: each line names a file and a line number, and the reason is one of a fixed set of words. The totals still show every line that could be read.
 
 ## What it prints
@@ -88,7 +88,7 @@ It never follows a symbolic link below the projects folder. A linked project fol
 - It starts no other program.
 - It writes no file. Nothing is saved, cached or logged.
 - It prints no prompt, answer, thinking, tool input, tool result or session title.
-- It prints a name only when the name has a fixed shape, such as a skill name or a model id. Any other name shows as `(unreadable name)`.
+- It prints a skill, command or model name only when the name has a fixed shape, such as a skill name or a model id. Any other name shows as `(unreadable name)`. It also prints session ids, project folder names and disk paths, as they are on disk.
 
 ## Warning for AI clients
 

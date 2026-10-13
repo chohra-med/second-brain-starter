@@ -613,7 +613,7 @@ test('each wrong use exits 2 with one line on standard error and nothing on stan
 test('--help prints the usage and exits 0', () => {
   const r = run(['--help']);
   assert.equal(r.code, 0);
-  assert.match(r.out, /Usage: node scripts\/usage-dashboard\.mjs/);
+  assert.match(r.out, /Usage: node <path to>\/usage-dashboard\.mjs \[options\]/);
   assert.match(r.out, /--since/);
 });
 
