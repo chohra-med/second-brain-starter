@@ -5,7 +5,7 @@ description: Bind applicable SDD roles to project rules and source evidence. Use
 
 # spec-harness-generate-agents
 
-Run `bash <spec-harness>/bin/sh-gen-agents.sh <target>`, then follow its work order using the inventory, existing policies and actual representative code. Bind the required project-aware planner, implementer, fresh tester, verifier and reviewer roles; select merger, design and workflow roles only when evidence supports them. Edit only GEN:rules blocks, cite package paths and source line/hash evidence, write the synthesis receipt, and run `bash <spec-harness>/bin/sh-gen-agents.sh --check <target>`. A separate fresh reviewer must confirm claim support before overall initialization is READY. Staging alone is PENDING.
+Run `spec-harness generate-agents <target>` (with no install: `npx -y github:chohra-med/spec-harness-oss generate-agents <target>`), then follow its work order using the inventory, existing policies and actual representative code. Bind the required project-aware planner, implementer, fresh tester, verifier and reviewer roles; select merger, design and workflow roles only when evidence supports them. Edit only GEN:rules blocks, cite package paths and source line/hash evidence, write the synthesis receipt, and run `spec-harness generate-agents --check <target>` (with no install: `npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>`). A separate fresh reviewer must confirm claim support before overall initialization is READY. Staging alone is PENDING.
 
 ## Run it
 1. **Load the full procedure** — read the command doc and follow it exactly:

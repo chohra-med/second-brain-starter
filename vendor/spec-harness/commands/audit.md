@@ -16,7 +16,6 @@ spec-harness audit [--target <path>]
 | **Contradictions** | `updated_rules.md` overrides a core rule that changed; spec ↔ design ↔ tasks disagree |
 | **Index drift** | file count in a dir ≠ entries in its `README.md` |
 | **Token weight** | Hot tier > 3K tokens — trim to headlines |
-| **Temporal redundancy** | claude-mem injection just echoes the bank — you're double-paying |
 | **Stale rules** | rules in `AGENTS.md` for code that no longer exists |
 | **Unverifiable goals** | a `goal.md` end-state that isn't checkable |
 

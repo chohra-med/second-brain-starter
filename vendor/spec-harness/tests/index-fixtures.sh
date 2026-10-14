@@ -114,6 +114,7 @@ printf 'DO_NOT_READ=outside-sentinel\n' > "$TMP/outside-sentinel.txt"
 
 # The default no-option inventory must remain byte-identical to the accepted
 # baseline, while deeper first-party sources remain absent from its fixed sample.
+# The baseline was re-pinned once: project_root_name is now "." instead of the folder name (2026-10-09).
 mkdir -p "$TMP/selected/src/features/pagination" "$TMP/selected/ai_rules"
 printf '{"name":"selected-source-fixture"}\n' > "$TMP/selected/package.json"
 for letter in a b c d e; do
@@ -122,7 +123,7 @@ done
 printf 'export const useHomePostList = true;\n' > "$TMP/selected/src/features/pagination/useHomePostList.ts"
 printf '# custom context map\n' > "$TMP/selected/ai_rules/context_map.md"
 bash "$INDEX" "$TMP/selected" > "$TMP/default.out"
-[[ "$(shasum -a 256 "$TMP/selected/ai_rules/project_inventory.json" | awk '{print $1}')" == "28ed1328d6e26a3c6b148e618870f7c6db41383abcd191e48fe3ad112070e81a" ]] || fail 'default index output differs from prechange byte baseline'
+[[ "$(shasum -a 256 "$TMP/selected/ai_rules/project_inventory.json" | awk '{print $1}')" == "fa717eda21ffa8581b673b2eff9a0ad0523d070b318fde5e451341a1f8889df5" ]] || fail 'default index output differs from pinned byte baseline'
 python3 - "$TMP/selected/ai_rules/project_inventory.json" <<'PY'
 import json, sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -471,5 +472,14 @@ fi
 [[ -L "$TMP/root-with-linked-rules/ai_rules" ]] || fail 'ai_rules symlink was replaced'
 [[ "$(find "$TMP/external-rules" -type f -print | sort)" == "$external_files" ]] || fail 'ai_rules symlink caused an outside write'
 pass 'symlinked output directory fails closed before writing outside the root'
+
+mkdir -p "$TMP/name-a/clone-alpha/src" "$TMP/name-b/other-name/src"
+for clone in "$TMP/name-a/clone-alpha" "$TMP/name-b/other-name"; do
+  printf '{"name":"same-content","dependencies":{"react":"18.3.1"}}\n' > "$clone/package.json"
+  printf 'export const same = 1;\n' > "$clone/src/index.ts"
+  bash "$INDEX" "$clone" > "$clone.out" 2>&1
+done
+diff -r "$TMP/name-a/clone-alpha/ai_rules" "$TMP/name-b/other-name/ai_rules" > "$TMP/name-diff.out" || fail 'index output depends on the checkout folder name'
+pass 'same content under two folder names produces byte-identical index output'
 
 printf 'All index fixtures passed.\n'

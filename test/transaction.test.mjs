@@ -210,7 +210,8 @@ test('rollback removes created files while preserving pre-existing custom files'
   const plan = await planInstall({ ...subject, targetPath: subject.target });
   const applied = await applyInstall({ ...subject, targetPath: subject.target, approvedDigest: plan.digest });
   const rollback = await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
-  assert.deepEqual(rollback.rolledBackPaths, ['00-Meta/Rules.md', 'Home.md', '.second-brain/installed-state.json']);
+  assert.deepEqual(rollback.rolledBackPaths, ['00-Meta/Rules.md', 'Home.md', '.second-brain/base/00-Meta/Rules.md', '.second-brain/base/Home.md', '.second-brain/installed-state.json']);
+  await assert.rejects(lstat(path.join(subject.target, '.second-brain', 'base')), { code: 'ENOENT' }, 'rollback leaves no empty base folder');
   await assert.rejects(readFile(path.join(subject.target, 'Home.md')));
   await assert.rejects(readFile(path.join(subject.target, '00-Meta', 'Rules.md')));
   assert.equal(await readFile(path.join(subject.target, 'custom.md'), 'utf8'), 'custom');

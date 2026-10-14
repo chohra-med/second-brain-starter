@@ -1,11 +1,11 @@
 ---
 name: spec-harness-audit
-description: Health-check the memory bank, rules, and index — flag stale, contradictory, or redundant entries and spec↔code drift. Use when the user says 'audit the bank', 'is the memory stale', 'check spec harness health', or 'clean up the rules'.
+description: Health-check the memory bank, rules, and index: flag stale or contradictory entries and spec↔code drift. Use when the user says 'audit the bank', 'is the memory stale', 'check spec harness health', or 'clean up the rules'.
 ---
 
 # spec-harness-audit
 
-Cross-check the bank, ai_rules, and index for staleness, contradiction, redundancy, and drift from the real code. Report fixes; promote durable learnings up into the curated bank.
+Cross-check the bank, ai_rules, and index for staleness, contradiction, and drift from the real code. Report fixes; promote durable learnings up into the curated bank.
 
 ## Run it
 1. **Load the full procedure** — read the command doc and follow it exactly:

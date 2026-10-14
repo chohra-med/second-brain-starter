@@ -5,9 +5,13 @@
 ## Invocation
 
 ```text
-bash <spec-harness>/bin/sh-gen-agents.sh <target>
-bash <spec-harness>/bin/sh-gen-agents.sh --check <target>
+bash <spec-harness>/bin/sh-gen-agents.sh <target>  # from a checkout
+bash <spec-harness>/bin/sh-gen-agents.sh --check <target>  # from a checkout
+npx -y github:chohra-med/spec-harness-oss generate-agents <target>        # no checkout
+npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>  # no checkout
 ```
+
+The `npx` lines run the same subcommand through the package's `spec-harness` CLI, which routes `generate-agents` to `bin/sh-gen-agents.sh`. Use them when no harness checkout is on the machine.
 
 The first command writes `.claude/agents/.generate-agents.prompt.md`. In an installed consumer, the stage documents are under `.claude/commands/spec-harness/`; use the source-tree `commands/` paths only when working in the source checkout. The model follows that work order and writes `.claude/agents/.init-synthesis.json`. The second command validates the receipt, inventory identity, outputs, role markers and cited source paths/hashes. Each generated project skill carries `<!-- source-bound: inventory-sha256=<raw inventory file hash> -->` so source changes are detectable. It cannot decide whether a citation semantically supports a claim; that needs a fresh reviewer.
 
@@ -35,7 +39,7 @@ Do not fill unselected roles merely because a template exists. A change to the i
 
 - `status`, `inventory_path`, raw `inventory_sha256`, exact inventoried `package_paths`, and `pending_reasons`;
 - each package's `rules_path`, output SHA-256 and `citations`;
-- the three core skill names `spec-harness-architecture`, `spec-harness-performance`, `spec-harness-packages`, plus at most five `spec-harness-tech-<technology>` skills scoped to the packages that use that technology, each with output paths/hashes, package paths and citations;
+- the core skill names `spec-harness-architecture`, `spec-harness-performance`, `spec-harness-packages`, plus `spec-harness-quality` and `spec-harness-conduct` on a first initialisation (schema 2; an existing schema-1 receipt keeps only the first three), plus at most five `spec-harness-tech-<technology>` skills scoped to the packages that use that technology, each with output paths/hashes, package paths and citations;
 - selected `roles` and `excluded_roles`, with role file paths/hashes, package paths, citations, and selection/exclusion reasons.
 
 Each citation has `package_path`, `path`, `line_start`, `line_end` and `sha256`. Cite representative code/config/test paths actually listed by the inventory. The readiness check rejects missing files, changed hashes, out-of-package citations, invalid line spans, generic/stub rule text, unsupported or incomplete inventory, skill conflicts, missing required roles, missing markers or stale role blocks. It prints each detected defect and exits nonzero. PENDING is the only honest result when synthesis or evidence is unresolved.

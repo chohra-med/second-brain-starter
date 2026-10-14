@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "harnessVersion": "0.2.0",
+  "harnessVersion": "0.3.0",
   "description": "Record of the file set bin/sh-install.sh stages into a target. The installer does not read this file; tests/install-manifest-contract.sh proves a real install produces exactly this set, byte for byte.",
   "substitutions": {
     "placeholder": "{name}",
@@ -148,7 +148,7 @@
       "source": "agents/sdd-reviewer.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "bf7370ffc650a8c3ffdde3ffb0146da3886b8eb3d40803f2db5196f6c554d2d3",
+      "sha256": "4b2314253982de642438b86622124777422bbc0bef38a8ffb380f6c433191b9e",
       "mode": "0644"
     },
     {
@@ -180,7 +180,7 @@
       "source": "commands/sdd.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "6b209f34b7e5ce7b31fdbdb16a54f3bbfbec26ad7a39eeff3b8dbe8487822e56",
+      "sha256": "1053ce98c5667b19150e16e4fe4b70f564a100434177367b4ecfe67a02b86b6d",
       "mode": "0644"
     },
     {
@@ -188,7 +188,7 @@
       "source": "commands/audit.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "57726a4cc4067fd434eda84fe22cc5c84915edfc69fa0ffd98b7bde30d479e03",
+      "sha256": "88023d8aded0c0e61e72034c2ab267c6e2524c27a32223298b4705c35cb38db9",
       "mode": "0644"
     },
     {
@@ -196,7 +196,7 @@
       "source": "commands/build.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "df6daba614501a53e144591d1305d7798b5bcd6650f9790b98f695d3848ee826",
+      "sha256": "4c2c7eb004fb8b2b2be430b2cac1e6a3d721c6dc05cc88e8523a5f464ab1cafd",
       "mode": "0644"
     },
     {
@@ -212,7 +212,7 @@
       "source": "commands/generate-agents.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "528e97741c8ccd8ec836e2e869646c90be15dc6b5845f75bf4b45df4cbdbdaf0",
+      "sha256": "a5013b48205eb829af76c3900975b22caaccd56722c533776c0d2cb72def24fe",
       "mode": "0644"
     },
     {
@@ -228,7 +228,7 @@
       "source": "commands/init.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "f1e4c7d69edd3490bc8ed82be88d866c4ad98f3527b0804fcac2dfc783f67791",
+      "sha256": "2477daa75fda5e51b98711d2f09f6682641a1f1a0c73a513424aa5f4a1658e44",
       "mode": "0644"
     },
     {
@@ -244,7 +244,7 @@
       "source": "commands/migrate.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "092f5c13eb24bc27705129b15521e003e920880906e0b152b30d5349a2a34064",
+      "sha256": "9bd0f3e42530551baa31e291cbe938723e53819a861893c85bdb602e5c23a1ed",
       "mode": "0644"
     },
     {
@@ -276,7 +276,7 @@
       "source": "commands/rules.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "40d2b80e3c8aedc9ae2e2e13863551ccf751920aacd20d0ee01e21c2a4cee311",
+      "sha256": "6bd05a05aa94b9187de7aa7b6e7739c2867c39afba314b8b24dd3a14c12bbdff",
       "mode": "0644"
     },
     {
@@ -312,6 +312,14 @@
       "mode": "0644"
     },
     {
+      "destination": ".claude/commands/spec-harness/teach.md",
+      "source": "commands/teach.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "d03325d6e11ea6a01acf35038f9276b594633d088c6b7e53e3d06a442a8f0a05",
+      "mode": "0644"
+    },
+    {
       "destination": ".claude/commands/spec-harness/tester.md",
       "source": "commands/tester.md",
       "render": "copy",
@@ -324,7 +332,7 @@
       "source": "commands/tickets.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "0965934173b0a69c7473d0c1daa6cc72b1fc4145681935628c5722718fe1193e",
+      "sha256": "6d12905a76a8e3157cbffc26d04d72816643e17ac03951011d4875e3e2f39366",
       "mode": "0644"
     },
     {
@@ -340,7 +348,7 @@
       "source": "skills/spec-harness-audit/SKILL.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "c3fecd9340404e4306e17cb42842f8afcc67c83c305cb93c79efe2118d2b607f",
+      "sha256": "20a019c4bff8da3ffd0bb454b744a2f7d5458e7459855eabba03c0d28152e66c",
       "mode": "0644"
     },
     {
@@ -356,7 +364,7 @@
       "source": "skills/spec-harness-generate-agents/SKILL.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "ddaaa2941313d73c7100d4e67be7fe2afb0e85f154a30efcd18a2cfb5e02441c",
+      "sha256": "6e3d48866e940ad2f398a1cfa0a705a17219db55ed84ebbeb919617319b2d85e",
       "mode": "0644"
     },
     {
@@ -372,7 +380,7 @@
       "source": "skills/spec-harness-install/SKILL.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "2d79d52413c55da730c1dd7a6ae7cf3a10de93afabb0d7e1f28c7dcd0c199432",
+      "sha256": "b66be5232c8f44812da935751ec2f8feabd92311230ed2c779ed9c5873641c78",
       "mode": "0644"
     },
     {
@@ -440,6 +448,14 @@
       "mode": "0644"
     },
     {
+      "destination": ".claude/skills/spec-harness-teach/SKILL.md",
+      "source": "skills/spec-harness-teach/SKILL.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "87e894e0ab2e41f649e7d24bb7fbdffb749581e4c1f0a847e03791ccc49c57c4",
+      "mode": "0644"
+    },
+    {
       "destination": ".claude/skills/spec-harness-tester/SKILL.md",
       "source": "skills/spec-harness-tester/SKILL.md",
       "render": "copy",
@@ -476,7 +492,15 @@
       "source": "templates/project-skills/spec-harness-architecture.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "6467c6118ef1b940f2ed316bc1e7112cf4698ea9ea339de47820f2eac9a4a05b",
+      "sha256": "b02d5d23f714df58621afba575cf9de5b6924a19c0cd9a2aece98e2855d8e79e",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-conduct.md",
+      "source": "templates/project-skills/spec-harness-conduct.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "8b78ad564d28ab6de4fb3568714394b2e5962f99a6a58001e0e80a8f5bbc86fb",
       "mode": "0644"
     },
     {
@@ -484,7 +508,7 @@
       "source": "templates/project-skills/spec-harness-packages.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "db12b8aa54af35eae9c6fa6b707b1367392123f61196760c10968fdfab846143",
+      "sha256": "27f107b07a7c79f95a9a616c9cbbbbc86753c249c93593516ef7881d2621b110",
       "mode": "0644"
     },
     {
@@ -492,7 +516,15 @@
       "source": "templates/project-skills/spec-harness-performance.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "f0c5ade9565cf43f717b002b86da4ca5bbc3e48e01bc48d39a036f5c0386d7e3",
+      "sha256": "6a8f5e5aa2448f4b06f2e0ddf1fc915d985434e0f808c155701b1a83b66f90c6",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/methods/spec-harness-quality.md",
+      "source": "templates/project-skills/spec-harness-quality.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "3410367eb1889cedbd7f4e9da3ce26ec216363c0181b9c2afa055529bf5b8f9c",
       "mode": "0644"
     },
     {
@@ -500,7 +532,7 @@
       "source": "templates/project-skills/spec-harness-tech.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "d2c16e7a9cf2c3d1681d6b3c805ca5571c98c1e96fb624788221938a054a385d",
+      "sha256": "ed560edca6a3196d9f4b8b8264a5e022270914534f49c43a82613cc454445bac",
       "mode": "0644"
     },
     {
@@ -640,7 +672,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "8fc9169e735662fbca33796db2cf066c2d7a6a49fbeee3e95906b1ab9f0c5db6",
+      "sha256": "84d07d6b0d0b67dae97217576c5742da4ec246818cb80f4bd3df4351832ca55d",
       "mode": "0644"
     },
     {
@@ -729,6 +761,14 @@
         "{{PROJECT_NAME}}"
       ],
       "sha256": "72daedbb3a5b3a9865ed263a4e99375d918d864bb5b7e0e458162f9642ca0fce",
+      "mode": "0644"
+    },
+    {
+      "destination": "learning_human.html",
+      "source": "learning_human.html",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "a5b00cd45d091de64cc1edbe529dddbaed1e9a7d38c022dc3a26f89d738d7de3",
       "mode": "0644"
     },
     {

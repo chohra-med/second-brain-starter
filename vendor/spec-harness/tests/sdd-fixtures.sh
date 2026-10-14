@@ -194,7 +194,7 @@ else
   if (cd "$HARNESS_DIR" && npm_config_cache="$TMP_DIR/npm-cache" npm pack --ignore-scripts --pack-destination "$TMP_DIR" >"$pack_log" 2>&1); then
     archive="$(find "$TMP_DIR" -maxdepth 1 -type f -name '*.tgz' -print -quit)"
     if [[ -n "$archive" ]]; then
-      if tar -tzf "$archive" | rg -q '^package/docs/GUARDRAILS\.md$' && tar -tzf "$archive" | rg -q '^package/docs/MCP-SERVERS\.md$'; then
+      if tar -tzf "$archive" | grep -q '^package/docs/GUARDRAILS\.md$' && tar -tzf "$archive" | grep -q '^package/docs/MCP-SERVERS\.md$'; then
         pass 'consumer package includes README-linked docs'
       else
         fail 'consumer package omits README-linked docs'
@@ -387,6 +387,11 @@ def role_contracts(d):
         "implementer optional selected evidence": "when present or selected" in implementer,
         "reviewer reads feature goal, plan, task, diff, rules and gates": all(x in reviewer for x in ("`specs/<feature>/spec.md`, `goal.md` and `plan.md`", "assigned task's acceptance criteria", "Current diff and source revision", "Applicable `AGENTS.md`", "gate evidence")),
         "reviewer optional selected evidence": "when present or selected" in reviewer,
+        "reviewer labels findings NEEDED and ADDITION": all(x in reviewer for x in ("`NEEDED` when:", "`ADDITION` when")),
+        "reviewer worked cases keep their labels": all(x in reviewer for x in ("| 1 | A security, privacy or data-loss flaw in the changed work that no criterion mentions | `NEEDED` |", "| 2 | An unhandled failure that normal use or hostile input reaches | `NEEDED` |", "| 3 | A failure reachable only through a fault outside normal use, such as a corrupted disk, that is not a security, privacy or data-loss problem | `ADDITION` |", "| 4 | A required behaviour with no test or check | `NEEDED` |", "| 5 | A cleaner structure for work that is correct | `ADDITION` |", "| 6 | Something the plan excluded, built anyway, even if it works | `NEEDED` |", "| 7 | Something nobody asked for, not excluded by the plan, and working | `ADDITION` |")),
+        "reviewer must read the code before calling a finding an addition": "only after you have read the changed code path it concerns" in reviewer,
+        "reviewer NEEDED covers security and trust-boundary defects": "security, privacy, trust-boundary, input-validation or data-loss problem" in reviewer,
+        "reviewer only NEEDED can request changes": "Only `NEEDED` findings can produce `REQUEST-CHANGES`" in reviewer,
         "researcher works from spec goal rules source and inventory": all(x in researcher for x in ("`specs/<feature>/spec.md` and `goal.md`", "applicable `RULES.md`", "Relevant source, tests, manifests and inventory / context map")),
         "researcher optional design": "when present or selected" in researcher,
     }
@@ -546,6 +551,39 @@ command_texts = {p.name: p.read_text() for p in sorted((root / "commands").glob(
 require(no_model_ids_outside_table(command_texts.values()), "no command names a model outside the tier table")
 wiring = {path: (root / path).read_text() for path in TECH_WIRING}
 require(wiring_contract(wiring), "technology skills, quick start and CLI fallback are wired in every carrier")
+def agent_file_ok(text):
+    """The root agent file routes the three jobs and every repository link in it resolves."""
+    links = re.findall(r"\]\(\./([^)#]+)", text)
+    return (
+        len(links) >= 6 and all((root / link).exists() for link in links)
+        and all(x in text for x in ("## Job 1:", "## Job 2:", "## Job 3:", "templates/AGENTS.md", "Never overwrite a preserved or conflicting"))
+    )
+agent_file = (root / "AGENTS.md").read_text()
+require(agent_file_ok(agent_file), "root AGENTS.md routes the three jobs and its links resolve")
+require((root / "CLAUDE.md").read_text().strip() == "@AGENTS.md", "root CLAUDE.md imports AGENTS.md")
+
+def human_page_ok(page, files):
+    """The explainer for humans is one offline file, is staged, and init opens it."""
+    loads = re.search(r"<link\b|<script[^>]+\bsrc=|@import|\bsrc=[\"']https?:|url\(\s*[\"']?https?:", page, re.I)
+    return (
+        "<title>" in page and page.count("<svg") >= 3 and 'role="img"' in page and not loads
+        and "prefers-color-scheme:" in page and "## " not in page and 'id="quick"' in page
+        and 'plan_copy learning_human.html "$SYS_DIR/learning_human.html"' in files["bin/sh-install.sh"]
+        and "Read first: open learning_human.html" in files["bin/sh-install.sh"]
+        and "## Show the human first" in files["commands/init.md"] and "open\nlearning_human.html" in files["commands/init.md"]
+        and "first open `learning_human.html`" in files["commands/sdd.md"]
+        and '"learning_human.html"' in files["package.json"]
+        and "learning_human.html" in files["AGENTS.md"] and "learning_human.html" in files["docs/GETTING-STARTED.md"]
+    )
+HUMAN_FILES = ("bin/sh-install.sh", "commands/init.md", "commands/sdd.md", "package.json", "AGENTS.md", "docs/GETTING-STARTED.md")
+human_page = (root / "learning_human.html").read_text()
+human_files = {path: (root / path).read_text() for path in HUMAN_FILES}
+require(human_page_ok(human_page, human_files), "the human explainer is one offline file, staged by the installer and opened at init")
+require(not human_page_ok(human_page + '<script src="https://cdn.example/x.js"></script>', human_files), "RED control: the human explainer loads a remote script")
+for path in HUMAN_FILES:
+    require(not human_page_ok(human_page, dict(human_files, **{path: "[planted omission]"})), f"RED control: human explainer wiring missing from {path}")
+require(not agent_file_ok(agent_file + "\n[gone](./no-such-file.md)\n"), "RED control: dead link in the root agent file")
+require(not agent_file_ok(agent_file.replace("## Job 2:", "## Other:")), "RED control: a job section removed from the root agent file")
 require(light_route_contract(d), "MICRO light route is one file, two stages and an independent verifier")
 require(learner_contract(d), "learning agent owns the loop and applies only reviewed changes")
 require(learning_contracts(d), "feedback is captured and reviewed before policy application")

@@ -80,7 +80,7 @@ Use this when you want to read the source first, work offline, pin a version for
    If you would rather not change `PATH`, call it by its full path instead:
    `bash ~/tools/spec-harness-oss/bin/spec-harness help`.
 
-4. **Optional: run its own tests** before trusting it. They need `rg` (ripgrep) on your `PATH`.
+4. **Optional: run its own tests** before trusting it.
 
    ```sh
    cd ~/tools/spec-harness-oss
@@ -102,6 +102,10 @@ With route B, every command below that starts with
 | 2. Stage | `npx -y github:chohra-med/spec-harness-oss init . integrate` | `spec-harness init . integrate` |
 | 4. Inventory | `npx -y github:chohra-med/spec-harness-oss index .` | `spec-harness index .` |
 | 5. Check | `npx -y github:chohra-med/spec-harness-oss generate-agents --check .` | `spec-harness generate-agents --check .` |
+
+**Let an agent do it.** With a checkout on your machine, open your project in Claude Code or Codex
+and say: "Read `~/tools/spec-harness-oss/AGENTS.md` and add Spec Harness to this project." That file
+walks the agent through these same steps and tells it what it must not touch.
 
 The files staged into your project are the same on both routes. Inside Claude Code, `/sdd init`
 runs `spec-harness` when it is on your `PATH` and falls back to the `npx` form when it is not.
@@ -139,6 +143,10 @@ you. The command only copies files. It prints a status and four lists:
 
 Running it a second time is safe: it adds nothing and changes nothing.
 
+**Read `learning_human.html` now.** It was just copied to your project root. Open it in a browser:
+it is a ten-minute interactive tour of how the harness works, and it makes the next steps obvious.
+The agent opens it for you when you run `/sdd init`. You can delete it afterwards.
+
 `install-manifest.json` at the repository root records the staged set (the installer's own code still decides what is staged, and the test below keeps the two in step): every destination, its source file, the two substitutions, the directories and the loader block below. `tests/install-manifest-contract.sh` installs into an empty git repository and checks that the files created match the manifest exactly, byte for byte.
 
 What lands in the repository:
@@ -151,6 +159,7 @@ What lands in the repository:
 | `.memory/` | the project memory bank |
 | `ai_rules/`, `RULES.md`, `AGENTS.md`, `CLAUDE.md`, `constitution.md` | rules, only where you had none |
 | `specs/`, `workflows/`, `learning/`, `SPEC-HARNESS.md`, `goal.md` | ticket packets, critical journeys, lessons, status |
+| `learning_human.html` | the interactive explainer for people; delete it once read |
 | `loop.sh` | a legacy placeholder; you can delete it |
 
 ### 3. Existing instruction files
@@ -206,7 +215,7 @@ then writes:
 | Output | Where |
 |---|---|
 | Source-backed rules, each citing a file and line | `RULES.md`, `ai_rules/rules/frequent_rules.md` |
-| Three core skills: architecture, performance, packages | `.claude/skills/spec-harness-*/SKILL.md` |
+| Five core skills on a first initialisation: architecture, performance, packages, quality, conduct (an existing schema-1 receipt keeps its three) | `.claude/skills/spec-harness-*/SKILL.md` |
 | One skill per major technology the code really uses, at most five | `.claude/skills/spec-harness-tech-<technology>/SKILL.md` |
 | Project rules inside each role | the `GEN:rules` block of `.claude/agents/sdd-*.md` |
 | The receipt | `.claude/agents/.init-synthesis.json` |
@@ -321,7 +330,7 @@ Before the commit:
 ```sh
 git restore .
 git clean -fd .claude .agents .memory ai_rules specs workflows learning
-git clean -f AGENTS.md CLAUDE.md RULES.md SPEC-HARNESS.md constitution.md goal.md loop.sh
+git clean -f AGENTS.md CLAUDE.md RULES.md SPEC-HARNESS.md constitution.md goal.md loop.sh learning_human.html
 ```
 
 `git clean` removes only untracked files, so anything of yours that was already committed stays.

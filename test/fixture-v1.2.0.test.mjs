@@ -12,21 +12,21 @@ import { sourceRoot } from './helpers/consumer-cli.mjs';
 // v1.2.0 CLI, not assembled by hand. The test recomputes every hash from the
 // materialised bytes; it never copies an installed hash into the assertion side.
 //
-// Reproduce it: check out commit 6fc244e9b72ba4beab3d57fe2676883b4b25e624 (VERSION
+// Reproduce it: check out commit 3c944c190 (VERSION
 // v1.2.0) of chohra-med/second-brain-starter, then with a neutral absolute path P
 // (for example /tmp/second-brain-fixture/target, never a home directory):
 //   node ./bin/second-brain.mjs init --target P                       (prints the plan digest)
 //   node ./bin/second-brain.mjs init --target P --apply <plan digest>
 //   node ./bin/second-brain.mjs verify --target P                     (must print "Verification: OK")
-// and snapshot every regular file under P: the 74 managed files, the installed state
+// and snapshot every regular file under P: the 75 managed files, the installed state
 // and the single receipt under .second-brain/receipts/. Two such runs differ ONLY in
 // planDigest, transactionId, writeSetDigest, the receiptId (and so the receipt file
 // name and its planDigest) and the state write's postimageSha256 in the receipt. The
 // tests below must not depend on any of those values. The v1.2.0 manifest bytes are
 // pinned by PINNED_MANIFEST_SHA256 so the fixture cannot drift from the real release.
 
-// sha256 of `git show 6fc244e:template-manifest.json`, pasted from that command.
-const PINNED_MANIFEST_SHA256 = 'e40baf119b921df58a5178aae37394b44813d4e5495961ddb0970da174c9d7c4';
+// sha256 of `git show 3c944c190:template-manifest.json`, the release whose hashes a real v1.2.0 install records (75 of 75 match).
+const PINNED_MANIFEST_SHA256 = '012cf31cfe811fdb0f73523a119ac5c7fdd1ac115200a0f5c6fcd9392ce120b3';
 
 const STATE_KEYS = ['edition', 'managedPaths', 'manifestSha256', 'operation', 'planDigest', 'publicDependency', 'schemaVersion', 'templateVersion', 'transactionId', 'writeSetDigest'];
 const STATE_PATH = '.second-brain/installed-state.json';
@@ -150,7 +150,7 @@ test('the current source verifies the v1.2.0 install, tolerating only a newer ma
   const target = await materialise(t);
   const current = await currentSource();
   const result = await verifyInstall({ ...current, targetPath: target });
-  assert.deepEqual(result.entries.filter((entry) => ['MISSING', 'CORRUPT'].includes(entry.status)).map((entry) => `${entry.status} ${entry.destination}`), []);
+  assert.deepEqual(result.entries.filter((entry) => ['MISSING', 'CORRUPT', 'MODIFIED'].includes(entry.status)).map((entry) => `${entry.status} ${entry.destination}`), []);
   for (const entry of result.entries) {
     if (entry.status === 'UNMANAGED') assert.equal(Object.hasOwn(fixture.state.managedPaths, entry.destination), false, `fixture path reported UNMANAGED: ${entry.destination}`);
     else assert.equal(['VERIFIED', 'PERSONALIZED'].includes(entry.status), true, `${entry.status} ${entry.destination}`);
@@ -179,7 +179,7 @@ test('the current source plans an upgrade of the v1.2.0 install with zero CONFLI
   const dropped = Object.keys(fixture.state.managedPaths).filter((destination) => !manifestDestinations.has(destination));
   assert.deepEqual(dropped, []);
   for (const destination of Object.keys(fixture.state.managedPaths).filter((d) => manifestDestinations.has(d))) {
-    assert.equal(['IDENTICAL', 'MANAGED-UPDATE', 'PERSONALIZED'].includes(byDestination.get(destination)), true, `${byDestination.get(destination)} ${destination}`);
+    assert.equal(['IDENTICAL', 'MANAGED-UPDATE', 'SEED-UPDATE', 'PERSONALIZED'].includes(byDestination.get(destination)), true, `${byDestination.get(destination)} ${destination}`);
   }
   for (const destination of [...manifestDestinations].filter((d) => !Object.hasOwn(fixture.state.managedPaths, d))) {
     assert.equal(byDestination.get(destination), 'CREATE', `new path must be CREATE: ${destination}`);

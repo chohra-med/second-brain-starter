@@ -52,7 +52,7 @@ case "$cmd" in
            echo "Manual procedure: $DIR/commands/sdd.md";
            cat "$DIR/commands/sdd.md";
            exit 2 ;;
-  verify|tester|learn|tickets|rules|spec|plan|tasks|build|audit|migrate|ship)
+  verify|tester|learn|teach|tickets|rules|spec|plan|tasks|build|audit|migrate|ship)
            echo "PENDING: documentation only; '$cmd' did not run a model stage, test, verification, or external action.";
            echo "Continue through the shared procedure: $DIR/commands/sdd.md";
            cat "$DIR/commands/$cmd.md";

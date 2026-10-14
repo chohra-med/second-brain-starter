@@ -41,20 +41,20 @@ Everything in Spec Harness is one of three things. The name is literal: **Spec**
 
 The harness has four moving parts that together make the system *converge* instead of drift:
 
-- **The ratchet** — `AGENTS.md` + `ai_rules/`. Reviewed rules only get added or sharpened; a failure does not become policy automatically.
-- **The verifier** — `sdd-verifier`, a fresh context that checks
+- **The ratchet**: `AGENTS.md` + `ai_rules/`. Reviewed rules only get added or sharpened; a failure does not become policy automatically.
+- **The verifier**: `sdd-verifier`, a fresh context that checks
   `specs/<feature>/goal.md` against current evidence and returns `RESULT: PASS|FAIL`. It works from
   the ticket goal and evidence, not the implementation conversation.
-- **The tester** — `sdd-workflow-tester`, the proactive complement to the verifier. It loads the
+- **The tester**: `sdd-workflow-tester`, the proactive complement to the verifier. It loads the
   `workflows/` bank (critical journeys, ranked P0→P2) and, per journey, a clean-context agent *runs
-  it end-to-end and adversarially tries to break it* — bad inputs, killed mid-flow, races, offline,
-  double-submits, boundary values — returning `BROKEN` + a concrete repro. The verifier checks *a
+  it end-to-end and adversarially tries to break it* (bad inputs, killed mid-flow, races, offline,
+  double-submits, boundary values), returning `BROKEN` + a concrete repro. The verifier checks *a
   change* against the goal; the tester checks *reality* against the critical journeys.
-- **The learning loop** (`learn`) — the verifier or tester records a failure; `learn` captures and
+- **The learning loop** (`learn`): the verifier or tester records a failure; `learn` captures and
   classifies it, then a reviewed durable correction can become a dated rule (a BROKEN workflow can
   also yield a recommended regression guard). The `sdd-learner` agent owns it: it also records
   decisions, promotes a cause that repeats, and corrects project skills as well as rules. Feedback never evaporates. The machine learns from its failures
-  (→ rules); the operator learns from its wins (→ `learning/` lessons). *This is the "loop" —
+  (→ rules); the operator learns from its wins (→ `learning/` lessons). *This is the "loop",
   reframed: not a cron schedule, a learning schedule.*
 
 ## What this is (and isn't)
@@ -80,6 +80,16 @@ npx -y github:chohra-med/spec-harness-oss init . integrate
 Then open the project in Claude Code and run `/sdd init`. The first command stages the harness and
 reports `PENDING`. The second reads the codebase and writes its rules, skills and roles.
 
+**New here? Read the ten-minute explainer first.** [`learning_human.html`](./learning_human.html) is
+one interactive page: what Spec Harness is, how a ticket moves through it, which model does what,
+what lands in your repository and how it improves over time. It is copied into every project you
+set up, and the agent opens it for you when you run `/sdd init`. Download it and open it in a
+browser; it needs no network.
+
+**Using an agent?** Point Claude Code, Codex or any agent at this repository and say what you want,
+for example "read AGENTS.md in this repository and add Spec Harness to my project at <path>".
+[`AGENTS.md`](./AGENTS.md) tells it how to install, how to run the workflow and where everything is.
+
 **Adopting it in an existing project?** Follow [docs/GETTING-STARTED.md](./docs/GETTING-STARTED.md):
 both ways to get the CLI (`npx`, or a `git clone` you keep on your machine), then ten steps from a clean branch to a first verified ticket, including what to do when the project
 already has its own `CLAUDE.md` and `AGENTS.md`, how to review what the initialiser wrote, and how
@@ -96,13 +106,13 @@ TARGET="/path/to/existing-project"
 PATH="$PWD/bin:$PATH" spec-harness install "$TARGET" integrate
 ```
 
-`install-manifest.json` lists every file `install` stages and where each one comes from. `bash tests/install-manifest-contract.sh` runs a real install into an empty git repository and checks the result against that list, byte for byte.
+`install-manifest.json` lists every file `install` stages and where each one comes from. `bash tests/install-manifest-contract.sh` (run it from a clone of this repository; the packed archive does not include `tests/`) runs a real install into an empty git repository and checks the result against that list, byte for byte.
 
 To install the CLI from a local tarball instead, run `npm pack` from the checkout, then install the
 filename it prints. For the current version, that is:
 
 ```sh
-npm install --global ./spec-harness-0.2.0.tgz
+npm install --global ./spec-harness-0.3.0.tgz
 ```
 
 Staging reports `PENDING`. It copies a scaffold; it does not synthesize project rules, run agents,
@@ -122,18 +132,19 @@ matching, and the result of a first real-ticket run remain unverified for this r
 |---|---|
 | [`install`](./bin/sh-install.sh) | Add/refresh the system in any repo. One entry point for **both** "start new" (`new`) and "integrate into existing" (`integrate`). Idempotent. |
 | [`/sdd`](./commands/sdd.md) | Shared entry for project initialization and ticket-text/reference execution. Runs only in a capable client; the shell route stays PENDING/manual. |
-| [`init`](./commands/init.md) | Stage then synthesize project-specific rules, three core skills plus one per major technology, and source-bound roles. Overall READY requires structural checks and a separate fresh semantic review. |
+| [`init`](./commands/init.md) | Stage then synthesize project-specific rules, five core skills plus one per major technology, and source-bound roles. Overall READY requires structural checks and a separate fresh semantic review. |
 | [`index`](./bin/sh-index.sh) / [`migrate`](./commands/migrate.md) | Adopt an existing repo: inventory the codebase into the index layer, then enrich. |
 | [`tickets`](./commands/tickets.md) | Accept exact ticket text or a retrieved body from an explicitly connected provider → one `specs/<feature>/` packet with its own `goal.md`. Unretrievable names stop for clarification. |
 | [`rules`](./commands/rules.md) | **Per-directory rules.** Resolve the nearest `RULES.md` for a path (coding/architecture/packages/testing/reviewing), or generate it from a directory's real code. Each section owned by one agent; deepest-wins cascade. Built for mixed-stack monorepos. |
 | [`spec`](./commands/spec.md) → [`plan`](./commands/plan.md) → [`tasks`](./commands/tasks.md) | Ticket input → checkable feature spec/goal → reuse-aware plan → atomic ordered units. |
 | [`build`](./commands/build.md) | Execute one task at a time with separate fresh tester, verifier and reviewer evidence tied to the feature goal and source revision. |
 | [`verify`](./commands/verify.md) | A separate fresh verifier checks `specs/<feature>/goal.md`. The shell CLI returns PENDING and does not run the check. |
-| [`tester`](./commands/tester.md) | Adversarially validate the critical `workflows/` — per journey, a clean-context agent **runs it + tries to break it** (bad inputs, kill mid-flow, races, offline, boundaries), reporting what's BROKEN, ranked P0 first. `--scan` derives candidate workflows from the app; every BROKEN feeds `learn`. The proactive complement to `verify`. |
+| [`tester`](./commands/tester.md) | Adversarially validate the critical `workflows/`: per journey, a clean-context agent **runs it + tries to break it** (bad inputs, kill mid-flow, races, offline, boundaries), reporting what's BROKEN, ranked P0 first. `--scan` derives candidate workflows from the app; every BROKEN feeds `learn`. The proactive complement to `verify`. |
 | [`document`](./commands/document.md) | Docs + comments to **the project technology's own standard** (Python docstrings, TS/JS TSDoc/JSDoc, GoDoc, rustdoc, Javadoc, …) + truthful README/ARCHITECTURE. Comments the WHY, never the WHAT. Behavior-locked (re-runs the suite to prove zero logic change). |
 | [`ship`](./commands/ship.md) | Records delivery evidence and applies explicit merger authority. Green gates do not authorize a commit, push, merge, deploy or release. |
+| [`teach`](./commands/teach.md) | Explain a system to a human as one self-contained interactive page: the idea, the flow, the structure, how to use it, evidence and limits. Never edits application source. |
 | [`learn`](./commands/learn.md) | Classify feedback/corrections and add durable rules only after review (+ optional human lesson). |
-| [`audit`](./commands/audit.md) | Health-check the bank, rules, and index. Flag stale/contradictory/redundant. |
+| [`audit`](./commands/audit.md) | Health-check the bank, rules, and index. Flag stale or contradictory entries. |
 
 The source exposes the native Claude `/sdd` command and a thin Codex project-skill adapter at
 `.agents/skills/sdd/SKILL.md`; native discovery and delegation must be measured in the actual client.
@@ -151,8 +162,8 @@ the supported ticket entrypoint.
 ## Guardrails: current procedures and MCP examples
 
 The current package includes the SDD verifier and delivery-authority procedures described above.
-Three optional release-guardrail examples — `release-preflight`, `eas-env-sync`, and
-`backend-secrets-lock` — are historical references: their skill directories and check scripts are
+Three optional release-guardrail examples (`release-preflight`, `eas-env-sync`, and
+`backend-secrets-lock`) are historical references: their skill directories and check scripts are
 absent from the current source and package, so they are not executable from this distribution.
 
 The current procedure and authority map for verification, learning review, and delivery is in
@@ -162,12 +173,13 @@ documentation before connecting a tool.
 
 ## Read next
 
-1. [`docs/GETTING-STARTED.md`](./docs/GETTING-STARTED.md) — step by step: stage, initialise, review, first ticket, undo.
-1. [`ARCHITECTURE.md`](./ARCHITECTURE.md) — the diagrams: the 3 pillars, the SDD flow, the
+1. [`docs/GETTING-STARTED.md`](./docs/GETTING-STARTED.md). Step by step: stage, initialise, review, first ticket, undo.
+2. [`ARCHITECTURE.md`](./ARCHITECTURE.md). The diagrams: the 3 pillars, the SDD flow, the
    ratchet, and the verifier + learning loop wired in.
-2. [`docs/GUARDRAILS.md`](./docs/GUARDRAILS.md) — current procedures for evidence, reviewed learning, and delivery authority.
-3. [`docs/MCP-SERVERS.md`](./docs/MCP-SERVERS.md) — a dated illustrative MCP map; recheck vendor details before use.
-4. [`commands/init.md`](./commands/init.md) — start here to use it on a project.
+3. [`docs/GUARDRAILS.md`](./docs/GUARDRAILS.md). Current procedures for evidence, reviewed learning, and delivery authority.
+4. [`docs/COMPANION-SKILLS.md`](./docs/COMPANION-SKILLS.md). Graphify, diagram-design and the methods that ship inside.
+5. [`docs/MCP-SERVERS.md`](./docs/MCP-SERVERS.md). A dated illustrative MCP map; recheck vendor details before use.
+6. [`commands/init.md`](./commands/init.md). Start here to use it on a project.
 
 ## More from Code Meet AI
 

@@ -21,7 +21,7 @@ A `#` line is shaped like a marker when it starts `# second-brain:` and goes on 
 
 Every other managed file is compared whole. Verify does not inspect unrelated project files.
 
-Personalizing these three files makes verify fail when the change is inside the block, and also when the text outside the block is one of the two damage cases: in `AGENTS.md` and `CLAUDE.md`, an HTML comment that names the tool or is never closed; in `.gitignore`, a `#` line shaped like a marker. A change inside the block reports `CORRUPT`, and a damaged or missing marker is reported too.
+Personalizing these three files makes verify fail when the change is inside the block, and also when the text outside the block is one of the two damage cases: in `AGENTS.md` and `CLAUDE.md`, an HTML comment that names the tool or is never closed; in `.gitignore`, a `#` line shaped like a marker. A change inside the block reports `CORRUPT`, and a damaged or missing marker is reported too. A local edit to any other managed file reports `MODIFIED`.
 
 Verify also lists each connection, if the workspace has any. The connections do not change the exit code. `verify` only reads: it writes nothing in either folder.
 
@@ -58,7 +58,14 @@ Most status lines that `verify` can print start with one of these prefixes. The 
 | `PERSONALIZED` | An editable seed record that you may change. Expected after setup. | No |
 | `UNMANAGED` | The installed state does not manage the path. You see this for a file that a newer source adds, such as `00-Meta/Profile.md` before an upgrade. | Yes |
 | `MISSING` | A managed file is missing. | Yes |
-| `CORRUPT` | A managed file differs from its installed hash. | Yes |
+| `MODIFIED` | A managed file differs from its installed hash: a local edit. `upgrade` keeps or merges it; `verify --adopt PATH` accepts it as your version. | Yes |
+| `CORRUPT` | Damage: a change inside a loader's managed block or a damaged marker in `AGENTS.md`, `CLAUDE.md` or `.gitignore`, or a base snapshot under `.second-brain/base/` that no longer matches the template hash the installed state records. | Yes |
+| `ADOPT` | Printed only by `verify --adopt PATH`: one path whose current bytes the adopt plan would record as your accepted version. | No |
+| `RECORDS` | Printed only by `verify --records`: one record shape problem, with the file and the line. That check reads only. | Yes, for `verify --records` |
+| `SKIPPED` | Printed only by `verify --records`: a project folder or record it did not read, such as a symlink. | No |
+| `Records` | The summary line of `verify --records`: how many problems in how many record files. | Follows the lines above |
+| `DIVERGED` | The `.claude/skills` and `.agents/skills` copies of one skill differ, so two clients load different instructions. | No |
+| `Manifest` | The first line: the template version and manifest hash this CLI expects, and the ones the installed state records. | No |
 | `MISSING_STATE` | The installed state record is missing. | Yes |
 | `SOURCE_MANIFEST_MISMATCH` | The installed state was made from a different source manifest. A newer source reports this until you upgrade. | Yes |
 | `CONNECTION` | One connection: its name, repository path, state and receipt ID. | No |
@@ -81,6 +88,12 @@ An empty root file with no install record is different. A new `init` plans it as
 The way out is in [install and recovery](install-and-recovery.md#repair-a-damaged-loader-or-ignore-file).
 
 ## Update
+
+`status` is the read-only check to run first. It names the installed template and receipt, this CLI's template, and the number of entries an upgrade would give each state. It applies nothing:
+
+```sh
+node ./bin/second-brain.mjs status --target "$PROJECT"
+```
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest. Non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](../UPGRADING.md) before upgrading.
 

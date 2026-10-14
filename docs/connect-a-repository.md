@@ -8,6 +8,17 @@ node ./bin/second-brain.mjs connect --target "$PROJECT" --repo "$REPOSITORY"
 
 Add `--name NAME` when you want a folder name other than the repository's own. The `Connection.md` record holds the repository path and the remote. A remote the parser does not recognise is recorded as `unknown`. The name becomes the folder `01-Projects/NAME/` in the workspace. If the default name cannot be used, the refusal says so and asks for `--name`.
 
+## Find the repositories to connect
+
+To list the repositories in one folder, run `workspace-plan` against it. It reads that one folder and writes nothing:
+
+```sh
+node ./bin/second-brain.mjs workspace-plan --parent /absolute/folder
+node ./bin/second-brain.mjs workspace-plan --parent /absolute/folder --list-projects
+```
+
+It proposes `<parent>/Second Brain` and lists each direct child folder that holds a real `.git` folder, with a ready `connect` command for each. Symbolic links, nested folders and files are not listed. `--list-projects` prints only the repository paths.
+
 ## Read the plan
 
 The command prints one plan for both folders and writes nothing. Without `--apply`, it is read-only in both folders. Read these lines first:

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
-import { mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { cp, mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
@@ -135,4 +136,90 @@ test('the CLI prints the version recorded in VERSION, package.json and the manif
   const printed = await cli(['--help']);
   assert.equal(printed.code, undefined, printed.stderr);
   assert.equal(printed.stdout.split(/\r?\n/)[0], `Second Brain Starter ${bare}`);
+});
+
+test('upgrade names both versions, verify labels a local edit MODIFIED, and verify --adopt accepts it under a receipt that rolls back', async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-adopt-'));
+  const target = path.join(root, 'target');
+  await mkdir(target);
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const planned = await cli(['init', '--target', target]);
+  assert.equal((await cli(['init', '--target', target, '--apply', digest(planned.stdout)])).code, undefined);
+  const version = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8')).metadata.templateVersion;
+
+  const upgrade = await cli(['upgrade', '--target', target]);
+  assert.match(upgrade.stdout, new RegExp(`^Versions: installed ${version.replace(/\./g, '\\.')} -> available ${version.replace(/\./g, '\\.')}$`, 'm'));
+  assert.match(upgrade.stdout, /^Summary: \d+ IDENTICAL$/m);
+
+  const skill = path.join(target, '.claude', 'skills', 'second-brain-context', 'SKILL.md');
+  await writeFile(skill, `${await readFile(skill, 'utf8')}Local note.\n`);
+  const modified = await cli(['verify', '--target', target]);
+  assert.equal(modified.code, 1);
+  assert.match(modified.stdout, /^Manifest: this CLI expects template \S+ \(manifest [a-f0-9]{64}\); installed \S+ \(manifest [a-f0-9]{64}\)$/m);
+  assert.match(modified.stdout, /^MODIFIED\t\.claude\/skills\/second-brain-context\/SKILL\.md\t.*verify --adopt \.claude\/skills\/second-brain-context\/SKILL\.md$/m);
+  assert.match(modified.stdout, /^DIVERGED\t\.claude\/skills\/second-brain-context\/SKILL\.md\t\.agents\/skills\/second-brain-context\/SKILL\.md\t/m);
+
+  const adoptPlan = await cli(['verify', '--target', target, '--adopt', '.claude/skills/second-brain-context/SKILL.md']);
+  assert.equal(adoptPlan.code, undefined, adoptPlan.stdout);
+  assert.match(adoptPlan.stdout, /^ADOPT\t\.claude\/skills\/second-brain-context\/SKILL\.md\tinstalled [a-f0-9]{12} -> current [a-f0-9]{12}$/m);
+  assert.match(adoptPlan.stdout, /Plan only: nothing was applied\./);
+  const misuse = await cli(['verify', '--target', target, '--apply', digest(adoptPlan.stdout)]);
+  assert.equal(misuse.code, 1);
+  assert.match(misuse.stdout, /verify accepts --apply only with --adopt/);
+  const adopted = await cli(['verify', '--target', target, '--adopt', '.claude/skills/second-brain-context/SKILL.md', '--apply', digest(adoptPlan.stdout)]);
+  assert.equal(adopted.code, undefined, adopted.stdout);
+  const adoptReceipt = receipt(adopted.stdout);
+  assert.ok(adoptReceipt);
+  const clean = await cli(['verify', '--target', target]);
+  assert.equal(clean.code, undefined, 'DIVERGED alone does not fail verify');
+  assert.match(clean.stdout, /^DIVERGED\t/m);
+  assert.match(clean.stdout, /Verification: OK/);
+
+  const undone = await cli(['rollback', '--target', target, '--receipt', adoptReceipt]);
+  assert.equal(undone.code, undefined, undone.stdout);
+  assert.equal((await cli(['verify', '--target', target])).code, 1, 'the adopt rollback restores the previous record');
+
+  const badPath = await cli(['verify', '--target', target, '--adopt', '../outside.md']);
+  assert.equal(badPath.code, 1);
+  assert.match(badPath.stdout, /--adopt takes a workspace-relative path/);
+});
+
+test('an overlapping edit prints the proposal path and the exact adopt and upgrade commands', async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-conflict-'));
+  const checkout = path.join(root, 'starter');
+  const target = path.join(root, 'target');
+  await mkdir(target);
+  t.after(() => rm(root, { recursive: true, force: true }));
+  await cp(sourceRoot, checkout, { recursive: true, filter: (entry) => !entry.includes(`${path.sep}.git`) && !entry.includes(`${path.sep}vendor${path.sep}`) && !entry.includes(`${path.sep}test${path.sep}`) });
+  const copyBin = path.join(checkout, 'bin', 'second-brain.mjs');
+  const run = async (args) => {
+    try {
+      return await execFile(process.execPath, [copyBin, ...args], { cwd: checkout });
+    } catch (error) {
+      return { stdout: error.stdout ?? '', code: error.code };
+    }
+  };
+  const planned = await run(['init', '--target', target]);
+  assert.equal((await run(['init', '--target', target, '--apply', digest(planned.stdout)])).code, undefined);
+  const destination = '03-Resources/Procedures/review.md';
+  const original = await readFile(path.join(target, ...destination.split('/')), 'utf8');
+  const firstLine = original.split('\n')[0];
+  await writeFile(path.join(target, ...destination.split('/')), original.replace(firstLine, `${firstLine} (local)`));
+  const manifestPath = path.join(checkout, 'template-manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  const changed = original.replace(firstLine, `${firstLine} (template)`);
+  await writeFile(path.join(checkout, 'template', ...destination.split('/')), changed);
+  manifest.entries.find((entry) => entry.destination === destination).sha256 = createHash('sha256').update(changed).digest('hex');
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+  const upgrade = await run(['upgrade', '--target', target]);
+  assert.match(upgrade.stdout, new RegExp(`^CONFLICT\\t${destination.replace(/\./g, '\\.')}\\tundo=none$`, 'm'));
+  assert.match(upgrade.stdout, new RegExp(`^Proposal: ${destination.replace(/\./g, '\\.')} has overlapping edits\\. A version with conflict markers is at \\.second-brain/merge/${destination.replace(/\./g, '\\.')}\\.proposed\\.$`, 'm'));
+  assert.match(upgrade.stdout, /^Blocked: nothing is applied while CONFLICT lines remain: 03-Resources\/Procedures\/review\.md$/m);
+  assert.ok(upgrade.stdout.includes(`verify --target ${target} --adopt ${destination}`) || upgrade.stdout.includes(`--adopt ${destination}`), upgrade.stdout);
+  const proposal = await readFile(path.join(target, '.second-brain', 'merge', ...`${destination}.proposed`.split('/')), 'utf8');
+  assert.match(proposal, /^<<<<<<< local /m);
+  const refused = await run(['upgrade', '--target', target, '--apply', digest(upgrade.stdout)]);
+  assert.equal(refused.code, 1);
+  assert.match(refused.stdout, /PLAN_CONFLICT/);
 });

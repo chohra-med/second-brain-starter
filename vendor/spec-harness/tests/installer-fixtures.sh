@@ -270,6 +270,20 @@ run_cli "$TMP/unknown.log" misspelled-command
 if [ "$LAST_RC" -ne 0 ]; then pass 'unknown command exits nonzero'; else fail 'unknown command exits nonzero'; fi
 assert_contains "$TMP/unknown.log" 'unknown command: misspelled-command' 'unknown command is identified'
 
+# A template that exists but cannot be read must abort before any target file is written.
+UNREADABLE_SRC="$TMP/unreadable-source"
+mkdir -p "$UNREADABLE_SRC"
+(cd "$HARNESS_DIR" && tar -cf - --exclude=.git .) | (cd "$UNREADABLE_SRC" && tar -xf -)
+UNREADABLE_TARGET="$TMP/unreadable-target"
+mkdir -p "$UNREADABLE_TARGET"
+chmod 000 "$UNREADABLE_SRC/templates/install/SPEC-HARNESS.md"
+(cd "$TMP" && "$UNREADABLE_SRC/bin/spec-harness" init "$UNREADABLE_TARGET" new UnreadableTemplate) >"$TMP/unreadable.log" 2>&1
+LAST_RC=$?
+chmod 644 "$UNREADABLE_SRC/templates/install/SPEC-HARNESS.md"
+assert_rc 1 'unreadable installer template aborts the install'
+assert_contains "$TMP/unreadable.log" 'templates/install/SPEC-HARNESS.md' 'unreadable template is named on stderr'
+if [ -z "$(find "$UNREADABLE_TARGET" -mindepth 1 -print -quit)" ]; then pass 'unreadable template writes no target files'; else fail 'unreadable template writes no target files'; fi
+
 # Shell syntax is part of the brief's required gate.
 for script in bin/spec-harness bin/sh-install.sh bin/sh-init.sh; do
   if bash -n "$HARNESS_DIR/$script"; then pass "bash -n $script"; else fail "bash -n $script"; fi

@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spec Harness, explained for humans</title>
+<meta name="description" content="How Spec Harness works, how to use it and why: an interactive ten-minute read.">
+<style>
+  /* Colorway C: dark first, off-black and off-white, one muted-teal accent used as a line. */
+  :root {
+    --paper: #0E0E10; --paper-2: #161618; --card: #161618;
+    --ink: #FAFAF8; --muted: rgba(250,250,248,0.74); --soft: #8A8A93;
+    --rule: #26262A; --rule-solid: #3A3A40;
+    --accent: #3BA9AE; --accent-tint: transparent;
+    --link: #3BA9AE; --store: rgba(250,250,248,0.04);
+    --serif: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --paper: #FAFAF8; --paper-2: #FFFFFF; --card: #FFFFFF;
+      --ink: #0E0E10; --muted: rgba(14,14,16,0.72); --soft: #6B6B73;
+      --rule: #E5E5E2; --rule-solid: #C9C9C4;
+      --accent: #1F6F73; --link: #1F6F73; --store: rgba(14,14,16,0.035);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.6; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+  header.hero { padding: 64px 0 32px; }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--soft); margin: 0 0 12px; }
+  h1 { font-family: var(--serif); font-weight: 750; font-size: clamp(2.3rem, 5.4vw, 3.8rem); line-height: 1.04; margin: 0 0 18px; letter-spacing: -0.025em; }
+  .cursor { color: var(--accent); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .cursor { animation: none; } }
+  h2 { font-family: var(--serif); font-weight: 700; font-size: clamp(1.6rem, 3.2vw, 2.2rem); line-height: 1.12; margin: 0 0 12px; letter-spacing: -0.02em; }
+  h3 { font-size: 1.05rem; margin: 0 0 6px; }
+  p { margin: 0 0 14px; }
+  .lede { font-size: 1.2rem; color: var(--muted); max-width: 46rem; }
+  section { padding: 44px 0; border-top: 1px solid var(--rule); }
+  .kicker { color: var(--muted); max-width: 44rem; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+  nav.toc a { font-family: var(--mono); font-size: 12.5px; color: var(--muted); text-decoration: none; border: 1px solid var(--rule-solid); border-radius: 4px; padding: 6px 10px; }
+  nav.toc a:hover, nav.toc a:focus-visible { color: var(--ink); border-color: var(--ink); outline: none; }
+  .grid { display: grid; gap: 16px; }
+  .grid > *, .steps > li, .cmd pre { min-width: 0; }
+  .swipe { display: none; font-family: var(--mono); font-size: 12px; color: var(--soft); margin: 0 0 4px; }
+  @media (max-width: 780px) { .swipe { display: block; } }
+  .g3 { grid-template-columns: 1.1fr 1fr 0.9fr; }
+  .g2 { grid-template-columns: 1.15fr 0.85fr; }
+  @media (max-width: 780px) { .g3, .g2 { grid-template-columns: 1fr; } }
+  .card { background: transparent; border: 0; border-top: 1px solid var(--rule); border-radius: 0; padding: 18px 0 4px; }
+  .card .eyebrow { margin-bottom: 8px; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); margin-right: 8px; vertical-align: middle; }
+  .dot.a { background: var(--accent); } .dot.l { background: var(--ink); } .dot.i { background: var(--ink); }
+  .get { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 40px; margin: 8px 0 8px; }
+  @media (max-width: 780px) { .get { grid-template-columns: 1fr; } }
+  .get > div { border-top: 1px solid var(--rule); padding: 16px 0 10px; }
+  .get h3 { font-size: 1rem; }
+  .get p { margin: 0; color: var(--muted); font-size: 15.5px; }
+  .when { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--soft); margin: 0 0 6px; }
+  .deeper { padding: 56px 0 8px; border-top: 1px solid var(--rule); }
+  .deeper h2 { margin-bottom: 6px; }
+  ul { margin: 0; padding-left: 20px; } li { margin-bottom: 6px; }
+  code, kbd { font-family: var(--mono); font-size: 0.86em; background: var(--store); border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; }
+  .seg { display: inline-flex; border: 1px solid var(--rule-solid); border-radius: 6px; overflow: hidden; margin: 8px 0 16px; flex-wrap: wrap; }
+  .seg button { font: 600 14px var(--sans); color: var(--muted); background: transparent; border: 0; border-right: 1px solid var(--rule-solid); padding: 10px 16px; cursor: pointer; }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .who { width: 100%; border-collapse: collapse; font-size: 15.5px; }
+  .who th, .who td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  .who th { font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); font-weight: 500; }
+  .who td.on { box-shadow: inset 2px 0 0 var(--accent); }
+  .diagram { overflow-x: auto; max-width: 100%; margin: 8px 0 4px; -webkit-overflow-scrolling: touch; }
+  .diagram svg { display: block; width: 100%; min-width: 760px; height: auto; }
+  .diagram.narrow svg { min-width: 560px; max-width: 800px; margin: 0 auto; }
+  svg text { font-family: var(--sans); }
+  svg .mono { font-family: var(--mono); }
+  .n-box { fill: var(--card); stroke: var(--ink); stroke-width: 1; }
+  .n-mask { fill: var(--paper); }
+  .n-user { fill: var(--store); stroke: var(--soft); }
+  .n-focal { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+  .n-name { fill: var(--ink); font-size: 14px; font-weight: 600; }
+  .n-sub { fill: var(--muted); font-size: 10px; }
+  .n-tag { fill: var(--soft); font-size: 9px; letter-spacing: 0.1em; }
+  .wire { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+  .wire.dash { stroke-dasharray: 5 4; }
+  .head { fill: var(--muted); }
+  .head.a { fill: var(--accent); }
+  .pick { cursor: pointer; }
+  .pick:focus-visible .n-box, .pick:focus-visible .n-user, .pick:focus-visible .n-focal, .pick:focus-visible .l-band { stroke: var(--accent); stroke-width: 2; }
+  .pick:focus { outline: none; }
+  .pick.sel .n-box, .pick.sel .n-user, .pick.sel .l-band { stroke-width: 2; }
+  .pick.sel .n-focal { stroke-width: 2.5; }
+  .pick.off { opacity: 0.22; }
+  .wire.off, .head.off { opacity: 0.18; }
+  .l-band { fill: var(--card); stroke: var(--rule-solid); stroke-width: 1; }
+  .l-band.focal { fill: var(--card); stroke: var(--accent); stroke-width: 1.5; }
+  .l-band.yours { fill: var(--store); stroke-dasharray: 4 3; }
+  .panel { background: transparent; border: 0; border-left: 2px solid var(--accent); border-radius: 0; padding: 6px 0 6px 20px; margin-top: 16px; min-height: 9.5em; }
+  .panel h3 { font-size: 1.15rem; }
+  .panel dl { display: grid; grid-template-columns: 9.5em 1fr; gap: 6px 14px; margin: 10px 0 0; font-size: 15.5px; }
+  .panel dt { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--soft); padding-top: 3px; }
+  .panel dd { margin: 0; }
+  @media (max-width: 560px) { .panel dl { grid-template-columns: 1fr; } }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding: 0 0 18px 44px; }
+  .steps > li::before { content: counter(s, decimal-leading-zero); position: absolute; left: 0; top: 2px; font: 500 13px var(--mono); color: var(--accent); letter-spacing: 0.06em; }
+  .cmd { display: flex; align-items: stretch; gap: 0; margin: 8px 0 6px; border: 1px solid var(--rule-solid); border-radius: 6px; overflow: hidden; background: var(--card); }
+  .cmd pre { margin: 0; padding: 11px 14px; font: 13.5px/1.5 var(--mono); overflow-x: auto; flex: 1; white-space: pre; }
+  .cmd button { font: 600 12px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); background: var(--store); border: 0; border-left: 1px solid var(--rule-solid); padding: 0 14px; cursor: pointer; min-width: 74px; }
+  .cmd button:hover, .cmd button:focus-visible { color: var(--ink); outline: none; }
+  .aside { font-family: var(--sans); font-style: normal; font-size: 1.08rem; color: var(--muted); border-left: 2px solid var(--accent); padding: 2px 0 2px 16px; margin: 18px 0; max-width: 42rem; }
+  details { border-bottom: 1px solid var(--rule); padding: 10px 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details p { margin: 8px 0 4px; color: var(--muted); }
+  footer { padding: 36px 0 60px; border-top: 1px solid var(--rule); font-family: var(--mono); font-size: 12.5px; color: var(--soft); }
+  footer a { color: var(--link); }
+  .note { font-size: 14.5px; color: var(--soft); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <p class="eyebrow">Spec Harness · read me first</p>
+  <h1>Let the AI do the typing.<br>Keep the judgment yours<span class="cursor" aria-hidden="true">_</span></h1>
+  <p class="lede">Spec Harness is a small set of files you add to a project. They give an AI coding agent a memory of your codebase, rules taken from your own source, and a fixed way of working: one agent writes, a different one checks, and nothing ships without you.</p>
+  <nav class="toc" aria-label="On this page">
+    <a href="#quick">Quick guide · 2 min</a>
+    <a href="#middle">The idea</a>
+    <a href="#flow">One ticket, step by step</a>
+    <a href="#tiers">Which model does what</a>
+    <a href="#lands">What lands in your repo</a>
+    <a href="#learn">How it gets better</a>
+    <a href="#why">Evidence and limits</a>
+    <a href="#words">Words</a>
+  </nav>
+</header>
+
+<section id="quick">
+  <p class="eyebrow">Quick guide · two minutes</p>
+  <h2>What you get</h2>
+  <p class="kicker">Nothing here is a promise about the future. Each item is a file or a result you can open.</p>
+  <div class="get">
+    <div><p class="when">After setup</p><h3>Rules written from your own code</h3><p>A <code>RULES.md</code> where every rule names the file and line it came from, labelled as observed or as a recommendation. You review it like a pull request.</p></div>
+    <div><p class="when">After setup</p><h3>A memory the agent reads first</h3><p>A short description of the project, its architecture, its stack and what is in progress, plus an inventory of your packages. A new session no longer starts cold.</p></div>
+    <div><p class="when">After setup</p><h3>A skill for each technology you use</h3><p>For example one for React Native or one for your API layer: how this project uses it, with the lines that show it.</p></div>
+    <div><p class="when">On every ticket</p><h3>A goal written before the code</h3><p>A short list of true-or-false checks, one to five on a small fix. This is what "done" means, in writing, before anyone types.</p></div>
+    <div><p class="when">On every ticket</p><h3>A change with a test that failed first</h3><p>Written by one agent on a cheap, fast model.</p></div>
+    <div><p class="when">On every ticket</p><h3>A verdict from someone else</h3><p><code>RESULT: PASS</code> or <code>FAIL</code>, with evidence for each check, from a separate agent that never saw the code being written.</p></div>
+    <div><p class="when">Over time</p><h3>Fewer repeated mistakes</h3><p>A correction becomes a proposed rule. You say yes or no. Approved rules are read on every later ticket.</p></div>
+    <div><p class="when">Always</p><h3>The last word</h3><p>Nothing is committed, pushed or merged without you saying so. Installing never edits your application code.</p></div>
+  </div>
+
+  <h2 style="margin-top:40px">Start in five steps</h2>
+  <p class="kicker">About half an hour on a real project, most of it reading what step three wrote.</p>
+  <ol class="steps">
+    <li>
+      <h3>Start on a branch</h3>
+      <p>There is no uninstall command. The branch is your undo.</p>
+      <div class="cmd"><pre>git switch -c chore/spec-harness</pre><button type="button" data-copy>Copy</button></div>
+    </li>
+    <li>
+      <h3>Stage the files</h3>
+      <p>From the root of your project. It copies files and reports <code>PENDING</code>, which is correct: nothing has read your code yet. Your own <code>CLAUDE.md</code> or <code>AGENTS.md</code> is never overwritten.</p>
+      <div class="cmd"><pre>npx -y github:chohra-med/spec-harness-oss init . integrate</pre><button type="button" data-copy>Copy</button></div>
+    </li>
+    <li>
+      <h3>Let it read your code</h3>
+      <p>Open the project in Claude Code, on your strongest model, and type:</p>
+      <div class="cmd"><pre>/sdd init</pre><button type="button" data-copy>Copy</button></div>
+    </li>
+    <li>
+      <h3>Review what it wrote, then commit</h3>
+      <p>Read the generated <code>RULES.md</code> the way you would read a pull request from a new colleague. Is each rule true of this codebase? Does the cited line show it? Delete what is wrong. If you changed anything, ask the agent to refresh, because the generated files carry hashes of each other. Then commit.</p>
+    </li>
+    <li>
+      <h3>Give it a first small ticket</h3>
+      <p>Paste the full text of a real, low-risk fix. A title is not a ticket.</p>
+      <div class="cmd"><pre>/sdd Free shipping should start at exactly 50.00, not above it. Add a test for an order of exactly 50.00.</pre><button type="button" data-copy>Copy</button></div>
+      <p class="note">You get one file describing the goal, a change with a test that failed first, and a verdict from a separate agent. You commit it yourself.</p>
+    </li>
+  </ol>
+  <p class="note">No <code>npx</code>, a team, or a large app? The full guide is <code>docs/GETTING-STARTED.md</code> in the Spec Harness repository, with a <code>git clone</code> route and how to undo everything.</p>
+</section>
+
+<div class="deeper">
+  <p class="eyebrow">The longer version · about ten minutes</p>
+  <h2>Now, how it actually works</h2>
+  <p class="kicker">You can stop here and start. Everything below explains why the steps above are shaped the way they are. The diagrams are clickable.</p>
+</div>
+
+<section id="middle">
+  <p class="eyebrow">01 / The idea</p>
+  <h2>There are two popular ways to build with AI. This is the third.</h2>
+  <p class="kicker">Pick a style and see who does what. The teal cells are where the judgment sits.</p>
+  <div class="seg" role="group" aria-label="Working style">
+    <button type="button" data-style="eng" aria-pressed="false">Engineer-led</button>
+    <button type="button" data-style="sh" aria-pressed="true">Spec Harness</button>
+    <button type="button" data-style="ai" aria-pressed="false">AI-led</button>
+  </div>
+  <div class="card">
+    <table class="who" id="who">
+      <thead><tr><th>Step</th><th>Who does it</th><th>What that costs you</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <p class="aside" id="who-aside"></p>
+</section>
+
+<section id="problem">
+  <p class="eyebrow">02 / The problem</p>
+  <h2>Three things go wrong when an agent works alone</h2>
+  <div class="grid g3">
+    <div class="card">
+      <p class="eyebrow">Every session</p>
+      <h3><span class="dot i"></span>It starts cold</h3>
+      <p>A new chat knows nothing about your project. It guesses file names, invents helpers that do not exist, and ignores conventions it never saw.</p>
+      <p class="note"><b>The fix:</b> a memory bank and an inventory of your code that every role reads first.</p>
+    </div>
+    <div class="card">
+      <p class="eyebrow">Every change</p>
+      <h3><span class="dot a"></span>It marks its own homework</h3>
+      <p>The agent that wrote the code is the one telling you it works. It has every reason to believe itself, and it does.</p>
+      <p class="note"><b>The fix:</b> a separate agent, with a fresh context, checks the work against a goal written before the code.</p>
+    </div>
+    <div class="card">
+      <p class="eyebrow">Every week</p>
+      <h3><span class="dot"></span>It repeats the mistake</h3>
+      <p>You correct it today. Next Tuesday it does the same thing, because nothing kept the correction.</p>
+      <p class="note"><b>The fix:</b> a learner that turns a correction into a rule, after you approve it.</p>
+    </div>
+  </div>
+</section>
+
+<section id="flow">
+  <p class="eyebrow">03 / The workflow</p>
+  <h2>One ticket, step by step</h2>
+  <p class="kicker">Click any step to see what happens there. Then switch to a small fix and watch most of the steps drop away.</p>
+  <div class="seg" role="group" aria-label="Ticket size">
+    <button type="button" data-size="full" aria-pressed="true">Larger work</button>
+    <button type="button" data-size="micro" aria-pressed="false">Small fix</button>
+  </div>
+  <p class="swipe">Swipe the diagram sideways →</p>
+  <div class="diagram">
+    <svg viewBox="0 0 984 184" role="img" aria-labelledby="flow-title flow-desc" id="flow-svg">
+      <title id="flow-title">The path of one ticket through Spec Harness</title>
+      <desc id="flow-desc">Eight steps in order: you write a ticket, a planner plans, an implementer writes the change, a tester runs it, a verifier checks each goal, a reviewer reads the diff, you decide on the merge, and a learner captures what should become a rule. A small fix uses only the ticket, implementer, verifier and learner steps.</desc>
+      <g id="flow-wires"></g>
+      <g id="flow-nodes"></g>
+    </svg>
+  </div>
+  <div class="panel" id="flow-panel" aria-live="polite"></div>
+</section>
+
+<section id="tiers">
+  <p class="eyebrow">04 / Models</p>
+  <h2>Plan with the best model. Build with a cheap one. Review with what you can afford.</h2>
+  <p class="kicker">Roles ask for a <b>tier</b>, never a model name. One table in the project maps tiers to models, so changing provider means editing one column. Move the budget and see what changes.</p>
+  <div class="seg" role="group" aria-label="Token budget">
+    <button type="button" data-budget="high" aria-pressed="true">Plenty of budget</button>
+    <button type="button" data-budget="low" aria-pressed="false">Budget is low</button>
+  </div>
+  <div class="grid g3" id="tier-cards"></div>
+  <p class="aside">A plan carries the detail, so the model that executes it can be cheaper. If a model is not available, the run uses the nearest tier and says so. It does not stop.</p>
+</section>
+
+<section id="lands">
+  <p class="eyebrow">05 / In your repository</p>
+  <h2>What lands in your project</h2>
+  <p class="kicker">Installing copies files. It never edits your application code and adds no dependency. Click a layer.</p>
+  <div class="diagram narrow">
+    <svg viewBox="0 0 800 392" role="img" aria-labelledby="lands-title lands-desc" id="lands-svg">
+      <title id="lands-title">The layers Spec Harness adds on top of your code</title>
+      <desc id="lands-desc">Four layers stacked above your own code: roles, procedures, rules and memory. Your code sits at the bottom and is not changed by installing.</desc>
+      <text class="mono n-tag" x="20" y="28">ADDED BY THE HARNESS  ↑</text>
+      <g id="lands-bands"></g>
+    </svg>
+  </div>
+  <div class="panel" id="lands-panel" aria-live="polite"></div>
+</section>
+
+<section id="learn">
+  <p class="eyebrow">06 / The loop</p>
+  <h2>How it gets better instead of repeating itself</h2>
+  <p class="kicker">Every pass through this loop leaves the project's rules a little sharper. The one step that is always yours is the teal one.</p>
+  <div class="diagram narrow">
+    <svg viewBox="0 0 800 600" role="img" aria-labelledby="loop-title loop-desc">
+      <title id="loop-title">The learning loop</title>
+      <desc id="loop-desc">A cycle of six steps around the project memory: a ticket runs, a gate fails or you correct the work, the learner captures it and proposes one change, you approve, the rule or skill is sharpened, and every role reads it on the next ticket.</desc>
+      <circle cx="400" cy="300" r="200" class="wire"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(500,127) rotate(30)"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(600,300) rotate(90)"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(500,473) rotate(150)"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(300,473) rotate(210)"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(200,300) rotate(270)"/>
+      <path class="head" d="M-6,-5 L6,0 L-6,5 Z" transform="translate(300,127) rotate(330)"/>
+      <line x1="400" y1="264" x2="400" y2="132" class="wire dash"/>
+      <path class="head" d="M-5,6 L0,-6 L5,6 Z" transform="translate(400,134)"/>
+      <line x1="400" y1="472" x2="400" y2="340" class="wire dash"/>
+      <path class="head" d="M-5,6 L0,-6 L5,6 Z" transform="translate(400,342)"/>
+      <rect class="n-mask" x="416" y="188" width="52" height="16" rx="2"/>
+      <text class="mono n-tag" x="442" y="200" text-anchor="middle">READ</text>
+      <rect class="n-mask" x="416" y="396" width="52" height="16" rx="2"/>
+      <text class="mono n-tag" x="442" y="408" text-anchor="middle">WRITE</text>
+      <rect class="n-mask" x="312" y="264" width="176" height="72" rx="6"/>
+      <rect x="312" y="264" width="176" height="72" rx="6" fill="var(--store)" stroke="var(--muted)"/>
+      <text class="n-name" x="400" y="296" text-anchor="middle">Project memory</text>
+      <text class="n-sub mono" x="400" y="316" text-anchor="middle">rules · skills · decisions</text>
+      <g>
+        <rect class="n-mask" x="320" y="72" width="160" height="56" rx="6"/><rect class="n-box" x="320" y="72" width="160" height="56" rx="6"/>
+        <text class="n-name" x="400" y="96" text-anchor="middle">A ticket runs</text><text class="n-sub" x="400" y="114" text-anchor="middle">roles read the rules</text>
+        <rect class="n-mask" x="492" y="172" width="160" height="56" rx="6"/><rect class="n-box" x="492" y="172" width="160" height="56" rx="6"/>
+        <text class="n-name" x="572" y="196" text-anchor="middle">Something goes wrong</text><text class="n-sub" x="572" y="214" text-anchor="middle">a gate fails, or you correct it</text>
+        <rect class="n-mask" x="492" y="372" width="160" height="56" rx="6"/><rect class="n-box" x="492" y="372" width="160" height="56" rx="6"/>
+        <text class="n-name" x="572" y="396" text-anchor="middle">Learner proposes</text><text class="n-sub" x="572" y="414" text-anchor="middle">one change, one owner</text>
+        <rect class="n-mask" x="320" y="472" width="160" height="56" rx="6"/><rect class="n-focal" x="320" y="472" width="160" height="56" rx="6"/>
+        <text class="n-name" x="400" y="496" text-anchor="middle">You approve</text><text class="n-sub" x="400" y="514" text-anchor="middle">or say no; nothing is automatic</text>
+        <rect class="n-mask" x="148" y="372" width="160" height="56" rx="6"/><rect class="n-box" x="148" y="372" width="160" height="56" rx="6"/>
+        <text class="n-name" x="228" y="396" text-anchor="middle">Rule is sharpened</text><text class="n-sub" x="228" y="414" text-anchor="middle">dated, with its cause</text>
+        <rect class="n-mask" x="148" y="172" width="160" height="56" rx="6"/><rect class="n-box" x="148" y="172" width="160" height="56" rx="6"/>
+        <text class="n-name" x="228" y="196" text-anchor="middle">Next ticket is smarter</text><text class="n-sub" x="228" y="214" text-anchor="middle">same mistake is now a rule</text>
+      </g>
+    </svg>
+  </div>
+  <div class="grid g2">
+    <div class="card">
+      <p class="eyebrow">What the learner may do</p>
+      <ul>
+        <li>Record a correction or a decision in the project memory.</li>
+        <li>Notice when the same cause shows up twice.</li>
+        <li>Propose one change to one rule or one project skill, with the evidence.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="eyebrow">What it may not do</p>
+      <ul>
+        <li>Edit your application code.</li>
+        <li>Apply a rule you have not approved.</li>
+        <li>Turn a one-off into policy.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="why">
+  <p class="eyebrow">07 / Evidence and limits</p>
+  <h2>Why trust it, and where it is weak</h2>
+  <div class="grid g2">
+    <div class="card">
+      <p class="eyebrow">Measured on real runs</p>
+      <ul>
+        <li><b>The verifier does not take the writer's word.</b> On a one-character fix, the checking agent put the old code back in a scratch copy, watched the new test fail, and only then said PASS.</li>
+        <li><b>Independent reviewers agree on real defects.</b> On one tooling change, three separate agents on three different models each stopped the work on the same unformatted line the writer had not been able to check.</li>
+        <li><b>The learner asks first.</b> After a ticket it wrote down the decision, proposed changes with before and after text, and applied none of them without a person present.</li>
+        <li><b>Agents can follow it cold.</b> An agent given only the repository's <code>AGENTS.md</code> found uncommitted work in a project, stopped, and changed nothing.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="eyebrow">Honest limits</p>
+      <ul>
+        <li><b>Setup is thorough, not light.</b> On a tiny repository it writes more harness than you have code. It pays off on a real codebase.</li>
+        <li><b>A green check is not a quality verdict.</b> The structural check proves hashes and citations line up. Only a reviewer finds a wrong rule.</li>
+        <li><b>Editing a generated rule costs a refresh.</b> Batch your review edits.</li>
+        <li><b>It needs a capable agent.</b> The shell only copies files; the thinking is done by the model you bring.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="words">
+  <p class="eyebrow">08 / Words</p>
+  <h2>The vocabulary, in plain terms</h2>
+  <details><summary>Ticket</summary><p>The full text of one piece of work. The harness refuses a bare title, because a title is where invented requirements come from.</p></details>
+  <details><summary>Goal</summary><p>A short list of true-or-false checks written before any code. The verifier checks these, line by line. "Tests pass" is necessary, not enough.</p></details>
+  <details><summary>Role</summary><p>One agent file with one job and a limited set of tools: planner, implementer, tester, verifier, reviewer, merger, learner.</p></details>
+  <details><summary>Fresh context</summary><p>A new agent that has not seen the conversation in which the code was written. It cannot be talked into agreeing by a history it never read.</p></details>
+  <details><summary>Tier</summary><p>The class of model a role asks for: strong, fast or review. The mapping to real models lives in one table per project.</p></details>
+  <details><summary>Small fix, also called MICRO</summary><p>One bounded, reversible, local change. It runs as one file, one implementer and one verifier. If it grows or touches shared or sensitive code, it is promoted to the full route.</p></details>
+  <details><summary>PENDING and READY</summary><p>PENDING means files are in place and a model or a reviewer still has work to do. READY means the structural check passed. Neither means "correct"; that is what review is for.</p></details>
+  <details><summary>Memory bank</summary><p>A handful of markdown files under <code>.memory/</code>: what the project is, how it is built, what is in progress, which decisions were made and why.</p></details>
+</section>
+
+<footer>
+  <p>Spec Harness · MIT licence · by Malik Chohra · <a href="https://github.com/chohra-med/spec-harness-oss">github.com/chohra-med/spec-harness-oss</a></p>
+  <p>This page is one file with no network requests. You can delete it from your project once you have read it.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text) {
+    var n = document.createElementNS(NS, tag), k;
+    for (k in attrs) { if (Object.prototype.hasOwnProperty.call(attrs, k)) n.setAttribute(k, attrs[k]); }
+    if (text != null) n.textContent = text;
+    return n;
+  }
+  function press(group, btn) {
+    Array.prototype.forEach.call(group.querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+    });
+  }
+  function onPick(node, fn) {
+    node.addEventListener("click", fn);
+    node.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fn(); }
+    });
+  }
+
+  /* 1. Who does what */
+  var STYLES = {
+    eng: { aside: "You stay in control and you stay the bottleneck. The agent is a fast pair of hands that forgets everything between sessions.",
+      rows: [["Decide what done means", "You, in your head", "It is never written down, so nothing can check it", false],
+             ["Write the code", "You, with AI suggestions", "Your time, line by line", true],
+             ["Check it works", "You", "You review your own work", true],
+             ["Remember the lesson", "You", "It lives in your memory only", false]] },
+    sh:  { aside: "You write what done means and you approve what ships. Everything between those two points is delegated, and checked by something that did not write it.",
+      rows: [["Decide what done means", "You and a planner, in writing", "A few minutes per ticket", true],
+             ["Write the code", "An implementer agent", "Almost nothing", false],
+             ["Check it works", "A separate verifier agent", "Tokens, not your attention", false],
+             ["Approve and merge", "You", "One decision, on evidence", true],
+             ["Remember the lesson", "A learner, after you approve", "One yes or no", false]] },
+    ai:  { aside: "Fast until it is wrong. The same agent defines the task, does it and declares it finished, so its mistakes arrive looking exactly like its successes.",
+      rows: [["Decide what done means", "The agent", "It optimises for what it guessed", true],
+             ["Write the code", "The agent", "Almost nothing", false],
+             ["Check it works", "The same agent", "It agrees with itself", true],
+             ["Remember the lesson", "Nobody", "The mistake comes back", false]] }
+  };
+  var whoBody = document.querySelector("#who tbody"), whoAside = document.getElementById("who-aside");
+  function showStyle(key) {
+    var s = STYLES[key]; whoBody.textContent = "";
+    s.rows.forEach(function (r) {
+      var tr = document.createElement("tr");
+      [r[0], r[1], r[2]].forEach(function (c, i) {
+        var td = document.createElement("td"); td.textContent = c;
+        if (i === 1 && r[3]) td.className = "on";
+        tr.appendChild(td);
+      });
+      whoBody.appendChild(tr);
+    });
+    whoAside.textContent = s.aside;
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-style]"), function (b) {
+    b.addEventListener("click", function () { press(b.parentNode, b); showStyle(b.getAttribute("data-style")); });
+  });
+  showStyle("sh");
+
+  /* 3. The flow */
+  var STAGES = [
+    { k: "ticket", name: "Ticket", sub: "you", cls: "n-user", micro: true, title: "You write the ticket",
+      does: "You paste the full text of the work. The harness copies it exactly and refuses a bare title.",
+      tier: "You", touch: "Nothing yet", out: "The exact request, kept as written" },
+    { k: "plan", name: "Plan", sub: "strong", cls: "n-box", micro: false, title: "The planner turns it into a goal and tasks",
+      does: "Reads your rules and the relevant source, writes a goal as true-or-false checks, then a plan and ordered tasks. It decides nothing about whether the work passed.",
+      tier: "Strong: your best model, because the plan carries the detail", touch: "Writes the plan files only", out: "Goal, plan and tasks under specs/<feature>/" },
+    { k: "impl", name: "Implement", sub: "fast", cls: "n-box", micro: true, title: "The implementer writes the change",
+      does: "Takes one task, writes a test that fails first, then the smallest change that makes it pass. It cannot mark its own work as accepted.",
+      tier: "Fast: a cheap model is enough when the plan is detailed", touch: "Reads and writes code and tests", out: "A diff, plus what it ran and saw" },
+    { k: "test", name: "Test", sub: "fast", cls: "n-box", micro: false, title: "A tester runs it and tries to break it",
+      does: "A new agent runs the real test commands and adversarial cases. It reports what it observed and fixes nothing.",
+      tier: "Fast", touch: "Runs commands, reads files", out: "Commands, outputs, pass or fail" },
+    { k: "verify", name: "Verify", sub: "review", cls: "n-focal", micro: true, title: "A verifier checks every line of the goal",
+      does: "A different new agent checks each goal line with a real command or by reading the real file. This is the one gate that exists on every route, including the smallest fix.",
+      tier: "Review: strong when the budget allows, otherwise fast", touch: "Runs commands, reads files. Cannot edit.", out: "RESULT: PASS or FAIL, with evidence per line" },
+    { k: "review", name: "Review", sub: "review", cls: "n-box", micro: false, title: "A reviewer reads the diff against your rules",
+      does: "A third new agent reads the change for scope, your project rules and anything the tests would not catch.",
+      tier: "Review", touch: "Reads the diff and the rules", out: "Findings, ranked" },
+    { k: "merge", name: "Merge", sub: "you decide", cls: "n-user", micro: false, title: "You decide whether it ships",
+      does: "Green gates do not grant permission. Commit, push and merge each need your explicit word, every time.",
+      tier: "You", touch: "Your repository", out: "A merge, or report-and-wait" },
+    { k: "learn", name: "Learn", sub: "review", cls: "n-box", micro: true, title: "The learner captures what should become a rule",
+      does: "Runs when a gate failed, when you corrected the work, or when a decision was made that later tickets should follow. On a clean ticket it does not run.",
+      tier: "Review", touch: "Memory, rules and project skills. Never application code.", out: "Proposals waiting for your yes" }
+  ];
+  var nodesG = document.getElementById("flow-nodes"), wiresG = document.getElementById("flow-wires");
+  var flowPanel = document.getElementById("flow-panel"), flowSize = "full", flowSel = "verify", flowEls = {};
+  STAGES.forEach(function (s, i) {
+    var x = 24 + i * 120, g = el("g", { "class": "pick", tabindex: "0", role: "button", "aria-label": s.title });
+    g.appendChild(el("rect", { "class": "n-mask", x: x, y: 56, width: 96, height: 64, rx: 6 }));
+    g.appendChild(el("rect", { "class": s.cls, x: x, y: 56, width: 96, height: 64, rx: 6 }));
+    g.appendChild(el("text", { "class": "mono n-tag", x: x + 48, y: 76, "text-anchor": "middle" }, "0" + (i + 1)));
+    g.appendChild(el("text", { "class": "n-name", x: x + 48, y: 100, "text-anchor": "middle" }, s.name));
+    g.appendChild(el("text", { "class": "mono n-sub", x: x + 48, y: 144, "text-anchor": "middle" }, s.sub));
+    onPick(g, function () { flowSel = s.k; drawFlow(); });
+    nodesG.appendChild(g); flowEls[s.k] = { g: g };
+    if (i < STAGES.length - 1) {
+      var line = el("line", { "class": "wire", x1: x + 96, y1: 88, x2: x + 114, y2: 88 });
+      var head = el("path", { "class": "head", d: "M-6,-5 L6,0 L-6,5 Z", transform: "translate(" + (x + 114) + ",88)" });
+      wiresG.appendChild(line); wiresG.appendChild(head);
+      flowEls[s.k].wire = [line, head];
+    }
+  });
+  function row(dl, k, v) {
+    var dt = document.createElement("dt"), dd = document.createElement("dd");
+    dt.textContent = k; dd.textContent = v; dl.appendChild(dt); dl.appendChild(dd);
+  }
+  function drawFlow() {
+    var micro = flowSize === "micro";
+    STAGES.forEach(function (s) {
+      var off = micro && !s.micro, e = flowEls[s.k];
+      e.g.classList.toggle("off", off); e.g.classList.toggle("sel", s.k === flowSel);
+      if (e.wire) e.wire.forEach(function (w) { w.classList.toggle("off", micro); });
+    });
+    var s = STAGES.filter(function (x) { return x.k === flowSel; })[0];
+    flowPanel.textContent = "";
+    var h = document.createElement("h3"); h.textContent = s.title; flowPanel.appendChild(h);
+    var p = document.createElement("p"); p.textContent = s.does; flowPanel.appendChild(p);
+    if (micro && !s.micro) {
+      var n = document.createElement("p"); n.className = "note";
+      n.textContent = "A small fix skips this step. The verifier becomes the only gate, so it also runs the tests and reads the diff.";
+      flowPanel.appendChild(n);
+    }
+    var dl = document.createElement("dl");
+    row(dl, "Model tier", s.tier); row(dl, "May touch", s.touch); row(dl, "Hands on", s.out);
+    flowPanel.appendChild(dl);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-size]"), function (b) {
+    b.addEventListener("click", function () {
+      press(b.parentNode, b); flowSize = b.getAttribute("data-size");
+      var cur = STAGES.filter(function (x) { return x.k === flowSel; })[0];
+      if (flowSize === "micro" && !cur.micro) flowSel = "verify";
+      drawFlow();
+    });
+  });
+  drawFlow();
+
+  /* 4. Tiers */
+  var tierBox = document.getElementById("tier-cards");
+  function drawTiers(budget) {
+    var low = budget === "low";
+    var T = [
+      { dot: "i", name: "Strong", who: "planner, merger", model: "Your provider's strongest model", why: "Planning is where a wrong decision is most expensive. One good plan lets everything after it be cheaper." },
+      { dot: "", name: "Fast", who: "implementer, tester, researcher, documenter", model: "A cheap, fast model", why: "It executes a detailed plan in a fresh context. It does not need to be brilliant, it needs to be exact." },
+      { dot: "a", name: "Review", who: "verifier, reviewer, learner", model: low ? "The fast model, because the budget is low" : "The strong model, because the budget allows it",
+        why: low ? "Review drops a tier to save tokens. What never drops: the reviewer is a different agent from the writer." : "A stronger reviewer catches more. If tokens run short, this is the tier that gives way first." }
+    ];
+    tierBox.textContent = "";
+    T.forEach(function (t) {
+      var c = document.createElement("div"); c.className = "card";
+      var e = document.createElement("p"); e.className = "eyebrow"; e.textContent = t.who; c.appendChild(e);
+      var h = document.createElement("h3"); var d = document.createElement("span"); d.className = "dot " + t.dot; h.appendChild(d);
+      h.appendChild(document.createTextNode(t.name + " tier")); c.appendChild(h);
+      var m = document.createElement("p"); var b = document.createElement("b"); b.textContent = t.model; m.appendChild(b); c.appendChild(m);
+      var w = document.createElement("p"); w.className = "note"; w.textContent = t.why; c.appendChild(w);
+      tierBox.appendChild(c);
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-budget]"), function (b) {
+    b.addEventListener("click", function () { press(b.parentNode, b); drawTiers(b.getAttribute("data-budget")); });
+  });
+  drawTiers("high");
+
+  /* 5. Layers */
+  var LAYERS = [
+    { k: "roles", idx: "L4", name: "Roles", path: ".claude/agents/sdd-*.md", cls: "", title: "Roles: who does what, with which tools",
+      text: "Twelve small files, one per job. Each lists the tools it may use. The core ones (planner, implementer, tester, verifier, reviewer) also carry a block of rules taken from your project. The verifier, for example, can run commands and read files but cannot edit.", read: "The agent, when it is dispatched in that role", yours: "Yes, after setup. They are plain markdown." },
+    { k: "proc", idx: "L3", name: "Procedures", path: ".claude/commands/sdd.md", cls: "", title: "Procedures: the workflow itself",
+      text: "The steps for setup and for running a ticket, the three ticket sizes, the model tiers table, and what each gate must record. This is what /sdd runs.", read: "The orchestrating agent, at the start of every run", yours: "Only the model tiers, through your own AGENTS.md" },
+    { k: "rules", idx: "L2", name: "Rules", path: "RULES.md · ai_rules/", cls: "focal", title: "Rules: what is true of this codebase",
+      text: "Written by setup from your own source. Each rule names the file and line it came from and is labelled as observed or as a recommendation. This is the layer you review, and the one the learner sharpens.", read: "Every role, before it acts", yours: "Yes. It is your policy. Delete what is wrong." },
+    { k: "mem", idx: "L1", name: "Memory", path: ".memory/ · ai_rules/project_inventory.json", cls: "", title: "Memory: what the project is and what happened",
+      text: "A short description, the architecture, the stack, what is in progress, decisions with their reasons, and an inventory of packages and sampled source files. It is why a new session does not start cold.", read: "Every role, at startup", yours: "Yes" },
+    { k: "code", idx: "YOU", name: "Your code", path: "src/ · tests · package.json", cls: "yours", title: "Your code: untouched by installing",
+      text: "Installing and setup do not edit application source, do not install packages and do not change your CI. If you already have a CLAUDE.md or AGENTS.md, it is kept byte for byte and you choose whether to add the harness to it.", read: "Setup reads a sample of it to write the rules", yours: "Always" }
+  ];
+  var bandsG = document.getElementById("lands-bands"), landsPanel = document.getElementById("lands-panel"), landsSel = "rules", landEls = {};
+  LAYERS.forEach(function (L, i) {
+    var y = 44 + i * 68, g = el("g", { "class": "pick", tabindex: "0", role: "button", "aria-label": L.title });
+    g.appendChild(el("rect", { "class": "n-mask", x: 20, y: y, width: 760, height: 60, rx: 6 }));
+    g.appendChild(el("rect", { "class": "l-band " + L.cls, x: 20, y: y, width: 760, height: 60, rx: 6 }));
+    g.appendChild(el("text", { "class": "mono n-tag", x: 40, y: y + 36 }, L.idx));
+    g.appendChild(el("text", { "class": "n-name", x: 96, y: y + 36, style: "font-size:16px" }, L.name));
+    g.appendChild(el("text", { "class": "mono n-sub", x: 760, y: y + 36, "text-anchor": "end", style: "font-size:11px" }, L.path));
+    onPick(g, function () { landsSel = L.k; drawLands(); });
+    bandsG.appendChild(g); landEls[L.k] = g;
+  });
+  function drawLands() {
+    var L = LAYERS.filter(function (x) { return x.k === landsSel; })[0];
+    LAYERS.forEach(function (x) { landEls[x.k].classList.toggle("sel", x.k === landsSel); });
+    landsPanel.textContent = "";
+    var h = document.createElement("h3"); h.textContent = L.title; landsPanel.appendChild(h);
+    var p = document.createElement("p"); p.textContent = L.text; landsPanel.appendChild(p);
+    var dl = document.createElement("dl");
+    row(dl, "Where", L.path); row(dl, "Read by", L.read); row(dl, "Yours to edit", L.yours);
+    landsPanel.appendChild(dl);
+  }
+  drawLands();
+
+  /* 7. Copy buttons */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-copy]"), function (b) {
+    b.addEventListener("click", function () {
+      var text = b.parentNode.querySelector("pre").textContent;
+      function done(ok) { b.textContent = ok ? "Copied" : "Select"; setTimeout(function () { b.textContent = "Copy"; }, 1400); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        var r = document.createRange(); r.selectNodeContents(b.parentNode.querySelector("pre"));
+        var s = window.getSelection(); s.removeAllRanges(); s.addRange(r); done(false);
+      }
+    });
+  });
+})();
+</script>
+<noscript><div class="wrap"><p class="note">The diagrams on this page are interactive and need JavaScript. Everything they explain is also written in docs/GETTING-STARTED.md in the Spec Harness repository.</p></div></noscript>
+</body>
+</html>

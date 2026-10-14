@@ -7,8 +7,8 @@ project, derive rules or skills, bind roles, or create feature-specific acceptan
 - Claude: `/sdd init` or `/sdd <ticket text or connected reference>` → `.claude/commands/sdd.md`.
 - Codex: use `.agents/skills/sdd/SKILL.md` when project skills are available, or follow the same
   procedure manually. File presence does not prove native discovery or delegation.
-- Shell: `spec-harness sdd ...` prints the shared procedure and exits 2/PENDING; no model stage or
-  independent gate ran.
+- Shell: `spec-harness sdd ...` (with no install, `npx -y github:chohra-med/spec-harness-oss sdd ...`)
+  prints the shared procedure and exits 2/PENDING; no model stage or independent gate ran.
 
 ## Next work
 - Read this project's existing policies and preserve their authority.

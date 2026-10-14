@@ -140,7 +140,7 @@ render_template() {
 plan_template() {
   local rel=$1 template=$2 token=$3 replacement=$4 index=${#PLAN_RELS[@]} expected
   expected="$PLAN_DIR/$index"
-  render_template "$template" "$token" "$replacement" >"$expected"
+  render_template "$template" "$token" "$replacement" >"$expected" || { echo "cannot read installer source: $SYS_DIR/$template; no target files were written." >&2; exit 1; }
   chmod 644 "$expected"
   PLAN_RELS+=("$rel")
   PLAN_SRCS+=("$expected")
@@ -153,6 +153,7 @@ plan_template constitution.md templates/constitution.md '{{PROJECT_NAME}}' "$NAM
 plan_template RULES.md templates/RULES.md '{{DIR}}' "$NAME (repo root - base rules)"
 plan_copy goal.md "$SYS_DIR/templates/goal.template.md"
 plan_copy loop.sh "$SYS_DIR/bin/loop.sh"
+plan_copy learning_human.html "$SYS_DIR/learning_human.html"
 plan_copy workflows/README.md "$SYS_DIR/templates/workflows/README.md"
 plan_copy workflows/EXAMPLE.md "$SYS_DIR/templates/workflows/EXAMPLE.md"
 
@@ -186,7 +187,7 @@ plan_copy .agents/skills/sdd/SKILL.md "$SYS_DIR/templates/install/agents-skill-s
 for method in ponytail grill-me package-finder skill-finder; do
   plan_copy ".agents/skills/spec-harness-$method/SKILL.md" "$SYS_DIR/skills/spec-harness-$method/SKILL.md"
 done
-for method in architecture performance packages tech; do
+for method in architecture performance packages tech quality conduct; do
   plan_copy ".claude/spec-harness/methods/spec-harness-${method}.md" "$SYS_DIR/templates/project-skills/spec-harness-${method}.md"
 done
 
@@ -319,5 +320,6 @@ print_paths PENDING "${PENDING[@]}"
 if [ "${#CONFLICTS[@]}" -gt 0 ]; then
   printf 'CONFLICTS: your existing files were kept unchanged. If AGENTS.md or CLAUDE.md is listed, add the block from step 3 of https://github.com/chohra-med/spec-harness-oss/blob/main/docs/GETTING-STARTED.md so your client loads the harness.\n'
 fi
+printf 'Read first: open learning_human.html in a browser. It explains how this works and how to use it, in about ten minutes.\n'
 printf 'Next: run /sdd init for source-grounded rules/roles/skills; create feature goals under specs/<feature>/goal.md.\n'
 exit 0

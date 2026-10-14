@@ -70,6 +70,9 @@ function assertProfileSeedBody(profile) {
     const body = profile.split(`## ${heading}\n`)[1]?.split('\n## ')[0].trim() ?? '';
     assert.ok(body.startsWith('Unknown'), `Profile.md section ${heading} must be seeded as Unknown`);
   }
+  // Standing boundaries only; scoped, dated grants are recorded in Decisions.md, not in this section.
+  assert.match(profile, /standing boundaries only/, 'Profile.md must limit Never touch to standing boundaries');
+  assert.match(profile, /`Decisions\.md`/, 'Profile.md must send scoped, dated grants to Decisions.md');
 }
 
 function assertNoInventing(firstUse) {
@@ -121,14 +124,15 @@ test('first-use pins the Unknown rule, so replacing it with a default is caught 
   assert.throws(() => assertUnknownRule(firstUse.replace(UNKNOWN_RULE, 'Fill any gap with a sensible default.')), /record unanswered Profile items as Unknown/);
 });
 
-// R03-13: the same Profile CONFLICT rule holds for an upgrade of the real v1.2.0 install, not only for init.
+// R03-13: a user Profile.md survives an upgrade of the real v1.2.0 install. The 1.2.0 release records Profile as a seed
+// file, so the installed copy is the user's: the plan is PERSONALIZED (kept, template changes offered), never overwritten.
 async function putFile(root, posixPath, content) {
   const destination = path.join(root, ...posixPath.split('/'));
   await mkdir(path.dirname(destination), { recursive: true });
   await writeFile(destination, content);
 }
 
-test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Profile.md and never overwrites it (R03-13)', async (t) => {
+test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALIZED and never overwrites it (R03-13)', async (t) => {
   const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
   const target = await consumerRoot('second-brain-upgrade-profile-');
   cleanup(t, target);
@@ -140,8 +144,7 @@ test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Pr
   const plan = await planInstall({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot, targetPath: target, operation: 'upgrade' });
   const profile = plan.entries.find((entry) => entry.destination === '00-Meta/Profile.md');
   assert.ok(profile, 'the upgrade plan lists the Profile seed');
-  assert.equal(profile.status, 'CONFLICT');
-  assert.equal(profile.undo.action, 'none');
+  assert.equal(profile.status, 'PERSONALIZED');
   assert.equal(await readFile(path.join(target, '00-Meta', 'Profile.md'), 'utf8'), 'my own profile\n');
 });
 
@@ -183,11 +186,53 @@ test('the connect wording defines the harness where Home first uses it', async (
   assert.ok(home.indexOf('(the harness is') > home.indexOf('Spec Harness files'), 'the definition sits at the first use');
 });
 
-// R03-11: the context procedure calls the seeded folder the seeded project, not an example.
-test('the context procedure names the seeded project, not an example (R03-11)', async () => {
+// R03-11 (v1.4.0): the loop procedures route to `01-Projects/<project>/`. Selected-Project is named only as the seeded
+// project or the seeded example of a link, never as the one project every run works in.
+function routeProblems(name, text) {
+  const problems = [];
+  if (!text.includes('01-Projects/<project>/')) problems.push(`${name} does not route to 01-Projects/<project>/`);
+  if (text.includes('the seeded example lives under')) problems.push(`${name} calls the seeded project an example folder`);
+  for (const line of text.split('\n').filter((item) => item.includes('Selected-Project'))) {
+    if (!/seeded/.test(line)) problems.push(`${name} names Selected-Project without calling it the seeded project: ${line}`);
+  }
+  return problems;
+}
+
+test('the loop procedures route to 01-Projects/<project>/ and name Selected-Project only as the seeded project (R03-11)', async () => {
   const context = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/context.md'), 'utf8');
   assert.ok(context.includes('the seeded project lives under `01-Projects/Selected-Project/`'), 'context names the seeded project');
-  assert.equal(context.includes('the seeded example lives under'), false, 'the example wording is gone');
+  for (const name of ['context.md', 'capture.md', 'close.md', 'review.md']) {
+    assert.deepEqual(routeProblems(name, await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures', name), 'utf8')), []);
+  }
+  assert.ok(context.includes('one block per selected project, followed by a cross-project line'), 'context returns one note per project and a cross-project line');
+});
+
+test('the R03-11 route check fires on the v1.3.0 single-project wording (positive control)', () => {
+  const old = 'Capture an incoming task in the selected project\'s `roadmap.md`.\n- One new row in `01-Projects/Selected-Project/roadmap.md`.\n';
+  assert.deepEqual(routeProblems('capture.md', old), [
+    'capture.md does not route to 01-Projects/<project>/',
+    'capture.md names Selected-Project without calling it the seeded project: - One new row in `01-Projects/Selected-Project/roadmap.md`.',
+  ]);
+});
+
+// WP2: the route owns multi-project selection; the four loop skills stay route-neutral.
+test('the operating route defines one, several and all, and the loop skills are route-neutral', async () => {
+  const route = await readFile(path.join(sourceRoot, 'template/00-Meta/AGENTS.md'), 'utf8');
+  for (const phrase of [
+    '## Selecting projects',
+    'Selection is explicit and may name one project, several, or `all`',
+    '[project index](../01-Projects/Index.md) and nothing outside it',
+    'One project: follow the read order below in full.',
+    'Defer step 2 for each project until just before you diagnose or change that project\'s files.',
+    'Every capture, close or decision is written to the one project that owns it.',
+    'give one compact block per project, then any cross-project conflict or dependency',
+    'A repository registered with `connect` is another project.',
+  ]) assert.ok(route.includes(phrase), `route is missing: ${phrase}`);
+  for (const skill of ['second-brain-context', 'second-brain-capture', 'second-brain-close', 'second-brain-review']) {
+    const text = await readFile(path.join(sourceRoot, 'template/shared-skills', skill, 'SKILL.md'), 'utf8');
+    assert.ok(/one or more selected projects|one, several or all selected/.test(text), `${skill} is not route-neutral`);
+    assert.equal(/Selected-Project|01-Projects\//.test(text), false, `${skill} names a route path, so a route edit would touch it`);
+  }
 });
 
 // Each Profile question, with its exact wording and the procedure that owns the field. The old four-string pin

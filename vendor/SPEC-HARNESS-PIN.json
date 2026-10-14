@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "a663397c2aafa35071fb1fe899bd6a174cd423e6",
-  "tree": "4bbbc0cdf42bf18b4954cae84a4a0fa5673a508e",
-  "harnessVersion": "0.2.0",
+  "commit": "767d0727a4161d80c893191544423be42fcaab34",
+  "tree": "b4659476c9a65db79fdfdfa6ca188f305b54bee3",
+  "harnessVersion": "0.3.0",
   "license": {
     "spdx": "MIT",
     "path": "LICENSE",
@@ -21,9 +21,19 @@
       "sha256": "42d3f6df5b89aa86d43b39a507aae2a127521ebd8c000a80f5d26978c0b00a97"
     },
     {
+      "path": "AGENTS.md",
+      "bytes": 15564,
+      "sha256": "945a879f08b4b664abb86bbff57f6a408bb4b35550f633e11884586e357ad041"
+    },
+    {
       "path": "ARCHITECTURE.md",
-      "bytes": 21298,
-      "sha256": "9cbca39981bca09592dc406083582f85fd4fa0a0da55c15f770265cc6df7eb92"
+      "bytes": 21222,
+      "sha256": "e8b221548b609d3e115dfd0de53a47f6134ff933970d17c58cb9ad72d18283d5"
+    },
+    {
+      "path": "CLAUDE.md",
+      "bytes": 11,
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
     },
     {
       "path": "LICENSE",
@@ -32,8 +42,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 13913,
-      "sha256": "8a07b5af3b941cc66769f719237d762eb7084e4e51a9ed7482fc76cab8aef87c"
+      "bytes": 15001,
+      "sha256": "f74f69866d280669e7488ff637970fd06c0a96cc736de44b8a38e9442748b62f"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -77,8 +87,8 @@
     },
     {
       "path": "agents/sdd-reviewer.md",
-      "bytes": 2436,
-      "sha256": "bf7370ffc650a8c3ffdde3ffb0146da3886b8eb3d40803f2db5196f6c554d2d3"
+      "bytes": 5221,
+      "sha256": "4b2314253982de642438b86622124777422bbc0bef38a8ffb380f6c433191b9e"
     },
     {
       "path": "agents/sdd-tester.md",
@@ -103,14 +113,14 @@
     },
     {
       "path": "bin/sh-gen-agents.sh",
-      "bytes": 25883,
-      "sha256": "3d5f340f3f484f4494718454f8ddddd0c71a47881aafc59e32f630afffa96bfc",
+      "bytes": 26681,
+      "sha256": "668a80c9c76cb228e8f2673ce88e537983665234c4d5ef4c1c49e02c7a2658d2",
       "executable": true
     },
     {
       "path": "bin/sh-index.sh",
-      "bytes": 35311,
-      "sha256": "f0b481bae33245b6419f04e31579d2f2fb14667aefc8af64be2bf867bea58c7a",
+      "bytes": 35394,
+      "sha256": "eb47b65cc8c51e17001b46659b272d8c20b3010d88ac526abb2e08cc16dd14ce",
       "executable": true
     },
     {
@@ -121,30 +131,30 @@
     },
     {
       "path": "bin/sh-install.sh",
-      "bytes": 12394,
-      "sha256": "0ffa97db5fedabae68bbb6c9efbf8afa8896ee74939b4a746d26da8b8a2791b9",
+      "bytes": 12708,
+      "sha256": "ad1924104da948607316606c66ef19d31bb0b6d98ed67d2966df953726f67bb9",
       "executable": true
     },
     {
       "path": "bin/sh-make-skills.sh",
-      "bytes": 14310,
-      "sha256": "713fc9fab80005f6c7535a6b0eca9767506c1792fb49719fd584d78e593b4ed8"
+      "bytes": 15191,
+      "sha256": "35901214b8594e7080fa3e32ecf68a6a147623183700ad31a7f4c5ee4f269762"
     },
     {
       "path": "bin/spec-harness",
-      "bytes": 3413,
-      "sha256": "a5ec9ff0fe0445c03ee50036dc35cfe6acf78ab70902fae61ac7b1bc6ae29919",
+      "bytes": 3419,
+      "sha256": "1a3a060a45cb8985acfec00b5562bca865a3d86a02889204d7f0f5d4ac311f45",
       "executable": true
     },
     {
       "path": "commands/audit.md",
-      "bytes": 1142,
-      "sha256": "57726a4cc4067fd434eda84fe22cc5c84915edfc69fa0ffd98b7bde30d479e03"
+      "bytes": 1045,
+      "sha256": "88023d8aded0c0e61e72034c2ab267c6e2524c27a32223298b4705c35cb38db9"
     },
     {
       "path": "commands/build.md",
-      "bytes": 3708,
-      "sha256": "df6daba614501a53e144591d1305d7798b5bcd6650f9790b98f695d3848ee826"
+      "bytes": 3832,
+      "sha256": "4c2c7eb004fb8b2b2be430b2cac1e6a3d721c6dc05cc88e8523a5f464ab1cafd"
     },
     {
       "path": "commands/document.md",
@@ -153,8 +163,8 @@
     },
     {
       "path": "commands/generate-agents.md",
-      "bytes": 5837,
-      "sha256": "528e97741c8ccd8ec836e2e869646c90be15dc6b5845f75bf4b45df4cbdbdaf0"
+      "bytes": 6391,
+      "sha256": "a5013b48205eb829af76c3900975b22caaccd56722c533776c0d2cb72def24fe"
     },
     {
       "path": "commands/grill-me.md",
@@ -163,8 +173,8 @@
     },
     {
       "path": "commands/init.md",
-      "bytes": 10649,
-      "sha256": "f1e4c7d69edd3490bc8ed82be88d866c4ad98f3527b0804fcac2dfc783f67791"
+      "bytes": 12701,
+      "sha256": "2477daa75fda5e51b98711d2f09f6682641a1f1a0c73a513424aa5f4a1658e44"
     },
     {
       "path": "commands/learn.md",
@@ -173,8 +183,8 @@
     },
     {
       "path": "commands/migrate.md",
-      "bytes": 1325,
-      "sha256": "092f5c13eb24bc27705129b15521e003e920880906e0b152b30d5349a2a34064"
+      "bytes": 1403,
+      "sha256": "9bd0f3e42530551baa31e291cbe938723e53819a861893c85bdb602e5c23a1ed"
     },
     {
       "path": "commands/package-finder.md",
@@ -193,13 +203,13 @@
     },
     {
       "path": "commands/rules.md",
-      "bytes": 3626,
-      "sha256": "40d2b80e3c8aedc9ae2e2e13863551ccf751920aacd20d0ee01e21c2a4cee311"
+      "bytes": 4007,
+      "sha256": "6bd05a05aa94b9187de7aa7b6e7739c2867c39afba314b8b24dd3a14c12bbdff"
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 20331,
-      "sha256": "6b209f34b7e5ce7b31fdbdb16a54f3bbfbec26ad7a39eeff3b8dbe8487822e56"
+      "bytes": 20711,
+      "sha256": "1053ce98c5667b19150e16e4fe4b70f564a100434177367b4ecfe67a02b86b6d"
     },
     {
       "path": "commands/ship.md",
@@ -222,14 +232,19 @@
       "sha256": "8881b392c217e124093d492204ca269b15035e8bf7a4069cca26d57e0f4a8f96"
     },
     {
+      "path": "commands/teach.md",
+      "bytes": 2045,
+      "sha256": "d03325d6e11ea6a01acf35038f9276b594633d088c6b7e53e3d06a442a8f0a05"
+    },
+    {
       "path": "commands/tester.md",
       "bytes": 6696,
       "sha256": "00582389eb131388ad4f8d7b2f52cabf13b91337dba39f0312022894405a2f47"
     },
     {
       "path": "commands/tickets.md",
-      "bytes": 2083,
-      "sha256": "0965934173b0a69c7473d0c1daa6cc72b1fc4145681935628c5722718fe1193e"
+      "bytes": 2156,
+      "sha256": "6d12905a76a8e3157cbffc26d04d72816643e17ac03951011d4875e3e2f39366"
     },
     {
       "path": "commands/verify.md",
@@ -237,9 +252,14 @@
       "sha256": "d452edd7b9ae0baee69931bee6a3e4e02ca3d733b55a91348608476c34836bf7"
     },
     {
+      "path": "docs/COMPANION-SKILLS.md",
+      "bytes": 2917,
+      "sha256": "41cf0eb59a0bf18c8583b216d77b0c1af5647b875c39e21b6563fa372d4dac65"
+    },
+    {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 15334,
-      "sha256": "c95470564761d514e867578802f69ed45c0f7ac4df595c201a0b38aa80cf8b23"
+      "bytes": 16050,
+      "sha256": "eec4bfc153b13abfe5bea433f0323f8dc09d8d3785656c7500bfbfc4657f1f04"
     },
     {
       "path": "docs/GUARDRAILS.md",
@@ -253,18 +273,23 @@
     },
     {
       "path": "install-manifest.json",
-      "bytes": 26200,
-      "sha256": "6507c421b244deb4741ed1297a5f87357e521630c2f467e8b6ee95a9384cdc91"
+      "bytes": 27604,
+      "sha256": "771b035e6a31a1c5046cfa5ca40afc03ca95120d5b88420b962b7aa861b0c0d1"
+    },
+    {
+      "path": "learning_human.html",
+      "bytes": 44431,
+      "sha256": "a5b00cd45d091de64cc1edbe529dddbaed1e9a7d38c022dc3a26f89d738d7de3"
     },
     {
       "path": "package.json",
-      "bytes": 1060,
-      "sha256": "718f611d12fabf4ce382ea088c0e82e449ac109322c354d0c91766ff8689cf90"
+      "bytes": 1160,
+      "sha256": "bcae9dae5511723ffb9158b09327bb14a5ded8d8de811b122db8b660b90d07ac"
     },
     {
       "path": "skills/spec-harness-audit/SKILL.md",
-      "bytes": 1256,
-      "sha256": "c3fecd9340404e4306e17cb42842f8afcc67c83c305cb93c79efe2118d2b607f"
+      "bytes": 1229,
+      "sha256": "20a019c4bff8da3ffd0bb454b744a2f7d5458e7459855eabba03c0d28152e66c"
     },
     {
       "path": "skills/spec-harness-build/SKILL.md",
@@ -273,8 +298,8 @@
     },
     {
       "path": "skills/spec-harness-generate-agents/SKILL.md",
-      "bytes": 1718,
-      "sha256": "ddaaa2941313d73c7100d4e67be7fe2afb0e85f154a30efcd18a2cfb5e02441c"
+      "bytes": 1878,
+      "sha256": "6e3d48866e940ad2f398a1cfa0a705a17219db55ed84ebbeb919617319b2d85e"
     },
     {
       "path": "skills/spec-harness-grill-me/SKILL.md",
@@ -283,8 +308,8 @@
     },
     {
       "path": "skills/spec-harness-install/SKILL.md",
-      "bytes": 1595,
-      "sha256": "2d79d52413c55da730c1dd7a6ae7cf3a10de93afabb0d7e1f28c7dcd0c199432"
+      "bytes": 1624,
+      "sha256": "b66be5232c8f44812da935751ec2f8feabd92311230ed2c779ed9c5873641c78"
     },
     {
       "path": "skills/spec-harness-learn/SKILL.md",
@@ -325,6 +350,11 @@
       "path": "skills/spec-harness-tasks/SKILL.md",
       "bytes": 1226,
       "sha256": "940ed845775c1ee2be438ff8b4ce192ea1983a1ae9d9bf5fa3ec1799f019c380"
+    },
+    {
+      "path": "skills/spec-harness-teach/SKILL.md",
+      "bytes": 1369,
+      "sha256": "87e894e0ab2e41f649e7d24bb7fbdffb749581e4c1f0a847e03791ccc49c57c4"
     },
     {
       "path": "skills/spec-harness-tester/SKILL.md",
@@ -373,8 +403,8 @@
     },
     {
       "path": "templates/install/SPEC-HARNESS.md",
-      "bytes": 1112,
-      "sha256": "8fc9169e735662fbca33796db2cf066c2d7a6a49fbeee3e95906b1ab9f0c5db6"
+      "bytes": 1183,
+      "sha256": "84d07d6b0d0b67dae97217576c5742da4ec246818cb80f4bd3df4351832ca55d"
     },
     {
       "path": "templates/install/agents-skill-sdd.md",
@@ -468,23 +498,33 @@
     },
     {
       "path": "templates/project-skills/spec-harness-architecture.md",
-      "bytes": 2402,
-      "sha256": "6467c6118ef1b940f2ed316bc1e7112cf4698ea9ea339de47820f2eac9a4a05b"
+      "bytes": 2486,
+      "sha256": "b02d5d23f714df58621afba575cf9de5b6924a19c0cd9a2aece98e2855d8e79e"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-conduct.md",
+      "bytes": 2439,
+      "sha256": "8b78ad564d28ab6de4fb3568714394b2e5962f99a6a58001e0e80a8f5bbc86fb"
     },
     {
       "path": "templates/project-skills/spec-harness-packages.md",
-      "bytes": 2500,
-      "sha256": "db12b8aa54af35eae9c6fa6b707b1367392123f61196760c10968fdfab846143"
+      "bytes": 2584,
+      "sha256": "27f107b07a7c79f95a9a616c9cbbbbc86753c249c93593516ef7881d2621b110"
     },
     {
       "path": "templates/project-skills/spec-harness-performance.md",
-      "bytes": 2177,
-      "sha256": "f0c5ade9565cf43f717b002b86da4ca5bbc3e48e01bc48d39a036f5c0386d7e3"
+      "bytes": 2261,
+      "sha256": "6a8f5e5aa2448f4b06f2e0ddf1fc915d985434e0f808c155701b1a83b66f90c6"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-quality.md",
+      "bytes": 2179,
+      "sha256": "3410367eb1889cedbd7f4e9da3ce26ec216363c0181b9c2afa055529bf5b8f9c"
     },
     {
       "path": "templates/project-skills/spec-harness-tech.md",
-      "bytes": 2483,
-      "sha256": "d2c16e7a9cf2c3d1681d6b3c805ca5571c98c1e96fb624788221938a054a385d"
+      "bytes": 2561,
+      "sha256": "ed560edca6a3196d9f4b8b8264a5e022270914534f49c43a82613cc454445bac"
     },
     {
       "path": "templates/workflows/EXAMPLE.md",
@@ -498,8 +538,8 @@
     },
     {
       "path": "tests/index-fixtures.sh",
-      "bytes": 25185,
-      "sha256": "071c6ea5ea2b92d3f4c701b87b1dd955a61774d3a0227244448867f07007bd1a",
+      "bytes": 25868,
+      "sha256": "2ef67906a05a1aaf1182c1ed2d3c7c61988f14bbf74cf600b1922d825dfd165f",
       "executable": true
     },
     {
@@ -516,24 +556,36 @@
     },
     {
       "path": "tests/installer-fixtures.sh",
-      "bytes": 15045,
-      "sha256": "d29063932630dcb1f93871fd2955b992e7ebf4b8931f086e46c6ac8d660313cb"
+      "bytes": 15986,
+      "sha256": "8fe2315c5b03c8071c5a69d291bc92e1a190f94c8f7886cb0a64841ce732ce05"
     },
     {
       "path": "tests/portable-skills-contract.sh",
-      "bytes": 12495,
-      "sha256": "fff8f8c3fc69428bd06f12375efd0b20dec6c2fffd12fe995f95d0a0b49a2fc8",
+      "bytes": 12629,
+      "sha256": "2347e302666e950cbdb2a397f1d5c8ba3975ca0a5b13265b9c208a41485e51db",
+      "executable": true
+    },
+    {
+      "path": "tests/run-all.sh",
+      "bytes": 1347,
+      "sha256": "b4d43cdd7251f524952bbf0f7ce94fe5ae9cff597e4c1a75700dae2ae3501f0c",
       "executable": true
     },
     {
       "path": "tests/sdd-fixtures.sh",
-      "bytes": 41200,
-      "sha256": "463ebdce57e09ac327d9aaab9587266b4b429090a0fd2f6e9a36a4ad4e3d08e2"
+      "bytes": 45146,
+      "sha256": "c212e04a4ba65910db81ce165af418d64c3200eac1e8462ad32fa123fae1b703"
     },
     {
       "path": "tests/synthesis-contract.sh",
-      "bytes": 27355,
-      "sha256": "2968cdff7f4f32a6c2082dfb66b9b4b2416f292208d35bc2cd7d440ee574db96",
+      "bytes": 30111,
+      "sha256": "23dc200c7d27344fafac94ed9d2016ffa4dc4d1d384287b077917c393c950695",
+      "executable": true
+    },
+    {
+      "path": "tests/tools/update-install-manifest.sh",
+      "bytes": 1854,
+      "sha256": "98e90394c48984ed1be0029bc4a07e321bbedf046285d346048d07173d02d511",
       "executable": true
     }
   ]

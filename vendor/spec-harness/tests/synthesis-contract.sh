@@ -283,6 +283,51 @@ for row in five:
 assert "READY: 3 packages, 3 skills, 5 selected roles" in check_skills(skills, 0, "core-only receipt restored GREEN")
 print("PASS: technology skill accepted when named, capped and scoped; five planted failures rejected")
 
+# Core-skill schema: schema 1 keeps the original three core skills; schema 2 (first initialisation)
+# requires five. Each fixture is a disposable copy of the mixed target with its own receipt.
+PURPOSE_CORE_1 = ["spec-harness-architecture", "spec-harness-performance", "spec-harness-packages"]
+PURPOSE_CORE_2 = PURPOSE_CORE_1 + ["spec-harness-quality", "spec-harness-conduct"]
+
+def core_skill_row(target, name):
+    path = f".claude/skills/{name}/SKILL.md"
+    lines = [f"# {name}", "", "Package applicability: " + ", ".join(package_paths), ""]
+    lines.append(f"<!-- source-bound: inventory-sha256={inventory_hash} -->")
+    for citation in citations.values():
+        lines.append(f"Evidence: {citation['path']}:{citation['line_start']}-{citation['line_end']}")
+    write(target / path, "\n".join(lines) + "\n")
+    return {
+        "name": name, "status": "READY", "path": path, "sha256": sha(target / path),
+        "package_paths": package_paths, "citations": list(citations.values()),
+    }
+
+def purpose_check(label, schema_version, names, expected):
+    target = tmp / label
+    shutil.copytree(mixed, target)
+    rows = [core_skill_row(target, name) for name in names]
+    write(target / ".claude/agents/.init-synthesis.json",
+          json.dumps(dict(receipt, schema_version=schema_version, skills=rows), indent=2) + "\n")
+    return run(["bash", str(bind), "--check", str(target)], expected, label)
+
+schema_one = purpose_check("purpose-schema-1-three", 1, PURPOSE_CORE_1, 0)
+assert "READY: 3 packages, 3 skills, 5 selected roles" in schema_one, schema_one
+schema_two = purpose_check("purpose-schema-2-five", 2, PURPOSE_CORE_2, 0)
+assert "READY: 3 packages, 5 skills, 5 selected roles" in schema_two, schema_two
+no_quality = purpose_check(
+    "purpose-schema-2-no-quality", 2, [n for n in PURPOSE_CORE_2 if n != "spec-harness-quality"], 1
+)
+assert "missing: spec-harness-quality" in no_quality, no_quality
+no_conduct = purpose_check(
+    "purpose-schema-2-no-conduct", 2, [n for n in PURPOSE_CORE_2 if n != "spec-harness-conduct"], 1
+)
+assert "missing: spec-harness-conduct" in no_conduct, no_conduct
+three_under_two = purpose_check("purpose-schema-2-three", 2, PURPOSE_CORE_1, 1)
+assert "missing: spec-harness-conduct, spec-harness-quality" in three_under_two, three_under_two
+for label, bad in (("bool-true", True), ("float-2.0", 2.0), ("string-2", "2"), ("integer-3", 3)):
+    rejected = purpose_check(f"purpose-schema-bad-{label}", bad, PURPOSE_CORE_2, 1)
+    assert "schema_version must be" in rejected, (label, rejected)
+print("PASS: schema 1 accepts three core skills; schema 2 accepts five and names a missing quality or conduct skill")
+print("PASS: schema_version true, 2.0, \"2\" and 3 are rejected; only integer 1 or 2 is accepted")
+
 # Human-authored policy can contain code examples whose syntax resembles a
 # template marker. JSX object props and TypeScript generics belong in a valid
 # synthesis fixture without being mistaken for unresolved placeholders.

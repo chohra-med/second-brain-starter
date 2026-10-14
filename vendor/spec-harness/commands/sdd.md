@@ -20,10 +20,10 @@ project-specific role and skill paths. Do not maintain a second copy of those ge
 
 ## 1. Check the route and project state
 
-For `init`, follow `.claude/commands/spec-harness/init.md`,
+For `init`, first open `learning_human.html` for the user as `init.md` describes, then follow `.claude/commands/spec-harness/init.md`,
 `.claude/commands/spec-harness/rules.md` and
 `.claude/commands/spec-harness/generate-agents.md`: inventory the target, preserve its policy,
-derive package-scoped rules, the three core project skills and a skill per major technology, then bind the core roles. Run
+derive package-scoped rules, the core project skills (five on first initialisation) and a skill per major technology, then bind the core roles. Run
 `spec-harness index "$PWD"` before synthesis and
 `spec-harness generate-agents --check "$PWD"` after it. That result proves structure and
 provenance only. A separate fresh reviewer must accept the cited claims before overall
@@ -238,6 +238,8 @@ section 3. For LITE and FULL the minimum order is:
    goal cannot override a failing feature goal.
 5. A third fresh bound reviewer checks the changed files against the accepted spec, rules, scope,
    and test evidence; record findings and revision identity in `gates/reviewer.md`.
+
+The reviewer also applies Ponytail to LITE and FULL tickets: it checks the plan's Ponytail receipt and labels each finding `NEEDED` or `ADDITION`, and only `NEEDED` findings can produce `REQUEST-CHANGES`. The definitions of both labels are in the bound `sdd-reviewer` role file.
 
 The implementer cannot write its own acceptance result. A fresh `sdd-verifier` remains mandatory for
 MICRO, LITE and FULL and checks every literal criterion in the accepted feature goal. Tester, verifier

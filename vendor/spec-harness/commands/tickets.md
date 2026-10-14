@@ -8,7 +8,7 @@
 ```text
 /sdd <exact ticket text>
 /sdd ticket <connected provider reference>
-spec-harness sdd <input>       # shell-only manual handoff; exit 2 / PENDING
+spec-harness sdd <input>       # shell-only manual handoff; exit 2 / PENDING (with no install, npx -y github:chohra-med/spec-harness-oss sdd <input>)
 ```
 
 Read `.claude/commands/sdd.md` first. The shell CLI cannot retrieve issues or synthesize artifacts.

@@ -32,7 +32,7 @@
                         ┌───────────────────▼──────────────────────┐
                         │   Memory bank: the memory/context engine  │
                         │   Index · Memory bank (.memory/, 10) ·    │
-                        │   curated > structural > temporal         │
+                        │   curated > structural                    │
                         └──────────────────────────────────────────┘
 ```
 
@@ -73,16 +73,16 @@ guarantee correct outputs or prevent every mistake. The bundled `bin/loop.sh` is
 └───────────────────────────────────────────────────────────────┘
 ```
 
-### Three indexes, one precedence rule
+### Two indexes, one precedence rule
 
 ```
-   curated  >  structural  >  temporal
-   .memory/    graphify-out/  claude-mem
-   the truth   what imports   what happened
-   (git)       what (AST)     across sessions
+   curated  >  structural
+   .memory/    graphify-out/
+   the truth   what imports
+   (git)       what (AST)
 ```
 
-**Curated project memory is the preferred reference in this model.** Structural and temporal views
+**Curated project memory is the preferred reference in this model.** Structural views
 help locate evidence; check the underlying source when they disagree. Reviewed learnings may be
 recorded in the appropriate project memory owner.
 

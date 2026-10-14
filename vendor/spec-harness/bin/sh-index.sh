@@ -561,7 +561,8 @@ for package in packages.values():
 inventory = {
     "format": "spec-harness-project-inventory",
     "schema_version": 1,
-    "project_root_name": root_path.name or ".",
+    # A fixed label: the checkout folder name would make the output (and its hash) differ per clone.
+    "project_root_name": ".",
     "scan": {
         "scope": "selected root only",
         "source_scan_read_only": True,

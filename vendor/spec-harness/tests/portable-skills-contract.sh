@@ -60,7 +60,7 @@ from pathlib import Path
 import sys
 before = {line.split(None, 1)[1].removeprefix('./'): line.split(None, 1)[0] for line in Path(sys.argv[1]).read_text().splitlines()}
 after = {line.split(None, 1)[1].removeprefix('./'): line.split(None, 1)[0] for line in Path(sys.argv[2]).read_text().splitlines()}
-assert len(before) == len(after) == 17, f"expected 17 generated skill files, got {len(before)} and {len(after)}"
+assert len(before) == len(after) == 18, f"expected 18 generated skill files, got {len(before)} and {len(after)}"
 round3 = {
     "spec-harness/SKILL.md": "c39b29ff07882181889ccf45ddc9277390eb14310c13dd87437ae8c80ff9439c",
     "spec-harness-audit/SKILL.md": "14b1665378052322304c54ce361874f7260577305c30d648ffa8acca80331260",
@@ -75,6 +75,7 @@ round3 = {
     "spec-harness-rules/SKILL.md": "c0fe5440b06f56d453f7ed6794a73dc925e0c0e1ffca88144a491646a063e0cb",
     "spec-harness-skill-finder/SKILL.md": "b8a8e214bc373cceb3dde9bb6f670291689febffb520454f428baf868bba3f8d",
     "spec-harness-spec/SKILL.md": "9efebaf5e6b8da7bb3fd7f2db6f87675782514c59f1f5e5cbfc984d173625879",
+    "spec-harness-teach/SKILL.md": "87e894e0ab2e41f649e7d24bb7fbdffb749581e4c1f0a847e03791ccc49c57c4",
     "spec-harness-tasks/SKILL.md": "4281604563197c18caec9fd15a8da8bffe3b17b99bb8c7364ce8744318478925",
     "spec-harness-tester/SKILL.md": "cb0f67b79df0cbe198e5e433159ad3f281530ca65645298bac2d7d6451fbe864",
     "spec-harness-tickets/SKILL.md": "bf7621458e57b06f4f0d45a99a68bc983d8c88cdeca2b43253d298202837ac83",
@@ -86,7 +87,7 @@ assert "implementation work" in trigger and "code" in trigger, "generated Ponyta
 changed = sorted(path for path in after if round3[path] != after[path])
 # The four method adapters stay frozen. Every command skill deviates since its trigger text
 # says "the user" instead of naming the author; install also gained technology skills.
-frozen = ["spec-harness-grill-me/SKILL.md", "spec-harness-package-finder/SKILL.md", "spec-harness-skill-finder/SKILL.md"]
+frozen = ["spec-harness-grill-me/SKILL.md", "spec-harness-package-finder/SKILL.md", "spec-harness-skill-finder/SKILL.md", "spec-harness-teach/SKILL.md"]
 assert changed == sorted(set(round3) - set(frozen)), f"unexpected historical skill deviations: {changed}"
 assert not any("Malik" in (Path(sys.argv[3]).parents[1] / path).read_text() for path in round3), "generated skill names the author"
 for path in round3:
