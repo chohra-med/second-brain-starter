@@ -5,7 +5,7 @@ The [README](../README.md) has the short version. This page sets the free starte
 | Second Brain Starter | Builder AI OS |
 |---|---|
 | Public foundation for one workspace and the repositories you connect to it. The starter's own files are MIT. | Paid operating layer for builders |
-| Home dashboard and twelve shared skills: context, capture, close, review, learning, ICM bindings, the bundled `icm-architect` and `humanizer` methods, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` | A premium Home page, more skills and adapters |
+| Home dashboard and fourteen shared skills: context, context modes, capture, close, review, learning, end session, ICM bindings, the bundled `icm-architect` and `humanizer` methods, and the example skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` | A premium Home page, more skills and adapters |
 | Safe initializer, verification and rollback | Prepared diagnostics, worked sessions and failure clinic |
 | Learning procedure | Controlled learning ratchet with human approval and changelog history |
 | Community source updates | Paid product updates and private repository access |

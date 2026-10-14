@@ -132,6 +132,18 @@
       "mergeKind": "managed-file"
     },
     {
+      "source": "template/03-Resources/Procedures/context-modes.md",
+      "destination": "03-Resources/Procedures/context-modes.md",
+      "sha256": "03b8b71736ebcacc7d10c7cb1cb6025ab2d1bb38f367ec006d7548fed9ce2a91",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/end-session.md",
+      "destination": "03-Resources/Procedures/end-session.md",
+      "sha256": "e73c3ece04e2c10ba1d7d7cb94709515380946c2b88c26e4023b0cd96d4f4f0e",
+      "mergeKind": "managed-file"
+    },
+    {
       "source": "template/03-Resources/Procedures/learning-and-scaling.md",
       "destination": "03-Resources/Procedures/learning-and-scaling.md",
       "sha256": "2176aa37633801e31afb3ddb8b2dce1dc99ad76d6f6ad2aa198b3abb6073ba21",
@@ -477,6 +489,30 @@
       "source": "template/shared-skills/icm-architect/references/system-map.md",
       "destination": ".claude/skills/icm-architect/references/system-map.md",
       "sha256": "d8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/context-modes/SKILL.md",
+      "destination": ".agents/skills/context-modes/SKILL.md",
+      "sha256": "58718a09226195e44d8e8c97851a9663859bc35524708910d8af2d2c0d901046",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/context-modes/SKILL.md",
+      "destination": ".claude/skills/context-modes/SKILL.md",
+      "sha256": "58718a09226195e44d8e8c97851a9663859bc35524708910d8af2d2c0d901046",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/end-session/SKILL.md",
+      "destination": ".agents/skills/end-session/SKILL.md",
+      "sha256": "ce5f23acd8db01f380e79d11c9724fdfb5e13f6467a9b4fd9045823a00077942",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/end-session/SKILL.md",
+      "destination": ".claude/skills/end-session/SKILL.md",
+      "sha256": "ce5f23acd8db01f380e79d11c9724fdfb5e13f6467a9b4fd9045823a00077942",
       "mergeKind": "managed-file"
     },
     {
