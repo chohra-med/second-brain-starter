@@ -71,7 +71,7 @@ function cliCommand(subcommand, { target, repo, name, receipt, apply } = {}) {
 }
 
 function help() {
-  return `Second Brain Starter 1.4.0
+  return `Second Brain Starter 1.4.1
 
 Usage:
   second-brain init --target /absolute/path [--apply PLAN_DIGEST]

@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.4.1 (2026-10-14)
+
+- Adds two procedures under `03-Resources/Procedures/`. `context-modes.md` loads workspace context in one of three named modes: the default, which reads the route and the operating map only; a scoped run for one named project or task; and a full run, which happens only when it is asked for by name. `end-session.md` closes a work session by writing the corrections back to the workspace, not only reporting them. It is bounded by default, and `end-session full` is the audited mode.
+- Each procedure has a shared skill of the same name, `context-modes` and `end-session`, installed to `.agents/skills/` and `.claude/skills/`. The installed set is now fourteen skills.
+- `context.md` is unchanged. The mode procedure has its own file name, `context-modes.md`, so the two do not collide.
+- An install made from v1.4.0 reports `SOURCE_MANIFEST_MISMATCH` from `verify` until it runs `upgrade`. The source manifest changed, and the installed state file still records the manifest it was made from.
+- Version: `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help, README, CHANGELOG and UPGRADING move to 1.4.1.
+
 ## v1.4.0 (2026-10-13)
 
 - `init` and `upgrade` append the managed block to a root `AGENTS.md` or `CLAUDE.md` that has your text and no loader markers, when this tool has no install record for that file. The plan shows `APPEND`. Your bytes stay in front of the block, and rollback restores the file byte for byte. A root file with a broken comment shows `CONFLICT`, with the line number and the reason: a comment that is never closed, or a comment that names the tool and is not the one clean managed block. A plain sentence that names the tool does not. The same rule covers `.gitignore`, with `#` lines. The tool cannot recognise every possible damage, so read the plan before you approve it. An installed file whose markers were removed also shows `CONFLICT`. Known limit, not fixed here: appending to a file with CRLF line endings leaves mixed line endings, because the block is LF and your bytes are kept as they are.

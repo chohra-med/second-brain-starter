@@ -1,5 +1,13 @@
 # Upgrading the free starter
 
+## Upgrading to v1.4.1
+
+This version adds two procedures and their shared skills. No existing installed file changes. The new files are the two procedure files and the skill files in `.agents/skills/` and `.claude/skills/`.
+
+### What a v1.4.0 install sees
+
+Until it runs `upgrade`, `verify` reports `SOURCE_MANIFEST_MISMATCH` on the installed state file. The source manifest changed, and the state still records the v1.4.0 manifest. Run `upgrade`, then read and approve its plan as described in [Read the three-way plan](#read-the-three-way-plan).
+
 ## Upgrading to v1.4.0
 
 This version adds one managed file, `.gitignore`, and it changes how a root `AGENTS.md` or `CLAUDE.md` with no loader markers is handled.
