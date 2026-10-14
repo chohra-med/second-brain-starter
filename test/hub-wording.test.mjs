@@ -124,15 +124,14 @@ test('first-use pins the Unknown rule, so replacing it with a default is caught 
   assert.throws(() => assertUnknownRule(firstUse.replace(UNKNOWN_RULE, 'Fill any gap with a sensible default.')), /record unanswered Profile items as Unknown/);
 });
 
-// R03-13: a user Profile.md survives an upgrade of the real v1.2.0 install. The 1.2.0 release records Profile as a seed
-// file, so the installed copy is the user's: the plan is PERSONALIZED (kept, template changes offered), never overwritten.
+// R03-13: the same Profile CONFLICT rule holds for an upgrade of the real v1.2.0 install, not only for init.
 async function putFile(root, posixPath, content) {
   const destination = path.join(root, ...posixPath.split('/'));
   await mkdir(path.dirname(destination), { recursive: true });
   await writeFile(destination, content);
 }
 
-test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALIZED and never overwrites it (R03-13)', async (t) => {
+test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Profile.md and never overwrites it (R03-13)', async (t) => {
   const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
   const target = await consumerRoot('second-brain-upgrade-profile-');
   cleanup(t, target);
@@ -144,7 +143,8 @@ test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALI
   const plan = await planInstall({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot, targetPath: target, operation: 'upgrade' });
   const profile = plan.entries.find((entry) => entry.destination === '00-Meta/Profile.md');
   assert.ok(profile, 'the upgrade plan lists the Profile seed');
-  assert.equal(profile.status, 'PERSONALIZED');
+  assert.equal(profile.status, 'CONFLICT');
+  assert.equal(profile.undo.action, 'none');
   assert.equal(await readFile(path.join(target, '00-Meta', 'Profile.md'), 'utf8'), 'my own profile\n');
 });
 

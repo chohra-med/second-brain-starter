@@ -7,27 +7,64 @@ import test from 'node:test';
 import { planInstall, sha256, stableStringify } from '../lib/installer.mjs';
 import { sourceRoot } from './helpers/consumer-cli.mjs';
 
-// template-bases.json holds the managed bytes of earlier releases that a merge needs as
-// its base. An install made by 1.2.0 records the 1.2.0 template hash; if that hash is
-// not in template-bases.json (or in the current template), its local edits cannot be
-// merged and become CONFLICT. This test fails when a managed file of the real 1.2.0
-// release has no base. The release is the pinned 1.2.0 manifest inside the fixture.
+// template-bases.json is the FROZEN legacy set of managed and seed bytes for installs made before
+// 1.5.0. `sources` names each release (label and commit) and lists every managed-file and
+// seed-file entry of that release's manifest. `bases` holds the bytes of each listed sha256 that
+// the current template does not provide, keyed by that sha256. An install made by 1.2.0 records
+// the 1.2.0 template hash; without a stored base its local edits cannot be merged. The 1.2.0
+// source must list exactly the entries of the real 1.2.0 manifest the fixture was installed from.
 const bases = JSON.parse(await readFile(path.join(sourceRoot, 'template-bases.json'), 'utf8'));
 const current = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
 const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
 const release = JSON.parse(fixture.manifestBytes);
 const currentHashes = new Set(current.entries.map((entry) => entry.sha256));
 const sha = (text) => createHash('sha256').update(text, 'utf8').digest('hex');
+const byDestination = (left, right) => (left.destination < right.destination ? -1 : left.destination > right.destination ? 1 : 0);
 
-test('every managed file of the real 1.2.0 release has a merge base', () => {
-  assert.equal(sha(fixture.manifestBytes), '012cf31cfe811fdb0f73523a119ac5c7fdd1ac115200a0f5c6fcd9392ce120b3');
-  const missing = [];
-  for (const entry of release.entries.filter((item) => item.mergeKind === 'managed-file')) {
-    if (currentHashes.has(entry.sha256)) continue;
-    if (typeof bases.bases[entry.sha256] !== 'string') missing.push(`${entry.destination} ${entry.sha256.slice(0, 12)}`);
-    else assert.equal(sha(bases.bases[entry.sha256]), entry.sha256, `stored base does not hash to its key: ${entry.destination}`);
+// The four sources, in order, with the commit each label names. There is no 3c944c1 source.
+const EXPECTED_SOURCES = [
+  ['1.1.0', 'd07369745c8d1f023d1c85f4cf949304df78adf8'],
+  ['1.2.0', '6fc244e9b72ba4beab3d57fe2676883b4b25e624'],
+  ['1.3.0', '250cfe58503098ac338cad57558e720cad72a128'],
+  ['1.4.0', '3f2e8992b98316ae320618509ae80585cc9242eb'],
+];
+
+// One line per listed entry the current template does not provide whose base is missing or does not hash to its key.
+function unresolvedBases(document, hashes) {
+  const problems = [];
+  for (const source of document.sources ?? []) {
+    for (const entry of source.entries ?? []) {
+      if (hashes.has(entry.sha256)) continue;
+      const text = document.bases?.[entry.sha256];
+      if (typeof text !== 'string') problems.push(`${source.label} ${entry.destination} ${entry.sha256.slice(0, 12)} has no base`);
+      else if (sha(text) !== entry.sha256) problems.push(`${source.label} ${entry.destination} base does not hash to its key`);
+    }
   }
-  assert.deepEqual(missing, [], 'a 1.2.0 managed file has no merge base in template-bases.json');
+  return problems;
+}
+
+test('template-bases.json names the four sources in order, and every base a listed entry needs is stored and hashes to its key', () => {
+  assert.equal(sha(fixture.manifestBytes), 'e40baf119b921df58a5178aae37394b44813d4e5495961ddb0970da174c9d7c4');
+  assert.equal(bases.schemaVersion, 2);
+  assert.deepEqual(bases.sources.map((source) => [source.label, source.commit]), EXPECTED_SOURCES);
+  const realRelease = release.entries
+    .filter((item) => item.mergeKind !== 'managed-block')
+    .map(({ destination, mergeKind, sha256: hash }) => ({ destination, mergeKind, sha256: hash }))
+    .sort(byDestination);
+  const listed = bases.sources.find((source) => source.label === '1.2.0').entries.slice().sort(byDestination);
+  assert.deepEqual(listed, realRelease, '1.2.0 source entries differ from the real 1.2.0 manifest');
+  assert.deepEqual(unresolvedBases(bases, currentHashes), [], 'a listed entry has no stored base, or its base does not hash to its key');
+});
+
+test('the base check names a deleted base and a base with altered bytes (positive control)', () => {
+  const target = bases.sources.find((source) => source.label === '1.2.0').entries.find((entry) => !currentHashes.has(entry.sha256));
+  assert.ok(target, 'the 1.2.0 source has an entry the current template lacks');
+  const deleted = structuredClone(bases);
+  delete deleted.bases[target.sha256];
+  assert.ok(unresolvedBases(deleted, currentHashes).some((line) => line.startsWith(`1.2.0 ${target.destination} `) && line.endsWith('has no base')), 'a deleted base is not reported');
+  const altered = structuredClone(bases);
+  altered.bases[target.sha256] = `${altered.bases[target.sha256]}altered\n`;
+  assert.ok(unresolvedBases(altered, currentHashes).some((line) => line.startsWith(`1.2.0 ${target.destination} `) && line.endsWith('does not hash to its key')), 'an altered base is not reported');
 });
 
 test('a 1.2.0 install with a local edit to a file the release changed merges, and keeps the edit', async (t) => {
