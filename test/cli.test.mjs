@@ -365,3 +365,28 @@ test('a kept edited proposal is named by the plan, and the apply leaves its byte
   assert.equal(applied.code, undefined, applied.stdout);
   assert.equal(await readFile(kept, 'utf8'), 'My own notes on the template change.\n');
 });
+
+test('a CUSTOMIZED-KEEP line says the apply records your current bytes as accepted, and the apply does exactly that', async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-kept-'));
+  const target = path.join(root, 'target');
+  await mkdir(target);
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const planned = await cli(['init', '--target', target]);
+  assert.equal((await cli(['init', '--target', target, '--apply', digest(planned.stdout)])).code, undefined);
+  // A local edit to a managed file the template did not change: the upgrade keeps it as CUSTOMIZED-KEEP.
+  const kept = '03-Resources/Procedures/close.md';
+  const local = `${await readFile(path.join(target, ...kept.split('/')), 'utf8')}A local note the template does not have.\n`;
+  await writeFile(path.join(target, ...kept.split('/')), local);
+
+  const upgrade = await cli(['upgrade', '--target', target]);
+  assert.equal(upgrade.code, undefined, upgrade.stdout);
+  assert.match(upgrade.stdout, new RegExp(`^CUSTOMIZED-KEEP\\t${escapeRe(kept)}\\t`, 'm'));
+  assert.ok(
+    upgrade.stdout.split('\n').includes(`Kept: ${kept} keeps your edits; the template did not change it. Applying this plan records your current bytes as the accepted version, as verify --adopt does.`),
+    upgrade.stdout,
+  );
+  const applied = await cli(['upgrade', '--target', target, '--apply', digest(upgrade.stdout)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  assert.equal(await readFile(path.join(target, ...kept.split('/')), 'utf8'), local);
+  assert.equal((await cli(['verify', '--target', target])).code, undefined, 'verify accepts the kept bytes after the apply');
+});

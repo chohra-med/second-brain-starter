@@ -87,6 +87,19 @@ test('status reports a local edit to a managed file as CUSTOMIZED-KEEP, and stil
   assert.ok(sameSnapshot(before, await snapshot(target)), 'status changed the edited workspace');
 });
 
+test('status on a workspace with a CONFLICT names the blocked path and the CONFLICT count, and writes nothing', async (t) => {
+  const target = await installedTarget(t);
+  // A lone loader start marker appended to the root AGENTS.md is a damaged loader, which the upgrade plan lists as a CONFLICT.
+  const agents = path.join(target, 'AGENTS.md');
+  await writeFile(agents, `${await readFile(agents, 'utf8')}<!-- second-brain:loader:start -->\nmine\n`);
+  const before = await snapshot(target);
+  const result = await cli(['status', '--target', target]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Upgrade would plan: .*\b1 CONFLICT\b/m);
+  assert.match(result.stdout, /^Blocked: AGENTS\.md need a decision before an upgrade applies\.$/m);
+  assert.ok(sameSnapshot(before, await snapshot(target)), 'status changed the workspace with a CONFLICT');
+});
+
 test('status takes only --target and refuses other flags, changing nothing', async (t) => {
   const root = await mkdtemp(path.join(tmpdir(), 'second-brain-status-args-'));
   t.after(() => rm(root, { recursive: true, force: true }));

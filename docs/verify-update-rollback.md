@@ -97,6 +97,8 @@ node ./bin/second-brain.mjs status --target "$PROJECT"
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest. Non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](../UPGRADING.md) before upgrading.
 
+A managed file you edited, whose template did not change, is planned as `CUSTOMIZED-KEEP`. Its bytes stay as they are. Applying the plan records your current bytes as the accepted version, as `verify --adopt` does, and the plan prints a `Kept:` line that says so.
+
 ## Resolve a CONFLICT
 
 A `CONFLICT` line means your edit and the starter's new template changed the same lines of one managed file. A plan writes nothing, and nothing is applied while a `CONFLICT` line remains. To resolve it, for example for `03-Resources/Procedures/review.md`:

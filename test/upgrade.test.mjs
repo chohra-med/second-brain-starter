@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, lstat, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, lstat, readdir, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -764,4 +764,30 @@ test('a receipt whose base snapshot write is not owned by the installed state is
   await writeFile(receiptPath, JSON.stringify(receipt));
   await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
   assert.equal(await readFile(at(subject, ROUTE), 'utf8'), routeA.replace('Use this', 'Use this route'), 'nothing was rolled back');
+});
+
+// Every file's path and bytes under a folder. Equal snapshots before and after prove a refused apply changed nothing.
+async function treeBytes(root, prefix = '') {
+  const out = new Map();
+  for (const entry of await readdir(path.join(root, prefix), { withFileTypes: true })) {
+    const relative = path.join(prefix, entry.name);
+    if (entry.isDirectory()) {
+      for (const [key, value] of await treeBytes(root, relative)) out.set(key, value);
+    } else {
+      out.set(relative, await readFile(path.join(root, relative)));
+    }
+  }
+  return out;
+}
+
+test('the plan digest covers base snapshot writes: a base snapshot changed after the plan refuses the old approval and changes no file', async (t) => {
+  const { subject, destinations } = await routeFixture(t);
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Use this', 'Use this route'));
+  const { source, plan } = await planUpgrade(subject, destinations);
+  const baseDestination = `.second-brain/base/${ROUTE}`;
+  assert.ok(plan.baseWrites.some((write) => write.destination === baseDestination), 'the upgrade plans a base snapshot write');
+  await writeFile(at(subject, baseDestination), 'a base snapshot changed after the plan\n');
+  const before = await treeBytes(subject.target);
+  await rejects('PLAN_DIGEST_MISMATCH', () => applyUpgrade(subject, source, plan));
+  assert.deepEqual(await treeBytes(subject.target), before, 'the refused apply changed no file');
 });

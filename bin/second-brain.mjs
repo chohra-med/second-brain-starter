@@ -152,6 +152,10 @@ async function printPlan(plan) {
   for (const entry of plan.entries.filter((item) => item.status === 'MERGE')) {
     output.write(`Merged: ${entry.destination} keeps your edits and takes the template's non-overlapping changes; undo restores your current bytes.\n`);
   }
+  // A kept local edit is accepted by the approved apply: its current bytes become the recorded version, as verify --adopt does.
+  for (const entry of plan.entries.filter((item) => item.status === 'CUSTOMIZED-KEEP')) {
+    output.write(`Kept: ${entry.destination} keeps your edits; the template did not change it. Applying this plan records your current bytes as the accepted version, as verify --adopt does.\n`);
+  }
   // A CONFLICT proposal is not written: upgrade --proposal prints it on request.
   for (const entry of plan.entries.filter((item) => item.status === 'CONFLICT' && item.proposal)) {
     output.write(`Proposal: ${entry.destination} has overlapping edits. Print its version with conflict markers with: ${cliCommand('upgrade', { target: plan.target, proposal: entry.destination })}\n`);

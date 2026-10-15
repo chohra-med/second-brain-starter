@@ -127,3 +127,18 @@ test('workspace-plan refuses bad arguments and changes nothing', async (t) => {
   }
   assert.deepEqual(await tree(parent), before, 'a refused plan changed the parent folder');
 });
+
+test('workspace-plan lists a child whose .git is a folder, and not one whose .git is a file (a worktree or submodule shape)', async (t) => {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-workspace-gitfile-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const parent = path.join(root, 'parent');
+  await mkdir(path.join(parent, 'a', '.git'), { recursive: true });
+  await mkdir(path.join(parent, 'b'), { recursive: true });
+  await writeFile(path.join(parent, 'b', '.git'), 'gitdir: ../a/.git/worktrees/b\n');
+  const before = await tree(parent);
+
+  const listed = await cli(['workspace-plan', '--parent', parent, '--list-projects']);
+  assert.equal(listed.code, 0, listed.stderr);
+  assert.equal(listed.stdout, `${path.join(await realpath(parent), 'a')}\n`);
+  assert.deepEqual(await tree(parent), before, 'the plan changed the parent folder');
+});
