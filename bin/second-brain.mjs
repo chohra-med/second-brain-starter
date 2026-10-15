@@ -532,7 +532,7 @@ async function runAdopt({ targetPath, adopt, approvedDigest }) {
     }
   }
   if (plan.baseWrites.length > 0) output.write(`Base snapshots: ${plan.baseWrites.length} to record under .second-brain/base/.\n`);
-  output.write('Writes: only .second-brain/installed-state.json and the base snapshots above. Your files are not changed.\n');
+  output.write('Writes: only .second-brain/installed-state.json, the base snapshots above, and its receipt and backup under .second-brain/. Your files are not changed.\n');
   output.write(`Plan digest: ${plan.digest}\n`);
   output.write(`Apply this exact plan with: ${cliCommand('verify', { target: plan.target, adopt: plan.entries.map((item) => item.destination), apply: plan.digest })}\n`);
   const { answer, interrupted } = await confirmInteractive(plan, approvedDigest);
