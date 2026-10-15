@@ -41,6 +41,8 @@ template/03-Resources/PARA-CODE.md
 template/03-Resources/Procedures/capture.md
 template/03-Resources/Procedures/close.md
 template/03-Resources/Procedures/context.md
+template/03-Resources/Procedures/context-modes.md
+template/03-Resources/Procedures/end-session.md
 template/03-Resources/Procedures/learning-and-scaling.md
 template/03-Resources/Procedures/review.md
 template/04-Archives/Projects/Archive-Guide.md
@@ -101,6 +103,8 @@ template/shared-skills/icm-architect/references/core.md
 template/shared-skills/icm-architect/references/forms.md
 template/shared-skills/icm-architect/references/reference-integrity.md
 template/shared-skills/icm-architect/references/system-map.md
+template/shared-skills/context-modes/SKILL.md
+template/shared-skills/end-session/SKILL.md
 template/shared-skills/graphify/SKILL.md
 template/shared-skills/grill-me/SKILL.md
 template/shared-skills/humanizer/LICENSE
