@@ -179,15 +179,22 @@ test('executable bits on disk match the pin inventory', { skip: process.platform
   assert.deepEqual(wrong, []);
 });
 
-// .ts is left out on purpose: Node 22 (engines >=22, `node --test` with no flags) discovers and runs only
-// .js/.mjs/.cjs files, and .ts runs only under --experimental-strip-types, which no script passes.
-// Spec Harness 0.4.0 ships examples/react-ts-minimal/src/*.ts as example source, so a .ts ban is red for a reason that is not execution.
-test('no vendored path can be executed by node --test (no .js, .mjs or .cjs file)', async () => {
+// Spec Harness 0.4.0 ships examples/react-ts-minimal/src/*.ts as example source. A Node with type stripping
+// on can run a .ts file, but `node --test` only discovers files named like tests, so a TypeScript file is
+// allowed only where test discovery never looks (the second check below).
+test('no vendored path can be executed by node --test (no .js, .mjs or .cjs file, and no TypeScript file named like a test)', async () => {
   const pin = await readPin();
   const pattern = /\.(?:js|mjs|cjs)$/i;
   assert.ok(pattern.test('planted/file.mjs') && pattern.test('x.CJS') && !pattern.test('x.sh'), 'control: the pattern fires on planted names');
   assert.deepEqual(pin.sourceInventory.map((file) => file.path).filter((file) => pattern.test(file)), []);
   assert.deepEqual((await walk(vendorRoot)).filter((file) => pattern.test(file)), []);
+  // Node's default test discovery: test.*, test-*.*, *.test.*, *-test.*, *_test.*, and anything under a test/ folder.
+  const typescript = /\.(?:ts|mts|cts)$/i;
+  const discovered = /(?:^|\/)test\/|(?:^|\/)test(?:-[^/]*)?\.[^/]+$|[.\-_]test\.[^/]+$/i;
+  const testLike = (file) => typescript.test(file) && discovered.test(file);
+  assert.ok(testLike('a/money.test.ts') && testLike('test/x.ts') && testLike('a/test-x.mts') && !testLike('examples/react-ts-minimal/src/money.ts'), 'control: the discovery pattern fires on planted test names only');
+  assert.deepEqual(pin.sourceInventory.map((file) => file.path).filter(testLike), []);
+  assert.deepEqual((await walk(vendorRoot)).filter(testLike), []);
 });
 
 test('the attribution repository check is anchored: a longer lookalike URL does not satisfy it', async () => {
