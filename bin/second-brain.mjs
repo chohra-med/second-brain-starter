@@ -131,8 +131,9 @@ async function printPlan(plan) {
   }
   for (const entry of plan.entries) {
     output.write(`${entry.status}\t${entry.destination}\tundo=${entry.undo.action}\n`);
-    if (entry.status === 'CONFLICT' && entry.mergeKind === 'managed-block') {
+    if (entry.status === 'CONFLICT' && (entry.mergeKind === 'managed-block' || entry.conflictReason)) {
       // A marker conflict names its line and its reason. Any other loader conflict keeps the general wording.
+      // A managed file that cannot be merged, such as one that is not UTF-8 text, names its reason too.
       output.write(`Manual resolution required: ${entry.conflictReason ?? `${entry.destination} has unmanaged or malformed loader markers.`}\n`);
     }
   }

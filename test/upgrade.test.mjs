@@ -409,6 +409,78 @@ test('without a usable base the planner falls back to CONFLICT with a whole-file
   }
 });
 
+test('a non-UTF-8 managed file is CONFLICT with no proposal: the merge is not attempted and the file bytes stay', async (t) => {
+  const { subject, destinations } = await routeFixture(t);
+  // Latin-1 e-acute (byte 0xE9) on one line: not valid UTF-8.
+  const local = Buffer.from(routeA.replace('Read the facts first.\n', 'Read the facts first, café.\n'), 'latin1');
+  assert.ok(local.includes(0xe9), 'the local file carries byte 0xE9');
+  await writeFile(at(subject, ROUTE), local);
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('State the next action.', 'State one next action.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations);
+  const entry = plan.entries.find((item) => item.destination === ROUTE);
+  assert.equal(status(ROUTE), 'CONFLICT');
+  assert.equal(entry.proposal ?? null, null, 'no proposal is offered for non-UTF-8 bytes');
+  assert.equal(entry.postimage ?? null, null, 'no merged bytes are planned');
+  assert.match(entry.conflictReason, /not UTF-8 text; the merge was not attempted/);
+  assert.deepEqual(plan.proposalWrites, []);
+  await rejects('PLAN_CONFLICT', () => applyUpgrade(subject, source, plan));
+  assert.deepEqual(await readFile(at(subject, ROUTE)), local, 'the file bytes are unchanged');
+});
+
+test('a CRLF copy of an unedited managed file merges to the new template with CRLF endings', async (t) => {
+  const { subject, destinations } = await routeFixture(t);
+  await writeFile(at(subject, ROUTE), Buffer.from(routeA.replace(/\n/g, '\r\n')));
+  // The template edits the line-final word, where every CRLF line already differs from the LF base.
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then the open roadmap.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations);
+  assert.equal(status(ROUTE), 'MERGE');
+  const templateBytes = await readFile(templateAt(subject, ROUTE));
+  const expected = Buffer.from(templateBytes.toString('utf8').replace(/\n/g, '\r\n'));
+  assert.deepEqual(plan.entries.find((item) => item.destination === ROUTE).postimage, expected, 'the new template, in CRLF endings');
+  await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, ROUTE)), expected);
+  assert.equal((await verifyInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target })).ok, true);
+});
+
+test('a CRLF file with a local edit and a non-overlapping template edit merges, keeping both, in CRLF endings', async (t) => {
+  const { subject, destinations } = await routeFixture(t);
+  const local = routeA.replace('Use this for the selected project folder.\n', 'Use this for the selected project folder.\nLocal rule: name the owner.\n');
+  await writeFile(at(subject, ROUTE), Buffer.from(local.replace(/\n/g, '\r\n')));
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then the open roadmap.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations);
+  assert.equal(status(ROUTE), 'MERGE');
+  const expected = Buffer.from('Use this for the selected project folder.\r\nLocal rule: name the owner.\r\nRead the facts first.\r\nThen the open roadmap.\r\nState the next action.\r\n');
+  assert.deepEqual(plan.entries.find((item) => item.destination === ROUTE).postimage, expected);
+  await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, ROUTE)), expected);
+});
+
+test('mixed line endings keep the line-by-line merge: the CRLF line is kept as written and the template edit merges', async (t) => {
+  // Characterization: one CRLF line among LF lines is not normalised, so it is compared as the line it is.
+  const { subject, destinations } = await routeFixture(t);
+  await writeFile(at(subject, ROUTE), routeA.replace('Read the facts first.\n', 'Read the facts first.\r\n'));
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('State the next action.', 'State one next action.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations);
+  assert.equal(status(ROUTE), 'MERGE');
+  const expected = Buffer.from('Use this for the selected project folder.\nRead the facts first.\r\nThen the roadmap.\nState one next action.\n');
+  assert.deepEqual(plan.entries.find((item) => item.destination === ROUTE).postimage, expected);
+  await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, ROUTE)), expected);
+});
+
+test('an edited non-UTF-8 seed whose template changed gets no proposal, and the seed stays byte-identical', async (t) => {
+  const { subject, destinations } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  const local = Buffer.from(routeA.replace('Read the facts first.\n', 'Read the facts first, café.\n'), 'latin1');
+  await writeFile(at(subject, ROUTE), local);
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Read the facts first.', 'Read the facts first, then the decisions.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations, new Set([ROUTE]));
+  assert.equal(status(ROUTE), 'PERSONALIZED');
+  assert.equal(plan.entries.find((item) => item.destination === ROUTE).proposal ?? null, null, 'no seed proposal for non-UTF-8 bytes');
+  assert.deepEqual(plan.proposalWrites, []);
+  await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, ROUTE)), local, 'the seed is never changed by an upgrade');
+});
+
 test('SEED-UPDATE: an unmodified older seed takes the new template; an edited seed stays PERSONALIZED', async (t) => {
   const { subject, destinations } = await routeFixture(t, { seedPaths: seedFilePaths });
   const edited = '01-Projects/Selected-Project/FACTS.md';
