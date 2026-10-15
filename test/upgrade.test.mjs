@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, lstat, readFile, rm, symlink, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { InstallPlanError, applyAdopt, applyInstall, planAdopt, planInstall, rollbackReceipt, sha256, verifyInstall, writeMergeProposals } from '../lib/installer.mjs';
+import { InstallPlanError, applyAdopt, applyInstall, planAdopt, planInstall, rollbackReceipt, sha256, verifyInstall } from '../lib/installer.mjs';
 
 const managedPaths = [
   'Home.md',
@@ -383,9 +383,8 @@ test('CONFLICT only for overlapping edits: the plan refuses, names the path, and
   assert.equal(status('Home.md'), 'MANAGED-UPDATE');
   const proposal = plan.entries.find((entry) => entry.destination === ROUTE).proposal.toString('utf8');
   assert.match(proposal, /^<<<<<<< local 00-Meta\/Route\.md\nThen the local roadmap\.\n\|\|\|\|\|\|\| base [a-f0-9]{12}\nThen the roadmap\.\n=======\nThen the template roadmap\.\n>>>>>>> template [a-f0-9]{12}\n/m);
-  const written = await writeMergeProposals(plan);
-  assert.deepEqual(written, [{ destination: ROUTE, proposal: `.second-brain/merge/${ROUTE}.proposed` }]);
-  assert.equal(await readFile(path.join(subject.target, '.second-brain', 'merge', '00-Meta', 'Route.md.proposed'), 'utf8'), proposal);
+  await assert.rejects(lstat(path.join(subject.target, '.second-brain', 'merge')), (error) => error.code === 'ENOENT', 'a plan writes no proposal file');
+  assert.deepEqual(plan.proposalWrites, [], 'a CONFLICT proposal is printed on request, never planned as a write');
   await rejects('PLAN_CONFLICT', () => applyUpgrade(subject, source, plan));
   assert.equal(await readFile(at(subject, ROUTE), 'utf8'), local);
   assert.equal(await readFile(at(subject, 'Home.md'), 'utf8'), 'A Home.md\n', 'nothing is applied while a conflict remains');
@@ -453,6 +452,69 @@ test('a managed to seed migration that cannot merge keeps the local file and onl
   assert.ok(plan.entries.find((entry) => entry.destination === ROUTE).proposal);
   await applyUpgrade(subject, source, plan);
   assert.equal(await readFile(at(subject, ROUTE), 'utf8'), local);
+});
+
+const PROPOSAL_PATH = `.second-brain/merge/1.1.0/${ROUTE}.proposed`;
+
+async function seedMigrationFixture(t) {
+  const { subject, destinations } = await routeFixture(t);
+  await writeFile(at(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then my roadmap.'));
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then the new roadmap.'));
+  return { subject, destinations, seeds: new Set([ROUTE]) };
+}
+
+test('a seed migration proposal is written by the approved apply, listed in the receipt, removed by rollback, and verify is OK after each step', async (t) => {
+  const { subject, destinations, seeds } = await seedMigrationFixture(t);
+  const { source, plan, status } = await planUpgrade(subject, destinations, seeds);
+  assert.equal(status(ROUTE), 'PERSONALIZED');
+  assert.deepEqual(plan.proposalWrites.map((write) => write.destination), [PROPOSAL_PATH]);
+  await assert.rejects(lstat(at(subject, '.second-brain/merge')), { code: 'ENOENT' }, 'the plan itself writes nothing');
+  const applied = await applyUpgrade(subject, source, plan);
+  const proposal = plan.entries.find((entry) => entry.destination === ROUTE).proposal;
+  assert.equal(await readFile(at(subject, PROPOSAL_PATH), 'utf8'), proposal.toString('utf8'));
+  const receipt = JSON.parse(await readFile(path.join(subject.target, applied.receiptPath), 'utf8'));
+  const written = receipt.writes.find((write) => write.destination === PROPOSAL_PATH);
+  assert.ok(written, 'the receipt lists the proposal write');
+  assert.equal(written.preimageSha256, null);
+  assert.equal(written.backupPath, null);
+  assert.equal(written.postimageSha256, sha256(proposal));
+  assert.equal((await verifyInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target })).ok, true);
+
+  await rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId });
+  await assert.rejects(lstat(at(subject, PROPOSAL_PATH)), { code: 'ENOENT' }, 'rollback removes the proposal');
+  await assert.rejects(lstat(at(subject, '.second-brain/merge')), { code: 'ENOENT' }, 'rollback removes the folders the apply created');
+  assert.equal(await readFile(at(subject, ROUTE), 'utf8'), routeA.replace('Then the roadmap.', 'Then my roadmap.'));
+});
+
+test('a tampered merge proposal entry in the receipt is refused before rollback', async (t) => {
+  const { subject, destinations, seeds } = await seedMigrationFixture(t);
+  const { source, plan } = await planUpgrade(subject, destinations, seeds);
+  const applied = await applyUpgrade(subject, source, plan);
+  const receiptPath = path.join(subject.target, applied.receiptPath);
+  const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+  const proposalWrite = receipt.writes.find((write) => write.destination === PROPOSAL_PATH);
+  assert.ok(proposalWrite, 'the upgrade receipt records the proposal write');
+  proposalWrite.destination = ROUTE;
+  await writeFile(receiptPath, JSON.stringify(receipt));
+  await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: subject.target, receiptId: applied.receiptId }));
+  assert.equal(await readFile(at(subject, PROPOSAL_PATH), 'utf8'), plan.entries.find((entry) => entry.destination === ROUTE).proposal.toString('utf8'), 'nothing was rolled back');
+});
+
+test('an edited proposal already at the proposal path is kept: the plan says so, the apply never overwrites it, and it changes the digest', async (t) => {
+  const { subject, destinations, seeds } = await seedMigrationFixture(t);
+  const clean = await planUpgrade(subject, destinations, seeds);
+  const edited = Buffer.from('My own notes on the template change.\n');
+  await mkdir(path.dirname(at(subject, PROPOSAL_PATH)), { recursive: true });
+  await writeFile(at(subject, PROPOSAL_PATH), edited);
+  const { source, plan, status } = await planUpgrade(subject, destinations, seeds);
+  assert.equal(status(ROUTE), 'PERSONALIZED');
+  assert.deepEqual(plan.proposalWrites, [], 'an existing proposal is not planned as a write');
+  assert.equal(plan.entries.find((entry) => entry.destination === ROUTE).proposalState, 'kept');
+  assert.notEqual(plan.digest, clean.plan.digest, 'the digest records that the proposal write is absent');
+  const applied = await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, PROPOSAL_PATH)), edited, 'the edited proposal survives the apply byte for byte');
+  const receipt = JSON.parse(await readFile(path.join(subject.target, applied.receiptPath), 'utf8'));
+  assert.equal(receipt.writes.some((write) => write.destination === PROPOSAL_PATH), false, 'the receipt does not claim the kept file');
 });
 
 test('verify --adopt accepts a local edit under its own receipt, and rollback restores the previous record', async (t) => {

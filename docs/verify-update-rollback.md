@@ -97,6 +97,26 @@ node ./bin/second-brain.mjs status --target "$PROJECT"
 
 For a later starter version, obtain a fresh source copy first, then run its `upgrade` command against the same target. It prints a complete three-way plan using the installed record, your current bytes, and the new template bytes. As with `init`, an interactive terminal requires the displayed digest. Non-interactive use requires `--apply` with that exact digest. Read [UPGRADING.md](../UPGRADING.md) before upgrading.
 
+## Resolve a CONFLICT
+
+A `CONFLICT` line means your edit and the starter's new template changed the same lines of one managed file. A plan writes nothing, and nothing is applied while a `CONFLICT` line remains. To resolve it, for example for `03-Resources/Procedures/review.md`:
+
+1. Print the marked version into a scratch file outside the target:
+
+   ```sh
+   node ./bin/second-brain.mjs upgrade --target "$PROJECT" --proposal 03-Resources/Procedures/review.md > "$SCRATCH/review.md"
+   ```
+
+   This command writes nothing to the target. Do not redirect its output into the managed file itself: the shell empties that file before the plan reads it.
+2. Edit the scratch file until no `<<<<<<<`, `|||||||`, `=======` or `>>>>>>>` line is left.
+3. Copy it over the managed file: `cp "$SCRATCH/review.md" "$PROJECT/03-Resources/Procedures/review.md"`.
+4. Accept those bytes with `verify --adopt`, then approve its plan the same way as `init`, by typing the digest or repeating it with `--apply`:
+
+   ```sh
+   node ./bin/second-brain.mjs verify --target "$PROJECT" --adopt 03-Resources/Procedures/review.md
+   ```
+5. Plan the upgrade again. It should show no `CONFLICT` line for that file.
+
 ## Roll back
 
 If a change goes wrong, stop editing the target. Use the relevant receipt rollback when its preconditions hold, or return to the dated copy made before the update.

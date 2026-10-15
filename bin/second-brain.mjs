@@ -14,7 +14,6 @@ import {
   sha256,
   statusInstall,
   verifyInstall,
-  writeMergeProposals,
 } from '../lib/installer.mjs';
 import {
   RECEIPT_ID_PATTERN,
@@ -66,7 +65,7 @@ function word(value) {
   return `'${text.replace(/'/g, "'\\''")}'`;
 }
 
-function cliCommand(subcommand, { target, repo, name, receipt, adopt, apply } = {}) {
+function cliCommand(subcommand, { target, repo, name, receipt, adopt, apply, proposal } = {}) {
   const parts = ['node', word(SCRIPT), subcommand];
   if (target !== undefined) parts.push('--target', word(target));
   for (const item of adopt ?? []) parts.push('--adopt', word(item));
@@ -74,6 +73,7 @@ function cliCommand(subcommand, { target, repo, name, receipt, adopt, apply } = 
   if (name !== undefined) parts.push('--name', word(name));
   if (receipt !== undefined) parts.push('--receipt', word(receipt));
   if (apply !== undefined) parts.push('--apply', word(apply));
+  if (proposal !== undefined) parts.push('--proposal', word(proposal));
   return parts.join(' ');
 }
 
@@ -82,19 +82,22 @@ function help() {
 
 Usage:
   second-brain init --target /absolute/path [--apply PLAN_DIGEST]
-  second-brain upgrade --target /absolute/path [--apply PLAN_DIGEST]
+  second-brain upgrade --target /absolute/path [--apply PLAN_DIGEST | --proposal PATH]
   second-brain connect --target /absolute/path --repo /absolute/repository [--name NAME] [--apply PLAN_DIGEST]
   second-brain verify --target /absolute/path [--records | --adopt PATH ... [--apply PLAN_DIGEST]]
   second-brain rollback --target /absolute/path --receipt RECEIPT_ID
   second-brain workspace-plan --parent /absolute/folder [--list-projects]
   second-brain status --target /absolute/path
 
-init and upgrade always print a complete plan. In a terminal, type the exact
-plan digest when prompted. Outside a terminal, they only plan unless --apply
-supplies that exact digest. upgrade keeps a locally edited managed file when
-the template did not change it (CUSTOMIZED-KEEP), merges both sides when they
-do not overlap (MERGE), and stops only on an overlapping edit (CONFLICT), with a
-marked proposal under .second-brain/merge/. --force is not available in V1.
+init and upgrade always print a complete plan, and a plan writes nothing. In a
+terminal, type the exact plan digest when prompted. Outside a terminal, they only
+plan unless --apply supplies that exact digest. upgrade keeps a locally edited managed
+file when the template did not change it (CUSTOMIZED-KEEP), merges both sides when
+they do not overlap (MERGE), and stops only on an overlapping edit (CONFLICT).
+upgrade --proposal PATH prints that edit's marked proposal and writes nothing. A file
+that becomes yours in this release keeps your bytes; its template changes are offered
+under .second-brain/merge/ when the approved apply writes them. --force is not
+available in V1.
 
 verify --adopt PATH records a managed file's current bytes as your accepted
 version, under its own plan digest and receipt. verify --records only reads:
@@ -121,7 +124,7 @@ function statusCounts(entries) {
   return [...counts.entries()].sort((left, right) => STATUS_ORDER.indexOf(left[0]) - STATUS_ORDER.indexOf(right[0]));
 }
 
-async function printPlan(plan, proposals = []) {
+async function printPlan(plan) {
   output.write(`Plan: ${plan.operation}\nTarget: ${plan.target}\n`);
   if (plan.operation === 'upgrade') {
     output.write(`Versions: installed ${plan.installedTemplateVersion ?? 'none'} -> available ${plan.templateVersion}\n`);
@@ -148,20 +151,25 @@ async function printPlan(plan, proposals = []) {
   for (const entry of plan.entries.filter((item) => item.status === 'MERGE')) {
     output.write(`Merged: ${entry.destination} keeps your edits and takes the template's non-overlapping changes; undo restores your current bytes.\n`);
   }
-  for (const { destination, proposal } of proposals) {
-    const entry = plan.entries.find((item) => item.destination === destination);
-    if (entry?.status === 'CONFLICT') {
-      output.write(`Proposal: ${destination} has overlapping edits. A version with conflict markers is at ${proposal}.\n`);
+  // A CONFLICT proposal is not written: upgrade --proposal prints it on request.
+  for (const entry of plan.entries.filter((item) => item.status === 'CONFLICT' && item.proposal)) {
+    output.write(`Proposal: ${entry.destination} has overlapping edits. Print its version with conflict markers with: ${cliCommand('upgrade', { target: plan.target, proposal: entry.destination })}\n`);
+  }
+  // A seed proposal is written by the approved apply, or it is already there and is kept, never overwritten.
+  for (const entry of plan.entries.filter((item) => item.status === 'PERSONALIZED' && item.proposal)) {
+    if (entry.proposalState === 'kept') {
+      output.write(`Proposal: kept your edited proposal at ${entry.proposalPath}; this apply does not overwrite it. ${entry.destination} is yours from this release and is kept as it is.\n`);
     } else {
-      output.write(`Proposal: ${destination} is yours from this release and is kept as it is. The template's changes are offered, optionally, in ${proposal}.\n`);
+      const when = entry.proposalState === 'write' ? ', which the approved apply writes' : '';
+      output.write(`Proposal: ${entry.destination} is yours from this release and is kept as it is. The template's changes are offered, optionally, in ${entry.proposalPath}${when}.\n`);
     }
   }
   const conflicts = plan.entries.filter((entry) => entry.status === 'CONFLICT');
   if (conflicts.length > 0) {
     output.write(`Blocked: nothing is applied while CONFLICT lines remain: ${conflicts.map((entry) => entry.destination).join(', ')}\n`);
-    const resolvable = conflicts.filter((entry) => entry.mergeKind === 'managed-file' && proposals.some((item) => item.destination === entry.destination));
+    const resolvable = conflicts.filter((entry) => entry.mergeKind === 'managed-file' && entry.proposal);
     if (resolvable.length > 0) {
-      output.write('Next: edit each proposal until no <<<<<<<, ||||||| , ======= or >>>>>>> line is left, save it over the file it names, then accept those bytes with:\n');
+      output.write('Next: print each proposal with the command above, save it outside the target, edit it until no <<<<<<<, ||||||| , ======= or >>>>>>> line is left, then copy it over the file it names. Do not redirect the output into that file: the shell empties it before the plan reads it. Then accept those bytes with:\n');
       output.write(`  ${cliCommand('verify', { target: plan.target, adopt: resolvable.map((entry) => entry.destination) })}\n`);
       output.write(`Then plan the upgrade again: ${cliCommand(plan.operation, { target: plan.target })}\n`);
     }
@@ -265,11 +273,24 @@ async function runWorkspacePlan(parsed) {
   output.write(`${lines.join('\n')}\n`);
 }
 
+// upgrade --proposal PATH: prints the marked proposal the plan holds for one path, byte for byte. It reads the plan and
+// writes nothing, and it never applies anything.
+async function runProposal(targetPath, proposalPath) {
+  const payload = await source();
+  const plan = await planInstall({ ...payload, targetPath, operation: 'upgrade' });
+  const entry = plan.entries.find((item) => item.destination === proposalPath && item.proposal);
+  if (!entry) {
+    output.write(`No proposal: ${proposalPath} has no proposal in this plan. Nothing was changed.\n`);
+    process.exitCode = 1;
+    return;
+  }
+  output.write(entry.proposal);
+}
+
 async function runPlan(command, targetPath, suppliedDigest) {
   const payload = await source();
   const plan = await planInstall({ ...payload, targetPath, operation: command });
-  const proposals = await writeMergeProposals(plan);
-  await printPlan(plan, proposals);
+  await printPlan(plan);
   const { answer, interrupted, yesAccepted, declined } = await confirmInteractive(plan, suppliedDigest);
   if (interrupted) {
     output.write('Plan not applied.\n');
@@ -922,7 +943,8 @@ async function run(context) {
     return;
   }
   if (parsed.command === 'init' || parsed.command === 'upgrade') {
-    await runPlan(parsed.command, parsed.targetPath, parsed.approvedDigest);
+    if (parsed.proposalPath !== null) await runProposal(parsed.targetPath, parsed.proposalPath);
+    else await runPlan(parsed.command, parsed.targetPath, parsed.approvedDigest);
     return;
   }
   if (parsed.command === 'connect') {

@@ -5,12 +5,72 @@ import { cp, mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import test from 'node:test';
 
 const execFile = promisify(execFileCallback);
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bin = path.join(sourceRoot, 'bin', 'second-brain.mjs');
+const CONFLICT_PATH = '03-Resources/Procedures/review.md';
+const SEED_PATH = '03-Resources/Procedures/init.md';
+const escapeRe = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Every file and folder under a root, each file as its SHA-256. A folder is listed with a trailing slash, so a
+// folder the command created or removed shows up in the comparison.
+async function treeSnapshot(root) {
+  const snapshot = {};
+  const walk = async (directory) => {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      const full = path.join(directory, entry.name);
+      const relative = path.relative(root, full).split(path.sep).join('/');
+      if (entry.isDirectory()) {
+        snapshot[`${relative}/`] = 'directory';
+        await walk(full);
+      } else {
+        snapshot[relative] = createHash('sha256').update(await readFile(full)).digest('hex');
+      }
+    }
+  };
+  await walk(root);
+  return snapshot;
+}
+
+// A copy of this checkout with a workspace installed from it. Each changed file has one edited line in the workspace
+// and one changed line in the template, on the same line: an overlapping edit. CONFLICT_PATH stays a managed file, so
+// the upgrade is blocked by a CONFLICT. SEED_PATH becomes a seed in the new template, so it keeps the local bytes and
+// gets a PERSONALIZED proposal.
+async function workspaceWithChanges(t, { conflict }) {
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-proposal-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const checkout = path.join(root, 'starter');
+  const target = path.join(root, 'target');
+  await mkdir(target);
+  await cp(sourceRoot, checkout, { recursive: true, filter: (entry) => !entry.includes(`${path.sep}.git`) && !entry.includes(`${path.sep}vendor${path.sep}`) && !entry.includes(`${path.sep}test${path.sep}`) });
+  const run = async (args) => {
+    try {
+      return await execFile(process.execPath, [path.join(checkout, 'bin', 'second-brain.mjs'), ...args], { cwd: checkout });
+    } catch (error) {
+      return { stdout: error.stdout ?? '', code: error.code };
+    }
+  };
+  const planned = await run(['init', '--target', target]);
+  assert.equal((await run(['init', '--target', target, '--apply', digest(planned.stdout)])).code, undefined);
+  const manifestPath = path.join(checkout, 'template-manifest.json');
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+  for (const destination of conflict ? [CONFLICT_PATH, SEED_PATH] : [SEED_PATH]) {
+    const original = await readFile(path.join(target, ...destination.split('/')), 'utf8');
+    const firstLine = original.split('\n')[0];
+    await writeFile(path.join(target, ...destination.split('/')), original.replace(firstLine, `${firstLine} (local)`));
+    const changed = original.replace(firstLine, `${firstLine} (template)`);
+    await writeFile(path.join(checkout, 'template', ...destination.split('/')), changed);
+    manifest.entries.find((entry) => entry.destination === destination).sha256 = createHash('sha256').update(changed).digest('hex');
+  }
+  manifest.entries.find((entry) => entry.destination === SEED_PATH).mergeKind = 'seed-file';
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  return { checkout, target, run, version: manifest.metadata.templateVersion };
+}
+
+const proposalRelative = (version, destination) => `.second-brain/merge/${version}/${destination}.proposed`;
 
 async function cli(args, options = {}) {
   try {
@@ -214,12 +274,94 @@ test('an overlapping edit prints the proposal path and the exact adopt and upgra
 
   const upgrade = await run(['upgrade', '--target', target]);
   assert.match(upgrade.stdout, new RegExp(`^CONFLICT\\t${destination.replace(/\./g, '\\.')}\\tundo=none$`, 'm'));
-  assert.match(upgrade.stdout, new RegExp(`^Proposal: ${destination.replace(/\./g, '\\.')} has overlapping edits\\. A version with conflict markers is at \\.second-brain/merge/${destination.replace(/\./g, '\\.')}\\.proposed\\.$`, 'm'));
+  assert.match(upgrade.stdout, new RegExp(`^Proposal: ${escapeRe(destination)} has overlapping edits\\. Print its version with conflict markers with: .*--proposal ${escapeRe(destination)}$`, 'm'));
   assert.match(upgrade.stdout, /^Blocked: nothing is applied while CONFLICT lines remain: 03-Resources\/Procedures\/review\.md$/m);
   assert.ok(upgrade.stdout.includes(`verify --target ${target} --adopt ${destination}`) || upgrade.stdout.includes(`--adopt ${destination}`), upgrade.stdout);
-  const proposal = await readFile(path.join(target, '.second-brain', 'merge', ...`${destination}.proposed`.split('/')), 'utf8');
-  assert.match(proposal, /^<<<<<<< local /m);
+  await assert.rejects(stat(path.join(target, '.second-brain', 'merge')), { code: 'ENOENT' }, 'the plan writes no proposal file');
+  const proposal = await run(['upgrade', '--target', target, '--proposal', destination]);
+  assert.equal(proposal.code, undefined, proposal.stdout);
+  assert.match(proposal.stdout, /^<<<<<<< local /m);
   const refused = await run(['upgrade', '--target', target, '--apply', digest(upgrade.stdout)]);
   assert.equal(refused.code, 1);
   assert.match(refused.stdout, /PLAN_CONFLICT/);
+});
+
+test('a plan-only upgrade with a CONFLICT and a seed proposal changes no byte under the target, the .second-brain folder included', async (t) => {
+  const { target, run, version } = await workspaceWithChanges(t, { conflict: true });
+  const before = await treeSnapshot(target);
+  const plan = await run(['upgrade', '--target', target]);
+  assert.equal(plan.code, undefined, plan.stdout);
+  assert.match(plan.stdout, new RegExp(`^CONFLICT\\t${escapeRe(CONFLICT_PATH)}\\t`, 'm'));
+  assert.match(plan.stdout, new RegExp(`^PERSONALIZED\\t${escapeRe(SEED_PATH)}\\t`, 'm'));
+  assert.match(plan.stdout, new RegExp(`^Proposal: ${escapeRe(SEED_PATH)} is yours from this release .* in ${escapeRe(proposalRelative(version, SEED_PATH))}`, 'm'));
+  assert.deepEqual(await treeSnapshot(target), before, 'README.md:98 holds: a plan writes nothing');
+  await assert.rejects(stat(path.join(target, '.second-brain', 'merge')), { code: 'ENOENT' });
+});
+
+test('upgrade --proposal prints the planned proposal bytes of one path, writes nothing, and refuses misuse', async (t) => {
+  const { checkout, target, run } = await workspaceWithChanges(t, { conflict: true });
+  const { planInstall } = await import(pathToFileURL(path.join(checkout, 'lib', 'installer.mjs')).href);
+  const manifestBytes = await readFile(path.join(checkout, 'template-manifest.json'));
+  const plan = await planInstall({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: checkout, targetPath: target, operation: 'upgrade' });
+  const expected = plan.entries.find((entry) => entry.destination === CONFLICT_PATH).proposal.toString('utf8');
+  assert.match(expected, /^<<<<<<< local /m);
+  const before = await treeSnapshot(target);
+
+  const printed = await run(['upgrade', '--target', target, '--proposal', CONFLICT_PATH]);
+  assert.equal(printed.code, undefined, printed.stdout);
+  assert.equal(printed.stdout, expected, 'the printed text is the planned proposal, byte for byte');
+  assert.deepEqual(await treeSnapshot(target), before, 'printing a proposal writes nothing');
+
+  const seed = await run(['upgrade', '--target', target, '--proposal', SEED_PATH]);
+  assert.equal(seed.code, undefined, seed.stdout);
+  assert.equal(seed.stdout, plan.entries.find((entry) => entry.destination === SEED_PATH).proposal.toString('utf8'));
+
+  const none = await run(['upgrade', '--target', target, '--proposal', 'Home.md']);
+  assert.equal(none.code, 1);
+  assert.match(none.stdout, /^No proposal: Home\.md has no proposal in this plan\. Nothing was changed\.$/m);
+
+  const withApply = await run(['upgrade', '--target', target, '--proposal', CONFLICT_PATH, '--apply', '0'.repeat(64)]);
+  assert.equal(withApply.code, 1);
+  assert.match(withApply.stdout, /^USAGE: upgrade --proposal prints a proposal and does not accept --apply\. Nothing was changed\.$/m);
+
+  const onInit = await run(['init', '--target', target, '--proposal', CONFLICT_PATH]);
+  assert.equal(onInit.code, 1);
+  assert.match(onInit.stdout, /^USAGE: init does not accept --proposal\.$/m);
+
+  const outside = await run(['upgrade', '--target', target, '--proposal', '../outside.md']);
+  assert.equal(outside.code, 1);
+  assert.match(outside.stdout, /^USAGE: --proposal takes a workspace-relative path/m);
+  assert.deepEqual(await treeSnapshot(target), before, 'every refusal changes nothing');
+});
+
+test('the approved apply writes the seed proposal the plan offered, and rollback removes it', async (t) => {
+  const { target, run, version } = await workspaceWithChanges(t, { conflict: false });
+  const statePath = path.join(target, '.second-brain', 'installed-state.json');
+  const stateBefore = await readFile(statePath);
+  const planned = await run(['upgrade', '--target', target]);
+  const offered = await run(['upgrade', '--target', target, '--proposal', SEED_PATH]);
+  assert.equal(offered.code, undefined, offered.stdout);
+  const applied = await run(['upgrade', '--target', target, '--apply', digest(planned.stdout)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  const appliedReceipt = receipt(applied.stdout);
+  assert.ok(appliedReceipt);
+  assert.equal(await readFile(path.join(target, ...proposalRelative(version, SEED_PATH).split('/')), 'utf8'), offered.stdout);
+  assert.equal((await run(['verify', '--target', target])).code, undefined, 'verify is OK after the apply');
+
+  const undone = await run(['rollback', '--target', target, '--receipt', appliedReceipt]);
+  assert.equal(undone.code, undefined, undone.stdout);
+  await assert.rejects(stat(path.join(target, ...proposalRelative(version, SEED_PATH).split('/'))), { code: 'ENOENT' });
+  assert.deepEqual(await readFile(statePath), stateBefore, 'rollback restores the installed state record byte for byte');
+});
+
+test('a kept edited proposal is named by the plan, and the apply leaves its bytes alone', async (t) => {
+  const { target, run, version } = await workspaceWithChanges(t, { conflict: false });
+  const kept = path.join(target, ...proposalRelative(version, SEED_PATH).split('/'));
+  await mkdir(path.dirname(kept), { recursive: true });
+  await writeFile(kept, 'My own notes on the template change.\n');
+  const planned = await run(['upgrade', '--target', target]);
+  assert.match(planned.stdout, new RegExp(`^Proposal: kept your edited proposal at ${escapeRe(proposalRelative(version, SEED_PATH))}; this apply does not overwrite it\\.`, 'm'));
+  const applied = await run(['upgrade', '--target', target, '--apply', digest(planned.stdout)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  assert.equal(await readFile(kept, 'utf8'), 'My own notes on the template change.\n');
 });
