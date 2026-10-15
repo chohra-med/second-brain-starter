@@ -424,6 +424,57 @@ test('SEED-UPDATE: an unmodified older seed takes the new template; an edited se
   assert.equal(again.status('01-Projects/Selected-Project/roadmap.md'), 'IDENTICAL');
 });
 
+test('an edited seed whose template changed since install gets a merge proposal, and the seed stays byte-identical', async (t) => {
+  const { subject, destinations } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  const local = routeA.replace('State the next action.\n', 'State the next action.\nMy own line.\n');
+  await writeFile(at(subject, ROUTE), local);
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Read the facts first.', 'Read the facts first, then the decisions.'));
+  const { source, plan, status } = await planUpgrade(subject, destinations, new Set([ROUTE]));
+  assert.equal(status(ROUTE), 'PERSONALIZED');
+  assert.deepEqual(plan.proposalWrites.map((write) => write.destination), [PROPOSAL_PATH]);
+  const templateLine = (await readFile(templateAt(subject, ROUTE), 'utf8')).split('\n').find((line) => line.includes('then the decisions'));
+  assert.ok(templateLine, 'the test template carries the new line');
+  const applied = await applyUpgrade(subject, source, plan);
+  assert.equal(await readFile(at(subject, ROUTE), 'utf8'), local, 'the seed is never changed by an upgrade');
+  const proposal = await readFile(at(subject, PROPOSAL_PATH), 'utf8');
+  assert.ok(proposal.includes(templateLine), 'the proposal carries the template line that is new');
+  assert.ok(proposal.includes('My own line.\n'), 'the proposal keeps the line the user added');
+  assert.ok(applied.receiptId, 'the proposal is recorded by a receipt');
+});
+
+test('an edited seed whose template did not change since install gets no proposal', async (t) => {
+  const { subject, destinations } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  await writeFile(at(subject, ROUTE), routeA.replace('State the next action.\n', 'State the next action.\nMy own line.\n'));
+  const { plan, status } = await planUpgrade(subject, destinations, new Set([ROUTE]));
+  assert.equal(status(ROUTE), 'PERSONALIZED');
+  assert.equal(plan.entries.find((entry) => entry.destination === ROUTE).proposal, undefined);
+  assert.deepEqual(plan.proposalWrites, []);
+});
+
+test('a second upgrade from the same template source offers no seed proposal again', async (t) => {
+  const { subject, destinations } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  await writeFile(at(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then my roadmap.'));
+  await writeFile(templateAt(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then the new roadmap.'));
+  const first = await planUpgrade(subject, destinations, new Set([ROUTE]));
+  assert.deepEqual(first.plan.proposalWrites.map((write) => write.destination), [PROPOSAL_PATH]);
+  await applyUpgrade(subject, first.source, first.plan);
+  const second = await planUpgrade(subject, destinations, new Set([ROUTE]));
+  assert.equal(second.status(ROUTE), 'PERSONALIZED');
+  assert.equal(second.plan.entries.find((entry) => entry.destination === ROUTE).proposal, undefined);
+  assert.deepEqual(second.plan.proposalWrites, [], 'the recorded template hash is the new source, so nothing is offered twice');
+});
+
+test('a seed records a base snapshot of its template at install, and verify accepts it', async (t) => {
+  const { subject, installed } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  const state = JSON.parse(await readFile(path.join(subject.target, '.second-brain', 'installed-state.json'), 'utf8'));
+  const snapshot = await readFile(path.join(subject.target, '.second-brain', 'base', ...ROUTE.split('/')));
+  assert.equal(sha256(snapshot), state.managedPaths[ROUTE].templateSha256);
+  assert.equal((await verifyInstall({ ...installed, sourceRoot: subject.sourceRoot, targetPath: subject.target })).ok, true);
+  await writeFile(path.join(subject.target, '.second-brain', 'base', ...ROUTE.split('/')), 'tampered base\n');
+  const damaged = await verifyInstall({ ...installed, sourceRoot: subject.sourceRoot, targetPath: subject.target });
+  assert.deepEqual(damaged.issues.filter((issue) => issue.code === 'CORRUPT').map((issue) => issue.path), [`.second-brain/base/${ROUTE}`]);
+});
+
 test('managed to seed migration merges a customized file once, then the file is user-owned', async (t) => {
   const { subject, destinations } = await routeFixture(t);
   const local = routeA.replace('State the next action.\n', 'State the next action.\nMy own line.\n');
@@ -432,7 +483,7 @@ test('managed to seed migration merges a customized file once, then the file is 
   const seeds = new Set([ROUTE]);
   const { source, plan, status } = await planUpgrade(subject, destinations, seeds);
   assert.equal(status(ROUTE), 'MERGE');
-  assert.equal(plan.baseWrites.some((write) => write.managedDestination === ROUTE), false, 'a seed keeps no base snapshot');
+  assert.equal(plan.baseWrites.some((write) => write.managedDestination === ROUTE), true, 'a seed keeps a base snapshot so its later proposal has a base');
   await applyUpgrade(subject, source, plan);
   const state = JSON.parse(await readFile(path.join(subject.target, '.second-brain', 'installed-state.json'), 'utf8'));
   assert.equal(state.managedPaths[ROUTE].mergeKind, 'seed-file');

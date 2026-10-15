@@ -117,6 +117,18 @@ A `CONFLICT` line means your edit and the starter's new template changed the sam
    ```
 5. Plan the upgrade again. It should show no `CONFLICT` line for that file.
 
+## Read a seed proposal
+
+A seed is a file you own, such as `Home.md`. An upgrade never changes it. When the starter's template for a seed changes after you personalized it, the plan shows that seed as `PERSONALIZED` and offers the template's change as a proposal. The proposal is optional: nothing requires you to take it.
+
+The approved `upgrade --apply` writes the proposal to `.second-brain/merge/<template version>/<seed path>.proposed` only when no file is there yet. To print it without writing anything, for example for `Home.md`:
+
+```sh
+node ./bin/second-brain.mjs upgrade --target "$PROJECT" --proposal Home.md > "$SCRATCH/Home.md"
+```
+
+Read it, copy any lines you want into your own seed by hand, or ignore it. Leave the proposal file where it is. A rollback of the upgrade that offered it removes that file only while it is still the exact bytes the upgrade wrote, so if you delete or edit it, that rollback refuses.
+
 ## Roll back
 
 If a change goes wrong, stop editing the target. Use the relevant receipt rollback when its preconditions hold, or return to the dated copy made before the update.
