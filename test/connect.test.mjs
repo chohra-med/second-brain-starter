@@ -2602,7 +2602,7 @@ test('index: connect adds exactly one row inside the table, and rollback removes
   const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
   const connected = await readFile(rel(w.hub, INDEX), 'utf8');
   assert.equal(rowLines(connected).length, 1);
-  assert.equal(rowLines(connected)[0], `| my-repo | [my-repo/README.md](<my-repo/README.md>) | ${w.repo} | Connected: STAGED |`);
+  assert.equal(rowLines(connected)[0], '| my-repo | [my-repo/README.md](<my-repo/README.md>) | [Connection.md](<my-repo/Connection.md>) | Connected: STAGED |');
   const lines = connected.split('\n');
   assert.ok(lines[lines.indexOf(rowLines(connected)[0]) - 1].startsWith('|'), 'the row sits inside the table');
   // A later hand edit elsewhere in the index survives the rollback.
@@ -2676,4 +2676,21 @@ test('index: a v1.3.0 connect receipt without indexRow still rolls back', async 
   await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
   // Without the record, the row this connect added is not known to the undo, so it stays: that is the v1.3.0 contract.
   assert.match(await readFile(rel(w.hub, INDEX), 'utf8'), /^\| my-repo \|/m);
+});
+
+test('index: the row links Connection.md and never stores the repository path (C51)', async (t) => {
+  const w = await world(t, { index: true });
+  await connectNow(w);
+  const index = await readFile(rel(w.hub, INDEX), 'utf8');
+  // The repository path comes from what connect recorded, not from this test's own variable.
+  const recorded = JSON.parse(await readFile(rel(w.hub, CONNECTIONS), 'utf8'));
+  const [record] = Object.values(recorded.connections);
+  assert.ok(path.isAbsolute(record.repo), 'connect recorded an absolute repository path');
+  const recordedReal = await realpath(record.repo);
+  const [row] = rowLines(index);
+  assert.ok(row, 'the index has the connected row');
+  assert.ok(!index.includes(record.repo), 'Index.md does not contain the recorded repository path');
+  assert.ok(!index.includes(recordedReal), 'Index.md does not contain the repository realpath');
+  assert.ok(!/\/(Users|home)\//.test(row), 'the new row holds no home-folder path');
+  assert.equal(row, '| my-repo | [my-repo/README.md](<my-repo/README.md>) | [Connection.md](<my-repo/Connection.md>) | Connected: STAGED |');
 });
