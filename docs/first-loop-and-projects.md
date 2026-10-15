@@ -29,7 +29,7 @@ For system architecture maintenance, use `second-brain-icm` before changing rule
 
 ## A second project
 
-To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. The initializer still seeds one project, `Selected-Project`, and does not rename it. To register a repository you already work in, use `connect` instead. See [connect a repository](connect-a-repository.md).
+To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. Then add its row to `01-Projects/Index.md`: one row per project, with its record map, source location and status. The initializer still seeds one project, `Selected-Project`, and does not rename it. To register a repository you already work in, use `connect` instead. See [connect a repository](connect-a-repository.md).
 
 ## Extend the workspace
 

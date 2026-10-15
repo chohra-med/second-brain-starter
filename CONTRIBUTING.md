@@ -26,46 +26,11 @@ Run the steps in order from the repository root, in bash or zsh (step 6 uses `<(
 4. Record the tracked files and the tree: `git -C "$S/UPSTREAM" ls-tree -r C > "$S/LS-TREE.txt"`, then `git -C "$S/UPSTREAM" rev-parse C^{tree}`. The second value is `TREE`.
 5. Export `C` into an empty folder: `mkdir "$S/EXPORT" && git -C "$S/UPSTREAM" archive C | tar -x -C "$S/EXPORT"`.
 6. Prove the export holds exactly the tracked files: `diff <(cut -f2 "$S/LS-TREE.txt" | sort) <(cd "$S/EXPORT" && find . -type f | sed 's|^\./||' | sort)`. It must print nothing. If it prints anything, stop.
-7. Replace the vendored folder: `rm -rf vendor/spec-harness && mkdir vendor/spec-harness && cp -R "$S/EXPORT/." vendor/spec-harness/`.
-8. Save the script below as `"$S/pin.mjs"`, then write the pin: `node "$S/pin.mjs" "$S/EXPORT" "$S/LS-TREE.txt" C TREE https://github.com/chohra-med/spec-harness-oss > vendor/SPEC-HARNESS-PIN.json`. Do not edit the pin by hand.
-9. If the commit or the harness version changed, update the Spec Harness section of [ATTRIBUTION.md](ATTRIBUTION.md). That section may name only the pinned commit.
-10. Update the `vendor/` lines of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt). Keep `vendor/SPEC-HARNESS-PIN.json`. Keep one `vendor/spec-harness/<path>` line for each file in the new inventory, remove the lines of files that are gone, and change nothing else.
+7. Dry-run the pin tool. It recomputes the git tree hash from the exported bytes, refuses an export that does not match `TREE`, and writes nothing: `node tools/update-harness-pin.mjs --source "$S/EXPORT" --commit C --tree TREE --dry-run`. It prints the file count, the tree and the license hash it checked.
+8. Run the same command without `--dry-run`. It replaces `vendor/spec-harness/`, writes `vendor/SPEC-HARNESS-PIN.json`, rewrites the `vendor/` lines of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt) and the commit in [ATTRIBUTION.md](ATTRIBUTION.md), and writes nothing else. Do not edit the pin by hand. Add `--accept-license-change` only when the upstream `LICENSE` changed on purpose; the tool refuses a changed license without it.
+9. Read the diff of [ATTRIBUTION.md](ATTRIBUTION.md). The Spec Harness section may name only the pinned commit.
+10. Read the diff of [FILE-ALLOWLIST.txt](FILE-ALLOWLIST.txt). Only the `vendor/` lines change, and `vendor/SPEC-HARNESS-PIN.json` stays on the list.
 11. Run `node --test test/vendor.test.mjs`. It must report `# fail 0`. Then run `node --test` for the whole suite.
-
-The script `pin.mjs`:
-
-```js
-// Writes vendor/SPEC-HARNESS-PIN.json for one upstream commit.
-// usage: node pin.mjs EXPORT_DIR LS_TREE_LISTING COMMIT TREE REPOSITORY_URL > vendor/SPEC-HARNESS-PIN.json
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-const [exportDir, listing, commit, tree, repository] = process.argv.slice(2);
-const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
-const modes = new Map();
-for (const line of readFileSync(listing, 'utf8').split('\n').filter(Boolean)) {
-  const [meta, file] = line.split('\t');
-  modes.set(file, meta.split(' ')[0]);
-}
-const paths = [...modes.keys()].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
-const sourceInventory = paths.map((file) => {
-  const bytes = readFileSync(path.join(exportDir, ...file.split('/')));
-  const entry = { path: file, bytes: bytes.length, sha256: sha256(bytes) };
-  if (modes.get(file) === '100755') entry.executable = true;
-  return entry;
-});
-const manifest = JSON.parse(readFileSync(path.join(exportDir, 'install-manifest.json'), 'utf8'));
-const pin = {
-  schemaVersion: 1,
-  repository,
-  commit,
-  tree,
-  harnessVersion: manifest.harnessVersion,
-  license: { spdx: 'MIT', path: 'LICENSE', sha256: sha256(readFileSync(path.join(exportDir, 'LICENSE'))) },
-  sourceInventory,
-};
-process.stdout.write(`${JSON.stringify(pin, null, 2)}\n`);
-```
 
 Two traps apply inside this repository:
 
