@@ -697,6 +697,60 @@ test('adopt refuses a seed file and a path that is not managed', async (t) => {
   await rejects('ADOPT_REFUSED', () => planAdopt({ ...payload, paths: [] }));
 });
 
+const INDEX = '01-Projects/Index.md';
+
+test('an upgrade of an install that predates a seed path keeps the user file there and offers the template as a proposal', async (t) => {
+  // routeFixture installs without INDEX, so the installed state has no record for it: a 1.4.0-shaped install.
+  const { subject, destinations } = await routeFixture(t, { seedPaths: new Set([ROUTE]) });
+  const local = Buffer.from('# My own project index\n');
+  await writeFile(at(subject, INDEX), local);
+  await writeFile(templateAt(subject, INDEX), '# Project index template\n');
+  const withIndex = [...destinations, INDEX];
+  const seeds = new Set([ROUTE, INDEX]);
+  const { source, plan, status } = await planUpgrade(subject, withIndex, seeds);
+  assert.equal(status(INDEX), 'PERSONALIZED');
+  assert.equal(plan.entries.find((entry) => entry.destination === INDEX).undo.action, 'none');
+  const proposalPath = `.second-brain/merge/1.1.0/${INDEX}.proposed`;
+  assert.deepEqual(plan.proposalWrites.map((write) => write.destination), [proposalPath]);
+  await applyUpgrade(subject, source, plan);
+  assert.deepEqual(await readFile(at(subject, INDEX)), local, 'the user file is unchanged');
+  assert.equal(await readFile(at(subject, proposalPath), 'utf8'), '# Project index template\n');
+  assert.equal((await verifyInstall({ ...source, sourceRoot: subject.sourceRoot, targetPath: subject.target })).ok, true);
+  const state = JSON.parse(await readFile(path.join(subject.target, '.second-brain', 'installed-state.json'), 'utf8'));
+  assert.equal(state.managedPaths[INDEX].mergeKind, 'seed-file', 'the state now manages the file as a seed');
+  const again = await planUpgrade(subject, withIndex, seeds);
+  assert.equal(again.status(INDEX), 'PERSONALIZED');
+  assert.equal(again.plan.entries.find((entry) => entry.destination === INDEX).proposal, undefined, 'the same template is not offered twice');
+  assert.deepEqual(again.plan.proposalWrites, []);
+});
+
+test('a user file at a path new to the install stays CONFLICT on init, without an installed state, and for a managed path', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  await mkdir(path.dirname(templateAt(subject, INDEX)), { recursive: true });
+  await writeFile(templateAt(subject, INDEX), '# Project index template\n');
+  await mkdir(path.dirname(at(subject, INDEX)), { recursive: true });
+  await writeFile(at(subject, INDEX), '# My own project index\n');
+  const seedSource = await manifestFor(subject.sourceRoot, [INDEX], new Set([INDEX]));
+  const init = await planInstall({ ...seedSource, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'init' });
+  assert.equal(init.entries[0].status, 'CONFLICT', 'init keeps CONFLICT: nothing is the user\'s by record');
+  assert.deepEqual(init.proposalWrites, []);
+  const noState = await planUpgrade(subject, [INDEX], new Set([INDEX]));
+  assert.equal(noState.status(INDEX), 'CONFLICT', 'an upgrade with no installed state keeps CONFLICT');
+  assert.deepEqual(noState.plan.proposalWrites, []);
+
+  // An installed workspace with a managed file at a path the user made: the user file is never adopted.
+  const installed = await routeFixture(t);
+  await writeFile(at(installed.subject, INDEX), '# My own project index\n');
+  await mkdir(path.dirname(templateAt(installed.subject, INDEX)), { recursive: true });
+  await writeFile(templateAt(installed.subject, INDEX), '# Project index template\n');
+  const managed = await planUpgrade(installed.subject, [...installed.destinations, INDEX], new Set());
+  assert.equal(managed.status(INDEX), 'CONFLICT', 'a managed path is never adopted from an unmanaged file');
+  assert.equal(managed.plan.entries.find((entry) => entry.destination === INDEX).proposal, undefined, 'a managed path gets no seed proposal');
+  assert.deepEqual(managed.plan.proposalWrites, []);
+  assert.deepEqual(await readFile(at(installed.subject, INDEX), 'utf8'), '# My own project index\n');
+});
+
 test('a receipt whose base snapshot write is not owned by the installed state is refused before rollback', async (t) => {
   const { subject, destinations } = await routeFixture(t);
   await writeFile(templateAt(subject, ROUTE), routeA.replace('Use this', 'Use this route'));

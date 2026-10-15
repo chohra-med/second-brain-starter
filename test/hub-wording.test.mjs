@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import test from 'node:test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { planInstall, stableStringify } from '../lib/installer.mjs';
+import { applyInstall, planInstall, stableStringify, verifyInstall } from '../lib/installer.mjs';
 import { cleanup, consumerRoot, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
 // init.md owns the Profile questions for Role, How I want answers and Never touch. complete-init.md owns the question for Stack.
@@ -131,7 +131,7 @@ async function putFile(root, posixPath, content) {
   await writeFile(destination, content);
 }
 
-test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Profile.md and never overwrites it (R03-13)', async (t) => {
+test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALIZED and offers the template as a proposal (R03-13)', async (t) => {
   const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
   const target = await consumerRoot('second-brain-upgrade-profile-');
   cleanup(t, target);
@@ -140,12 +140,21 @@ test('an upgrade of the real v1.2.0 install plans a named CONFLICT for a user Pr
   await putFile(target, fixture.receiptPath, `${stableStringify(fixture.receipt)}\n`);
   await putFile(target, '00-Meta/Profile.md', 'my own profile\n');
   const manifestBytes = await readFile(path.join(sourceRoot, 'template-manifest.json'));
-  const plan = await planInstall({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot, targetPath: target, operation: 'upgrade' });
+  const source = { manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot, targetPath: target };
+  const plan = await planInstall({ ...source, operation: 'upgrade' });
   const profile = plan.entries.find((entry) => entry.destination === '00-Meta/Profile.md');
   assert.ok(profile, 'the upgrade plan lists the Profile seed');
-  assert.equal(profile.status, 'CONFLICT');
+  assert.equal(profile.status, 'PERSONALIZED');
   assert.equal(profile.undo.action, 'none');
+  const template = await readFile(path.join(sourceRoot, 'template', '00-Meta', 'Profile.md'));
+  assert.deepEqual(profile.proposal, template, 'the template is the proposal: no base exists for a file the user made');
+  const proposalPath = `.second-brain/merge/${plan.templateVersion}/00-Meta/Profile.md.proposed`;
+  assert.deepEqual(plan.proposalWrites.map((write) => write.destination), [proposalPath]);
+  const applied = await applyInstall({ ...source, operation: 'upgrade', approvedDigest: plan.digest });
+  assert.equal(applied.applied, true);
   assert.equal(await readFile(path.join(target, '00-Meta', 'Profile.md'), 'utf8'), 'my own profile\n');
+  assert.deepEqual(await readFile(path.join(target, ...proposalPath.split('/'))), template);
+  assert.equal((await verifyInstall({ ...source })).ok, true);
 });
 
 // R03-14: a managed template file may only name a CLI command the CLI exposes. The allowed set is read from bin.
