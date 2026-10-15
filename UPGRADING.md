@@ -112,7 +112,7 @@ Until you apply this upgrade, `verify` run from the v1.5.0 source exits 1. Measu
 
 ### Rolling back this upgrade
 
-Rolling back this upgrade removes the files it created, restores the files it changed, and removes any seed proposal it wrote. Measured on a 1.4.0 copy: the apply wrote `.second-brain/merge/1.5.0/00-Meta/Profile.md.proposed`, `rollback --receipt` printed `ROLLED_BACK` for that path, and no `.second-brain/merge` folder was left.
+Rolling back this upgrade removes the files it created, restores the files it changed, and removes any seed proposal it wrote. Measured on a 1.4.0 copy: the apply wrote `.second-brain/merge/1.5.0/00-Meta/Profile.md.proposed`, `rollback --receipt` printed `ROLLED_BACK` for that path, and no `.second-brain/merge` folder was left. After a rollback the workspace is on its earlier version again, so `verify` run from this 1.5.0 copy reports `SOURCE_MANIFEST_MISMATCH`, as it does before the upgrade. Run `verify` from the copy you installed with to check the rolled-back workspace: measured on a 1.4.1 copy, it printed `Verification: OK`.
 
 ## Upgrading to v1.4.1
 
