@@ -430,7 +430,7 @@ test('a non-UTF-8 managed file is CONFLICT with no proposal: the merge is not at
 test('a CRLF copy of an unedited managed file merges to the new template with CRLF endings', async (t) => {
   const { subject, destinations } = await routeFixture(t);
   await writeFile(at(subject, ROUTE), Buffer.from(routeA.replace(/\n/g, '\r\n')));
-  // The template edits the line-final word, where every CRLF line already differs from the LF base.
+  // The template edits one line. The CRLF local file is merged as LF, so that line is a one-sided change, and the test checks the CRLF restore.
   await writeFile(templateAt(subject, ROUTE), routeA.replace('Then the roadmap.', 'Then the open roadmap.'));
   const { source, plan, status } = await planUpgrade(subject, destinations);
   assert.equal(status(ROUTE), 'MERGE');

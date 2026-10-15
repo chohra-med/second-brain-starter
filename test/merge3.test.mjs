@@ -39,7 +39,7 @@ test('overlapping edits are a conflict rendered with all three versions', () => 
   assert.equal(result.text, lines('a', '<<<<<<< local', 'local edit', '||||||| base', 'b', '=======', 'template edit', '>>>>>>> template', 'c'));
 });
 
-test('adjacent edits are a conflict, for lines and for words', () => {
+test('adjacent edits are a conflict, on lines and within one line', () => {
   const adjacentLines = mergeThreeWay(lines('a', 'b', 'c', 'd'), lines('a', 'B local', 'c', 'd'), lines('a', 'b', 'C template', 'd'));
   assert.equal(adjacentLines.clean, false, 'lines b and c are adjacent, as in diff3');
   assert.match(adjacentLines.text, /<<<<<<< local/);
@@ -48,17 +48,33 @@ test('adjacent edits are a conflict, for lines and for words', () => {
   const insertAfterEdit = mergeThreeWay(lines('Then the roadmap.'), lines('Then my roadmap.'), lines('Then the new roadmap.'));
   assert.equal(insertAfterEdit.clean, false, 'an insertion right after an edited word touches it');
   const separated = mergeThreeWay(lines('alpha beta gamma delta'), lines('alpha BETA gamma delta'), lines('alpha beta gamma DELTA'));
-  assert.equal(separated.text, lines('alpha BETA gamma DELTA'), 'one unchanged word between two edits keeps them apart');
+  assert.equal(separated.clean, false, 'one unchanged word between two edits on one line still conflicts, as in git');
+  assert.equal(separated.text.includes('alpha BETA gamma DELTA'), false, 'no merged line is written');
   const editAndInsert = mergeThreeWay(lines('x', 'the selected project folder', 'y'), lines('x', 'each selected project folder', 'y'), lines('x', 'the selected project folders', 'new line', 'y'));
-  assert.deepEqual(editAndInsert, { clean: true, conflicts: 0, text: lines('x', 'each selected project folders', 'new line', 'y') });
+  assert.equal(editAndInsert.clean, false, 'a line edited on both sides conflicts, even with a template insertion after it');
+  assert.equal(editAndInsert.conflicts, 1);
 });
 
-test('word refinement merges separate edits within the same line, and refuses overlapping words', () => {
+test('two edits within one line conflict, and overlapping words conflict too', () => {
   const base = lines('Read the selected project folder you named.');
-  const clean = mergeThreeWay(base, lines('Read each selected project folder you named.'), lines('Read the selected project folder you named today.'));
-  assert.deepEqual(clean, { clean: true, conflicts: 0, text: lines('Read each selected project folder you named today.') });
+  const separate = mergeThreeWay(base, lines('Read each selected project folder you named.'), lines('Read the selected project folder you named today.'));
+  assert.equal(separate.clean, false, 'separate words on one line conflict, as in git');
+  assert.equal(separate.conflicts, 1);
+  assert.equal(separate.text.includes('Read each selected project folder you named today.'), false, 'no merged sentence is written');
   const overlap = mergeThreeWay(base, lines('Read each selected project folder you named.'), lines('Read one selected project folder you named.'));
   assert.equal(overlap.clean, false);
+});
+
+test('two edits in one sentence, one word each, are a conflict and never a sentence neither side wrote', () => {
+  const base = lines('The plan has three steps and one owner.');
+  const local = lines('The plan has four steps and one owner.');
+  const template = lines('The plan has three steps and two owner.');
+  const result = mergeThreeWay(base, local, template);
+  assert.equal(result.clean, false, 'both sides edited the same line, so git would conflict');
+  assert.equal(result.conflicts, 1);
+  assert.equal(result.text.includes('The plan has four steps and two owner.'), false, 'no merged sentence is written');
+  assert.match(result.text, /^<<<<<<< local\nThe plan has four steps and one owner\.\n\|\|\|\|\|\|\| base\n/);
+  assert.match(result.text, /=======\nThe plan has three steps and two owner\.\n>>>>>>> template\n$/);
 });
 
 test('insertion at end of file from both sides', () => {
