@@ -131,7 +131,7 @@ async function putFile(root, posixPath, content) {
   await writeFile(destination, content);
 }
 
-test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALIZED and offers the template as a proposal (R03-13)', async (t) => {
+test('an upgrade of the real v1.2.0 install keeps a user Profile.md as PERSONALIZED and offers the template as a proposal', async (t) => {
   const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
   const target = await consumerRoot('second-brain-upgrade-profile-');
   cleanup(t, target);
@@ -195,7 +195,7 @@ test('the connect wording defines the harness where Home first uses it', async (
   assert.ok(home.indexOf('(the harness is') > home.indexOf('Spec Harness files'), 'the definition sits at the first use');
 });
 
-// R03-11 (v1.4.0): the loop procedures route to `01-Projects/<project>/`. Selected-Project is named only as the seeded
+// The loop procedures route to `01-Projects/<project>/`. Selected-Project is named only as the seeded
 // project or the seeded example of a link, never as the one project every run works in.
 function routeProblems(name, text) {
   const problems = [];
@@ -207,7 +207,7 @@ function routeProblems(name, text) {
   return problems;
 }
 
-test('the loop procedures route to 01-Projects/<project>/ and name Selected-Project only as the seeded project (R03-11)', async () => {
+test('the loop procedures route to 01-Projects/<project>/ and name Selected-Project only as the seeded project', async () => {
   const context = await readFile(path.join(sourceRoot, 'template/03-Resources/Procedures/context.md'), 'utf8');
   assert.ok(context.includes('the seeded project lives under `01-Projects/Selected-Project/`'), 'context names the seeded project');
   for (const name of ['context.md', 'capture.md', 'close.md', 'review.md']) {
@@ -216,7 +216,7 @@ test('the loop procedures route to 01-Projects/<project>/ and name Selected-Proj
   assert.ok(context.includes('one block per selected project, followed by a cross-project line'), 'context returns one note per project and a cross-project line');
 });
 
-test('the R03-11 route check fires on the v1.3.0 single-project wording (positive control)', () => {
+test('the loop route check fires on the v1.3.0 single-project wording (positive control)', () => {
   const old = 'Capture an incoming task in the selected project\'s `roadmap.md`.\n- One new row in `01-Projects/Selected-Project/roadmap.md`.\n';
   assert.deepEqual(routeProblems('capture.md', old), [
     'capture.md does not route to 01-Projects/<project>/',
@@ -224,7 +224,7 @@ test('the R03-11 route check fires on the v1.3.0 single-project wording (positiv
   ]);
 });
 
-// WP2: the route owns multi-project selection; the four loop skills stay route-neutral.
+// The route owns multi-project selection; the four loop skills stay route-neutral.
 test('the operating route defines one, several and all, and the loop skills are route-neutral', async () => {
   const route = await readFile(path.join(sourceRoot, 'template/00-Meta/AGENTS.md'), 'utf8');
   for (const phrase of [

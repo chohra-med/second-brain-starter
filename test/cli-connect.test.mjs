@@ -138,7 +138,7 @@ async function killedAfterCommit(w) {
   const plan = await planConnect(args);
   const total = plan.directories.filter((entry) => entry.status === 'CREATE').length
     + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4
-    + (plan.indexRow ? 1 : 0); // v1.4.0: the project index row is one more durable write
+    + (plan.indexRow ? 1 : 0); // The project index row is one more durable write
   const config = { module: pathToFileURL(path.join(sourceRoot, 'lib', 'connect.mjs')).href, manifest: path.join(sourceRoot, 'template-manifest.json'), sourceRoot, hub: w.hub, repo: w.repo, digest: plan.digest, kill: total };
   let child = null;
   try {

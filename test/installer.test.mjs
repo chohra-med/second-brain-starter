@@ -317,7 +317,7 @@ test('installed Home is a complete operating dashboard with valid contained link
   const clean = await runCli(['verify', '--target', target]);
   assert.equal(clean.code, undefined, clean.stdout);
   assert.match(clean.stdout, /Verification: OK/);
-  // Home is a user-owned seed from v1.4.0: an edit is PERSONALIZED, not drift.
+  // Home is a user-owned seed: an edit is PERSONALIZED, not drift.
   await writeFile(homePath, `${home}\nconsumer edit\n`);
   const personalized = await runCli(['verify', '--target', target]);
   assert.equal(personalized.code, undefined, personalized.stdout);
@@ -389,7 +389,7 @@ test('consumer upgrade preserves a personalized seed while updating managed file
   const upgradePlan = await runCli(['upgrade', '--target', target], { checkout });
   assert.equal(upgradePlan.code, undefined, upgradePlan.stdout);
   assert.match(upgradePlan.stdout, /^PERSONALIZED\t01-Projects\/Selected-Project\/FACTS\.md\tundo=none$/m);
-  // Home is a seed from v1.4.0. An unchanged older seed still takes the new template.
+  // Home is a seed. An unchanged seed still takes the new template.
   assert.match(upgradePlan.stdout, /^SEED-UPDATE\tHome\.md\tundo=restore-preimage$/m);
   const upgradeDigest = planDigest(upgradePlan.stdout);
   assert.ok(upgradeDigest, upgradePlan.stdout);
@@ -403,7 +403,7 @@ test('consumer upgrade preserves a personalized seed while updating managed file
   assert.match(verified.stdout, /Verification: OK/);
 });
 
-// The project map is a user-owned seed from v1.4.0: a person lists their own projects there.
+// The project map is a user-owned seed: a person lists their own projects there.
 const userOwnedIndexes = ['01-Projects/README.md'];
 
 function assertIndexManifest(manifest) {

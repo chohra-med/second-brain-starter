@@ -275,7 +275,7 @@ test('free then paid state shares a namespace and paid rollback preserves pre-ex
 });
 
 // ---------------------------------------------------------------------------
-// v1.4.0 three-way states. Synthetic files only.
+// Three-way states. Synthetic files only.
 // ---------------------------------------------------------------------------
 
 const ROUTE = '00-Meta/Route.md';

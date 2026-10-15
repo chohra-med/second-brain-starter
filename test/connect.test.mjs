@@ -1815,7 +1815,7 @@ test('a SIGKILL against the REAL vendored harness at the spread of positions (re
   const repoFiles = plan.entries.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
   const hubDirs = plan.directories.filter((entry) => entry.root === 'hub' && entry.status === 'CREATE').length;
   const hubFiles = plan.entries.filter((entry) => entry.root === 'hub' && entry.kind === 'file' && entry.status === 'CREATE').length;
-  // v1.4.0: one more durable write, the project index row, between the hub files and the connections state.
+  // One more durable write, the project index row, between the hub files and the connections state.
   assert.ok(plan.indexRow, 'a current workspace manages the project index, so connect adds its row');
   const total = 1 + repoDirs + repoFiles + hubDirs + hubFiles + 1 + 3;
   const positions = [2, 1 + repoDirs + 1, 1 + repoDirs + Math.floor(repoFiles / 2), 1 + repoDirs + repoFiles, 1 + repoDirs + repoFiles + hubDirs + 1, total - 3, total - 2, total - 1, total];
@@ -2586,7 +2586,7 @@ test('the engine has no child_process, network or git invocation (positive contr
 
 
 // ---------------------------------------------------------------------------
-// v1.4.0: the project index row (WP3)
+// The project index row
 // ---------------------------------------------------------------------------
 
 const INDEX = '01-Projects/Index.md';
@@ -2678,7 +2678,7 @@ test('index: a v1.3.0 connect receipt without indexRow still rolls back', async 
   assert.match(await readFile(rel(w.hub, INDEX), 'utf8'), /^\| my-repo \|/m);
 });
 
-test('index: the row links Connection.md and never stores the repository path (C51)', async (t) => {
+test('index: the row links Connection.md and never stores the repository path', async (t) => {
   const w = await world(t, { index: true });
   await connectNow(w);
   const index = await readFile(rel(w.hub, INDEX), 'utf8');
