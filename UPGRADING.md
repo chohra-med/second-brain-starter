@@ -2,27 +2,117 @@
 
 ## Upgrading to v1.5.0
 
-This version adds one shared skill, `usage-dashboard`, to the two skill folders. It changes no existing managed file. Its price file is a seed file, so it is yours to edit.
+This version adds one shared skill, `usage-dashboard`, and changes how an upgrade treats a file you have edited. Nothing in it deletes a file. Read the plan line by line before you approve it. From this release, `Home.md`, `01-Projects/README.md` and `01-Projects/Index.md` are seed files, which are yours to edit, and so are the two `usage-prices.json` files.
 
-### What a v1.4.0 install sees
+The plan lines below were printed by this branch's `upgrade` against scratch installs made from each release's own source tree, with that tree's `init`. The lines are copied from the plan. The `Target`, `Privacy`, `Base snapshots`, digest and apply lines, and the `IDENTICAL` lines, are not listed.
 
-The lines below are from a real upgrade. The v1.4.0 install was made from commit `3f2e899` (a clean export of `main`), with that tree's `init`. This branch's `upgrade` planned it. The plan has six `CREATE` lines, 102 `IDENTICAL` lines, and no `CONFLICT`, `MANAGED-UPDATE` or `DEPRECATED` line. The `IDENTICAL` lines are not listed.
+### What a v1.4.1 install sees
+
+The install was made from `main` at 1.4.1 (commit `01d0144`), with no edits. The plan has 7 `CREATE`, 17 `MANAGED-UPDATE`, 2 `SEED-UPDATE` and 89 `IDENTICAL` lines.
 
 ```text
+Versions: installed 1.4.1 -> available 1.5.0
+MANAGED-UPDATE	.agents/skills/second-brain-capture/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-close/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-context/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-review/SKILL.md	undo=restore-preimage
 CREATE	.agents/skills/usage-dashboard/SKILL.md	undo=remove-created-file
 CREATE	.agents/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
 CREATE	.agents/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+MANAGED-UPDATE	.claude/skills/second-brain-capture/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-close/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-context/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-review/SKILL.md	undo=restore-preimage
 CREATE	.claude/skills/usage-dashboard/SKILL.md	undo=remove-created-file
 CREATE	.claude/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
 CREATE	.claude/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+MANAGED-UPDATE	00-Meta/AGENTS.md	undo=restore-preimage
+SEED-UPDATE	00-Meta/Daily-Task-Plan.md	undo=restore-preimage
+SEED-UPDATE	00-Meta/Profile.md	undo=restore-preimage
+CREATE	01-Projects/Index.md	undo=remove-created-file
+MANAGED-UPDATE	01-Projects/README.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/capture.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/close.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/context.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/first-use.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/review.md	undo=restore-preimage
+MANAGED-UPDATE	04-Archives/Projects/Archive-Guide.md	undo=restore-preimage
+MANAGED-UPDATE	Home.md	undo=restore-preimage
+Summary: 7 CREATE, 17 MANAGED-UPDATE, 2 SEED-UPDATE, 89 IDENTICAL
 ```
 
-After `upgrade --apply` with the exact plan digest, `verify` printed `Verification: OK` and exited 0. Rolling back the upgrade receipt printed `ROLLED_BACK` for each of the six files and exited 0. `verify` run from the v1.4.0 source then printed `Verification: OK` again.
+- The `CREATE` lines are the `usage-dashboard` skill in each skill folder, and `01-Projects/Index.md`, the project index.
+- `Home.md` and `01-Projects/README.md` show `MANAGED-UPDATE`, because you have not edited them. The upgrade replaces each one with the new template. From the next upgrade on, they are seed files, so an edit you make is merged or kept.
+- `00-Meta/Profile.md` and `00-Meta/Daily-Task-Plan.md` show `SEED-UPDATE`, because they are unedited. An edited seed is never overwritten.
+- `usage-prices.json` is a seed file in both skill folders. An install made from this version writes it once. An unedited copy under an unchanged template shows `IDENTICAL`. An edited copy shows `PERSONALIZED`, and a later template change reaches an unedited copy as `SEED-UPDATE`. An upgrade does not overwrite your copy.
 
-- Each `CREATE` line is a new file. Three go in `.agents/skills/usage-dashboard/` and three in `.claude/skills/usage-dashboard/`. Nothing existing is removed, and nothing in the upgrade runs the script.
-- `usage-prices.json` is a seed file. An install made from this version writes it once. An existing install keeps its file. The plan shows `IDENTICAL` for an unedited copy under an unchanged template, and `PERSONALIZED` once you have edited it or a later template changes it. An upgrade does not overwrite your copy.
-- Until you apply this upgrade, `verify` run from the v1.5.0 source exits non-zero. It reports `SOURCE_MANIFEST_MISMATCH`, and an `UNMANAGED` line for each of the six files. Those lines go away after the upgrade.
-- Rolling back this upgrade removes the six files and leaves the two empty `usage-dashboard` folders in place, as earlier versions describe.
+### What a v1.4.0 install sees
+
+The install was made from tag `v1.4.0` (commit `3f2e899`), with that tree's `init`. Before the plan, one line was added to `Home.md` and one to `00-Meta/Profile.md`, so the plan shows what an edited install gets.
+
+```text
+Versions: installed 1.4.0 -> available 1.5.0
+CREATE	.agents/skills/context-modes/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/end-session/SKILL.md	undo=remove-created-file
+MANAGED-UPDATE	.agents/skills/second-brain-capture/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-close/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-context/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.agents/skills/second-brain-review/SKILL.md	undo=restore-preimage
+CREATE	.agents/skills/usage-dashboard/SKILL.md	undo=remove-created-file
+CREATE	.agents/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
+CREATE	.agents/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+CREATE	.claude/skills/context-modes/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/end-session/SKILL.md	undo=remove-created-file
+MANAGED-UPDATE	.claude/skills/second-brain-capture/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-close/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-context/SKILL.md	undo=restore-preimage
+MANAGED-UPDATE	.claude/skills/second-brain-review/SKILL.md	undo=restore-preimage
+CREATE	.claude/skills/usage-dashboard/SKILL.md	undo=remove-created-file
+CREATE	.claude/skills/usage-dashboard/usage-dashboard.mjs	undo=remove-created-file
+CREATE	.claude/skills/usage-dashboard/usage-prices.json	undo=remove-created-file
+MANAGED-UPDATE	00-Meta/AGENTS.md	undo=restore-preimage
+SEED-UPDATE	00-Meta/Daily-Task-Plan.md	undo=restore-preimage
+PERSONALIZED	00-Meta/Profile.md	undo=none
+CREATE	01-Projects/Index.md	undo=remove-created-file
+MANAGED-UPDATE	01-Projects/README.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/capture.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/close.md	undo=restore-preimage
+CREATE	03-Resources/Procedures/context-modes.md	undo=remove-created-file
+MANAGED-UPDATE	03-Resources/Procedures/context.md	undo=restore-preimage
+CREATE	03-Resources/Procedures/end-session.md	undo=remove-created-file
+MANAGED-UPDATE	03-Resources/Procedures/first-use.md	undo=restore-preimage
+MANAGED-UPDATE	03-Resources/Procedures/review.md	undo=restore-preimage
+MANAGED-UPDATE	04-Archives/Projects/Archive-Guide.md	undo=restore-preimage
+MERGE	Home.md	undo=restore-preimage
+Summary: 13 CREATE, 16 MANAGED-UPDATE, 1 SEED-UPDATE, 1 MERGE, 1 PERSONALIZED, 83 IDENTICAL
+Merged: Home.md keeps your edits and takes the template's non-overlapping changes; undo restores your current bytes.
+Proposal: 00-Meta/Profile.md is yours from this release and is kept as it is. The template's changes are offered, optionally, in .second-brain/merge/1.5.0/00-Meta/Profile.md.proposed, which the approved apply writes.
+```
+
+- `Home.md` shows `MERGE`. Your added line stays, and the template's two changed lines are written in. Undo restores your bytes.
+- If your edit had changed the same line the template changed, the plan would show `PERSONALIZED` for `Home.md`, and the template's version would be offered in `.second-brain/merge/1.5.0/Home.md.proposed`. A scratch copy with that overlapping edit gave `PERSONALIZED	Home.md` and a `Proposal:` line that says the file "is yours from this release and is kept as it is."
+- `00-Meta/Profile.md` shows `PERSONALIZED`. It is a seed, so your bytes stay, and the template's version is offered in `.second-brain/merge/1.5.0/00-Meta/Profile.md.proposed`. The approved apply writes that file. To read a seed proposal, see [Read a seed proposal](docs/verify-update-rollback.md#read-a-seed-proposal).
+- After `upgrade --apply` with the exact plan digest, `verify` printed `Verification: OK` and exited 0. It lists the seed files as `PERSONALIZED`, edited or not. That status describes a seed you own. It is a normal result.
+
+### What a v1.2.0 install sees
+
+The install was made from commit `6fc244e`, which has no `00-Meta/Profile.md`. The same two lines were added to `Home.md` and `00-Meta/Profile.md`, so `Profile.md` is a file you already have at a new seed path. The plan summary is:
+
+```text
+Versions: installed 1.2.0 -> available 1.5.0
+Summary: 40 CREATE, 18 MANAGED-UPDATE, 1 SEED-UPDATE, 1 MERGE, 1 PERSONALIZED, 54 IDENTICAL
+```
+
+- `00-Meta/Profile.md` shows `PERSONALIZED`. Your file is kept, and the template's version is offered under `.second-brain/merge/1.5.0/`. Earlier versions refused the apply in this case.
+- `Home.md` shows `MERGE`, as it does for a 1.4.0 install.
+
+### Before this upgrade
+
+Until you apply this upgrade, `verify` run from the v1.5.0 source exits 1. Measured on a 1.4.1 install, it reports `SOURCE_MANIFEST_MISMATCH` for the installed state, and an `UNMANAGED` line for each of the seven new files: the six `usage-dashboard` files and `01-Projects/Index.md`. Those lines go away after the upgrade.
+
+### Rolling back this upgrade
+
+Rolling back this upgrade removes the files it created, restores the files it changed, and removes any seed proposal it wrote. Measured on a 1.4.0 copy: the apply wrote `.second-brain/merge/1.5.0/00-Meta/Profile.md.proposed`, `rollback --receipt` printed `ROLLED_BACK` for that path, and no `.second-brain/merge` folder was left.
 
 ## Upgrading to v1.4.1
 
@@ -86,7 +176,7 @@ After `upgrade --apply` with the exact plan digest, `verify` printed `Verificati
 - This change adds five skills (`grill-me`, `readme-generator`, `graphify`, `writing-skills` and `humanizer`) and one procedure, `03-Resources/Procedures/showcase-readme.md`. An upgrade from v1.3.0 shows their 11 skill files as 22 `CREATE` lines, one in each of `.agents/skills/` and `.claude/skills/`, plus the procedure's `CREATE` line. It shows `03-Resources/Procedures/README.md` as `MANAGED-UPDATE` because its list gained the new procedure. No existing file is removed.
 - This change adds three managed procedures, `03-Resources/Procedures/quick-start.md`, `init.md` and `complete-init.md`. Each one shows as `CREATE` in the plan.
 - It changes three managed files, which show as `MANAGED-UPDATE`: `Home.md` (a new first section, "Start here"), `03-Resources/Procedures/first-use.md` (its Profile section now points to `init.md` and `complete-init.md`) and `03-Resources/Procedures/README.md` (the index lists the three ways). `00-Meta/Profile.md` is a seed file, not a managed file. An existing install keeps its file, and the plan shows `PERSONALIZED` for it, even if you never edited it. The new seed text reaches new installs only. A `00-Meta/Profile.md` that you already filled in is kept as it is.
-- If you edited `Home.md` or `03-Resources/Procedures/first-use.md` by hand, the plan shows `CONFLICT` for that file, and the upgrade is refused. Move your copy aside, or keep your edits outside the workspace, and plan again. The upgrade never overwrites a file you changed.
+- In this version, if you edited `Home.md` or `03-Resources/Procedures/first-use.md` by hand, the plan showed `CONFLICT` for that file, and the upgrade was refused. Move your copy aside, or keep your edits outside the workspace, and plan again. The upgrade never overwrites a file you changed. From 1.5.0, `Home.md` is a seed file and an edit to it is merged or kept: see [Upgrading to v1.5.0](#upgrading-to-v150).
 - An install made from an unreleased build that had a `skill-creator` folder shows those files as `DEPRECATED` on upgrade. Nothing is deleted. Those files are unchanged since that install, so you may delete them by hand if you do not want them; the tool does not delete them for you.
 - This change edits three managed files, which show as `MANAGED-UPDATE` on upgrade: `00-Meta/README.md` (a new section, "Keeping it clean"), `03-Resources/Procedures/review.md` (one new step) and `04-Archives/Projects/Archive-Guide.md` (a sentence on never deleting). `00-Meta/Daily-Task-Plan.md` is a seed file, so its new task-line examples reach new installs only; an existing install keeps its file and shows `PERSONALIZED`. Your own edits to the three managed files make the plan show `CONFLICT`, as for any managed file.
 
@@ -109,7 +199,7 @@ MANAGED-UPDATE	Home.md	undo=restore-preimage
 
 - `CREATE 00-Meta/Profile.md` adds the Profile seed. The Profile interview fills it under the same exact-plan approval as your other records.
 - The five `MANAGED-UPDATE` lines are managed files whose wording changed for the hub shape. Your records are not in this list.
-- If you already created `00-Meta/Profile.md` yourself, the plan shows `CONFLICT` for it and the apply is refused. Move your file aside, or keep it outside the workspace, and plan again. The upgrade never overwrites it.
+- If you already created `00-Meta/Profile.md` yourself, this version's plan showed `CONFLICT` for it and refused the apply. Move your file aside, or keep it outside the workspace, and plan again. The upgrade never overwrites it. From 1.5.0 that file is yours: the plan shows `PERSONALIZED` and offers the template's version as a proposal, see [Upgrading to v1.5.0](#upgrading-to-v150).
 
 Until you upgrade, `verify` run from the 1.3.0 source reports `SOURCE_MANIFEST_MISMATCH` and also `UNMANAGED 00-Meta/Profile.md`, and it exits non-zero. Measured on a copy of the real v1.2.0 install, before the upgrade:
 
@@ -165,13 +255,22 @@ It also adds the bundled `icm-architect` skill in both client skill folders and 
 
 ## Read the three-way plan
 
-The upgrader compares the previous installed template digest, the current target bytes, and the fresh template digest. It reports the complete path-by-path outcome before writing:
+The upgrader compares the bytes you have, the template bytes the install recorded when it last wrote each file, and this release's template. It reports the complete path-by-path outcome before writing:
 
 - `IDENTICAL` needs no work.
+- `CREATE` adds a file that is not there yet.
 - `APPEND` adds the managed block after your own bytes in a root `AGENTS.md` or `CLAUDE.md` that has no loader markers and no install record. Your bytes stay in front of the block.
-- `MANAGED-UPDATE` has a safe update path defined by the installed state.
+- `MANAGED-UPDATE` replaces an unedited managed file with the new template.
+- `SEED-UPDATE` replaces an unedited seed file with the new template.
+- `CUSTOMIZED-KEEP` keeps your edit to a managed file that the template did not change. The approved apply records your current bytes as accepted, as `verify --adopt` does, and the plan prints a `Kept:` line for each one.
+- `MERGE` writes your edits together with the template's changes, when they do not overlap.
+- `PERSONALIZED` keeps your seed file as it is. When the template changed, the template's version is offered as a proposal under `.second-brain/merge/<template version>/`, and the approved apply writes it. An existing file at that path is never overwritten.
 - `CONFLICT` requires manual resolution and prevents application.
 - `DEPRECATED` identifies a formerly managed path that needs an explicit decision.
+
+Merging is line by line, as git does. An edit you made and a change the template made to the same line, or to lines directly next to each other, is a `CONFLICT`. Two edits with at least one unchanged line between them merge. This release has no word-by-word merge. A file that is not UTF-8 text is a `CONFLICT` with no proposal, and the plan prints `Manual resolution required`. A CRLF file merges in its own line endings.
+
+A plan writes nothing. To print the proposal for a `CONFLICT` file, run `upgrade --proposal PATH`, then resolve it as described in [Resolve a CONFLICT](docs/verify-update-rollback.md#resolve-a-conflict). The plan digest covers these writes, so an approval from a plan made by an earlier build does not match. Plan again and approve the new digest.
 
 Your facts, decisions, roadmap, progress, and daily notes are still your records. Once the v1.1.0 seed policy is installed, an existing safe seed record is reported as `PERSONALIZED` and preserved through upgrade. That status is not proof of damage. Do not treat the initializer as a blanket overwrite. There is no V1 `--force` option.
 
