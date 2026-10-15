@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.5.0 (2026-10-13)
+## v1.5.0 (2026-10-15)
 
 - Adds the shared skill `usage-dashboard`, installed to `.agents/skills/` and `.claude/skills/`. It is one script, `usage-dashboard.mjs`, that reads the Claude Code transcript files on this machine and prints, per session, the tokens used, an estimated cost at list prices, the peak context, and how often each skill and slash command was used. The skill is written for this repository, see [ATTRIBUTION.md](ATTRIBUTION.md).
 - `usage-prices.json` beside the script is a seed file. Each install writes it once. It is yours to edit, and an upgrade keeps your copy. The plan shows `IDENTICAL` for an unedited copy under an unchanged template, and `PERSONALIZED` once you edit it. A later template change reaches an unedited copy as `SEED-UPDATE`, and an edited copy as `PERSONALIZED` with the template's version offered as a proposal.
