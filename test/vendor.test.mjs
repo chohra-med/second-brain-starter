@@ -154,7 +154,7 @@ async function measuredTree(pin) {
 test('the pinned git tree hash equals the tree recomputed from the vendored bytes, paths and recorded executable bits', async () => {
   const pin = await readPin();
   assert.ok(pin.sourceInventory.every((file) => file.executable === undefined || file.executable === true), 'executable is absent or true');
-  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 13, 'the 13 executable paths are recorded (Spec Harness 0.3.0)');
+  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 15, 'the 15 executable paths are recorded (Spec Harness 0.4.0; 0.3.0 had 13, the two added are tests/examples-smoke.sh and tests/run-state-fixtures.sh)');
   assert.equal(await measuredTree(pin), pin.tree, 'recomputed git tree differs from pin.tree');
 });
 
@@ -179,9 +179,12 @@ test('executable bits on disk match the pin inventory', { skip: process.platform
   assert.deepEqual(wrong, []);
 });
 
-test('no vendored path can be executed by node --test (no .js, .mjs, .cjs or .ts file)', async () => {
+// .ts is left out on purpose: Node 22 (engines >=22, `node --test` with no flags) discovers and runs only
+// .js/.mjs/.cjs files, and .ts runs only under --experimental-strip-types, which no script passes.
+// Spec Harness 0.4.0 ships examples/react-ts-minimal/src/*.ts as example source, so a .ts ban is red for a reason that is not execution.
+test('no vendored path can be executed by node --test (no .js, .mjs or .cjs file)', async () => {
   const pin = await readPin();
-  const pattern = /\.(?:js|mjs|cjs|ts)$/i;
+  const pattern = /\.(?:js|mjs|cjs)$/i;
   assert.ok(pattern.test('planted/file.mjs') && pattern.test('x.CJS') && !pattern.test('x.sh'), 'control: the pattern fires on planted names');
   assert.deepEqual(pin.sourceInventory.map((file) => file.path).filter((file) => pattern.test(file)), []);
   assert.deepEqual((await walk(vendorRoot)).filter((file) => pattern.test(file)), []);

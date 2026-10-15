@@ -1,4 +1,4 @@
-# 20-system — {{PROJECT_NAME}}
+# 20-system: {{PROJECT_NAME}}
 
 > Tier: Warm. architecture and how the pieces connect
 

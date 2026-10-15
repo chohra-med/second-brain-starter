@@ -8,10 +8,10 @@ description: Health-check the memory bank, rules, and index: flag stale or contr
 Cross-check the bank, ai_rules, and index for staleness, contradiction, and drift from the real code. Report fixes; promote durable learnings up into the curated bank.
 
 ## Run it
-1. **Load the full procedure** — read the command doc and follow it exactly:
+1. **Load the full procedure**: read the command doc and follow it exactly:
    `.claude/commands/spec-harness/audit.md` (this repo) or the spec-harness source `commands/audit.md`.
-2. **Agents** — follow this command and project policy for role selection.
-3. **Stay inside the 3 pillars** — Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.
+2. **Agents**: follow this command and project policy for role selection.
+3. **Stay inside the 3 pillars**: Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.
 
 ## Non-negotiables
 - The ratchet only tightens after a reviewed rule change.

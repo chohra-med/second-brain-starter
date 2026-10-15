@@ -73,6 +73,6 @@ test('the vendored inventory regenerates byte for byte into the committed pin', 
   const committed = JSON.parse(await readFile(path.join(sourceRoot, 'vendor', 'SPEC-HARNESS-PIN.json'), 'utf8'));
   const { pin } = await buildPin({ source: path.join(sourceRoot, 'vendor', 'spec-harness'), commit: committed.commit, tree: committed.tree, repository: committed.repository, previousPin: committed });
   assert.deepEqual(pin, committed);
-  assert.equal(committed.commit, '767d0727a4161d80c893191544423be42fcaab34', 'pinned to upstream 767d072 (Spec Harness 0.3.0)');
-  assert.equal(committed.harnessVersion, '0.3.0');
+  assert.equal(committed.commit, 'b7ea02973a331d8664f6005e0e358ae3c6fc0700', 'pinned to upstream b7ea029 (Spec Harness 0.4.0)');
+  assert.equal(committed.harnessVersion, '0.4.0');
 });

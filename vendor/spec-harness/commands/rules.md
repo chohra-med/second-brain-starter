@@ -1,4 +1,4 @@
-# Command: `rules` — derive and resolve package-scoped rules
+# Command: `rules`, derive and resolve package-scoped rules
 
 > Each package boundary needs rules grounded in its own policies and code. The inventory finds boundaries and representative paths; a capable model reads those files and derives the rules. Neither a shell scaffold nor a dependency name proves an architecture rule.
 

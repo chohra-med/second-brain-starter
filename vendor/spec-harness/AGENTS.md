@@ -36,7 +36,7 @@ If you cannot tell which, ask. Do not start installing anything on a guess.
 | **Packet** | The folder `specs/<feature>/` that a LITE or FULL ticket keeps: input, spec, goal, plan, tasks and gate records. |
 | **Role** | One agent file with one job: planner, implementer, tester (runs things), verifier (checks each goal line), reviewer (reads the diff against the rules), merger, learner. |
 | **Tier** | The class of model a role asks for: `strong`, `fast` or `review`. Never a model name. |
-| **Inventory** | `ai_rules/project_inventory.json` in the target: its packages and a few sampled source files. Written by `index`. |
+| **Inventory** | The output of `index` in the target: its packages and a few sampled source files. It is `ai_rules/context_map.md`, or `ai_rules/project_inventory.json` when the target keeps its own `context_map.md` (see `docs/GETTING-STARTED.md` step 4). |
 | **Receipt** | `.claude/agents/.init-synthesis.json` in the target: what initialisation produced, with hashes. |
 | **PENDING / READY** | PENDING: files are staged but a model or reviewer has not done its part. READY: the structural check prints it when hashes and citations line up. That alone does not mean the generated rules are correct; the setup is fully ready only after a fresh reviewer accepts them. |
 
@@ -55,7 +55,7 @@ default source sample in step 6. Do not edit their instruction files (step 5) an
    unsure which directory they mean, ask.
 2. **Protect their work.** In the target: check `git status`. If it shows modified or staged
    tracked files, stop and tell them; do not stash, commit or discard their work. Create a branch (`git switch -c chore/spec-harness`; pick another name if that one
-   exists). There is no uninstall command; the branch is the undo.
+   exists). `spec-harness uninstall <target>` prints what the install record says was written and deletes nothing; the branch is the undo. The uninstall steps are in the README's `## Uninstall` section.
 3. **Stage the files.** `cd` to the target root first; every command here runs from there. Use
    the checkout you are reading if there is one:
 
@@ -173,8 +173,9 @@ done
 ```
 
 Every line must say `exit 0`. For any other code, read that script's log in the temp directory.
-Run them before you change anything, so you know the baseline, and again after. There is no CI:
-your local run is the only gate, so report the exit lines and the failing log as they are.
+Run them before you change anything, so you know the baseline, and again after. CI runs `npm test`
+on pull requests and on `main` (`.github/workflows/test.yml`, Linux and macOS, strict skips); run the
+suite locally before you push, and report the exit lines and the failing log as they are.
 
 ### Rules for changing this repository
 
@@ -185,7 +186,7 @@ your local run is the only gate, so report the exit lines and the failing log as
   regenerated `skills/`.
 - **After editing any file that gets staged** (anything under `agents/`, `commands/`, `skills/`,
   `templates/`), run `bash tests/tools/update-install-manifest.sh`. It rewrites every `sha256` in
-  `install-manifest.json` and sets `harnessVersion` from `package.json`, and changes nothing else.
+  `install-manifest.json`, sets `harnessVersion` from `package.json` and `loaderBlock` from the step-3 fenced block in `docs/GETTING-STARTED.md`, and changes nothing else.
   `tests/install-manifest-contract.sh` names the entry when you forget.
 - **Keep the docs true.** If you change install behaviour, a count, a prerequisite or an exit code,
   update `README.md` and `docs/GETTING-STARTED.md` in the same change.
@@ -206,7 +207,7 @@ your local run is the only gate, so report the exit lines and the failing log as
 |---|---|
 | How do I install it? | Job 1 above, or `docs/GETTING-STARTED.md` |
 | Does it need Node? | Only for `npx`. A checkout needs `bash`, `git` and `python3` 3.11+ |
-| What do the exit codes mean? | `0`: the shell step finished (status may still be PENDING). `1`: a check failed and said what is missing, or `index` refused an argument or its target. `2`: no target given, an unknown command, a missing target for `init`, or a subcommand that only prints a procedure for a model to follow |
+| What do the exit codes mean? | The owner is [`docs/GETTING-STARTED.md` § Exit codes](./docs/GETTING-STARTED.md#exit-codes). Same codes: `0` the shell step finished (status may still be PENDING). `1` a check failed and said what is missing, or `index`/`finalize-init` refused an argument, precondition or busy lock. `2` no target given, an unknown command, a bad argument, or a subcommand that only prints a procedure for a model to follow. `130` `finalize-init` interrupted by Ctrl-C or SIGTERM during `--apply`, rolled back |
 | What does `PENDING` mean? | Files are staged; a model or reviewer has not done its part yet |
 | How do I undo an install? | The "Undo" section of `docs/GETTING-STARTED.md` |
 | Which model should plan? | The strongest available. Implement on a fast cheap one. Review on what the budget allows. See `Model tiers` |

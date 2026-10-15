@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Rewrites install-manifest.json in place: every entry's sha256 from its current source file, and
-# harnessVersion from package.json. Nothing else changes (key order, indentation and the final LF are
-# kept). Exits 1 without writing if any entry's source file is missing.
+# Rewrites install-manifest.json in place: every entry's sha256 from its current source file,
+# harnessVersion from package.json, and loaderBlock from the one fenced markdown block in
+# docs/GETTING-STARTED.md (step 3). Nothing else changes (key order, indentation and the final LF are
+# kept). Exits 1 without writing if any entry's source file is missing or the guide's block is not unique.
 set -u
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -12,8 +13,8 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 1
 fi
 
-python3 -I - "$HARNESS_DIR" <<'PYEOF'
-import hashlib, json, os, sys
+python3 -I -B - "$HARNESS_DIR" <<'PYEOF'
+import hashlib, json, os, re, sys
 
 root = sys.argv[1]
 path = os.path.join(root, "install-manifest.json")
@@ -38,6 +39,12 @@ if missing:
         sys.stderr.write("  " + item + "\n")
     sys.exit(1)
 
+guide = open(os.path.join(root, "docs/GETTING-STARTED.md"), encoding="utf-8").read()
+blocks = re.findall(r"```markdown\n(.*?)```", guide, re.S)
+if len(blocks) != 1:
+    sys.stderr.write("update-install-manifest: docs/GETTING-STARTED.md must hold exactly one ```markdown block; found %d; install-manifest.json was not written\n" % len(blocks))
+    sys.exit(1)
+manifest["loaderBlock"] = blocks[0]
 manifest["harnessVersion"] = version
 open(path, "w", encoding="utf-8").write(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 print("update-install-manifest: %d entries rehashed; harnessVersion %s" % (len(manifest["entries"]), version))

@@ -1,7 +1,7 @@
-# `workflows/` — the critical-journey bank (peer of `specs/`)
+# `workflows/`: the critical-journey bank (peer of `specs/`)
 
 > **What `specs/` is to a change, `workflows/` is to reality.** A spec describes one feature you're
-> about to build; a workflow describes a **critical user journey that must never break** — the paths
+> about to build; a workflow describes a **critical user journey that must never break**: the paths
 > that, if broken in production, cost you users, money, or trust. The `tester` command loads this
 > bank and, for each workflow, spawns a clean-context **`sdd-workflow-tester`** agent that runs the
 > journey end-to-end **and adversarially tries to break it**, then reports PASS or BROKEN.
@@ -15,7 +15,7 @@ after approval.
 ## One file per workflow
 
 Each critical journey is one markdown file, `workflows/<id>.md`, in the small stack-agnostic format
-below (see `EXAMPLE.md` for a filled, copy-ready P0). Keep it a **journey**, not a unit test — the
+below (see `EXAMPLE.md` for a filled, copy-ready P0). Keep it a **journey**, not a unit test, the
 smallest thing a real user does end-to-end that must hold.
 
 ```
@@ -63,11 +63,11 @@ importance: P0 | P1 | P2       # P0 = app is broken if this fails (test these fi
 
 ## Rules for a good workflow
 
-- **A journey, not an assertion.** "User completes onboarding and it persists once" — not "the POST
+- **A journey, not an assertion.** "User completes onboarding and it persists once", not "the POST
   returns 200". The invariant is the assertion; the steps are the journey around it.
 - **Name the invariant that can break under stress.** Idempotency, no-partial-write, survives-kill,
   no-double-charge. That line is what the tester attacks.
-- **Give a runnable `how_to_run`.** A workflow with no way to execute it can't be tested — prefer an
+- **Give a runnable `how_to_run`.** A workflow with no way to execute it can't be tested; prefer an
   e2e command or API sequence; fall back to an agent-driven-UI recipe only when nothing else exists.
 - **Stack-agnostic.** The same format holds for an RN app (e2e / agent-driven UI), a FastAPI backend
   (curl / httpx sequence), or a web app (Playwright / agent-browser). Put the stack specifics in

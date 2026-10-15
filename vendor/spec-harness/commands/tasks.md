@@ -1,4 +1,4 @@
-# Command: `tasks` — accepted plan → ordered task list
+# Command: `tasks`, accepted plan → ordered task list
 
 > The task list stays inside the feature packet and translates the accepted plan into executable,
 > checkable units.

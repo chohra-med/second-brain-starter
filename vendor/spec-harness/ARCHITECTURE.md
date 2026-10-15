@@ -88,7 +88,7 @@ recorded in the appropriate project memory owner.
 
 ---
 
-## 2. SDD workflow — intent as the source of truth (added)
+## 2. SDD workflow: intent as the source of truth (added)
 
 ```
   ticket input ──▶ spec.md + goal.md ──plan──▶ plan.md ──tasks──▶ tasks.md ──build──▶ code
@@ -98,7 +98,7 @@ recorded in the appropriate project memory owner.
                         (principles are reviewed for the target project)
 ```
 
-Each artifact is a **markdown file that feeds the next** — structured context, not a wall of
+Each artifact is a **markdown file that feeds the next**: structured context, not a wall of
 prompt text. The spec is stable ("what"); the design is flexible ("how"); the tasks are the
 executable bridge. `/analyze` (the `audit` command) is the cross-artifact consistency gate.
 
@@ -108,7 +108,7 @@ Research is selected only when a material fact needs it.
 
 ---
 
-## 3. The harness — the ratchet (added)
+## 3. The harness: the ratchet (added)
 
 ```
         mistake ──▶ fix the OUTPUT          (corrects this result)
@@ -134,7 +134,7 @@ never recur.
 
 ---
 
-## 4. The learning loop — feedback may lead to a reviewed rule
+## 4. The learning loop: feedback may lead to a reviewed rule
 
 The `learn` procedure preserves the original feedback, identifies its cause and classifies the
 canonical owner. A reviewed, reusable correction may be added as a dated rule; conflicts return to
@@ -224,7 +224,7 @@ Three different questions. The split is the point.
 
 ---
 
-## 5a. The tester — adversarial workflow validation (the proactive complement)
+## 5a. The tester: adversarial workflow validation (the proactive complement)
 
 The feature verifier checks one change against its feature-specific goal. The workflow tester runs
 configured journeys with a runnable `how_to_run` and attacks their stated invariants. Each report
@@ -252,14 +252,14 @@ covers the checks that actually ran; it does not certify every path in the appli
   approved change from the existing human or reviewer authority updates canonical policy.
 - The `workflows/` bank is a **peer of `specs/`**: a spec is one feature you're building; a workflow is
   one journey the project chooses to track or protect. `tester --scan` derives candidate workflows from the real app
-  surface (routes, entry points, write paths) the same way `rules --scan` derives rules — proposes,
-  human confirms.
+  surface (routes, entry points, write paths) the same way `rules --scan` derives rules, proposes,
+  and a human confirms.
 - A **BROKEN** workflow is to the tester what a **FAIL** is to the verifier: preserve its repro and
   classify the cause. Rule changes wait for the `learn` review; a regression guard may be proposed.
 
 ---
 
-## 5b. Per-directory rules — the cascade (each agent, its concern)
+## 5b. Per-directory rules: the cascade (each agent, its concern)
 
 Global rules (`frequent_rules.md`, `30-tech.md`) describe ONE stack. A mixed-stack monorepo
 breaks that: a pure-TS package, an RN app, and a Python example each need different rules. So
@@ -281,7 +281,7 @@ owned by one agent:
 ```
 
 **Auto-create:** a rules-boundary dir (its own manifest/stack) with no `RULES.md` gets one
-**generated from its real code** — manifest deps, existing patterns, test config — never copied
+**generated from its real code**: manifest deps, existing patterns, test config, never copied
 from another directory's stack. Generated guidance should match the subtree, but stack labels do not guarantee correct isolation.
 Review each rule against the cited source before treating it as project policy. The `rules` command
 provides scan, generation, and resolution procedures (see `commands/rules.md`).
@@ -300,7 +300,7 @@ and tests; a stack label alone is not evidence.
 The file and role structure can be reused, while rule content should follow the actual target stack
 and source evidence.
 
-## 7. MCP integration — the action layer and its limits
+## 7. MCP integration: the action layer and its limits
 
 MCP servers can expose actions to a connected client. A document that describes a check does not
 install a server, run the check, enforce permissions, or prevent a tool call. Confirm the project's

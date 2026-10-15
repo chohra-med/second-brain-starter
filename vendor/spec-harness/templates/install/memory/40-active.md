@@ -1,4 +1,4 @@
-# 40-active — {{PROJECT_NAME}}
+# 40-active: {{PROJECT_NAME}}
 
 > Tier: Hot. current focus and next action
 

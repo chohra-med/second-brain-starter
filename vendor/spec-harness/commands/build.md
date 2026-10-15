@@ -1,4 +1,4 @@
-# Command: `build` — execute one accepted feature packet
+# Command: `build`, execute one accepted feature packet
 
 > The shared `.claude/commands/sdd.md` procedure owns route, context, authorization and acceptance.
 > This file owns the task-sized implementation cycle.

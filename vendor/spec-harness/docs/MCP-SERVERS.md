@@ -36,7 +36,7 @@ Use current official vendor documentation to confirm the actual endpoint, authen
 supported version, available actions, data access, and destructive-action controls. Treat a setup
 example from another project as unverified until checked against that project's client and provider.
 
-## Security — read this before you paste a token
+## Security: read this before you paste a token
 
 - **Scope tokens to the minimum.** An MCP with prod write is a live foot-gun with a fast trigger.
 - **Prefer read-only** for anything you're only inspecting (logs, revenue, issues).
@@ -57,4 +57,4 @@ and their limits.
 
 *Maintained as part of [Spec Harness](https://github.com/chohra-med/spec-harness-oss) by
 [Malik Chohra](https://getwireai.com) · [Code Meet AI newsletter](https://codemeetai.substack.com).
-Illustrative list assembled July 2026 — verify all vendor details against current official documentation before use.*
+Illustrative list assembled July 2026; verify all vendor details against current official documentation before use.*

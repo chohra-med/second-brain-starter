@@ -2146,7 +2146,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
     if (mid <= 3 || kills % 10 === 0) {
       const fresh = await connectNow(w);
-      assert.equal(treeFiles((await snap(w)).repo).length, 89, 'a fresh connect stages exactly the 89 harness files of Spec Harness 0.3.0');
+      assert.equal(treeFiles((await snap(w)).repo).length, 95, 'a fresh connect stages exactly the 95 harness files of Spec Harness 0.4.0');
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before);
     }
@@ -2226,7 +2226,7 @@ async function settleAfterKill(w, before, initId) {
   assert.equal(connected.length, 1, `one connection at most, saw ${connected.join(', ')}`);
   const [id] = connected;
   assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
-  assert.equal(treeFiles(after.repo).length, 89, 'the connection is fully present with all 89 staged files');
+  assert.equal(treeFiles(after.repo).length, 95, 'the connection is fully present with all 95 staged files');
   await assertReceiptFilesPresent(w, id);
   assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
   await rollbackReceipt({ targetPath: w.hub, receiptId: id });
@@ -2538,7 +2538,14 @@ test('cross-check: the vendored bash installer and applyConnect produce the same
   await connectNow(w, { name });
   const bash = await treeInventory(reference);
   const ours = await treeInventory(w.repo);
-  assert.deepEqual(ours, bash, 'diff -r equivalent: same files, same bytes, same directories');
+  // Spec Harness 0.4.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
+  // later three-way updates). connect writes no such record: its plan is the approved, digest-bound set and it writes nothing
+  // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly.
+  const isRecord = (key) => key === '.spec-harness' || key.startsWith('.spec-harness/');
+  assert.ok(Object.keys(bash).some(isRecord), 'control: the bash installer writes its .spec-harness/ install record');
+  assert.equal(Object.keys(ours).some(isRecord), false, 'connect writes no .spec-harness/ install record');
+  const bashWithoutRecord = Object.fromEntries(Object.entries(bash).filter(([key]) => !isRecord(key)));
+  assert.deepEqual(ours, bashWithoutRecord, 'diff -r equivalent outside .spec-harness/: same files, same bytes, same directories');
   assert.ok(((await lstat(path.join(reference, 'loop.sh'))).mode & 0o111) !== 0, 'bash installer stages loop.sh executable');
   assert.equal((await lstat(rel(w.repo, 'loop.sh'))).mode & 0o111, 0, 'connect stages loop.sh without the executable bit (documented, D3-c)');
 });

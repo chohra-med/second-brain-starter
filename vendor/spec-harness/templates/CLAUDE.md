@@ -1,9 +1,9 @@
-# {{PROJECT_NAME}} — Spec Harness entry point
+# {{PROJECT_NAME}}: Spec Harness entry point
 
 Auto-loaded by Claude Code at session start. Read fully before any other action.
 
 ## 🧠 Behavioral foundation (override everything below on ambiguity)
-1. Surface uncertainty first — state assumptions + tradeoffs before code.
+1. Surface uncertainty first, state assumptions + tradeoffs before code.
 2. Minimum code that solves the task. No speculative abstraction.
 3. Surgical changes only. Touch only what the task requires.
 4. State success criteria before coding. Verify before reporting done.
@@ -15,7 +15,7 @@ Auto-loaded by Claude Code at session start. Read fully before any other action.
 4. **Frequent rules (REQUIRED before any code edit)** → `ai_rules/rules/frequent_rules.md`
 5. Anti-hallucination checklist → `ai_rules/rules/context_management.md`
 6. Context map → `ai_rules/context_map.md`
-7. Confirm internally: "Spec Harness startup complete — frequent_rules.md loaded."
+7. Confirm internally: "Spec Harness startup complete, frequent_rules.md loaded."
 
 The deterministic installer stages files only. Generic templates, unbound roles, and a goal
 template are not project-derived policy or acceptance; never call them READY by their presence.
@@ -27,9 +27,11 @@ work. The shared procedure is `.claude/commands/sdd.md`; it creates a ticket-spe
 the light route instead: one `specs/<feature>/ticket.md`, an implementer and one fresh verifier. Never substitute
 the unrelated root `goal.md`. Tests passing is necessary, not sufficient.
 
+A code ticket is any change to a tracked file outside `specs/` and `.memory/`. It goes through `/sdd` before the first source edit, even when it looks small: the light route is still `/sdd`. Keep the ticket's code inside this repository: no worktree, clone or copy elsewhere unless the user asks for one.
+
 ## ⚖️ The non-negotiables
-- `constitution.md` — SDD articles (TDD, minimalism, type-safety, harness-around-the-dev).
-- `AGENTS.md` — the reviewed ratchet. A failure is preserved and classified through `learn`; only
+- `constitution.md`, SDD articles (TDD, minimalism, type-safety, harness-around-the-dev).
+- `AGENTS.md`, the reviewed ratchet. A failure is preserved and classified through `learn`; only
   reviewed durable corrections become dated rules.
 
 ## 🧠 Memory tiering

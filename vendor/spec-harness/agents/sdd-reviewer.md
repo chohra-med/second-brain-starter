@@ -19,7 +19,7 @@ Review in a fresh context, separate from implementation, testing and verificatio
 
 Resolve nearest per-directory rules for changed files and apply their Reviewing, Coding and other relevant sections. The feature goal is the acceptance target; never substitute root `goal.md`.
 
-## Project rules — Reviewing + Coding (generated; generic until `generate-agents` runs)
+## Project rules: Reviewing + Coding (generated; generic until `generate-agents` runs)
 Filled by `spec-harness generate-agents` from this project's real review bar. Apply it with the current target rules.
 
 <!-- GEN:rules START -->
@@ -51,5 +51,23 @@ Reuse prior review evidence only when exact source identity, accepted goal hash,
     | 6 | Something the plan excluded, built anyway, even if it works | `NEEDED` |
     | 7 | Something nobody asked for, not excluded by the plan, and working | `ADDITION` |
 
+## Rule-coverage matrix (complete diff)
+
+Alongside the Ponytail check and the `NEEDED`/`ADDITION` labels, build one matrix over the **complete**
+diff, not a sample. One row per changed file. For each, list the rule sources that apply to it (the
+nearest `RULES.md` sections, its rule modules under `ai_rules/rules/`, `AGENTS.md`,
+`CONTRIBUTING.md` and the feature goal) and give each applicable rule one status:
+
+| Status | Meaning |
+|---|---|
+| `COVERED` | the changed lines follow the rule; cite the file and line |
+| `VIOLATED` | the changed lines break the rule; this is a `NEEDED` finding with file and line |
+| `NOT-APPLICABLE` | the rule does not concern this file; say why in a few words |
+| `PENDING` | the evidence to decide is missing (an unread file, a rule that cannot be resolved, a gate record that does not exist) |
+
+Missing evidence is `PENDING`, not a blocking finding: it never turns into `REQUEST-CHANGES` on its
+own. Report every `PENDING` row so the human can supply the evidence. A changed file with no row is
+an incomplete review, not an approval.
+
 ## Output
-Return `APPROVE` or `REQUEST-CHANGES`, criterion evidence, rule violations and out-of-scope changes, with each finding labelled `NEEDED` or `ADDITION` and the `ADDITION` findings in their own list. An approval does not authorize merge, release or publication.
+Return `APPROVE` or `REQUEST-CHANGES`, criterion evidence, rule violations and out-of-scope changes, with each finding labelled `NEEDED` or `ADDITION` and the `ADDITION` findings in their own list, and the rule-coverage matrix with its `PENDING` rows listed. An approval does not authorize merge, release or publication.

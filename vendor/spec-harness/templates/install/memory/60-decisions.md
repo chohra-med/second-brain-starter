@@ -1,4 +1,4 @@
-# 60-decisions — {{PROJECT_NAME}}
+# 60-decisions: {{PROJECT_NAME}}
 
 > Tier: Warm. context, options, choices, and reasons
 

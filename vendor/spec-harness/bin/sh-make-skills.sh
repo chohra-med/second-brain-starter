@@ -23,22 +23,22 @@ emit() {
     printf '# %s\n\n%s\n\n' "$name" "$role"
     printf '## Run it\n'
     if [ "$shared_route" = method ]; then
-      printf '1. **Load this reusable method owner** — `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`. This method is usable during initialization before a synthesis receipt or feature goal exists.\n' "$doc" "$doc"
-      printf '2. **Use shared SDD context when applicable** — `.claude/commands/sdd.md`; do not infer role bindings or native discovery from this skill file.\n\n'
+      printf '1. **Load this reusable method owner**: `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`. This method is usable during initialization before a synthesis receipt or feature goal exists.\n' "$doc" "$doc"
+      printf '2. **Use shared SDD context when applicable**: `.claude/commands/sdd.md`; do not infer role bindings or native discovery from this skill file.\n\n'
     elif [ "$shared_route" = yes ]; then
-      printf '1. **Load the shared SDD procedure first** — `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.\n'
-      printf '2. **Load this stage contract** — `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`.\n' "$doc" "$doc"
-      printf '3. **Resolve roles from the receipt** — use only `.claude/agents/.init-synthesis.json` selected paths; file presence or model frontmatter does not prove binding or capability.\n'
-      printf '4. **Stay inside the 3 pillars** — Memory bank (`.memory/`) · Spec-Driven Development · Harness. Read `SPEC-HARNESS.md` for setup status.\n\n'
+      printf '1. **Load the shared SDD procedure first**: `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.\n'
+      printf '2. **Load this stage contract**: `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`.\n' "$doc" "$doc"
+      printf '3. **Resolve roles from the receipt**: use only `.claude/agents/.init-synthesis.json` selected paths; file presence or model frontmatter does not prove binding or capability.\n'
+      printf '4. **Stay inside the 3 pillars**: Memory bank (`.memory/`) · Spec-Driven Development · Harness. Read `SPEC-HARNESS.md` for setup status.\n\n'
     else
-      printf '1. **Load the full procedure** — read the command doc and follow it exactly:\n'
+      printf '1. **Load the full procedure**: read the command doc and follow it exactly:\n'
       printf '   `.claude/commands/spec-harness/%s.md` (this repo) or the spec-harness source `commands/%s.md`.\n' "$doc" "$doc"
       pillars_step=2
       if [ -n "$agents" ]; then
-        printf '2. **Agents** — follow this command and project policy for role selection.\n'
+        printf '2. **Agents**: follow this command and project policy for role selection.\n'
         pillars_step=3
       fi
-      printf '%s. **Stay inside the 3 pillars** — Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.\n\n' "$pillars_step"
+      printf '%s. **Stay inside the 3 pillars**: Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.\n\n' "$pillars_step"
     fi
     printf '## Non-negotiables\n'
     if [ "$shared_route" = method ]; then
@@ -59,8 +59,8 @@ emit() {
 }
 
 emit spec-harness "build" "" \
-"The Spec Harness orchestrator — spec-driven development wrapped in a harness (reviewed ratchet + independent verifier + learning loop) over a persistent memory bank. Use when the user says 'use spec harness', 'run the spec harness', 'spec-harness this feature', or wants the full /sdd init or ticket → feature spec/goal → plan → tasks → independent gates flow. Routes to the sub-skills and enforces the 3 pillars (Memory bank · SDD · Harness)." \
-"You are the orchestrator for a Spec Harness project. Read the shared \`sdd\` procedure first, then route initialization or ticket work through the appropriate stage skill. Resolve every project-specific role from the synthesis receipt. The implementer does not own acceptance." yes
+"The Spec Harness orchestrator. Spec-driven development wrapped in a harness (reviewed ratchet + independent verifier + learning loop) over a persistent memory bank. Use when the user says 'use spec harness', 'run the spec harness', 'spec-harness this feature', or wants the full /sdd init or ticket → feature spec/goal → plan → tasks → independent gates flow. Routes to the sub-skills and enforces the 3 pillars (Memory bank · SDD · Harness)." \
+"You are the orchestrator for a Spec Harness project. Read the shared \`sdd\` procedure first, then route initialization or ticket work through the appropriate stage skill. Resolve every project-specific role from the synthesis receipt. The implementer does not own acceptance. A code ticket is any change to a tracked file outside \`specs/\` and \`.memory/\`. It goes through \`/sdd\` before the first source edit, even when it looks small: the light route is still \`/sdd\`. Keep the ticket's code inside this repository: no worktree, clone or copy elsewhere unless the user asks for one." yes
 
 emit spec-harness-install "init" "researcher" \
 "Add or refresh Spec Harness in a repo, greenfield or existing. Use when the user asks to install or initialize Spec Harness. The shell stages files and leaves project synthesis PENDING." \
@@ -78,8 +78,14 @@ emit spec-harness-plan "plan" "planner" \
 "Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail and source-grounded Grill Me before finalizing the plan." \
 "Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices. Keep the plan tied to the feature goal and source/rule hashes." yes
 
-for method in ponytail grill-me package-finder skill-finder; do
+for method in ponytail grill-me package-finder skill-finder conventions technology-profiles; do
   description="Use the portable Spec Harness $method method when initializing a project or planning a ticket that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
+  if [ "$method" = conventions ]; then
+    description="Use the portable Spec Harness conventions method to find the repository's branch, commit, pull-request and task-splitting conventions from its own policy and bounded Git history, during initialization or when a ticket touches them. Read actual target evidence first; never create branches or commits."
+  fi
+  if [ "$method" = technology-profiles ]; then
+    description="Use the portable Spec Harness technology-profiles method to select a technology profile and give every package and direct dependency a disposition from manifests, lockfiles and imports, during initialization or planning. Read actual target evidence first; do not install packages or third-party skills."
+  fi
   if [ "$method" = ponytail ]; then
     description="Use the portable Spec Harness Ponytail method for code or implementation work, project initialization, or ticket planning that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
   fi
@@ -101,7 +107,7 @@ emit spec-harness-verify "verify" "verifier" \
 "Resolve the bound verifier from \`.claude/agents/.init-synthesis.json\`; check each literal criterion in \`specs/<feature>/goal.md\` with evidence. Root \`goal.md\` is not a substitute." yes
 
 emit spec-harness-tester "tester" "workflow-tester" \
-"Adversarially validate the app's critical workflows — for each journey in workflows/, a clean-context agent RUNS it end-to-end and actively tries to BREAK it (bad inputs, kill mid-flow, races, double-submit, offline, boundary values), then reports which are BROKEN, ranked P0 first. Use when the user says 'test the workflows', 'try to break the app', 'which critical flows are broken', 'run the workflow tester', or 'is checkout/onboarding still working'. The tester checks reality against critical journeys alongside the verifier's goal check. \`--scan\` and \`tester <id>\` use a capable client; the shell reports PENDING/manual. A BROKEN result sends its repro and candidate guard through reviewed learning; policy changes require approval." \
+"Adversarially validate the app's critical workflows. For each journey in workflows/, a clean-context agent RUNS it end-to-end and actively tries to BREAK it (bad inputs, kill mid-flow, races, double-submit, offline, boundary values), then reports which are BROKEN, ranked P0 first. Use when the user says 'test the workflows', 'try to break the app', 'which critical flows are broken', 'run the workflow tester', or 'is checkout/onboarding still working'. The tester checks reality against critical journeys alongside the verifier's goal check. \`--scan\` and \`tester <id>\` use a capable client; the shell reports PENDING/manual. A BROKEN result sends its repro and candidate guard through reviewed learning; policy changes require approval." \
 "Load the workflows/ bank (P0 first). For each workflow spawn a fresh sdd-workflow-tester (clean context, no stake): it runs the journey via how_to_run, then attacks its invariants (bad inputs · kill mid-flow · races/double-submit · offline · boundary · replay) and returns PASS or BROKEN with a concrete repro. Aggregate a ranked report; send each BROKEN repro, likely cause and candidate guard through commands/learn.md for capture, classification and review. Apply a policy change only after approval. The shell prints PENDING/manual; a capable client may propose candidate workflows from app evidence (routes/entry points/write paths) for human confirmation."
 
 emit spec-harness-learn "learn" "learner" \

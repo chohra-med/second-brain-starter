@@ -1,4 +1,4 @@
-# Command: `teach` — explain a system to a human
+# Command: `teach`, explain a system to a human
 
 > Make one page a person can open in a browser and understand. Short first, deep after.
 > `learning_human.html` at the root of an installed project is the worked example.

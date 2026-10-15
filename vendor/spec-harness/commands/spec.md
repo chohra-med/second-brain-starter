@@ -1,4 +1,4 @@
-# Command: `spec` — input → feature spec and goal
+# Command: `spec`, input → feature spec and goal
 
 > The shared SDD procedure owns the run. This stage writes the ticket's checkable "what".
 

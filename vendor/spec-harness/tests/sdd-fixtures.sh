@@ -3,6 +3,10 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HARNESS_DIR="$(cd "${1:-$SCRIPT_DIR/..}" && pwd -P)"
+PORTABLE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/lib/portable.sh"
+# shellcheck source=lib/portable.sh
+. "$PORTABLE"
+require_python311
 TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/sdd-fixtures.XXXXXX")" || exit 1
 trap 'rm -rf "$TMP_DIR"' EXIT HUP INT TERM
 
@@ -67,7 +71,7 @@ if [[ -f "$HARNESS_DIR/commands/sdd.md" ]]; then
 fi
 
 if [[ -f "$HARNESS_DIR/commands/sdd.md" && -f "$HARNESS_DIR/commands/build.md" ]]; then
-  if ! python3 - "$HARNESS_DIR/commands/sdd.md" "$HARNESS_DIR/commands/build.md" <<'PYCONTRACT'
+  if ! python3 -I -B - "$HARNESS_DIR/commands/sdd.md" "$HARNESS_DIR/commands/build.md" <<'PYCONTRACT'
 from pathlib import Path
 import sys, tempfile
 sdd, build = (Path(p).read_text() for p in sys.argv[1:])
@@ -188,13 +192,15 @@ for skill in tickets spec plan tasks build verify; do
 done
 
 if ! command -v npm >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1; then
-  fail 'clean consumer check requires npm and tar'
+  for tool in npm tar; do command -v "$tool" >/dev/null 2>&1 || fail "missing tool: $tool (clean consumer check did not run)"; done
 else
   pack_log="$TMP_DIR/npm-pack.log"
   if (cd "$HARNESS_DIR" && npm_config_cache="$TMP_DIR/npm-cache" npm pack --ignore-scripts --pack-destination "$TMP_DIR" >"$pack_log" 2>&1); then
     archive="$(find "$TMP_DIR" -maxdepth 1 -type f -name '*.tgz' -print -quit)"
     if [[ -n "$archive" ]]; then
-      if tar -tzf "$archive" | grep -q '^package/docs/GUARDRAILS\.md$' && tar -tzf "$archive" | grep -q '^package/docs/MCP-SERVERS\.md$'; then
+      # Capture the listing first: with pipefail, grep -q exiting early makes GNU tar die of SIGPIPE.
+      listing="$(tar -tzf "$archive")"
+      if grep -q '^package/docs/GUARDRAILS\.md$' <<<"$listing" && grep -q '^package/docs/MCP-SERVERS\.md$' <<<"$listing"; then
         pass 'consumer package includes README-linked docs'
       else
         fail 'consumer package omits README-linked docs'
@@ -304,12 +310,12 @@ if [[ -x "$HARNESS_DIR/bin/sh-install.sh" ]]; then
     printf 'user Claude route sentinel\n' >"${custom_files[1]}"
     printf 'user Codex route sentinel\n' >"${custom_files[2]}"
     before=()
-    for path in "${custom_files[@]}"; do before+=("$(shasum -a 256 "$path" | awk '{print $1}')"); done
+    for path in "${custom_files[@]}"; do before+=("$(sha256_file "$path")"); done
     install_log="$TMP_DIR/preservation-rerun.log"
     if bash "$HARNESS_DIR/bin/sh-install.sh" --entrypoint install "$target" integrate >"$install_log" 2>&1; then
       preserved=true
       for i in "${!custom_files[@]}"; do
-        after="$(shasum -a 256 "${custom_files[$i]}" | awk '{print $1}')"
+        after="$(sha256_file "${custom_files[$i]}")"
         [[ "$after" == "${before[$i]}" ]] || preserved=false
       done
       if [[ "$preserved" == true ]]; then pass 'rerun preserves custom goal and both client routes byte-for-byte'; else fail 'rerun changed a custom goal or client route'; fi
@@ -322,7 +328,9 @@ if [[ -x "$HARNESS_DIR/bin/sh-install.sh" ]]; then
   fi
 fi
 
-python3 - "$HARNESS_DIR" "${2:-${TASK06_PYTHON_FIXTURE:-}}" "$packed_consumer" "$packed_consumer_ready" <<'PY'
+# The Python fixture state check runs on the synthetic fixture shipped in tests/fixtures unless
+# argument 2 or TASK06_PYTHON_FIXTURE names another root, so it never skips silently.
+python3 -I -B - "$HARNESS_DIR" "${2:-${TASK06_PYTHON_FIXTURE:-$SCRIPT_DIR/fixtures/python-state/targets/python/app}}" "$packed_consumer" "$packed_consumer_ready" <<'PY'
 from pathlib import Path
 import hashlib
 import re

@@ -1,9 +1,9 @@
-# Directory rules — {{DIR}}
+# Directory rules: {{DIR}}
 
 > **Per-directory rules.** Resolved nearest-up-the-tree: an agent working on a file collects every
 > `RULES.md` from the repo root down to the file's directory; **this file overrides its ancestors
 > on conflict**, and an empty section inherits the parent's. Each section is owned by one SDD
-> agent. Rules here are generated from **this directory's real code** — never copied from another
+> agent. Rules here are generated from **this directory's real code**: never copied from another
 > directory's stack.
 
 > **PENDING scaffold:** the installer does not derive or verify these sections. This file becomes

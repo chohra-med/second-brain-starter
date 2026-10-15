@@ -19,10 +19,10 @@ fail() {
 
 pass() { printf 'PASS: %s\n' "$1"; }
 
-if ! command -v python3 >/dev/null 2>&1; then
-  printf 'SKIPPED: python3 is required\n'
-  exit 1
-fi
+# shellcheck source=lib/portable.sh
+. "$TEST_DIR/lib/portable.sh"
+require_tools git
+require_python311
 
 CHECKER="$TMP/checker.py"
 cat >"$CHECKER" <<'PYEOF'
@@ -74,6 +74,22 @@ def check(manifest, root, target, name):
     entries = manifest["entries"]
     want = {e["destination"] for e in entries}
     files, dirs = walk(target)
+    # The install record and one base copy per installed file (kept for three-way updates).
+    record_info = manifest.get("installRecord") or {}
+    record_rel, base_dir = record_info.get("record"), record_info.get("baseDir")
+    if not record_rel or not base_dir:
+        bad.append("INSTALL RECORD not described in the manifest (installRecord.record / installRecord.baseDir)")
+        record_rel, base_dir = ".spec-harness/install.json", ".spec-harness/base"
+    state_files = {record_rel} | {base_dir + "/" + d for d in want}
+    for p in sorted(state_files - files):
+        bad.append("MISSING install state file: " + p)
+    files = files - state_files
+    try:
+        record = json.load(open(os.path.join(target, record_rel), encoding="utf-8"))
+    except (OSError, ValueError):
+        record = {}
+    if record.get("format") != "spec-harness-install-record" or record.get("harness_version") != pkg["version"]:
+        bad.append("INSTALL RECORD format or harness_version is wrong")
     for p in sorted(files - want):
         bad.append("EXTRA installed path not in manifest: " + p)
     for p in sorted(want - files):
@@ -97,6 +113,12 @@ def check(manifest, root, target, name):
             bad.append("unknown render for %s: %s" % (d, e["render"]))
             continue
         ip = os.path.join(target, d)
+        bp = os.path.join(target, base_dir, d)
+        if os.path.isfile(bp) and open(bp, "rb").read() != expect:
+            bad.append("BASE COPY differs for " + d)
+        row = record.get("files", {}).get(d, {})
+        if not row.get("managed") or row.get("sha256") != sha(expect):
+            bad.append("INSTALL RECORD entry wrong for " + d)
         if os.path.isfile(ip):
             if open(ip, "rb").read() != expect:
                 bad.append("BYTES differ for installed " + d)
@@ -109,6 +131,8 @@ def check(manifest, root, target, name):
     for p in listed | want:
         implied |= ancestors(p)
     implied |= {a for p in listed for a in ancestors(p + "/x")}
+    for p in state_files:
+        implied |= ancestors(p)
     for p in sorted(dirs - implied):
         bad.append("EXTRA directory not in manifest: " + p)
     for p in sorted(listed - dirs):
@@ -173,6 +197,12 @@ def main():
     t4 = os.path.join(fresh("i"), "t"); install(root, t4, name)
     open(os.path.join(t4, "SPEC-HARNESS.md"), "ab").write(b"x")
     controls.append(("i one installed byte changed", check(manifest, root, t4, name), "BYTES differ for installed SPEC-HARNESS.md"))
+    t6 = os.path.join(fresh("l"), "t"); install(root, t6, name)
+    open(os.path.join(t6, ".spec-harness/base/goal.md"), "ab").write(b"x")
+    controls.append(("l one base copy byte changed", check(manifest, root, t6, name), "BASE COPY differs for goal.md"))
+    t7 = os.path.join(fresh("m"), "t"); install(root, t7, name)
+    os.remove(os.path.join(t7, ".spec-harness/install.json"))
+    controls.append(("m install record removed", check(manifest, root, t7, name), "MISSING install state file: .spec-harness/install.json"))
     r = copy_root("j"); p = os.path.join(r, "docs/GETTING-STARTED.md")
     s = open(p, encoding="utf-8").read().replace("```markdown", "```text", 1)
     open(p, "w", encoding="utf-8").write(s)
@@ -204,7 +234,7 @@ for NAME in "${NAMES[@]}"; do
   i=$((i + 1))
   work="$TMP/real$i"
   mkdir -p "$work"
-  if python3 -I "$CHECKER" real "$HARNESS_DIR" "$work" "$NAME" >"$TMP/real$i.log" 2>&1; then
+  if python3 -I -B "$CHECKER" real "$HARNESS_DIR" "$work" "$NAME" >"$TMP/real$i.log" 2>&1; then
     pass "installed set equals manifest, bytes and modes match (name case $i)"
   else
     cat "$TMP/real$i.log"
@@ -215,7 +245,7 @@ done
 
 work="$TMP/controls"
 mkdir -p "$work"
-if python3 -I "$CHECKER" controls "$HARNESS_DIR" "$work" 'plain-name' >"$TMP/controls.log" 2>&1; then
+if python3 -I -B "$CHECKER" controls "$HARNESS_DIR" "$work" 'plain-name' >"$TMP/controls.log" 2>&1; then
   cat "$TMP/controls.log"
   pass 'planted-fault controls all turn the checker red'
 else

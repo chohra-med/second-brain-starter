@@ -6,6 +6,10 @@ TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 HARNESS_DIR="${SPEC_HARNESS_DIR:-$(cd "$TEST_DIR/.." && pwd -P)}"
 CLI="$HARNESS_DIR/bin/spec-harness"
 INIT="$HARNESS_DIR/bin/sh-init.sh"
+PORTABLE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/lib/portable.sh"
+# shellcheck source=lib/portable.sh
+. "$PORTABLE"
+require_tools git cmp
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/spec-harness-installer.XXXXXX")" || exit 1
 FAILURES=0
 LAST_RC=0
@@ -74,7 +78,7 @@ assert_absent() {
   if [ ! -e "$path" ]; then pass "$label"; else fail "$label (unexpected: $path)"; fi
 }
 
-hash_file() { shasum -a 256 "$1" | awk '{print $1}'; }
+hash_file() { sha256_file "$1"; }
 
 check_startup() {
   local target="$1" label="$2" path
@@ -283,6 +287,75 @@ chmod 644 "$UNREADABLE_SRC/templates/install/SPEC-HARNESS.md"
 assert_rc 1 'unreadable installer template aborts the install'
 assert_contains "$TMP/unreadable.log" 'templates/install/SPEC-HARNESS.md' 'unreadable template is named on stderr'
 if [ -z "$(find "$UNREADABLE_TARGET" -mindepth 1 -print -quit)" ]; then pass 'unreadable template writes no target files'; else fail 'unreadable template writes no target files'; fi
+
+# The install record is written through the safe writer. A link planted at the old fixed temporary
+# name (.spec-harness/install.json.tmp) must not be written through; the record must be a regular file.
+RECORD_TMP_ROOT="$TMP/record-tmp-link"
+RECORD_VICTIM="$TMP/record-victim.txt"
+mkdir -p "$RECORD_TMP_ROOT/.spec-harness"
+printf 'victim bytes that init must not touch\n' >"$RECORD_VICTIM"
+ln -s "$RECORD_VICTIM" "$RECORD_TMP_ROOT/.spec-harness/install.json.tmp"
+RECORD_VICTIM_BEFORE="$(hash_file "$RECORD_VICTIM")"
+run_cli "$TMP/record-tmp-link.log" init "$RECORD_TMP_ROOT" integrate RecordTmpLink
+assert_rc 0 'planted install.json.tmp link: install completes'
+RECORD_VICTIM_AFTER="$(hash_file "$RECORD_VICTIM")"
+if [ "$RECORD_VICTIM_AFTER" = "$RECORD_VICTIM_BEFORE" ]; then pass 'planted install.json.tmp link: outside victim bytes unchanged'; else fail "planted install.json.tmp link: outside victim changed ($RECORD_VICTIM_BEFORE -> $RECORD_VICTIM_AFTER)"; fi
+if [ -f "$RECORD_TMP_ROOT/.spec-harness/install.json" ] && [ ! -L "$RECORD_TMP_ROOT/.spec-harness/install.json" ]; then pass 'planted install.json.tmp link: install.json is a regular file'; else fail 'planted install.json.tmp link: install.json is a regular file'; fi
+
+# A1: a read-only .spec-harness/base is an OS refusal of the record step. It must be a named line that
+# says the record could not be written, with exit 1 and no Python traceback (the update path does the same).
+READONLY_RECORD="$TMP/record-readonly"
+mkdir -p "$READONLY_RECORD/.spec-harness/base"
+chmod 555 "$READONLY_RECORD/.spec-harness/base"
+run_cli "$TMP/record-readonly.log" init "$READONLY_RECORD" integrate ReadOnlyRecord
+chmod 755 "$READONLY_RECORD/.spec-harness/base"
+assert_rc 1 'read-only base directory: the install record step exits 1'
+assert_contains "$TMP/record-readonly.log" 'install record could not be written' 'read-only base directory: the record failure is named'
+assert_contains "$TMP/record-readonly.log" 'install record: cannot write' 'read-only base directory: the refused path is named'
+if grep -Fq 'Traceback' "$TMP/record-readonly.log"; then fail 'read-only base directory: no Python traceback is printed'; cat "$TMP/record-readonly.log"; else pass 'read-only base directory: no Python traceback is printed'; fi
+
+# A link at a base-copy path is refused by the preflight before any file is staged (exit 2).
+BASE_LINK_ROOT="$TMP/base-link"
+BASE_VICTIM="$TMP/base-victim.txt"
+mkdir -p "$BASE_LINK_ROOT/.spec-harness/base"
+printf 'outside base victim\n' >"$BASE_VICTIM"
+ln -s "$BASE_VICTIM" "$BASE_LINK_ROOT/.spec-harness/base/goal.md"
+BASE_VICTIM_BEFORE="$(hash_file "$BASE_VICTIM")"
+run_cli "$TMP/base-link.log" init "$BASE_LINK_ROOT" integrate BaseLink
+assert_rc 2 'symlinked base copy goal.md is refused before staging'
+assert_contains "$TMP/base-link.log" 'preflight failed; target was not modified.' 'symlinked base copy is named by the preflight refusal'
+if [ "$(hash_file "$BASE_VICTIM")" = "$BASE_VICTIM_BEFORE" ]; then pass 'symlinked base copy: outside victim bytes unchanged'; else fail 'symlinked base copy: outside victim bytes unchanged'; fi
+assert_absent "$BASE_LINK_ROOT/goal.md" 'symlinked base copy: no planned file is staged'
+
+# The shared writer refuses a link at any path component and writes a plain file when the path is safe.
+WRITE_REGULAR="$TMP/write-regular"
+mkdir -p "$WRITE_REGULAR/root" "$WRITE_REGULAR/outside"
+printf 'outside file for write_regular\n' >"$WRITE_REGULAR/outside/victim"
+ln -s "$WRITE_REGULAR/outside" "$WRITE_REGULAR/root/linked-dir"
+ln -s "$WRITE_REGULAR/outside/victim" "$WRITE_REGULAR/root/linked-file"
+WRITE_VICTIM_BEFORE="$(hash_file "$WRITE_REGULAR/outside/victim")"
+python3 -I -B - "$HARNESS_DIR/bin" "$WRITE_REGULAR/root" >"$TMP/write-regular.log" 2>&1 <<'PYWR'
+import os, sys
+sys.path.insert(0, sys.argv.pop(1))
+from sh_safe_io import WriteRefused, write_regular
+root = sys.argv[1]
+refused = 0
+for rel in ("linked-dir/new.txt", "linked-file", "linked-dir/deeper/new.txt", "../escape.txt"):
+    try:
+        write_regular(root, rel, b"must not land\n")
+    except WriteRefused:
+        refused += 1
+write_regular(root, "sub/ok.txt", b"plain write\n")
+with open(os.path.join(root, "sub/ok.txt"), "rb") as handle:
+    plain = handle.read() == b"plain write\n"
+print("REFUSED %d of 4; PLAIN %s" % (refused, plain))
+PYWR
+assert_contains "$TMP/write-regular.log" 'REFUSED 4 of 4; PLAIN True' 'write_regular refuses every link and unsafe path, and writes a plain path'
+if [ "$(hash_file "$WRITE_REGULAR/outside/victim")" = "$WRITE_VICTIM_BEFORE" ] && [ "$(find "$WRITE_REGULAR/outside" -mindepth 1 | wc -l | tr -d ' ')" = 1 ]; then
+  pass 'write_regular: the link target directory and file are unchanged'
+else
+  fail 'write_regular: the link target directory and file are unchanged'
+fi
 
 # Shell syntax is part of the brief's required gate.
 for script in bin/spec-harness bin/sh-install.sh bin/sh-init.sh; do
