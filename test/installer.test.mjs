@@ -5,16 +5,21 @@ import test from 'node:test';
 import { appliedReceipt, cleanup, consumerRoot, fixtureBytes, planDigest, runCli, sourceRoot } from './helpers/consumer-cli.mjs';
 
 const expectedSeedDestinations = [
+  '.agents/skills/usage-dashboard/usage-prices.json',
+  '.claude/skills/usage-dashboard/usage-prices.json',
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
-  '01-Projects/Selected-Project/FACTS.md',
+  '01-Projects/Index.md',
+  '01-Projects/README.md',
   '01-Projects/Selected-Project/Decisions.md',
+  '01-Projects/Selected-Project/FACTS.md',
   '01-Projects/Selected-Project/progress.md',
   '01-Projects/Selected-Project/roadmap.md',
   '02-Areas/Areas.md',
   '03-Resources/Extensions.md',
   '05-Daily/daily-template.md',
+  'Home.md',
 ];
 
 const indexDestinations = [
@@ -156,7 +161,7 @@ test('the ICM contract installs exactly, stays bounded, and rejects missing inpu
     await writeFile(path.join(target, destination), 'changed skill\n');
     const corrupt = await runCli(['verify', '--target', target]);
     assert.equal(corrupt.code, 1, corrupt.stdout);
-    assert.ok(corrupt.stdout.includes(`CORRUPT\t${destination}`), corrupt.stdout);
+    assert.ok(corrupt.stdout.includes(`MODIFIED\t${destination}`), corrupt.stdout);
     await writeFile(path.join(target, destination), skill);
   }
   assert.equal((await runCli(['verify', '--target', target])).code, undefined);
@@ -238,6 +243,7 @@ test('installed Home is a complete operating dashboard with valid contained link
 
   const expectedDestinations = [
     ...indexDestinations,
+    '01-Projects/Index.md',
     '00-Meta/AGENTS.md',
     '00-Meta/Daily-Task-Plan.md',
     '00-Meta/Decisions.md',
@@ -311,12 +317,21 @@ test('installed Home is a complete operating dashboard with valid contained link
   const clean = await runCli(['verify', '--target', target]);
   assert.equal(clean.code, undefined, clean.stdout);
   assert.match(clean.stdout, /Verification: OK/);
+  // Home is a user-owned seed: an edit is PERSONALIZED, not drift.
   await writeFile(homePath, `${home}\nconsumer edit\n`);
+  const personalized = await runCli(['verify', '--target', target]);
+  assert.equal(personalized.code, undefined, personalized.stdout);
+  assert.match(personalized.stdout, /^PERSONALIZED\tHome\.md$/m);
+  await writeFile(homePath, home);
+  // A managed route file is still drift-checked, with the adopt hint.
+  const routePath = path.join(target, '00-Meta', 'AGENTS.md');
+  const route = await readFile(routePath);
+  await writeFile(routePath, Buffer.concat([route, Buffer.from('consumer edit\n')]));
   const drifted = await runCli(['verify', '--target', target]);
   assert.equal(drifted.code, 1, drifted.stdout);
-  assert.match(drifted.stdout, /^CORRUPT\tHome\.md\tManaged destination hash mismatch: Home\.md$/m);
+  assert.match(drifted.stdout, /^MODIFIED\t00-Meta\/AGENTS\.md\tManaged file differs from its installed bytes \(a local edit\): 00-Meta\/AGENTS\.md\. Keep it with verify --adopt 00-Meta\/AGENTS\.md$/m);
   assert.match(drifted.stdout, /Verification: FAILED/);
-  await writeFile(homePath, home);
+  await writeFile(routePath, route);
   const restored = await runCli(['verify', '--target', target]);
   assert.equal(restored.code, undefined, restored.stdout);
   assert.match(restored.stdout, /Verification: OK/);
@@ -374,7 +389,8 @@ test('consumer upgrade preserves a personalized seed while updating managed file
   const upgradePlan = await runCli(['upgrade', '--target', target], { checkout });
   assert.equal(upgradePlan.code, undefined, upgradePlan.stdout);
   assert.match(upgradePlan.stdout, /^PERSONALIZED\t01-Projects\/Selected-Project\/FACTS\.md\tundo=none$/m);
-  assert.match(upgradePlan.stdout, /^MANAGED-UPDATE\tHome\.md\tundo=restore-preimage$/m);
+  // Home is a seed. An unchanged seed still takes the new template.
+  assert.match(upgradePlan.stdout, /^SEED-UPDATE\tHome\.md\tundo=restore-preimage$/m);
   const upgradeDigest = planDigest(upgradePlan.stdout);
   assert.ok(upgradeDigest, upgradePlan.stdout);
   const applied = await runCli(['upgrade', '--target', target, '--apply', upgradeDigest], { checkout });
@@ -387,12 +403,15 @@ test('consumer upgrade preserves a personalized seed while updating managed file
   assert.match(verified.stdout, /Verification: OK/);
 });
 
+// The project map is a user-owned seed: a person lists their own projects there.
+const userOwnedIndexes = ['01-Projects/README.md'];
+
 function assertIndexManifest(manifest) {
   for (const destination of indexDestinations) {
     const entries = manifest.entries.filter((entry) => entry.destination === destination);
     assert.equal(entries.length, 1, `Missing or duplicate index: ${destination}`);
     assert.equal(entries[0].source, `template/${destination}`);
-    assert.equal(entries[0].mergeKind, 'managed-file');
+    assert.equal(entries[0].mergeKind, userOwnedIndexes.includes(destination) ? 'seed-file' : 'managed-file');
   }
 }
 
@@ -427,7 +446,7 @@ test('installed indexes and shared imports preserve exact source bytes and detec
   await writeFile(indexPath, Buffer.concat([clean, Buffer.from('consumer edit\n')]));
   const drift = await runCli(['verify', '--target', target]);
   assert.equal(drift.code, 1, drift.stdout);
-  assert.match(drift.stdout, /CORRUPT\t00-Meta\/README.md/);
+  assert.match(drift.stdout, /MODIFIED\t00-Meta\/README.md/);
   await writeFile(indexPath, clean);
   const restored = await runCli(['verify', '--target', target]);
   assert.equal(restored.code, undefined, restored.stdout);
@@ -516,6 +535,7 @@ const installedSkills = [
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'usage-dashboard',
   'writing-skills',
 ];
 
@@ -541,8 +561,8 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /fourteen local skills/);
-  assert.match(readme, /fourteen shared skills/);
+  assert.match(readme, /fifteen local skills/);
+  assert.match(readme, /fifteen shared skills/);
   assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 

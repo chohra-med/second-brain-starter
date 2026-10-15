@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
+PORTABLE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)/lib/portable.sh"
+# shellcheck source=lib/portable.sh
+. "$PORTABLE"
+require_tools npm tar
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/sh-installed-init.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 CACHE="$TMP/npm-cache"
@@ -36,18 +40,18 @@ grep -Fq 'spec-harness index <target>' "$TARGET/.claude/agents/.generate-agents.
 CUSTOM="$TMP/custom-target"
 mkdir -p "$CUSTOM/.claude/skills/spec-harness-performance"
 printf 'custom bytes\n' >"$CUSTOM/.claude/skills/spec-harness-performance/SKILL.md"
-BEFORE="$(shasum -a 256 "$CUSTOM/.claude/skills/spec-harness-performance/SKILL.md" | cut -d ' ' -f1)"
+BEFORE="$(sha256_file "$CUSTOM/.claude/skills/spec-harness-performance/SKILL.md")"
 "$CLI" install "$CUSTOM" integrate >"$TMP/custom.log"
-AFTER="$(shasum -a 256 "$CUSTOM/.claude/skills/spec-harness-performance/SKILL.md" | cut -d ' ' -f1)"
+AFTER="$(sha256_file "$CUSTOM/.claude/skills/spec-harness-performance/SKILL.md")"
 test "$BEFORE" = "$AFTER"
 grep -Fq '.claude/skills/spec-harness-performance/SKILL.md (reserved project skill already exists; preserve and report CONFLICT/PENDING during init)' "$TMP/custom.log"
 # A legacy generic skill from the collision version is preserved and kept pending.
 LEGACY="$TMP/legacy-target"
 mkdir -p "$LEGACY/.claude/skills/spec-harness-architecture"
 cp "$ROOT/templates/project-skills/spec-harness-architecture.md" "$LEGACY/.claude/skills/spec-harness-architecture/SKILL.md"
-BEFORE="$(shasum -a 256 "$LEGACY/.claude/skills/spec-harness-architecture/SKILL.md" | cut -d ' ' -f1)"
+BEFORE="$(sha256_file "$LEGACY/.claude/skills/spec-harness-architecture/SKILL.md")"
 "$CLI" install "$LEGACY" integrate >"$TMP/legacy.log"
-AFTER="$(shasum -a 256 "$LEGACY/.claude/skills/spec-harness-architecture/SKILL.md" | cut -d ' ' -f1)"
+AFTER="$(sha256_file "$LEGACY/.claude/skills/spec-harness-architecture/SKILL.md")"
 test "$BEFORE" = "$AFTER"
 grep -Fq '.claude/skills/spec-harness-architecture/SKILL.md (reserved project skill already exists; preserve and report CONFLICT/PENDING during init)' "$TMP/legacy.log"
 # A method destination symlink is rejected before target files are staged.

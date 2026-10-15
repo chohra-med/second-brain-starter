@@ -1,0 +1,69 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-test:
+    name: npm test (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      # Actions are pinned to full commit SHAs; the comment names the release.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: "22"
+      - name: Show tool versions
+        run: |
+          bash --version | head -n 1
+          git --version
+          python3 --version
+          node --version
+          npm --version
+          tar --version | head -n 1
+      - name: No test or script may call rg
+        run: |
+          if grep -rnE '(^|[[:space:]|;&(`])rg[[:space:]]' tests bin; then
+            echo "rg is not a prerequisite; use grep" >&2
+            exit 1
+          fi
+      - name: Shadow rg so any use fails loudly
+        run: |
+          mkdir -p "$RUNNER_TEMP/no-rg"
+          printf '#!/bin/sh\necho "rg is not a prerequisite of this repository" >&2\nexit 127\n' > "$RUNNER_TEMP/no-rg/rg"
+          chmod +x "$RUNNER_TEMP/no-rg/rg"
+          echo "$RUNNER_TEMP/no-rg" >> "$GITHUB_PATH"
+      - name: npm test (TMPDIR unset on Linux)
+        if: runner.os == 'Linux'
+        env:
+          SPEC_HARNESS_STRICT_SKIP: "1"
+        run: env -u TMPDIR npm test
+      - name: npm test
+        if: runner.os != 'Linux'
+        env:
+          SPEC_HARNESS_STRICT_SKIP: "1"
+        run: npm test
+      - name: Show failing logs
+        if: failure()
+        run: |
+          for log in "${TMPDIR:-/tmp}"/sh-*.log; do
+            [ -f "$log" ] || continue
+            echo "::group::$log"
+            cat "$log"
+            echo "::endgroup::"
+          done

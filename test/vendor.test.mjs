@@ -154,7 +154,7 @@ async function measuredTree(pin) {
 test('the pinned git tree hash equals the tree recomputed from the vendored bytes, paths and recorded executable bits', async () => {
   const pin = await readPin();
   assert.ok(pin.sourceInventory.every((file) => file.executable === undefined || file.executable === true), 'executable is absent or true');
-  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 11, 'the 11 executable paths are recorded');
+  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 15, 'the 15 executable paths are recorded (Spec Harness 0.4.0; 0.3.0 had 13, the two added are tests/examples-smoke.sh and tests/run-state-fixtures.sh)');
   assert.equal(await measuredTree(pin), pin.tree, 'recomputed git tree differs from pin.tree');
 });
 
@@ -179,12 +179,22 @@ test('executable bits on disk match the pin inventory', { skip: process.platform
   assert.deepEqual(wrong, []);
 });
 
-test('no vendored path can be executed by node --test (no .js, .mjs, .cjs or .ts file)', async () => {
+// Spec Harness 0.4.0 ships examples/react-ts-minimal/src/*.ts as example source. A Node with type stripping
+// on can run a .ts file, but `node --test` only discovers files named like tests, so a TypeScript file is
+// allowed only where test discovery never looks (the second check below).
+test('no vendored path can be executed by node --test (no .js, .mjs or .cjs file, and no TypeScript file named like a test)', async () => {
   const pin = await readPin();
-  const pattern = /\.(?:js|mjs|cjs|ts)$/i;
+  const pattern = /\.(?:js|mjs|cjs)$/i;
   assert.ok(pattern.test('planted/file.mjs') && pattern.test('x.CJS') && !pattern.test('x.sh'), 'control: the pattern fires on planted names');
   assert.deepEqual(pin.sourceInventory.map((file) => file.path).filter((file) => pattern.test(file)), []);
   assert.deepEqual((await walk(vendorRoot)).filter((file) => pattern.test(file)), []);
+  // Node's default test discovery: test.*, test-*.*, *.test.*, *-test.*, *_test.*, and anything under a test/ folder.
+  const typescript = /\.(?:ts|mts|cts)$/i;
+  const discovered = /(?:^|\/)test\/|(?:^|\/)test(?:-[^/]*)?\.[^/]+$|[.\-_]test\.[^/]+$/i;
+  const testLike = (file) => typescript.test(file) && discovered.test(file);
+  assert.ok(testLike('a/money.test.ts') && testLike('test/x.ts') && testLike('a/test-x.mts') && !testLike('examples/react-ts-minimal/src/money.ts'), 'control: the discovery pattern fires on planted test names only');
+  assert.deepEqual(pin.sourceInventory.map((file) => file.path).filter(testLike), []);
+  assert.deepEqual((await walk(vendorRoot)).filter(testLike), []);
 });
 
 test('the attribution repository check is anchored: a longer lookalike URL does not satisfy it', async () => {

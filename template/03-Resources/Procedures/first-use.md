@@ -24,7 +24,7 @@ Read `00-Meta/Profile.md` first. Ask only what is still `Unknown`. `init.md` own
 
 Record anything the person cannot or will not answer as `Unknown` and list it under `## Unknown`. Do not invent a role, stack, preference or boundary. Write `00-Meta/Profile.md` under the same exact-plan approval and preimage rule as the next section. The read order in `00-Meta/AGENTS.md` puts Profile first, so read the `Never touch` entries before changing anything. Do not assume the client loads it automatically.
 
-Do not record credentials, tokens, client names or anything confidential. `Never touch` names paths and areas, not secrets.
+Do not record credentials, tokens, client names or anything confidential. `Never touch` names paths and areas, not secrets. It holds standing boundaries only; a scoped, dated permission goes in `Decisions.md`.
 
 ## 3. Approve the exact personalization
 

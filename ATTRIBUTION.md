@@ -18,9 +18,9 @@ This starter's own differences from the method live in the separate `second-brai
 
 The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
 
-## Original skills: grill-me, readme-generator, graphify and writing-skills
+## Original skills: grill-me, readme-generator, graphify, writing-skills and usage-dashboard
 
-The skills `grill-me`, `readme-generator`, `graphify` and `writing-skills` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. For `graphify`, the outside tool it describes is separate software, as the note below explains.
+The skills `grill-me`, `readme-generator`, `graphify`, `writing-skills` and `usage-dashboard` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. For `graphify`, the outside tool it describes is separate software, as the note below explains.
 
 ## Optional companion: graphify
 
@@ -28,6 +28,6 @@ The `graphify` skill in [template/shared-skills/graphify/](template/shared-skill
 
 ## Bundled third-party system: Spec Harness
 
-[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `a663397c2aafa35071fb1fe899bd6a174cd423e6`, harness version 0.2.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
+[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `b7ea02973a331d8664f6005e0e358ae3c6fc0700`, harness version 0.4.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
 
 The copy is not part of the workspace template. The `connect` command reads the vendored install manifest and the files it names, and writes rendered copies of them into a repository you name. No code in `lib` or `bin` starts a process, so the vendored shell scripts are never executed; `bin/loop.sh` is copied as bytes only. `vendor/SPEC-HARNESS-PIN.json` records the commit, tree and a SHA-256 for every vendored file, and `test/vendor.test.mjs` checks the folder against that record.

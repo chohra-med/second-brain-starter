@@ -1,4 +1,4 @@
-# 70-knowledge — {{PROJECT_NAME}}
+# 70-knowledge: {{PROJECT_NAME}}
 
 > Tier: Warm. durable lessons and patterns
 

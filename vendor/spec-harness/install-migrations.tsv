@@ -1,0 +1,3 @@
+# Renamed installed paths, read by `spec-harness update` to explain a rename.
+# One row per rename: old target path<TAB>new target path<TAB>harness version that renamed it.
+# update never deletes the old path: it lists it as REMOVED-UPSTREAM and adds the new one as NEW.

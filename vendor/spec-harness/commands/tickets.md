@@ -1,4 +1,4 @@
-# Command: `tickets` — resolve input into a feature packet
+# Command: `tickets`, resolve input into a feature packet
 
 > Ticket intake is the first stage of the shared `/sdd` procedure. The route owns one feature
 > packet and one feature-specific verifier goal; this file supplies the intake details.
@@ -8,7 +8,7 @@
 ```text
 /sdd <exact ticket text>
 /sdd ticket <connected provider reference>
-spec-harness sdd <input>       # shell-only manual handoff; exit 2 / PENDING
+spec-harness sdd <input>       # shell-only manual handoff; exit 2 / PENDING (with no install, npx -y github:chohra-med/spec-harness-oss sdd <input>)
 ```
 
 Read `.claude/commands/sdd.md` first. The shell CLI cannot retrieve issues or synthesize artifacts.
@@ -30,12 +30,12 @@ invent requirements, overwrite an existing packet, or write status back to the i
 
 Create one new `specs/<feature>/` packet as described by `.claude/commands/sdd.md`:
 
-- `input.md` — exact input and source identity;
-- `spec.md` — problem, scope and checkable acceptance;
-- `goal.md` — literal feature end-state checks derived from the accepted spec;
-- `plan.md` — design, Ponytail receipt and resolved Grill Me rulings;
-- `tasks.md` — ordered work with changed paths, acceptance, tests and dependencies;
-- `gates/` — separate tester, verifier, reviewer and merger records.
+- `input.md`, exact input and source identity;
+- `spec.md`, problem, scope and checkable acceptance;
+- `goal.md`, literal feature end-state checks derived from the accepted spec;
+- `plan.md`, design, Ponytail receipt and resolved Grill Me rulings;
+- `tasks.md`, ordered work with changed paths, acceptance, tests and dependencies;
+- `gates/`, separate tester, verifier, reviewer and merger records.
 
 A MICRO ticket writes one `ticket.md` instead of this packet; its goal checks are the verifier
 target. Otherwise the ticket's `goal.md` is the verifier target. Root `goal.md` remains untouched. No external

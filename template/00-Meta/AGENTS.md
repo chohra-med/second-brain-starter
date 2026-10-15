@@ -1,10 +1,18 @@
 # Manual context route
 
-Use this only for the selected project folder. Do not scan the broader vault, parent folders, secrets, unrelated projects, or private notes.
+Use this only for the selected project folders. Do not scan the broader vault, parent folders, secrets, unselected projects, or private notes.
+
+## Selecting projects
+
+Selection is explicit and may name one project, several, or `all`. `all` means every row of the [project index](../01-Projects/Index.md) and nothing outside it. Never infer the selection from a previous task.
+
+- One project: follow the read order below in full.
+- Several projects or `all`: read steps 0, 1 and 7 once. Read steps 3 to 6 for each selected project. Defer step 2 for each project until just before you diagnose or change that project's files. Then read it in full for that project only.
+- Every capture, close or decision is written to the one project that owns it. A task that spans projects is recorded in each project it changes, and each record links to the others.
 
 Shared instructions belong in `AGENTS.md`; `CLAUDE.md` imports that owner. For navigation, choose the relevant [operating](README.md), [project](../01-Projects/README.md), or [resource](../03-Resources/README.md) map and follow its owner links only when needed. Maps do not replace the prerequisite order below.
 
-Read in this order when the files exist:
+Read in this order when the files exist (steps 3 to 6 repeat for each selected project):
 
 0. `00-Meta/Profile.md`: it sets how answers are given and what is never touched
 1. `00-Meta/Decisions.md`
@@ -15,11 +23,13 @@ Read in this order when the files exist:
 6. The three newest entries in `01-Projects/Selected-Project/progress.md`
 7. `00-Meta/Daily-Task-Plan.md` only if today's focus changes the task
 
-`Selected-Project` is the seeded project and stands for the project you are working in: for another project, read the same four records in its folder under `01-Projects/`. Its code stays where it is. This route never scans for repositories; the person names each one. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
+`Selected-Project` is the seeded project and stands for each project you are working in: for any other project, read the same four records in its folder under `01-Projects/`. Its code stays where it is. This route never scans for repositories; the person names each one. A new project is a copy of `03-Resources/_templates/project/`; the [project map](../01-Projects/README.md) owns that rule.
 
 A repository registered with `connect` is another project. Its folder under `01-Projects/` has a `Connection.md` that records the repository path, the remote if one was readable, the rule files found and the status at connect time. That status is a record, not a live reading: `verify` re-checks it. Read the repository's own rules and memory in the repository before changing its files.
 
-Then state: selected root, selected project, files read, current goal, constraints, next useful action, evidence required for done, and any conflict. If a completed progress entry conflicts with an open roadmap item, name the conflict. Do not call the project ready.
+When that repository has a Spec Harness (`SPEC-HARNESS.md` at its root), a code ticket goes through its `/sdd` procedure before any source edit. Keep the ticket's code inside that repository: no worktree, clone or copy elsewhere unless the person asks for one.
+
+Then state: selected root, selected projects, files read, and for each project its current goal, constraints, next useful action, evidence required for done, and any conflict. When several projects are selected, give one compact block per project, then any cross-project conflict or dependency. If a completed progress entry conflicts with an open roadmap item, name the conflict. Do not call any project ready.
 
 Capture new work with `03-Resources/Procedures/capture.md`. Never invent a fact, decision, or verification result.
 

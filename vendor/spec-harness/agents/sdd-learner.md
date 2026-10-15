@@ -14,7 +14,7 @@ You improve the harness, not the product. Run in a fresh context after a ticket'
 2. `.memory/80-feedback.md` for raw signals and `.memory/60-decisions.md` for decisions and their reasons.
 3. The owners the signal points at: nearest `RULES.md`, `AGENTS.md`, `ai_rules/` and the project skills under `.claude/skills/`.
 
-## Project rules — rule and skill owners
+## Project rules: rule and skill owners
 
 <!-- GEN:rules START -->
 This role is harness-owned and needs no source binding. At runtime, resolve rule and skill owners from `.claude/agents/.init-synthesis.json`.

@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  printf 'Usage: %s <target-dir> [--source <repo-relative-path> ...]\nPython 3.11+ is required for safe TOML manifest parsing.\n' "$0" >&2
+  printf 'Usage: %s <target-dir> [--source <repo-relative-path> ...] [--preview]\n--preview prints the bytes index would write and writes nothing.\nPython 3.11+ is required for safe TOML manifest parsing.\n' "$0" >&2
   exit 2
 fi
 target="$1"
@@ -13,8 +13,16 @@ command -v python3 >/dev/null 2>&1 || {
   printf 'spec-harness-index requires Python 3.11+; install Python and retry.\n' >&2
   exit 2
 }
+# Check the version before Python parses the program below, so an old interpreter gets this
+# message instead of a SyntaxError. -I (isolated mode) keeps the current directory, PYTHONPATH and
+# the user site out of sys.path: a module planted in the target cannot replace the standard library.
+python3 -I -B -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null || {
+  printf 'spec-harness-index requires Python 3.11+ (found %s); install a newer python3 and retry.\n' "$(python3 -I -B -c 'import platform; print(platform.python_version())' 2>/dev/null || echo unknown)" >&2
+  exit 2
+}
 
-python3 - "$target" "$@" <<'PY'
+BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+python3 -I -B - "$BIN_DIR" "$target" "$@" <<'PY'
 import hashlib
 import json
 import os
@@ -28,6 +36,11 @@ if sys.version_info < (3, 11):
 
 import tomllib
 
+# Isolated mode leaves bin/ off sys.path; the shared bounded reader is imported by explicit path.
+sys.path.insert(0, sys.argv.pop(1))
+from sh_safe_io import (MAX_RECEIPT_BYTES, MAX_RECEIPT_OUTPUTS, NOT_REGULAR, SafeReadError,
+                        load_json_object, read_bounded_result, safe_relative)
+
 MAX_DIRECTORIES = 5_000
 MAX_FILES = 25_000
 MAX_MANIFEST_BYTES = 256 * 1024
@@ -40,6 +53,8 @@ MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 GENERATED_IDENTITY_PATHS = {
     "ai_rules/project_inventory.json",
     ".claude/agents/.init-synthesis.json",
+    # Held only while finalize-init runs; counting it would make the inventory depend on the lock.
+    ".claude/agents/.sh-finalize.lock",
     ".claude/skills/spec-harness-architecture/SKILL.md",
     ".claude/skills/spec-harness-performance/SKILL.md",
     ".claude/skills/spec-harness-packages/SKILL.md",
@@ -94,8 +109,15 @@ GENERATED_PATTERNS = (
 requested = Path(sys.argv[1]).expanduser()
 source_args = sys.argv[2:]
 explicit_source_paths = []
+preview = False
 index = 0
 while index < len(source_args):
+    if source_args[index] == "--preview":
+        if preview:
+            raise SystemExit("duplicate --preview option")
+        preview = True
+        index += 1
+        continue
     if source_args[index] != "--source" or index + 1 >= len(source_args):
         raise SystemExit("usage error: expected repeated --source <repo-relative-path> options")
     path = source_args[index + 1]
@@ -130,6 +152,72 @@ scanned_dirs = 0
 visited_files = 0
 scanned_files = 0
 truncated = False
+
+
+RECEIPT_PATH = ".claude/agents/.init-synthesis.json"
+
+
+def receipt_owned_rule_digests():
+    """Map each generated rule output the prior receipt owns to the SHA-256 it recorded.
+
+    Generated rule files (package RULES.md routers and ai_rules/rules/*.md modules) may carry the
+    inventory digest in their own bytes. If their hashes were also inventory inputs, every refresh
+    would change the inventory and so its own marker: a cycle. Such a file is left out of the
+    inventory's hashes only while its current bytes equal the receipt's record; that comparison
+    happens on the single read of the file below. Nothing is read here except the receipt.
+    """
+    def reject(reason):
+        raise SystemExit(f"PENDING: synthesis receipt ownership unavailable: {reason}; inventory preserved. Repair or re-synthesize the receipt before retrying.")
+    receipt_file = os.path.join(root, RECEIPT_PATH)
+    if not os.path.lexists(receipt_file):
+        return {}
+    try:
+        receipt = load_json_object(RECEIPT_PATH, MAX_RECEIPT_BYTES, root=root, what="receipt")
+    except SafeReadError as error:
+        reject(str(error))
+    # The scaffold written before synthesis has no output ownership yet.
+    if receipt.get("format") == "spec-harness-synthesis" and "schema_version" not in receipt and "packages" not in receipt:
+        return {}
+    version = receipt.get("schema_version")
+    if receipt.get("format") != "spec-harness-synthesis" or type(version) is not int or version not in (1, 2, 3):
+        reject("unsupported format/schema_version")
+    rows = receipt.get("packages")
+    if not isinstance(rows, list):
+        reject("packages must be a list")
+    owned = {}
+    boundaries = set()
+
+    def own(path, digest, prefix, router):
+        if not safe_relative(path) or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            reject("malformed generated-output path or hash")
+        inside = path == prefix + "RULES.md" if router else (path.startswith(prefix + "ai_rules/rules/") and path.endswith(".md"))
+        if not inside:
+            reject(f"generated output is outside its package rule boundary: {path}")
+        if path in owned:
+            reject(f"duplicate generated output: {path}")
+        owned[path] = digest
+        if len(owned) > MAX_RECEIPT_OUTPUTS:
+            reject("generated-output count budget exceeded")
+
+    for row in rows:
+        if not isinstance(row, dict):
+            reject("package row must be an object")
+        boundary = row.get("path")
+        if boundary != "." and not safe_relative(boundary):
+            reject("unsafe package boundary")
+        if boundary in boundaries:
+            reject("duplicate package boundary")
+        boundaries.add(boundary)
+        prefix = "" if boundary == "." else boundary + "/"
+        own(row.get("rules_path"), row.get("sha256"), prefix, True)
+        modules = row.get("rule_modules", [])
+        if not isinstance(modules, list):
+            reject("rule_modules must be a list")
+        for module in modules:
+            if not isinstance(module, dict):
+                reject("rule module row must be an object")
+            own(module.get("path"), module.get("sha256"), prefix, False)
+    return owned
 
 
 def rel(path):
@@ -208,35 +296,10 @@ def instruction_scope(path):
 
 
 def read_bounded(path, limit):
-    """Read a regular in-root file without following a final symlink."""
-    try:
-        info = os.lstat(path)
-        if not stat.S_ISREG(info.st_mode) or not is_inside(path):
-            return None, "not a regular in-root file"
-        if info.st_size > limit:
-            return None, f"exceeds {limit}-byte read limit"
-        flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
-        fd = os.open(path, flags)
-        try:
-            opened = os.fstat(fd)
-            if not stat.S_ISREG(opened.st_mode) or (opened.st_dev, opened.st_ino) != (info.st_dev, info.st_ino):
-                return None, "file changed during inventory"
-            chunks = []
-            remaining = limit + 1
-            while remaining:
-                chunk = os.read(fd, min(remaining, 64 * 1024))
-                if not chunk:
-                    break
-                chunks.append(chunk)
-                remaining -= len(chunk)
-            data = b"".join(chunks)
-            if len(data) > limit:
-                return None, f"exceeds {limit}-byte read limit"
-            return data, None
-        finally:
-            os.close(fd)
-    except OSError as error:
-        return None, f"unreadable ({error.__class__.__name__})"
+    """Read a regular in-root file through sh_safe_io: no link is followed on the way."""
+    if not is_inside(path):
+        return None, NOT_REGULAR
+    return read_bounded_result(rel(path), limit, root=root)
 
 
 def safe_string(value):
@@ -329,6 +392,8 @@ def classify_manifest(name):
     return "supported" if name in {"package.json", "pyproject.toml"} else "unsupported"
 
 
+receipt_owned = receipt_owned_rule_digests()
+
 for directory, dirnames, filenames in os.walk(root, topdown=True, followlinks=False, onerror=walk_error):
     relative_dir = rel(directory)
     scanned_dirs += 1
@@ -353,6 +418,8 @@ for directory, dirnames, filenames in os.walk(root, topdown=True, followlinks=Fa
             add_exclusion(path_rel, "symbolic link", "directory symlinks are not followed")
         elif name == ".git":
             add_exclusion(path_rel, "repository metadata", "repository metadata is not scanned")
+        elif name == ".spec-harness" and relative_dir == ".":
+            add_exclusion(path_rel, "harness state", "install record, base copies and run state are not project evidence")
         elif name in IGNORED_DIRS:
             add_exclusion(path_rel, "generated/dependency directory", "directory class is excluded")
         elif name.lower() in PRIVATE_DIRS:
@@ -447,16 +514,30 @@ for package_path, files in sorted(manifest_paths.items()):
     packages[package_path] = package
 
 instruction_rows = []
+# One read per instruction file: ownership is decided and the row is recorded from the same bytes.
+read_digests = {}
 for path_rel, absolute in sorted(instruction_files):
     data, error = read_bounded(absolute, MAX_INSTRUCTION_BYTES)
+    if error and path_rel in receipt_owned:
+        raise SystemExit(f"PENDING: synthesis receipt ownership unavailable: registered generated output {path_rel}: {error}; inventory preserved.")
     row = {"path": path_rel, "kind": "project instruction/startup document", "read_status": "read" if data is not None else "excluded"}
     if data is not None:
-        row["sha256"] = hashlib.sha256(data).hexdigest()
-        row["bytes"] = len(data)
+        digest = hashlib.sha256(data).hexdigest()
+        read_digests[path_rel] = digest
+        if receipt_owned.get(path_rel) == digest:
+            # Receipt-owned generated output, unchanged since synthesis: its hash stays out of the
+            # inventory so the inventory does not depend on the marker it feeds.
+            row["ownership"] = "receipt-generated"
+        else:
+            row["sha256"] = digest
+            row["bytes"] = len(data)
     else:
         row["reason"] = error
         add_exclusion(path_rel, "instruction not read", error)
     instruction_rows.append(row)
+unseen_owned = sorted(set(receipt_owned) - set(read_digests))
+if unseen_owned and not truncated:
+    raise SystemExit(f"PENDING: synthesis receipt ownership unavailable: registered generated output is missing, linked or not a regular file: {', '.join(unseen_owned[:5])}; inventory preserved.")
 
 package_paths = sorted(packages, key=lambda value: (value.count("/"), value))
 
@@ -523,7 +604,6 @@ for package_path in package_paths:
             data, error = read_bounded(absolute, min(MAX_SOURCE_BYTES, MAX_SAMPLE_BYTES - sampled_bytes))
         if error:
             add_exclusion(path_rel, "source not sampled", error)
-            package["representative_sources"].append({"path": path_rel, "read_status": "excluded", "reason": error})
             continue
         if path_rel not in explicit_source_bytes:
             sampled_bytes += len(data)
@@ -561,7 +641,8 @@ for package in packages.values():
 inventory = {
     "format": "spec-harness-project-inventory",
     "schema_version": 1,
-    "project_root_name": root_path.name or ".",
+    # A fixed label: the checkout folder name would make the output (and its hash) differ per clone.
+    "project_root_name": ".",
     "scan": {
         "scope": "selected root only",
         "source_scan_read_only": True,
@@ -637,19 +718,19 @@ def markdown_for(value):
                 f"- Declared dependencies: {', '.join(f'`{item}`' for item in package['dependencies']) or 'none parsed'}",
                 f"- Stack signals: {', '.join(f'`{item}`' for item in package['stack_signals']) or 'none'}",
                 f"- Manifest entrypoints: {', '.join(f'`{item}`' for item in package['entrypoints']) or 'none parsed'}",
-                f"- Representative first-party source: {', '.join(f'`{item['path']}`' for item in package['representative_sources']) or 'none found'}",
+                "- Representative first-party source: " + (', '.join(f"`{item['path']}`" for item in package['representative_sources']) or 'none found'),
                 f"- Applicable instructions: {', '.join(f'`{item}`' for item in package['applicable_instructions']) or 'none found'}",
                 "",
             ])
     else:
         lines.extend(["No recognized package manifests were found.", ""])
     lines.extend(["## Project instructions and workspace evidence", ""])
-    lines.extend(f"- `{item['path']}` — {item['read_status']} ({item.get('sha256', item.get('reason', ''))})" for item in value["rule_files"])
+    lines.extend(f"- `{item['path']}`: {item['read_status']} ({item.get('sha256', item.get('ownership', item.get('reason', '')))})" for item in value["rule_files"])
     lines.extend(f"- Workspace: `{item['owner']}` declares `{item['pattern']}`" for item in value["workspace_declarations"])
     lines.extend(f"- Workspace file: `{item['path']}` ({item['status']})" for item in value["workspace_files"])
     lines.extend(f"- Lockfile: `{item['path']}` ({item['status']})" for item in value["lockfiles"])
     lines.extend(["", "## Excluded paths and limitations", ""])
-    lines.extend(f"- `{item['path']}` — {item['category']}: {item['reason']}" for item in value["exclusions"])
+    lines.extend(f"- `{item['path']}`: {item['category']}: {item['reason']}" for item in value["exclusions"])
     lines.extend(f"- {item}" for item in value["limitations"])
     lines.append("")
     body = "\n".join(lines)
@@ -711,6 +792,12 @@ if os.path.lexists(output_path):
         raise SystemExit(f"refusing to overwrite customized map: {rel(output_path)}")
     if use_json and map_state == "custom" and map_preimage is None and stat.S_ISREG(os.lstat(map_path).st_mode):
         raise SystemExit("refusing to route around an unreadable customized map")
+
+if preview:
+    # Read-only: print exactly the bytes a write would produce, then stop before any change.
+    sys.stdout.buffer.write(output_bytes)
+    sys.stdout.flush()
+    raise SystemExit(0)
 
 if ai_info is None:
     try:

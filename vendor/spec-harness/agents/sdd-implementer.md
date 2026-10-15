@@ -22,7 +22,7 @@ Confirm task class, exact input, accepted goal, source/rule identities and decla
 
 The feature goal defines acceptance. Research and design artifacts are useful evidence when selected; current source and target rules remain authoritative for actual symbols and contracts.
 
-## Project rules — Coding + Packages (generated; generic until `generate-agents` runs)
+## Project rules: Coding + Packages (generated; generic until `generate-agents` runs)
 The block below is filled by `spec-harness generate-agents` from this project's real rules. Obey it together with the current nearest rules.
 
 <!-- GEN:rules START -->

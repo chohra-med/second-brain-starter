@@ -23,4 +23,4 @@ This source procedure is a generic scaffold. During initialization, create a pro
 
 The project copy identifies the package paths it covers, the exact supported/unsupported manifests, dependencies and scripts it read, and source citations for its boundary rules. Incomplete inventories and unsupported formats are recorded as `PARTIAL/PENDING`, not hidden behind an aggregate stack label.
 
-Record output path, citations and source hashes in `.claude/agents/.init-synthesis.json`. After changing a cited source or rule, refresh only affected bindings. Run `bash <spec-harness>/bin/sh-gen-agents.sh --check <target>`; a passing structural check does not replace a fresh semantic review.
+Record output path, citations and source hashes in `.claude/agents/.init-synthesis.json`. After changing a cited source or rule, refresh only affected bindings. Run `spec-harness generate-agents --check <target>` (with no install: `npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>`); a passing structural check does not replace a fresh semantic review.

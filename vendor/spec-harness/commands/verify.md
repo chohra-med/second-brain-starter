@@ -1,4 +1,4 @@
-# Command: `verify` — check a feature goal in a separate context
+# Command: `verify`, check a feature goal in a separate context
 
 > A shell handoff is not a verifier run. A feature verifier uses the accepted ticket's own goal and
 > returns measured evidence.

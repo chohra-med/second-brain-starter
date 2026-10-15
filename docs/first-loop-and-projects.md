@@ -8,7 +8,7 @@ This page covers what to do after setup: the first project, the working loop, a 
 2. Choose one active project. Do not turn this into a life archive on day one. Start with one project and add others later.
 3. Follow Home's [First use](../template/03-Resources/Procedures/first-use.md) route in the installed target. Agree the missing goal and constraints, approve the exact record edits, then approve and finish one small artifact with a check. Preserve existing personalized records. Close the result and start a new chat in that target to recover the next action.
 4. The Profile interview is part of that route. It asks only the four questions whose answers are still missing in `00-Meta/Profile.md`: your role, how you want answers given and what must never be touched (asked by `init.md`), and your stack (asked by `complete-init.md`). An answer you do not give stays `Unknown`, so a later session asks again instead of guessing.
-5. The initializer writes compatible root loader and skill files for supported-client discovery. These are fourteen skills in `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
+5. The initializer writes compatible root loader and skill files for supported-client discovery. These are fifteen skills in `.claude/skills/` and `.agents/skills/`, plus installed `AGENTS.md` and `CLAUDE.md` loaders. Give a client local-file access only when you intend it, then inspect those files in the target. Clean authenticated discovery evidence for the named supported clients is pending. These files do not grant file access, enforce compliance, or establish universal client support.
 6. A text editor is enough. You may test a copied target as an Obsidian vault, but current Obsidian desktop compatibility has not been verified.
 
 ## The working loop
@@ -29,7 +29,7 @@ For system architecture maintenance, use `second-brain-icm` before changing rule
 
 ## A second project
 
-To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. The initializer still seeds one project, `Selected-Project`, and does not rename it. To register a repository you already work in, use `connect` instead. See [connect a repository](connect-a-repository.md).
+To start a second project, copy the installed `03-Resources/_templates/project/` folder into `01-Projects/` under the new project's name. Then add its row to `01-Projects/Index.md`: one row per project, with its record map, source location and status. The initializer still seeds one project, `Selected-Project`, and does not rename it. To register a repository you already work in, use `connect` instead. See [connect a repository](connect-a-repository.md).
 
 ## Extend the workspace
 

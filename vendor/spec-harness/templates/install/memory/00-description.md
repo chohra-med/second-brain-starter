@@ -1,4 +1,4 @@
-# 00-description — {{PROJECT_NAME}}
+# 00-description: {{PROJECT_NAME}}
 
 > Tier: Cold. one-paragraph what-this-is
 

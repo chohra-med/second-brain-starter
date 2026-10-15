@@ -23,20 +23,22 @@ emit() {
     printf '# %s\n\n%s\n\n' "$name" "$role"
     printf '## Run it\n'
     if [ "$shared_route" = method ]; then
-      printf '1. **Load this reusable method owner** — `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`. This method is usable during initialization before a synthesis receipt or feature goal exists.\n' "$doc" "$doc"
-      printf '2. **Use shared SDD context when applicable** — `.claude/commands/sdd.md`; do not infer role bindings or native discovery from this skill file.\n\n'
+      printf '1. **Load this reusable method owner**: `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`. This method is usable during initialization before a synthesis receipt or feature goal exists.\n' "$doc" "$doc"
+      printf '2. **Use shared SDD context when applicable**: `.claude/commands/sdd.md`; do not infer role bindings or native discovery from this skill file.\n\n'
     elif [ "$shared_route" = yes ]; then
-      printf '1. **Load the shared SDD procedure first** — `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.\n'
-      printf '2. **Load this stage contract** — `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`.\n' "$doc" "$doc"
-      printf '3. **Resolve roles from the receipt** — use only `.claude/agents/.init-synthesis.json` selected paths; file presence or model frontmatter does not prove binding or capability.\n'
-      printf '4. **Stay inside the 3 pillars** — Memory bank (`.memory/`) · Spec-Driven Development · Harness. Read `SPEC-HARNESS.md` for setup status.\n\n'
+      printf '1. **Load the shared SDD procedure first**: `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.\n'
+      printf '2. **Load this stage contract**: `.claude/commands/spec-harness/%s.md` (installed project) or source `commands/%s.md`.\n' "$doc" "$doc"
+      printf '3. **Resolve roles from the receipt**: use only `.claude/agents/.init-synthesis.json` selected paths; file presence or model frontmatter does not prove binding or capability.\n'
+      printf '4. **Stay inside the 3 pillars**: Memory bank (`.memory/`) · Spec-Driven Development · Harness. Read `SPEC-HARNESS.md` for setup status.\n\n'
     else
-      printf '1. **Load the full procedure** — read the command doc and follow it exactly:\n'
+      printf '1. **Load the full procedure**: read the command doc and follow it exactly:\n'
       printf '   `.claude/commands/spec-harness/%s.md` (this repo) or the spec-harness source `commands/%s.md`.\n' "$doc" "$doc"
+      pillars_step=2
       if [ -n "$agents" ]; then
-        printf '2. **Agents** — follow this command and project policy for role selection.\n'
+        printf '2. **Agents**: follow this command and project policy for role selection.\n'
+        pillars_step=3
       fi
-      printf '3. **Stay inside the 3 pillars** — Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.\n\n'
+      printf '%s. **Stay inside the 3 pillars**: Memory bank (`.memory/`) · Spec-Driven Development · Harness (ratchet `AGENTS.md` + verifier + learning loop). Read `SPEC-HARNESS.md` for how this repo is wired.\n\n' "$pillars_step"
     fi
     printf '## Non-negotiables\n'
     if [ "$shared_route" = method ]; then
@@ -57,12 +59,12 @@ emit() {
 }
 
 emit spec-harness "build" "" \
-"The Spec Harness orchestrator — spec-driven development wrapped in a harness (reviewed ratchet + independent verifier + learning loop) over a persistent memory bank. Use when the user says 'use spec harness', 'run the spec harness', 'spec-harness this feature', or wants the full /sdd init or ticket → feature spec/goal → plan → tasks → independent gates flow. Routes to the sub-skills and enforces the 3 pillars (Memory bank · SDD · Harness)." \
-"You are the orchestrator for a Spec Harness project. Read the shared \`sdd\` procedure first, then route initialization or ticket work through the appropriate stage skill. Resolve every project-specific role from the synthesis receipt. The implementer does not own acceptance." yes
+"The Spec Harness orchestrator. Spec-driven development wrapped in a harness (reviewed ratchet + independent verifier + learning loop) over a persistent memory bank. Use when the user says 'use spec harness', 'run the spec harness', 'spec-harness this feature', or wants the full /sdd init or ticket → feature spec/goal → plan → tasks → independent gates flow. Routes to the sub-skills and enforces the 3 pillars (Memory bank · SDD · Harness)." \
+"You are the orchestrator for a Spec Harness project. Read the shared \`sdd\` procedure first, then route initialization or ticket work through the appropriate stage skill. Resolve every project-specific role from the synthesis receipt. The implementer does not own acceptance. A code ticket is any change to a tracked file outside \`specs/\` and \`.memory/\`. It goes through \`/sdd\` before the first source edit, even when it looks small: the light route is still \`/sdd\`. Keep the ticket's code inside this repository: no worktree, clone or copy elsewhere unless the user asks for one." yes
 
 emit spec-harness-install "init" "researcher" \
 "Add or refresh Spec Harness in a repo, greenfield or existing. Use when the user asks to install or initialize Spec Harness. The shell stages files and leaves project synthesis PENDING." \
-"Stage the harness, then follow \`.claude/commands/spec-harness/init.md\` as a capable model (source checkout fallback: \`commands/init.md\`): read the inventory, applicable project rules and actual representative source; derive package-scoped rules, three core project skills and a skill per major technology; bind project-aware planner, implementer, fresh tester, verifier and reviewer roles; record evidence and run the structural/provenance check. A separate fresh reviewer must confirm claim support before overall initialization is READY. Shell staging remains PENDING."
+"Stage the harness, then follow \`.claude/commands/spec-harness/init.md\` as a capable model (source checkout fallback: \`commands/init.md\`): read the inventory, applicable project rules and actual representative source; derive package-scoped rules, the core project skills (five on first initialisation) and a skill per major technology; bind project-aware planner, implementer, fresh tester, verifier and reviewer roles; record evidence and run the structural/provenance check. A separate fresh reviewer must confirm claim support before overall initialization is READY. Shell staging remains PENDING."
 
 emit spec-harness-tickets "tickets" "researcher, planner" \
 "Intake exact ticket text or a retrieved body from an explicitly connected provider. Use when the user asks to run /sdd on ticket text, a connected issue, or a feature request. Bare issue names without a retrievable body stop for clarification. Produces a feature-owned specs/<feature>/ packet and goal." \
@@ -76,8 +78,14 @@ emit spec-harness-plan "plan" "planner" \
 "Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail and source-grounded Grill Me before finalizing the plan." \
 "Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices. Keep the plan tied to the feature goal and source/rule hashes." yes
 
-for method in ponytail grill-me package-finder skill-finder; do
+for method in ponytail grill-me package-finder skill-finder conventions technology-profiles; do
   description="Use the portable Spec Harness $method method when initializing a project or planning a ticket that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
+  if [ "$method" = conventions ]; then
+    description="Use the portable Spec Harness conventions method to find the repository's branch, commit, pull-request and task-splitting conventions from its own policy and bounded Git history, during initialization or when a ticket touches them. Read actual target evidence first; never create branches or commits."
+  fi
+  if [ "$method" = technology-profiles ]; then
+    description="Use the portable Spec Harness technology-profiles method to select a technology profile and give every package and direct dependency a disposition from manifests, lockfiles and imports, during initialization or planning. Read actual target evidence first; do not install packages or third-party skills."
+  fi
   if [ "$method" = ponytail ]; then
     description="Use the portable Spec Harness Ponytail method for code or implementation work, project initialization, or ticket planning that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
   fi
@@ -99,12 +107,16 @@ emit spec-harness-verify "verify" "verifier" \
 "Resolve the bound verifier from \`.claude/agents/.init-synthesis.json\`; check each literal criterion in \`specs/<feature>/goal.md\` with evidence. Root \`goal.md\` is not a substitute." yes
 
 emit spec-harness-tester "tester" "workflow-tester" \
-"Adversarially validate the app's critical workflows — for each journey in workflows/, a clean-context agent RUNS it end-to-end and actively tries to BREAK it (bad inputs, kill mid-flow, races, double-submit, offline, boundary values), then reports which are BROKEN, ranked P0 first. Use when the user says 'test the workflows', 'try to break the app', 'which critical flows are broken', 'run the workflow tester', or 'is checkout/onboarding still working'. The tester checks reality against critical journeys alongside the verifier's goal check. \`--scan\` and \`tester <id>\` use a capable client; the shell reports PENDING/manual. A BROKEN result sends its repro and candidate guard through reviewed learning; policy changes require approval." \
+"Adversarially validate the app's critical workflows. For each journey in workflows/, a clean-context agent RUNS it end-to-end and actively tries to BREAK it (bad inputs, kill mid-flow, races, double-submit, offline, boundary values), then reports which are BROKEN, ranked P0 first. Use when the user says 'test the workflows', 'try to break the app', 'which critical flows are broken', 'run the workflow tester', or 'is checkout/onboarding still working'. The tester checks reality against critical journeys alongside the verifier's goal check. \`--scan\` and \`tester <id>\` use a capable client; the shell reports PENDING/manual. A BROKEN result sends its repro and candidate guard through reviewed learning; policy changes require approval." \
 "Load the workflows/ bank (P0 first). For each workflow spawn a fresh sdd-workflow-tester (clean context, no stake): it runs the journey via how_to_run, then attacks its invariants (bad inputs · kill mid-flow · races/double-submit · offline · boundary · replay) and returns PASS or BROKEN with a concrete repro. Aggregate a ranked report; send each BROKEN repro, likely cause and candidate guard through commands/learn.md for capture, classification and review. Apply a policy change only after approval. The shell prints PENDING/manual; a capable client may propose candidate workflows from app evidence (routes/entry points/write paths) for human confirmation."
 
 emit spec-harness-learn "learn" "learner" \
 "Capture a human correction, review finding, bug postmortem or verifier/tester failure as one testable rule. Use when the user says 'learn this', 'remember this', 'capture this lesson', or a separate acceptance role finds a cause." \
 "Run commands/learn.md: capture raw feedback, propose a testable cause and owner, and record the existing human/reviewer decision. Apply a canonical rule only after approval; report affected skill/role bindings as stale for the orchestrator's guarded refresh. Unsupported or pending proposals stay captured and proposed. Report LEARNED only after reviewed application; otherwise report PENDING."
+
+emit spec-harness-teach "teach" "" \
+"Explain a system to a human as one self-contained page: a two-minute quick guide first (what they get, how to start), then the longer version with diagrams. Use when the user says 'explain this to me', 'teach me how this works', 'make a learning page', 'onboard someone to this', or wants to understand a codebase, a feature or a decision." \
+"Run commands/teach.md: read the real source, write the quick guide and cut it to two minutes, write the longer version underneath, then check it in a real browser at two widths and click every control. Never invent an excerpt or a number. Never edit application source."
 
 emit spec-harness-rules "rules" "researcher, implementer" \
 "Derive or review package-scoped rules from an inventory, applicable policies, actual source, tests and configuration. Use during initialization or when a mixed-stack package needs its own rules." \
@@ -112,11 +124,11 @@ emit spec-harness-rules "rules" "researcher, implementer" \
 
 emit spec-harness-generate-agents "generate-agents" "researcher" \
 "Bind applicable SDD roles to project rules and source evidence. Use during initialization or after a changed rule/source requires a binding refresh. Role selection must distinguish project need from installed templates." \
-"Run \`bash <spec-harness>/bin/sh-gen-agents.sh <target>\`, then follow its work order using the inventory, existing policies and actual representative code. Bind the required project-aware planner, implementer, fresh tester, verifier and reviewer roles; select merger, design and workflow roles only when evidence supports them. Edit only GEN:rules blocks, cite package paths and source line/hash evidence, write the synthesis receipt, and run \`bash <spec-harness>/bin/sh-gen-agents.sh --check <target>\`. A separate fresh reviewer must confirm claim support before overall initialization is READY. Staging alone is PENDING."
+"Run \`spec-harness generate-agents <target>\` (with no install: \`npx -y github:chohra-med/spec-harness-oss generate-agents <target>\`), then follow its work order using the inventory, existing policies and actual representative code. Bind the required project-aware planner, implementer, fresh tester, verifier and reviewer roles; select merger, design and workflow roles only when evidence supports them. Edit only GEN:rules blocks, cite package paths and source line/hash evidence, write the synthesis receipt, and run \`spec-harness generate-agents --check <target>\` (with no install: \`npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>\`). A separate fresh reviewer must confirm claim support before overall initialization is READY. Staging alone is PENDING."
 
 emit spec-harness-audit "audit" "researcher" \
-"Health-check the memory bank, rules, and index — flag stale, contradictory, or redundant entries and spec↔code drift. Use when the user says 'audit the bank', 'is the memory stale', 'check spec harness health', or 'clean up the rules'." \
-"Cross-check the bank, ai_rules, and index for staleness, contradiction, redundancy, and drift from the real code. Report fixes; promote durable learnings up into the curated bank."
+"Health-check the memory bank, rules, and index: flag stale or contradictory entries and spec↔code drift. Use when the user says 'audit the bank', 'is the memory stale', 'check spec harness health', or 'clean up the rules'." \
+"Cross-check the bank, ai_rules, and index for staleness, contradiction, and drift from the real code. Report fixes; promote durable learnings up into the curated bank."
 
 for staged in "$STAGE"/*; do
   [ -d "$staged" ] || continue

@@ -1,4 +1,4 @@
-# Command: `ship` — prepare a separately authorized delivery
+# Command: `ship`, prepare a separately authorized delivery
 
 > The shared SDD procedure gates delivery. This command records the release plan; it does not
 > grant permission to commit, push, merge, deploy or publish.

@@ -137,7 +137,8 @@ async function killedAfterCommit(w) {
   const args = await engine(w);
   const plan = await planConnect(args);
   const total = plan.directories.filter((entry) => entry.status === 'CREATE').length
-    + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+    + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4
+    + (plan.indexRow ? 1 : 0); // The project index row is one more durable write
   const config = { module: pathToFileURL(path.join(sourceRoot, 'lib', 'connect.mjs')).href, manifest: path.join(sourceRoot, 'template-manifest.json'), sourceRoot, hub: w.hub, repo: w.repo, digest: plan.digest, kill: total };
   let child = null;
   try {
@@ -1276,7 +1277,7 @@ test('R06-5 drift: every error code the libraries can throw is translated in the
   for (const code of codesIn(bin)) codes.add(code);
   const translated = new Set([...bin.matchAll(/case '([A-Z_]+)'/g)].map((match) => match[1]));
   // Codes without their own wording: the generic branch prints the code, the message, what is not changed, and verify.
-  const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE']);
+  const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE', 'ADOPT_REFUSED', 'MISSING_STATE']);
   for (const code of codes) {
     assert.ok(translated.has(code) || generic.has(code), `${code} has no translation and is not listed as generic`);
   }

@@ -6,10 +6,13 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
   InstallPlanError,
+  applyAdopt,
   applyInstall,
+  planAdopt,
   planInstall,
   rollbackReceipt,
   sha256,
+  statusInstall,
   verifyInstall,
 } from '../lib/installer.mjs';
 import {
@@ -27,6 +30,8 @@ import {
   planConnect,
   readConnections,
 } from '../lib/connect.mjs';
+import { lintWorkspaceRecords } from '../lib/records.mjs';
+import { WORKSPACE_FOLDER, planWorkspace } from '../lib/workspace-plan.mjs';
 
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = path.join(sourceRoot, 'template-manifest.json');
@@ -60,33 +65,49 @@ function word(value) {
   return `'${text.replace(/'/g, "'\\''")}'`;
 }
 
-function cliCommand(subcommand, { target, repo, name, receipt, apply } = {}) {
+function cliCommand(subcommand, { target, repo, name, receipt, adopt, apply, proposal } = {}) {
   const parts = ['node', word(SCRIPT), subcommand];
   if (target !== undefined) parts.push('--target', word(target));
+  for (const item of adopt ?? []) parts.push('--adopt', word(item));
   if (repo !== undefined) parts.push('--repo', word(repo));
   if (name !== undefined) parts.push('--name', word(name));
   if (receipt !== undefined) parts.push('--receipt', word(receipt));
   if (apply !== undefined) parts.push('--apply', word(apply));
+  if (proposal !== undefined) parts.push('--proposal', word(proposal));
   return parts.join(' ');
 }
 
 function help() {
-  return `Second Brain Starter 1.4.1
+  return `Second Brain Starter 1.5.0
 
 Usage:
   second-brain init --target /absolute/path [--apply PLAN_DIGEST]
-  second-brain upgrade --target /absolute/path [--apply PLAN_DIGEST]
+  second-brain upgrade --target /absolute/path [--apply PLAN_DIGEST | --proposal PATH]
   second-brain connect --target /absolute/path --repo /absolute/repository [--name NAME] [--apply PLAN_DIGEST]
-  second-brain verify --target /absolute/path
+  second-brain verify --target /absolute/path [--records | --adopt PATH ... [--apply PLAN_DIGEST]]
   second-brain rollback --target /absolute/path --receipt RECEIPT_ID
+  second-brain workspace-plan --parent /absolute/folder [--list-projects]
+  second-brain status --target /absolute/path
 
-init and upgrade always print a complete plan. In a terminal, type the exact
-plan digest when prompted. Outside a terminal, they only plan unless --apply
-supplies that exact digest. Differing files are conflicts; --force is not
+init and upgrade always print a complete plan, and a plan writes nothing. In a
+terminal, type the exact plan digest when prompted. Outside a terminal, they only
+plan unless --apply supplies that exact digest. upgrade keeps a locally edited managed
+file when the template did not change it (CUSTOMIZED-KEEP), merges both sides when
+they do not overlap (MERGE), and stops only on an overlapping edit (CONFLICT).
+upgrade --proposal PATH prints that edit's marked proposal and writes nothing. A file
+that becomes yours in this release keeps your bytes; its template changes are offered
+under .second-brain/merge/ when the approved apply writes them. --force is not
 available in V1.
+
+verify --adopt PATH records a managed file's current bytes as your accepted
+version, under its own plan digest and receipt. verify --records only reads:
+it reports roadmap tables, status words and record sizes, and changes nothing.
 
 connect stages Spec Harness into the named repository and registers it here; it never runs git. Files it creates are uncommitted; your team decides whether they go in by pull request.
 Run one connect at a time per workspace. Two at once are not supported: both can finish, and then only one connection is kept in the workspace records.
+workspace-plan reads one folder and writes nothing. It proposes <parent>/Second Brain and lists each direct child
+folder of the parent that holds a real .git folder, with a ready connect command for each. Symbolic links and
+nested folders are not listed. --list-projects prints only the repository paths, one per line.
 Commands this CLI prints use the absolute path of this script, so they run from any folder.`;
 }
 
@@ -95,12 +116,24 @@ async function source() {
   return { manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot };
 }
 
+const STATUS_ORDER = ['CREATE', 'MANAGED-UPDATE', 'APPEND', 'SEED-UPDATE', 'MERGE', 'CUSTOMIZED-KEEP', 'PERSONALIZED', 'IDENTICAL', 'DEPRECATED', 'CONFLICT'];
+
+function statusCounts(entries) {
+  const counts = new Map();
+  for (const entry of entries) counts.set(entry.status, (counts.get(entry.status) ?? 0) + 1);
+  return [...counts.entries()].sort((left, right) => STATUS_ORDER.indexOf(left[0]) - STATUS_ORDER.indexOf(right[0]));
+}
+
 async function printPlan(plan) {
   output.write(`Plan: ${plan.operation}\nTarget: ${plan.target}\n`);
+  if (plan.operation === 'upgrade') {
+    output.write(`Versions: installed ${plan.installedTemplateVersion ?? 'none'} -> available ${plan.templateVersion}\n`);
+  }
   for (const entry of plan.entries) {
     output.write(`${entry.status}\t${entry.destination}\tundo=${entry.undo.action}\n`);
-    if (entry.status === 'CONFLICT' && entry.mergeKind === 'managed-block') {
+    if (entry.status === 'CONFLICT' && (entry.mergeKind === 'managed-block' || entry.conflictReason)) {
       // A marker conflict names its line and its reason. Any other loader conflict keeps the general wording.
+      // A managed file that cannot be merged, such as one that is not UTF-8 text, names its reason too.
       output.write(`Manual resolution required: ${entry.conflictReason ?? `${entry.destination} has unmanaged or malformed loader markers.`}\n`);
     }
   }
@@ -111,6 +144,40 @@ async function printPlan(plan) {
     // An exception line (!path) re-includes a path, so it is not one of the paths git ignores.
     const ignored = block.split('\n').filter((line) => line !== '' && !line.startsWith('#') && !line.startsWith('!'));
     output.write(`Privacy: the .gitignore block (${privacy.status}) makes git ignore: ${ignored.join(', ')}\n`);
+  }
+  if (plan.baseWrites.length > 0) {
+    output.write(`Base snapshots: ${plan.baseWrites.length} template ${plan.baseWrites.length === 1 ? 'copy' : 'copies'} to record under .second-brain/base/ for the next three-way upgrade.\n`);
+  }
+  output.write(`Summary: ${statusCounts(plan.entries).map(([status, count]) => `${count} ${status}`).join(', ')}\n`);
+  for (const entry of plan.entries.filter((item) => item.status === 'MERGE')) {
+    output.write(`Merged: ${entry.destination} keeps your edits and takes the template's non-overlapping changes; undo restores your current bytes.\n`);
+  }
+  // A kept local edit is accepted by the approved apply: its current bytes become the recorded version, as verify --adopt does.
+  for (const entry of plan.entries.filter((item) => item.status === 'CUSTOMIZED-KEEP')) {
+    output.write(`Kept: ${entry.destination} keeps your edits; the template did not change it. Applying this plan records your current bytes as the accepted version, as verify --adopt does.\n`);
+  }
+  // A CONFLICT proposal is not written: upgrade --proposal prints it on request.
+  for (const entry of plan.entries.filter((item) => item.status === 'CONFLICT' && item.proposal)) {
+    output.write(`Proposal: ${entry.destination} has overlapping edits. Print its version with conflict markers with: ${cliCommand('upgrade', { target: plan.target, proposal: entry.destination })}\n`);
+  }
+  // A seed proposal is written by the approved apply, or it is already there and is kept, never overwritten.
+  for (const entry of plan.entries.filter((item) => item.status === 'PERSONALIZED' && item.proposal)) {
+    if (entry.proposalState === 'kept') {
+      output.write(`Proposal: kept your edited proposal at ${entry.proposalPath}; this apply does not overwrite it. ${entry.destination} is yours from this release and is kept as it is.\n`);
+    } else {
+      const when = entry.proposalState === 'write' ? ', which the approved apply writes' : '';
+      output.write(`Proposal: ${entry.destination} is yours from this release and is kept as it is. The template's changes are offered, optionally, in ${entry.proposalPath}${when}.\n`);
+    }
+  }
+  const conflicts = plan.entries.filter((entry) => entry.status === 'CONFLICT');
+  if (conflicts.length > 0) {
+    output.write(`Blocked: nothing is applied while CONFLICT lines remain: ${conflicts.map((entry) => entry.destination).join(', ')}\n`);
+    const resolvable = conflicts.filter((entry) => entry.mergeKind === 'managed-file' && entry.proposal);
+    if (resolvable.length > 0) {
+      output.write('Next: print each proposal with the command above, save it outside the target, edit it until no <<<<<<<, ||||||| , ======= or >>>>>>> line is left, then copy it over the file it names. Do not redirect the output into that file: the shell empties it before the plan reads it. Then accept those bytes with:\n');
+      output.write(`  ${cliCommand('verify', { target: plan.target, adopt: resolvable.map((entry) => entry.destination) })}\n`);
+      output.write(`Then plan the upgrade again: ${cliCommand(plan.operation, { target: plan.target })}\n`);
+    }
   }
   output.write(`Plan digest: ${plan.digest}\n`);
   output.write(`Apply this exact plan with: ${cliCommand(plan.operation, { target: plan.target, apply: plan.digest })}\n`);
@@ -163,6 +230,66 @@ async function confirmInteractive(plan, suppliedDigest) {
   } finally {
     prompt.close();
   }
+}
+
+// status: read-only. It names the installed template and receipt, this CLI's template, and the counts an upgrade
+// would give each state. It never applies anything; `upgrade` prints the full plan and its digest.
+async function runStatus(targetPath) {
+  const payload = await source();
+  const status = await statusInstall({ ...payload, targetPath });
+  const lines = [
+    `Status: ${status.target}`,
+    status.installed
+      ? `Installed: template ${status.installed.templateVersion}, receipt ${status.installed.receiptId}`
+      : 'Installed: none. Run init to install the harness.',
+    `This CLI: template ${status.available.templateVersion ?? 'unknown'} (manifest ${status.available.manifestSha256})`,
+  ];
+  if (status.installed && status.counts.length > 0) {
+    lines.push(`Upgrade would plan: ${status.counts.map(([state, count]) => `${count} ${state}`).join(', ')}`);
+  }
+  if (status.blocked.length > 0) lines.push(`Blocked: ${status.blocked.join(', ')} need a decision before an upgrade applies.`);
+  lines.push(`Nothing was applied. See the full plan with: ${cliCommand('upgrade', { target: status.target })}`);
+  output.write(`${lines.join('\n')}\n`);
+}
+
+async function runWorkspacePlan(parsed) {
+  const plan = await planWorkspace(parsed.parentPath);
+  if (parsed.listProjects) {
+    for (const repository of plan.repositories) output.write(`${repository.path}\n`);
+    return;
+  }
+  const lines = [
+    'Plan: workspace-plan (plan only: nothing was written)',
+    `Parent: ${plan.parent}`,
+    `Proposed workspace: ${plan.hub}${plan.hubExists ? ' (already exists; connect checks it before it writes)' : ' (not created by this plan)'}`,
+  ];
+  if (plan.repositories.length === 0) {
+    lines.push('Repositories: none. No direct child folder of the parent has a .git folder.');
+  } else {
+    lines.push(`Repositories: ${plan.repositories.length} with a .git folder directly under the parent`);
+    for (const repository of plan.repositories) lines.push(`  ${repository.path}`);
+  }
+  for (const item of plan.skipped) lines.push(`Skipped: ${item.name} (${item.reason})`);
+  if (plan.repositories.length > 0) {
+    lines.push('Connect each one, one at a time. Each command plans first and applies only with the digest it prints:');
+    for (const repository of plan.repositories) lines.push(`  ${cliCommand('connect', { target: plan.hub, repo: repository.path })}`);
+  }
+  lines.push(`Nothing was written. The workspace folder is named ${WORKSPACE_FOLDER}; change it by hand before connect if you want another name.`);
+  output.write(`${lines.join('\n')}\n`);
+}
+
+// upgrade --proposal PATH: prints the marked proposal the plan holds for one path, byte for byte. It reads the plan and
+// writes nothing, and it never applies anything.
+async function runProposal(targetPath, proposalPath) {
+  const payload = await source();
+  const plan = await planInstall({ ...payload, targetPath, operation: 'upgrade' });
+  const entry = plan.entries.find((item) => item.destination === proposalPath && item.proposal);
+  if (!entry) {
+    output.write(`No proposal: ${proposalPath} has no proposal in this plan. Nothing was changed.\n`);
+    process.exitCode = 1;
+    return;
+  }
+  output.write(entry.proposal);
 }
 
 async function runPlan(command, targetPath, suppliedDigest) {
@@ -393,11 +520,58 @@ async function connectionState(targetPath, record) {
   }
 }
 
+async function runAdopt({ targetPath, adopt, approvedDigest }) {
+  const payload = await source();
+  const plan = await planAdopt({ ...payload, targetPath, paths: adopt });
+  output.write(`Plan: adopt\nTarget: ${plan.target}\n`);
+  for (const item of plan.entries) {
+    const change = item.currentSha256 === item.previousInstalledSha256 ? 'already accepted' : `installed ${item.previousInstalledSha256.slice(0, 12)} -> current ${item.currentSha256.slice(0, 12)}`;
+    output.write(`ADOPT\t${item.destination}\t${change}\n`);
+    if (item.baseMoves) {
+      output.write(`  The merge base moves to this CLI's template (${plan.templateVersion}). The next upgrade treats this file as already containing that template's changes.\n`);
+    }
+  }
+  if (plan.baseWrites.length > 0) output.write(`Base snapshots: ${plan.baseWrites.length} to record under .second-brain/base/.\n`);
+  output.write('Writes: only .second-brain/installed-state.json, the base snapshots above, and its receipt and backup under .second-brain/. Your files are not changed.\n');
+  output.write(`Plan digest: ${plan.digest}\n`);
+  output.write(`Apply this exact plan with: ${cliCommand('verify', { target: plan.target, adopt: plan.entries.map((item) => item.destination), apply: plan.digest })}\n`);
+  const { answer, interrupted } = await confirmInteractive(plan, approvedDigest);
+  if (interrupted) {
+    output.write('Plan not applied.\n');
+    process.exitCode = 1;
+    return;
+  }
+  if (!answer) {
+    output.write(input.isTTY && output.isTTY ? 'Plan not applied.\n' : 'Plan only: nothing was applied.\n');
+    return;
+  }
+  if (answer !== plan.digest) throw usageError('Plan digest did not match. No files were changed.');
+  const result = await applyAdopt({ ...payload, targetPath, paths: adopt, approvedDigest: answer });
+  if (!result.applied) {
+    output.write('No changes needed: these bytes are already the accepted version.\n');
+    return;
+  }
+  output.write(`Applied receipt: ${result.receiptId}\n`);
+  output.write(`To undo this adopt: ${cliCommand('rollback', { target: plan.target, receipt: result.receiptId })}\n`);
+}
+
+async function runRecords(targetPath) {
+  const result = await lintWorkspaceRecords({ targetPath, sourceRoot });
+  for (const finding of result.findings) output.write(`RECORDS\t${finding.path}\t${finding.problem}\n`);
+  for (const note of result.skipped) output.write(`SKIPPED\t${note}\n`);
+  output.write(`Records: ${result.findings.length} ${result.findings.length === 1 ? 'problem' : 'problems'} in ${result.files} record ${result.files === 1 ? 'file' : 'files'} read. This check reads only; nothing was changed.\n`);
+  if (result.findings.length > 0) process.exitCode = 1;
+}
+
 async function runVerify(targetPath) {
   const payload = await source();
   const result = await verifyInstall({ ...payload, targetPath });
+  output.write(`Manifest: this CLI expects template ${result.templateVersion} (manifest ${result.manifestSha256}); installed ${result.installedTemplateVersion ?? 'none'} (manifest ${result.installedManifestSha256 ?? 'none'})\n`);
   for (const entry of result.entries) output.write(`${entry.status}\t${entry.destination}\n`);
   for (const issue of result.issues) output.write(`${issue.code}\t${issue.path}\t${issue.message}\n`);
+  for (const divergence of result.divergences) {
+    output.write(`DIVERGED\t${divergence.claude}\t${divergence.agents}\tthe two client copies of this skill differ, so the two clients load different instructions. Make them equal.\n`);
+  }
   const connections = Object.values((await readConnections({ targetPath })).connections).sort((left, right) => left.name.localeCompare(right.name));
   const printedLabels = new Set();
   const labels = [];
@@ -765,8 +939,17 @@ async function run(context) {
     return;
   }
   Object.assign(context, parsed);
+  if (parsed.command === 'workspace-plan') {
+    await runWorkspacePlan(parsed);
+    return;
+  }
+  if (parsed.command === 'status') {
+    await runStatus(parsed.targetPath);
+    return;
+  }
   if (parsed.command === 'init' || parsed.command === 'upgrade') {
-    await runPlan(parsed.command, parsed.targetPath, parsed.approvedDigest);
+    if (parsed.proposalPath !== null) await runProposal(parsed.targetPath, parsed.proposalPath);
+    else await runPlan(parsed.command, parsed.targetPath, parsed.approvedDigest);
     return;
   }
   if (parsed.command === 'connect') {
@@ -774,7 +957,9 @@ async function run(context) {
     return;
   }
   if (parsed.command === 'verify') {
-    await runVerify(parsed.targetPath);
+    if (parsed.adopt.length > 0) await runAdopt(parsed);
+    else if (parsed.records) await runRecords(parsed.targetPath);
+    else await runVerify(parsed.targetPath);
     return;
   }
   await runRollback(parsed);

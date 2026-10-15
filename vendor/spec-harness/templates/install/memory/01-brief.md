@@ -1,4 +1,4 @@
-# 01-brief — {{PROJECT_NAME}}
+# 01-brief: {{PROJECT_NAME}}
 
 > Tier: Cold. the decoded brief and source intent
 

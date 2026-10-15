@@ -179,7 +179,7 @@ test('the current source plans an upgrade of the v1.2.0 install with zero CONFLI
   const dropped = Object.keys(fixture.state.managedPaths).filter((destination) => !manifestDestinations.has(destination));
   assert.deepEqual(dropped, []);
   for (const destination of Object.keys(fixture.state.managedPaths).filter((d) => manifestDestinations.has(d))) {
-    assert.equal(['IDENTICAL', 'MANAGED-UPDATE', 'PERSONALIZED'].includes(byDestination.get(destination)), true, `${byDestination.get(destination)} ${destination}`);
+    assert.equal(['IDENTICAL', 'MANAGED-UPDATE', 'SEED-UPDATE', 'PERSONALIZED'].includes(byDestination.get(destination)), true, `${byDestination.get(destination)} ${destination}`);
   }
   for (const destination of [...manifestDestinations].filter((d) => !Object.hasOwn(fixture.state.managedPaths, d))) {
     assert.equal(byDestination.get(destination), 'CREATE', `new path must be CREATE: ${destination}`);

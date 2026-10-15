@@ -1,10 +1,10 @@
-# Guardrails — current procedures and their limits
+# Guardrails: current procedures and their limits
 
 > This page maps the bundled SDD procedures for checking work and preparing a delivery. Markdown
 > describes a process; it does not enforce file or provider permissions, block tool calls, or prove a
 > check ran.
 
-## Layer 1 — Project rules and reviewed learning
+## Layer 1: Project rules and reviewed learning
 
 Project `AGENTS.md`, `RULES.md`, and the shipped constitution scaffold describe expected constraints.
 The [`constitution template`](../templates/constitution.md) says a release action needs an applicable
@@ -15,7 +15,7 @@ The [`learn` procedure](../commands/learn.md) preserves raw feedback, proposes a
 classifies it, and waits for the project's existing human or reviewer authority. Canonical policy
 changes happen only after approval; a FAIL or BROKEN report does not automatically become a rule.
 
-## Layer 2 — Goal and workflow evidence
+## Layer 2: Goal and workflow evidence
 
 - [`verify`](../commands/verify.md) uses a separate context to check the accepted feature's own
 goal against its named evidence. It reports `RESULT: PASS|FAIL` per the criteria; stale inputs or
@@ -26,7 +26,7 @@ then tests their stated invariants in a separate context. Its report covers thos
 checks; it does not certify every application path. Findings can be captured and classified through
 `learn`, whose approval step controls whether canonical policy changes.
 
-## Layer 3 — Delivery authority and connected actions
+## Layer 3: Delivery authority and connected actions
 
 [`ship`](../commands/ship.md) reads the feature packet, source revision, and gate records. Fresh
 tester, verifier, and reviewer results must refer to the same current inputs before delivery is

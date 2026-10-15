@@ -7,3 +7,7 @@ _run-logs/
 # Logs / OS / editor
 *.log
 .DS_Store
+
+# Python bytecode (the CLI runs with -B; this is a safety net)
+__pycache__/
+*.pyc

@@ -18,6 +18,8 @@ Unknown. Asked by `init.md`, question 4.
 
 Unknown. Asked by `init.md`, question 5: paths or systems the assistant must not change.
 
+This section holds standing boundaries only. A scoped, dated permission to change one of them belongs in `Decisions.md`, with its date and its scope, and it does not edit this section.
+
 ## Unknown
 
 List here every question that was skipped or not answered, by its number and text, so a later session asks again instead of guessing. A skip writes `Unknown` at once, with no separate yes.

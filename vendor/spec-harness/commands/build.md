@@ -1,4 +1,4 @@
-# Command: `build` — execute one accepted feature packet
+# Command: `build`, execute one accepted feature packet
 
 > The shared `.claude/commands/sdd.md` procedure owns route, context, authorization and acceptance.
 > This file owns the task-sized implementation cycle.
@@ -27,7 +27,7 @@ do not substitute generic agents.
 4. The separate fresh bound verifier, using its separately confirmed model/context, checks each literal criterion in
    `specs/<feature>/goal.md`; save result and evidence to `gates/verifier.md`.
 5. A third fresh bound reviewer, using its separately confirmed model/context, checks the diff against the spec, goal, rules and task scope;
-   save findings to `gates/reviewer.md`.
+   save findings to `gates/reviewer.md`, each labelled `NEEDED` or `ADDITION` as the bound `sdd-reviewer` role file defines; only `NEEDED` findings request changes.
 6. If any gate fails, return to the implementer. Re-read changed inputs and invalidate only evidence
    tied to the affected spec, goal, rule, source or declared dependency; widen through declared
    dependents when a shared interface changes. After two unsuccessful ordinary correction rounds, stop

@@ -1,13 +1,13 @@
-# Constitution — {{PROJECT_NAME}}
+# Constitution: {{PROJECT_NAME}}
 
 > Borrowed from GitHub Spec Kit. The non-negotiable principles every agent respects on every
 > task. The spec says *what*; the design says *how*; the constitution says *what is never up
-> for debate*. Keep it short — a constitution nobody can recite isn't one.
+> for debate*. Keep it short; a constitution nobody can recite isn't one.
 
 ## Articles
 
 1. **TDD is law.** Non-trivial logic gets a failing test first, then the implementation. A
-   task is not done because it runs — it's done when the verifier confirms the end-state.
+   task is not done because it runs; it's done when the verifier confirms the end-state.
 
 2. **Minimum code that solves the problem.** No speculative abstractions, no design patterns
    for requirements that don't exist yet. Over-engineering is a defect, not diligence.
@@ -25,7 +25,7 @@
    noted as follow-ups, never acted on mid-task.
 
 7. **The harness stays around the dev, not in the product.** Spec Harness scaffolding (`.memory/`,
-   `ai_rules/`, `.claude/`) is development tooling. The shipped artifact stays clean — and
+   `ai_rules/`, `.claude/`) is development tooling. The shipped artifact stays clean, and
    for graded/anonymized deliverables, the scaffolding is excluded from the submission.
 
 8. **Surface uncertainty first.** If scope or intent is ambiguous, state the assumption and

@@ -62,11 +62,11 @@ The first command prints the plan and its digest. The second applies that exact 
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships fourteen shared skills. The initializer installs them as fourteen local skills in `.claude/skills/` and `.agents/skills/`. |
+| Skills | The starter ships fifteen shared skills. The initializer installs them as fifteen local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
-The fourteen skills:
+The fifteen skills:
 
 | Skill | What it does |
 |---|---|
@@ -83,6 +83,7 @@ The fourteen skills:
 | `grill-me` | Settles a confused idea by checking real files and asking one question at a time. |
 | `readme-generator` | Writes a README for a project. |
 | `graphify` | Suggests links in your notes from a graph file. It needs an optional outside tool. |
+| `usage-dashboard` | Prints how much Claude Code was used, from its transcript files on this machine: tokens, an estimated cost at list prices, and skill and command use. It runs only when you run it. |
 | `writing-skills` | Explains how to write your own skill. |
 
 ## Day 1, day 7 and day 14
@@ -110,13 +111,13 @@ Verify checks the files the starter manages. Run it after setup and after any up
 
 The starter's own files are licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies of those files under those terms. Keep the copyright and license notices with substantial copies. Bundled third-party folders keep their own licences, listed in [ATTRIBUTION.md](ATTRIBUTION.md): `icm-architect` and `humanizer` are MIT-licensed by other authors, and the vendored Spec Harness is MIT-licensed too.
 
-This is the free Second Brain foundation. It contains the folder layout, the per-project workflow, manual procedures, the local initializer and the `connect` command. It does not include any paid layer, a private application, native file discovery, a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
+This is the free Second Brain foundation. It contains the folder layout, the per-project workflow, manual procedures, the local initializer and the `connect` command. It does not include any paid layer, a private application, a search of your disk for repositories (`workspace-plan` lists only the folders directly inside one parent folder you name, and `connect` registers one repository you name), a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
 This package also bundles Spec Harness under `vendor/spec-harness/` with its own MIT license. The `connect` command stages its files into a repository you name. No code in `lib` or `bin` starts a process, so the starter never runs the vendored shell scripts. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.4.1`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.5.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Remove the starter
 

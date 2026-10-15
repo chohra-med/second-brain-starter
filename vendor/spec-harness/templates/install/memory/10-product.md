@@ -1,4 +1,4 @@
-# 10-product — {{PROJECT_NAME}}
+# 10-product: {{PROJECT_NAME}}
 
 > Tier: Cold. who it serves, the goal, and success
 

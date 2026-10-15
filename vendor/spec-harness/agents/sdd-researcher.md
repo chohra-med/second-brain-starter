@@ -23,7 +23,7 @@ Gather source-grounded facts for the accepted feature goal. Research is selected
 
 For every touched subtree, resolve nearest `RULES.md` Architecture and Packages sections. If the task does not need a research report, hand back concise findings to the caller without creating one.
 
-## Project rules — Architecture + Packages (generated; generic until `generate-agents` runs)
+## Project rules: Architecture + Packages (generated; generic until `generate-agents` runs)
 Filled by `spec-harness generate-agents` from this project's real rules. Confirm findings against current source.
 
 <!-- GEN:rules START -->

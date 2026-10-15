@@ -35,7 +35,7 @@ Each connection gets a folder under `01-Projects/` with its own `README.md` and 
 
 ## Current records
 
-These four link to `Selected-Project`, the seeded project. For another project, use the same four records in its folder under `01-Projects/`.
+These four link to `Selected-Project`, the seeded project. For another project, use the same four records in its folder under `01-Projects/`. The [project index](01-Projects/Index.md) lists every project; name one, several, or `all` of them before work.
 
 [Facts](01-Projects/Selected-Project/FACTS.md) · [Roadmap](01-Projects/Selected-Project/roadmap.md) · [Progress](01-Projects/Selected-Project/progress.md) · [Decisions](01-Projects/Selected-Project/Decisions.md)
 
@@ -48,6 +48,6 @@ Current values live in these owners. Home only points to them. Any other project
 ## More
 
 - Daily work: [Focus](00-Meta/Daily-Task-Plan.md), [Capture](03-Resources/Procedures/capture.md), [Review](03-Resources/Procedures/review.md).
-- Maps: [Operating](00-Meta/README.md), [Projects](01-Projects/README.md), [Seeded project](01-Projects/Selected-Project/README.md), [Resources](03-Resources/README.md), [Procedures](03-Resources/Procedures/README.md).
+- Maps: [Operating](00-Meta/README.md), [Projects](01-Projects/README.md), [Project index](01-Projects/Index.md), [Seeded project](01-Projects/Selected-Project/README.md), [Resources](03-Resources/README.md), [Procedures](03-Resources/Procedures/README.md).
 - Who I am: [Profile](00-Meta/Profile.md) sets how answers are given and what is never touched.
 - Reference: [Assistant route](00-Meta/AGENTS.md), [Cross-project decisions](00-Meta/Decisions.md), [PARA + CODE](03-Resources/PARA-CODE.md), [Areas](02-Areas/Areas.md), [Learning and scaling](03-Resources/Procedures/learning-and-scaling.md), [Archive guide](04-Archives/Projects/Archive-Guide.md), [Daily template](05-Daily/daily-template.md).

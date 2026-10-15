@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
-import { lstat, readFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 import { promisify } from 'node:util';
+import { planConnect } from '../lib/connect.mjs';
+import { applyInstall, planInstall } from '../lib/installer.mjs';
 import { sourceRoot } from './helpers/consumer-cli.mjs';
 
 const execFile = promisify(execFileCallback);
@@ -365,4 +368,53 @@ test('the scan-document check fires on a truncated quoted title and on a missing
   assert.deepEqual(scanDocumentProblems('PLANTED.md', `Run \`node --test\` to scan, then \`${full}\`.`, vendorTest), []);
   assert.equal(scanDocumentProblems('PLANTED.md', `Run \`node --test\` to scan, then \`${truncated}\`.`, vendorTest).length, 1);
   assert.equal(scanDocumentProblems('PLANTED.md', 'Run the scan some other way.', vendorTest).length, 1);
+});
+
+// ---------------------------------------------------------------------------
+// (v) PRIVACY.md's harness counts are the counts the connect planner produces for a fresh repository.
+// ---------------------------------------------------------------------------
+
+const PRIVACY_HARNESS_COUNT = /up to (\d+) harness files and (\d+) folders/;
+
+// The repository writes the planner's CREATE entries and CREATE folders. The workspace writes are not counted.
+async function freshRepositoryCreates(t) {
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-privacy-counts-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const manifestBytes = await readFile(path.join(sourceRoot, 'template-manifest.json'));
+  const manifest = JSON.parse(manifestBytes.toString('utf8'));
+  const hub = path.join(root, 'hub');
+  const repo = path.join(root, 'fresh-repo');
+  await mkdir(hub);
+  await mkdir(path.join(repo, '.git'), { recursive: true });
+  await writeFile(path.join(repo, '.git', 'config'), '[core]\n\trepositoryformatversion = 0\n');
+  const installPlan = await planInstall({ manifest, manifestBytes, sourceRoot, targetPath: hub });
+  await applyInstall({ manifest, manifestBytes, sourceRoot, targetPath: hub, approvedDigest: installPlan.digest });
+  const plan = await planConnect({ manifest, manifestBytes, sourceRoot, targetPath: hub, repoPath: repo, name: 'fresh-repo' });
+  const files = plan.entries.filter((entry) => entry.root === 'repo' && entry.kind === 'file' && entry.status === 'CREATE');
+  const folders = plan.directories.filter((item) => item.root === 'repo' && item.status === 'CREATE');
+  return { files: files.map((entry) => entry.destination), folders: folders.map((item) => item.destination) };
+}
+
+function harnessCountProblems(text, creates) {
+  const match = text.match(PRIVACY_HARNESS_COUNT);
+  if (!match) return ['PRIVACY.md has no "up to N harness files and M folders" sentence'];
+  const problems = [];
+  if (Number(match[1]) !== creates.files.length) problems.push(`PRIVACY.md says ${match[1]} harness files; the planner creates ${creates.files.length}`);
+  if (Number(match[2]) !== creates.folders.length) problems.push(`PRIVACY.md says ${match[2]} folders; the planner creates ${creates.folders.length}`);
+  return problems;
+}
+
+test('PRIVACY.md states the harness file and folder counts the connect planner creates in a fresh repository', async (t) => {
+  const creates = await freshRepositoryCreates(t);
+  assert.ok(creates.files.length > 0 && creates.folders.length > 0, 'the planner found a set to count');
+  assert.deepEqual(harnessCountProblems(await read('PRIVACY.md'), creates), []);
+});
+
+test('the harness count check fires on a planted wrong number and passes on the planner numbers (positive control)', async (t) => {
+  const creates = await freshRepositoryCreates(t);
+  const wrongFiles = `up to ${creates.files.length - 1} harness files and ${creates.folders.length} folders`;
+  const wrongFolders = `up to ${creates.files.length} harness files and ${creates.folders.length + 1} folders`;
+  assert.ok(harnessCountProblems(wrongFiles, creates).length > 0);
+  assert.ok(harnessCountProblems(wrongFolders, creates).length > 0);
+  assert.deepEqual(harnessCountProblems(`up to ${creates.files.length} harness files and ${creates.folders.length} folders`, creates), []);
 });

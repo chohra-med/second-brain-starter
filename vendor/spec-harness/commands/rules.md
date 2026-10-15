@@ -1,20 +1,22 @@
-# Command: `rules` — derive and resolve package-scoped rules
+# Command: `rules`, derive and resolve package-scoped rules
 
 > Each package boundary needs rules grounded in its own policies and code. The inventory finds boundaries and representative paths; a capable model reads those files and derives the rules. Neither a shell scaffold nor a dependency name proves an architecture rule.
 
 ## Invocation
 
+The shell CLI does not run these modes. `spec-harness rules ...` only prints this procedure and exits 2 (PENDING). A model follows the procedure with these modes:
+
 ```text
-spec-harness rules --generate [<package-path>]
-spec-harness rules --scan [<package-path>]
-spec-harness rules --check <file-path>
+rules --generate [<package-path>]
+rules --scan [<package-path>]
+rules --check <file-path>
 ```
 
 `--generate` is a native-model procedure, not a shell rule generator. `--scan` inventories boundaries and reports gaps. `--check` resolves the nearest `RULES.md` sections for a file.
 
 ## Required evidence
 
-1. Run `bin/sh-index.sh <target>` and read `ai_rules/project_inventory.json` when present, otherwise the generated `ai_rules/context_map.md`.
+1. Run `spec-harness index <target>` (from a checkout, `bash <spec-harness>/bin/sh-index.sh <target>`; with no install, `npx -y github:chohra-med/spec-harness-oss index <target>`) and read `ai_rules/project_inventory.json` when present, otherwise the generated `ai_rules/context_map.md`.
 2. Read applicable project instructions first, including startup sequences. Preserve their precedence and existing text.
 3. For each package, open its actual representative source and relevant tests/configuration. Cite `path:line` and the source SHA-256. Inventory paths are discovery evidence, not architecture evidence.
 4. Read the package manifest. The inventory parser supports `package.json` and `pyproject.toml`; any other format stays visibly `unsupported` and must not be interpreted from its filename.
@@ -45,7 +47,8 @@ State uncertainty or a conflict instead of smoothing it into a rule. A project-s
 `generate-agents` consumes the completed rules and binds applicable roles. Then run:
 
 ```bash
-bash <spec-harness>/bin/sh-gen-agents.sh --check <target>
+bash <spec-harness>/bin/sh-gen-agents.sh --check <target>  # from a checkout
+npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>   # no checkout
 ```
 
 The check must reject PENDING templates, false or stale source citations, stale role blocks, missing skills and unresolved conflicts. A successful static check validates structure and hashes; a fresh reviewer still judges whether each cited line supports its rule.

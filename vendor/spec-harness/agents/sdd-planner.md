@@ -20,7 +20,7 @@ Plan the accepted feature packet from the actual source and target rules. A tick
 
 For each changed directory, resolve its nearest `RULES.md` (deepest wins) and honor its applicable Architecture and Packages guidance.
 
-## Project rules — Architecture (generated; generic until `generate-agents` runs)
+## Project rules: Architecture (generated; generic until `generate-agents` runs)
 Filled by `spec-harness generate-agents` from this project's real architecture rules. At runtime, resolve the nearest `RULES.md` Architecture section and `ai_rules/context_map.md`, and order work to respect them.
 
 <!-- GEN:rules START -->

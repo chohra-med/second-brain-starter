@@ -4,6 +4,13 @@
 #   install <target> [new|integrate] [name]  safely stage the system in a repo
 #   init <target> [new|integrate] [name]      stage a new or integrated project (PENDING)
 #   index <target>            inventory an existing codebase into the bank's index layer
+#   finalize-init <target> [--apply|--recover] --evidence-dir <dir>
+#                             guarded binding-only refresh; dry run by default
+#   doctor <target>           read-only setup report: structural, semantic and client fields
+#   run-state --check <ticket> [target]  validate .spec-harness/runs/<ticket>/run-state.json
+#   status <target>           installed and source version/commit; whether an update is available
+#   update <target> [--apply DIGEST]  plan, then apply exactly that plan (no network)
+#   uninstall <target>        plan only: list what the install wrote; deletes nothing
 #   sdd [init|ticket text|connected reference]  print the shared model-led route; PENDING here
 #   verify --goal specs/<feature>/goal.md      print the manual verifier handoff; no check runs
 #   tester [<id>|--scan]      print a PENDING/manual handoff for capable-client workflow checks
@@ -28,13 +35,22 @@ SOURCE_DIR="$(cd -P "$(dirname "$SOURCE_PATH")" >/dev/null 2>&1 && pwd)"
 DIR="$(cd -P "$SOURCE_DIR/.." >/dev/null 2>&1 && pwd)"
 cmd="${1:-help}"; shift || true
 
+# Python programs need 3.11+; the version is checked before any program is parsed.
+require_python() {
+  command -v python3 >/dev/null 2>&1 || { echo "spec-harness $1 requires Python 3.11+; install python3 and retry" >&2; exit 2; }
+  python3 -I -B -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>/dev/null || {
+    echo "spec-harness $1 requires Python 3.11+ (found $(python3 -I -B -c 'import platform; print(platform.python_version())' 2>/dev/null || echo unknown)); install a newer python3 and retry" >&2
+    exit 2
+  }
+}
+
 show_help() {
   echo "Spec Harness — spec-driven development × a harness (ratchet + verifier + tester + learning loop)"
   echo "pillars: Memory bank · Spec-Driven Development · Harness"
   echo "front door: spec-harness init <target> [new|integrate] [name]   # stages files; reports PENDING"
   echo "SDD entry: /sdd init or /sdd <ticket text or connected reference>"
   echo "shell sdd: spec-harness sdd ... prints the route and exits 2/PENDING; no model stages run"
-  echo "commands: init <target> | install | index | sdd | tickets | rules | generate-agents | spec | plan | tasks | build | verify | tester | learn | audit | loop (legacy placeholder)"
+  echo "commands: init <target> | install | status | update | uninstall | index | finalize-init | doctor | run-state | sdd | tickets | rules | conventions | technology-profiles | generate-agents | spec | plan | tasks | build | verify | tester | learn | audit | loop (legacy placeholder)"
   echo "docs: $DIR/commands/  agents: $DIR/agents/  architecture: $DIR/ARCHITECTURE.md"
 }
 
@@ -44,6 +60,18 @@ case "$cmd" in
            exec bash "$DIR/bin/sh-install.sh" --entrypoint "$cmd" "$@" ;;
   scaffold) exec bash "$DIR/bin/sh-init.sh" "$@" ;;
   index)   exec bash "$DIR/bin/sh-index.sh" "$@" ;;
+  finalize-init)
+           require_python finalize-init
+           exec python3 -I -B "$DIR/bin/sh-finalize-init.py" "$@" ;;
+  doctor)
+           require_python doctor
+           exec python3 -I -B "$DIR/bin/sh-doctor.py" "$@" ;;
+  run-state)
+           require_python run-state
+           exec python3 -I -B "$DIR/bin/sh-run-state.py" "$@" ;;
+  status|update|uninstall)
+           require_python "$cmd"
+           exec python3 -I -B "$DIR/bin/sh-update.py" "$cmd" "$@" ;;
   generate-agents|gen-agents)
            exec bash "$DIR/bin/sh-gen-agents.sh" "$@" ;;
   loop)    exec bash "${LOOP_SH:-./loop.sh}" "$@" ;;
@@ -52,7 +80,7 @@ case "$cmd" in
            echo "Manual procedure: $DIR/commands/sdd.md";
            cat "$DIR/commands/sdd.md";
            exit 2 ;;
-  verify|tester|learn|tickets|rules|spec|plan|tasks|build|audit|migrate|ship)
+  verify|tester|learn|teach|tickets|rules|conventions|technology-profiles|spec|plan|tasks|build|audit|migrate|ship)
            echo "PENDING: documentation only; '$cmd' did not run a model stage, test, verification, or external action.";
            echo "Continue through the shared procedure: $DIR/commands/sdd.md";
            cat "$DIR/commands/$cmd.md";

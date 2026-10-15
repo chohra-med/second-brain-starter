@@ -1,4 +1,4 @@
-# 30-tech — {{PROJECT_NAME}}
+# 30-tech: {{PROJECT_NAME}}
 
 > Tier: Warm. stack, commands, dependencies, and justifications
 

@@ -1,4 +1,4 @@
-# 80-feedback — {{PROJECT_NAME}}
+# 80-feedback: {{PROJECT_NAME}}
 
 > Tier: Hot. learning-loop inbox
 

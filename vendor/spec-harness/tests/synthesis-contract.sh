@@ -2,11 +2,11 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd -P)"
-if [ -n "$TMPDIR" ]; then
-  TMP="$(mktemp -d "$TMPDIR/sh-synthesis-contract.XXXXXX")"
-else
-  TMP="$(mktemp -d /tmp/sh-synthesis-contract.XXXXXX)"
-fi
+# shellcheck source=lib/portable.sh
+. "$ROOT/tests/lib/portable.sh"
+require_tools git
+require_python311
+TMP="$(mktemp -d "${TMPDIR:-/tmp}/sh-synthesis-contract.XXXXXX")"
 trap 'rm -rf "$TMP"' EXIT
 
 for file in bin/sh-gen-agents.sh bin/sh-make-skills.sh; do
@@ -14,7 +14,7 @@ for file in bin/sh-gen-agents.sh bin/sh-make-skills.sh; do
 done
 echo "PASS: generator shell syntax"
 
-python3 - "$ROOT" "$TMP" <<'PY'
+python3 -I -B - "$ROOT" "$TMP" <<'PY'
 import copy
 import hashlib
 import json
@@ -50,7 +50,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 try:
-    run(["python3", "-c", "pass"], 1, "expected-failure helper positive control")
+    run(["python3", "-I", "-B", "-c", "pass"], 1, "expected-failure helper positive control")
 except AssertionError as error:
     assert "expected exit 1, got 0" in str(error), error
     print("PASS: expected-failure helper rejects a successful child")
@@ -151,6 +151,8 @@ assert "templates/project-skills/" in prompt
 assert "A matching receipt hash alone never authorizes replacement." in prompt
 assert "preserve its bytes and record `CONFLICT/PENDING`" in prompt
 assert sha(conflict_target / ".claude/skills/spec-harness-performance/SKILL.md") == conflict_hash
+assert str(conflict_target) not in prompt and str(tmp) not in prompt, "work order embeds an absolute target path"
+assert "Target root: the project directory that contains this `.claude/` directory" in prompt
 missing = run(["bash", str(bind), "--check", str(conflict_target)], 1, "missing receipt RED control")
 assert "PENDING: missing or unsafe synthesis receipt" in missing
 print("PASS: shell staging preserves literal Markdown paths, stays PENDING and leaves a conflicting skill unchanged")
@@ -282,6 +284,52 @@ for row in five:
 (mixed / tech_path).unlink(); (mixed / tech_path).parent.rmdir()
 assert "READY: 3 packages, 3 skills, 5 selected roles" in check_skills(skills, 0, "core-only receipt restored GREEN")
 print("PASS: technology skill accepted when named, capped and scoped; five planted failures rejected")
+
+# Core-skill schema: schema 1 keeps the original three core skills; schema 2 (first initialisation)
+# requires five. Each fixture is a disposable copy of the mixed target with its own receipt.
+PURPOSE_CORE_1 = ["spec-harness-architecture", "spec-harness-performance", "spec-harness-packages"]
+PURPOSE_CORE_2 = PURPOSE_CORE_1 + ["spec-harness-quality", "spec-harness-conduct"]
+
+def core_skill_row(target, name):
+    path = f".claude/skills/{name}/SKILL.md"
+    lines = [f"# {name}", "", "Package applicability: " + ", ".join(package_paths), ""]
+    lines.append(f"<!-- source-bound: inventory-sha256={inventory_hash} -->")
+    for citation in citations.values():
+        lines.append(f"Evidence: {citation['path']}:{citation['line_start']}-{citation['line_end']}")
+    write(target / path, "\n".join(lines) + "\n")
+    return {
+        "name": name, "status": "READY", "path": path, "sha256": sha(target / path),
+        "package_paths": package_paths, "citations": list(citations.values()),
+    }
+
+def purpose_check(label, schema_version, names, expected):
+    target = tmp / label
+    shutil.copytree(mixed, target)
+    rows = [core_skill_row(target, name) for name in names]
+    write(target / ".claude/agents/.init-synthesis.json",
+          json.dumps(dict(receipt, schema_version=schema_version, skills=rows), indent=2) + "\n")
+    return run(["bash", str(bind), "--check", str(target)], expected, label)
+
+schema_one = purpose_check("purpose-schema-1-three", 1, PURPOSE_CORE_1, 0)
+assert "READY: 3 packages, 3 skills, 5 selected roles" in schema_one, schema_one
+schema_two = purpose_check("purpose-schema-2-five", 2, PURPOSE_CORE_2, 0)
+assert "READY: 3 packages, 5 skills, 5 selected roles" in schema_two, schema_two
+no_quality = purpose_check(
+    "purpose-schema-2-no-quality", 2, [n for n in PURPOSE_CORE_2 if n != "spec-harness-quality"], 1
+)
+assert "missing: spec-harness-quality" in no_quality, no_quality
+no_conduct = purpose_check(
+    "purpose-schema-2-no-conduct", 2, [n for n in PURPOSE_CORE_2 if n != "spec-harness-conduct"], 1
+)
+assert "missing: spec-harness-conduct" in no_conduct, no_conduct
+three_under_two = purpose_check("purpose-schema-2-three", 2, PURPOSE_CORE_1, 1)
+assert "missing: spec-harness-conduct, spec-harness-quality" in three_under_two, three_under_two
+# Schema 3 (policy coverage) is accepted; its own fixtures are below. 4 is the next unknown version.
+for label, bad in (("bool-true", True), ("float-2.0", 2.0), ("string-2", "2"), ("integer-4", 4)):
+    rejected = purpose_check(f"purpose-schema-bad-{label}", bad, PURPOSE_CORE_2, 1)
+    assert "schema_version must be" in rejected, (label, rejected)
+print("PASS: schema 1 accepts three core skills; schema 2 accepts five and names a missing quality or conduct skill")
+print("PASS: schema_version true, 2.0, \"2\" and 4 are rejected; only integer 1, 2 or 3 is accepted")
 
 # Human-authored policy can contain code examples whose syntax resembles a
 # template marker. JSX object props and TypeScript generics belong in a valid
@@ -499,6 +547,106 @@ custom_red = run(["bash", str(bind), "--check", str(custom_refresh)], 1, "custom
 assert "output is missing or stale" in custom_red
 assert custom_skill.read_bytes() == custom_preimage
 print("RED control observed: post-receipt custom skill remains byte-identical and PENDING")
+
+# Schema 3: the policy-sources / policy-coverage ledger, with an optional package rule module.
+# Schema 3 keeps schema 2's five core skills and adds the ledger and a policy drift check.
+schema3 = tmp / "schema-3"
+shutil.copytree(mixed, schema3)
+s3_receipt = copy.deepcopy(receipt)
+s3_receipt["schema_version"] = 3
+root_citation = citations["."]
+cited = f"{root_citation['path']}:{root_citation['line_start']}-{root_citation['line_end']}"
+module_rel = "ai_rules/rules/coding.md"
+write(schema3 / module_rel, "# Coding module\n\n<!-- source-bound: inventory-sha256=" + inventory_hash + " -->\n- [OBSERVED] Keep exports explicit. Evidence: " + cited + "\n")
+root_rules = schema3 / "RULES.md"
+root_rules.write_text(root_rules.read_text() + "\n## Modules\n- [coding](ai_rules/rules/coding.md)\n")
+root_row = next(row for row in s3_receipt["packages"] if row["path"] == ".")
+root_row["sha256"] = sha(root_rules)
+root_row["rule_modules"] = [{"name": "coding", "path": module_rel, "sha256": sha(schema3 / module_rel), "citations": [root_citation]}]
+write(schema3 / "CONTRIBUTING.md", "# Contributing\n- Use named exports.\n- Ship release notes with each tag.\n")
+s3_receipt["skills"] = [core_skill_row(schema3, name) for name in PURPOSE_CORE_2]
+s3_path = schema3 / ".claude/agents/.init-synthesis.json"
+
+def s3_rows_with_files(value):
+    rows = [(row, schema3 / row["path"]) for row in value["skills"] + value["roles"]]
+    rows += [(module, schema3 / module["path"]) for package in value["packages"] for module in package.get("rule_modules", [])]
+    return rows
+
+def s3_ledger(value):
+    contributing = schema3 / "CONTRIBUTING.md"
+    value["policy_sources"] = [{"path": "CONTRIBUTING.md", "sha256": sha(contributing), "requirement_ids": ["CONTRIB-1", "CONTRIB-2"]}]
+    value["policy_coverage"] = [
+        {"id": "CONTRIB-1", "path": "CONTRIBUTING.md", "sha256": sha(contributing), "line_start": 2, "line_end": 2,
+         "disposition": "captured", "rule_path": module_rel, "rule_anchor": "Keep exports explicit"},
+        {"id": "CONTRIB-2", "path": "CONTRIBUTING.md", "sha256": sha(contributing), "line_start": 3, "line_end": 3,
+         "disposition": "not-applicable", "reason": "Release tagging is outside code changes in this fixture."},
+    ]
+
+# First write the receipt so the index sees the module as receipt-owned, then reindex and rebind
+# every marker consumer to the new raw inventory hash.
+s3_ledger(s3_receipt)
+write(s3_path, json.dumps(s3_receipt, indent=2) + "\n")
+run(["bash", str(index), str(schema3)], 0, "schema 3 reindex")
+s3_inventory = schema3 / "ai_rules/project_inventory.json"
+s3_hash = sha(s3_inventory)
+s3_rows = json.loads(s3_inventory.read_text())["rule_files"]
+assert next(row for row in s3_rows if row["path"] == module_rel).get("ownership") == "receipt-generated"
+assert next(row for row in s3_rows if row["path"] == "RULES.md").get("ownership") == "receipt-generated"
+for row, file in s3_rows_with_files(s3_receipt):
+    file.write_text(file.read_text().replace(s3_receipt["inventory_sha256"], s3_hash))
+    row["sha256"] = sha(file)
+s3_receipt["inventory_sha256"] = s3_hash
+write(s3_path, json.dumps(s3_receipt, indent=2) + "\n")
+s3_green = run(["bash", str(bind), "--check", str(schema3)], 0, "schema 3 GREEN control")
+assert "READY: 3 packages, 5 skills, 5 selected roles" in s3_green, s3_green
+run(["bash", str(index), str(schema3)], 0, "schema 3 refresh fixed point")
+assert sha(s3_inventory) == s3_hash, "rebinding a receipt-owned module changed the inventory"
+assert "READY:" in run(["bash", str(bind), "--check", str(schema3)], 0, "schema 3 GREEN after reindex")
+print("PASS: schema 3 receipt with a policy ledger and a rule module is READY; reindex is a fixed point")
+
+def s3_red(label, mutate, needle, files=()):
+    saved = {path: path.read_bytes() for path in [s3_path, *files]}
+    try:
+        value = copy.deepcopy(s3_receipt)
+        mutate(value)
+        write(s3_path, json.dumps(value, indent=2) + "\n")
+        output = run(["bash", str(bind), "--check", str(schema3)], 1, label)
+        assert needle in output, (label, output)
+        print("RED control observed: schema 3 " + label + " -> " + needle)
+    finally:
+        for path, data in saved.items():
+            path.write_bytes(data)
+
+s3_red("missing coverage row", lambda v: v["policy_coverage"].pop(), "policy source is missing coverage rows: CONTRIBUTING.md (CONTRIB-2)")
+s3_red("missing ledger", lambda v: (v.pop("policy_sources"), v.pop("policy_coverage")), "schema 3 receipt is missing policy_sources")
+s3_red("stale module hash", lambda v: (schema3 / module_rel).write_bytes((schema3 / module_rel).read_bytes() + b"edit\n"),
+       "rule module is missing, unsafe or stale: ai_rules/rules/coding.md", files=(schema3 / module_rel,))
+def unsafe_module(v):
+    next(r for r in v["packages"] if r["path"] == ".")["rule_modules"][0]["path"] = "../coding.md"
+s3_red("unsafe module path", unsafe_module, "rule module path is unsafe or not package-scoped")
+def cross_package_module(v):
+    next(r for r in v["packages"] if r["path"] == ".")["rule_modules"][0]["path"] = "apps/mobile/ai_rules/rules/coding.md"
+s3_red("module outside its package", cross_package_module, "rule module path is unsafe or not package-scoped")
+def owner_decision(v):
+    v["policy_coverage"][1]["disposition"] = "owner-decision"
+s3_red("owner decision", owner_decision, "policy requirement CONTRIB-2 remains owner-decision")
+def captured_without_anchor(v):
+    v["policy_coverage"][0]["rule_anchor"] = "text that is not in the module"
+s3_red("captured without anchor", captured_without_anchor, "captured policy requirement CONTRIB-1 has no registered rule output")
+s3_red("stale policy source", lambda v: (schema3 / "CONTRIBUTING.md").write_text("# Contributing\n- changed\n- policy\n"),
+       "policy source is missing, unsafe or stale: CONTRIBUTING.md", files=(schema3 / "CONTRIBUTING.md",))
+s3_red("policy drift after indexing", lambda v: (schema3 / "ai_rules/rules/frequent_rules.md").write_text("# Frequent rules\n- A new rule after indexing.\n"),
+       "project policy file changed after indexing: ai_rules/rules/frequent_rules.md", files=(schema3 / "ai_rules/rules/frequent_rules.md",))
+s3_red("missing quality skill", lambda v: v.__setitem__("skills", [row for row in v["skills"] if row["name"] != "spec-harness-quality"]), "missing: spec-harness-quality")
+assert "READY:" in run(["bash", str(bind), "--check", str(schema3)], 0, "schema 3 restored GREEN")
+# The same target with a schema 2 receipt (no ledger) still validates: schema 2 keeps its meaning.
+s2_value = copy.deepcopy(s3_receipt)
+s2_value["schema_version"] = 2
+del s2_value["policy_sources"], s2_value["policy_coverage"]
+write(s3_path, json.dumps(s2_value, indent=2) + "\n")
+assert "READY: 3 packages, 5 skills" in run(["bash", str(bind), "--check", str(schema3)], 0, "schema 2 without a ledger GREEN")
+write(s3_path, json.dumps(s3_receipt, indent=2) + "\n")
+print("PASS: schema 2 receipts keep validating without a ledger; schema 3 enforces it")
 
 print("All synthesis contract fixtures passed.")
 PY

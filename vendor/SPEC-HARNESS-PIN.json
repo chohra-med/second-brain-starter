@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "a663397c2aafa35071fb1fe899bd6a174cd423e6",
-  "tree": "4bbbc0cdf42bf18b4954cae84a4a0fa5673a508e",
-  "harnessVersion": "0.2.0",
+  "commit": "b7ea02973a331d8664f6005e0e358ae3c6fc0700",
+  "tree": "c77212ce8b7d6c1fe370d72eac29db4547f4ea3d",
+  "harnessVersion": "0.4.0",
   "license": {
     "spdx": "MIT",
     "path": "LICENSE",
@@ -16,14 +16,44 @@
       "sha256": "d60f352d0db1404c70afb4bb8b2ca3fd1c610572aa40720e8a0b7baa7885418c"
     },
     {
+      "path": ".github/pull_request_template.md",
+      "bytes": 596,
+      "sha256": "ffac129a70bbd2de1bc43c5997034cf5b861cd99382073d2e82165eeffef30d8"
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "bytes": 2159,
+      "sha256": "f17575ef808d1a251ea7012be72c12ce4f0987a60d96e92c8293403bf75f3a49"
+    },
+    {
       "path": ".gitignore",
-      "bytes": 162,
-      "sha256": "42d3f6df5b89aa86d43b39a507aae2a127521ebd8c000a80f5d26978c0b00a97"
+      "bytes": 245,
+      "sha256": "168bdb9225400b01eca6b5a79087101edc42076247b6e89c8e7e842ca8b3bbd9"
+    },
+    {
+      "path": "AGENTS.md",
+      "bytes": 16207,
+      "sha256": "0d8145d10d571af802c7c561e49e86c8a7543681607c24010717d29448733ab5"
     },
     {
       "path": "ARCHITECTURE.md",
-      "bytes": 21298,
-      "sha256": "9cbca39981bca09592dc406083582f85fd4fa0a0da55c15f770265cc6df7eb92"
+      "bytes": 21198,
+      "sha256": "26414bac5cb3f960f84eaaf5157f3bf47eb35069ad7b4425c4ad98121d834478"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "bytes": 9156,
+      "sha256": "81b4a1bfd317153c323b96a7c9e555ec3eb18a6a78b5326a34c223cb1f3ecdd0"
+    },
+    {
+      "path": "CLAUDE.md",
+      "bytes": 11,
+      "sha256": "336cc4fbf19beaada7ccf9986414fa91851a8d7a07dfb3ccbe800a69eed0ab49"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "bytes": 1337,
+      "sha256": "d56055ef4df2659f1c979af012f954353c5488ce66126335f3c518ee195da901"
     },
     {
       "path": "LICENSE",
@@ -32,33 +62,33 @@
     },
     {
       "path": "README.md",
-      "bytes": 13913,
-      "sha256": "8a07b5af3b941cc66769f719237d762eb7084e4e51a9ed7482fc76cab8aef87c"
+      "bytes": 24824,
+      "sha256": "d6fc9e5f1e28a06400ade2a24c62df08253533bfcdc8459cc7cc3e8dedc329c5"
     },
     {
       "path": "agents/sdd-architect.md",
-      "bytes": 2892,
-      "sha256": "5b62aa5cdaf57bcc787be1cd68db0664a21b0b641a6b8588cbb7ba4c021b6b76"
+      "bytes": 2871,
+      "sha256": "345d8ff034630fc5040b6d395fd229fa4f56cae5eb95c4167d63fee62d3254a1"
     },
     {
       "path": "agents/sdd-design-verifier.md",
-      "bytes": 5712,
-      "sha256": "d086fdf96c83f771220662702b791c73c5901d4bf26494ba588da2e592cf9476"
+      "bytes": 5679,
+      "sha256": "6b2285d50bba7377f6e6b738682609c2e725bb945e62ea03cd3b77e6b9033c3d"
     },
     {
       "path": "agents/sdd-documenter.md",
-      "bytes": 7765,
-      "sha256": "b290b3d9d1f3186f4b450479ba96e3dc91599d567a5ed606411dac928a5a7504"
+      "bytes": 7717,
+      "sha256": "59dd6bc167c627c2e5a6e0de2cd5844f38ca97f1b4a57702ac56432c316077cc"
     },
     {
       "path": "agents/sdd-implementer.md",
-      "bytes": 3391,
-      "sha256": "9d436d168db5cee2475f505e5e47e29600b7b345dad6d8e4f09f646c56a554dd"
+      "bytes": 3388,
+      "sha256": "568e1b1d2455af5ec4a89f355d5fa363a1ddf2f50d559d63290743ff1122d8c1"
     },
     {
       "path": "agents/sdd-learner.md",
-      "bytes": 2579,
-      "sha256": "13bda8af9c8ef0d008f093ee140af6fa123b674cb35f7eccfc4af0537e27d3bc"
+      "bytes": 2576,
+      "sha256": "99440f34323fc08d566efbeec5b6033a157ffd631a5a34e40b8d6fb5b5827622"
     },
     {
       "path": "agents/sdd-merger.md",
@@ -67,33 +97,33 @@
     },
     {
       "path": "agents/sdd-planner.md",
-      "bytes": 3255,
-      "sha256": "b0f3f85341a5772466db053a82601396dcd1587ebf00fb176b3d326cf3b2f632"
+      "bytes": 3252,
+      "sha256": "35a12337a3fd92dda0e1a40ec6e5c6d7e62d4081f94f320af8cb6912bf231455"
     },
     {
       "path": "agents/sdd-researcher.md",
-      "bytes": 2049,
-      "sha256": "342ca8ff3b249b3f4221d0afb01f51aeebdf3905ac29e90092b4c489e29b8f47"
+      "bytes": 2046,
+      "sha256": "38ba7d3d5cc86bb18745343bc18bd74f22d582940acdcae6123e2674005ad673"
     },
     {
       "path": "agents/sdd-reviewer.md",
-      "bytes": 2436,
-      "sha256": "bf7370ffc650a8c3ffdde3ffb0146da3886b8eb3d40803f2db5196f6c554d2d3"
+      "bytes": 6351,
+      "sha256": "5ca154315967f5e544e6a57f6e75a875a05591db037a6edfa622ca4111c76858"
     },
     {
       "path": "agents/sdd-tester.md",
-      "bytes": 3202,
-      "sha256": "d3c82546288d81c67310b2e16db39e16bfb64a96d1174f539e2a51c1a292d24e"
+      "bytes": 3181,
+      "sha256": "78c160bd8d1c52cff1ca7055b4de39263d8eb7162898f50ca1454303d9baea57"
     },
     {
       "path": "agents/sdd-verifier.md",
-      "bytes": 3340,
-      "sha256": "f6596cbb7950fed6815d427e98917216ca46ea8d683c913197b386235b5458c4"
+      "bytes": 3337,
+      "sha256": "b6e7471576042eee6ef44c97836bf7ec34185af3d910175e324269dd7e1efca0"
     },
     {
       "path": "agents/sdd-workflow-tester.md",
-      "bytes": 6488,
-      "sha256": "59a305c6c457d7e753cae461ec73b168fbeeefc520951bf770668d8d9f8060bf"
+      "bytes": 6449,
+      "sha256": "44be2ca1acdf47542afe7f1014a134605afab80f1dbdbe1976369784e537a9ac"
     },
     {
       "path": "bin/loop.sh",
@@ -102,15 +132,25 @@
       "executable": true
     },
     {
+      "path": "bin/sh-doctor.py",
+      "bytes": 7572,
+      "sha256": "5d5e289dee62acfe17b359a6f1b5fe1857b057a69e3b41679922441671de1190"
+    },
+    {
+      "path": "bin/sh-finalize-init.py",
+      "bytes": 38061,
+      "sha256": "6939572ae384978732411f6d8500f82422c75182355b9e70d12ce22c5c405004"
+    },
+    {
       "path": "bin/sh-gen-agents.sh",
-      "bytes": 25883,
-      "sha256": "3d5f340f3f484f4494718454f8ddddd0c71a47881aafc59e32f630afffa96bfc",
+      "bytes": 36770,
+      "sha256": "4901a98ba1be2eb1a26b0fdaf1e40b0a9820a0472320b60b29925fca1b8eae5d",
       "executable": true
     },
     {
       "path": "bin/sh-index.sh",
-      "bytes": 35311,
-      "sha256": "f0b481bae33245b6419f04e31579d2f2fb14667aefc8af64be2bf867bea58c7a",
+      "bytes": 40329,
+      "sha256": "542071e6a6be85bcc3ad58fbf8238cdb3cbb0a98a490820385cbc757cd5cfb35",
       "executable": true
     },
     {
@@ -121,40 +161,60 @@
     },
     {
       "path": "bin/sh-install.sh",
-      "bytes": 12394,
-      "sha256": "0ffa97db5fedabae68bbb6c9efbf8afa8896ee74939b4a746d26da8b8a2791b9",
+      "bytes": 17951,
+      "sha256": "fbe5543c586372ed0b739ebb73f8c041f19a8b16a6478e121b0dbdecbff5bc04",
       "executable": true
     },
     {
       "path": "bin/sh-make-skills.sh",
-      "bytes": 14310,
-      "sha256": "713fc9fab80005f6c7535a6b0eca9767506c1792fb49719fd584d78e593b4ed8"
+      "bytes": 16239,
+      "sha256": "ba6a7b3efea82412531a7082a8328510e4b2ee41e765ef424288c26aac3fbb91"
+    },
+    {
+      "path": "bin/sh-run-state.py",
+      "bytes": 7849,
+      "sha256": "0ea4fc30922efbe6b6c780a1c18e5f9a4449a079a15146bc57f5869b611a7c89"
+    },
+    {
+      "path": "bin/sh-update.py",
+      "bytes": 20356,
+      "sha256": "da52bf6bb10768564d073549d47b77c6865f9861301349dca572f535d2f56fc3"
+    },
+    {
+      "path": "bin/sh_safe_io.py",
+      "bytes": 9242,
+      "sha256": "4e5428632fdba326f31f779f3a5629a48c3a60408b2e0b7dd062450f02ec19fa"
     },
     {
       "path": "bin/spec-harness",
-      "bytes": 3413,
-      "sha256": "a5ec9ff0fe0445c03ee50036dc35cfe6acf78ab70902fae61ac7b1bc6ae29919",
+      "bytes": 5176,
+      "sha256": "413913acc291fe46216e72dd5271602ba19a1dfd3ae465000b27dc6be0edeaca",
       "executable": true
     },
     {
       "path": "commands/audit.md",
-      "bytes": 1142,
-      "sha256": "57726a4cc4067fd434eda84fe22cc5c84915edfc69fa0ffd98b7bde30d479e03"
+      "bytes": 1133,
+      "sha256": "0fe0e026e43f3da1e47691def0568fcb3bd50570a6023001b7c573ae2c2940f3"
     },
     {
       "path": "commands/build.md",
-      "bytes": 3708,
-      "sha256": "df6daba614501a53e144591d1305d7798b5bcd6650f9790b98f695d3848ee826"
+      "bytes": 3829,
+      "sha256": "539cb8480c99ccda3a69e148eca2972b8368b29a57b3fc207ac54dd5d10067f9"
+    },
+    {
+      "path": "commands/conventions.md",
+      "bytes": 3473,
+      "sha256": "3cb12ed6375879ed72ca3d4382004272a1a7b8d16e27734a73cc86f67df9c7e6"
     },
     {
       "path": "commands/document.md",
-      "bytes": 2234,
-      "sha256": "4c76ed1d3d58caa99f01d6c7211681010cc3f32821097ce9b921d57aadb58f05"
+      "bytes": 2216,
+      "sha256": "5cb43d0632e0edd344010a66fac4fe961523e33594d074d333ef1628ce56f97d"
     },
     {
       "path": "commands/generate-agents.md",
-      "bytes": 5837,
-      "sha256": "528e97741c8ccd8ec836e2e869646c90be15dc6b5845f75bf4b45df4cbdbdaf0"
+      "bytes": 8247,
+      "sha256": "5ba3909e35e6720482e518a83dcc19b31760bd1caf8648899e43a81da1aaefa8"
     },
     {
       "path": "commands/grill-me.md",
@@ -163,18 +223,18 @@
     },
     {
       "path": "commands/init.md",
-      "bytes": 10649,
-      "sha256": "f1e4c7d69edd3490bc8ed82be88d866c4ad98f3527b0804fcac2dfc783f67791"
+      "bytes": 12928,
+      "sha256": "ff14c480599edf46beb977654c03c96b8e877a6b9cacdc7f95ebb3279b50242f"
     },
     {
       "path": "commands/learn.md",
-      "bytes": 3566,
-      "sha256": "98c565645f8967ffc141555ab37de217ea0f2e051e294bac8ad3d0011f9a3a9e"
+      "bytes": 3563,
+      "sha256": "aafc4a7227bfd0413d22563f8ed3f3e36525e404c8d183429509315107707a0b"
     },
     {
       "path": "commands/migrate.md",
-      "bytes": 1325,
-      "sha256": "092f5c13eb24bc27705129b15521e003e920880906e0b152b30d5349a2a34064"
+      "bytes": 1400,
+      "sha256": "88767b7190e7c3629da4d0ac53f2279ec9c0e9983a36e66572c026304de3cc96"
     },
     {
       "path": "commands/package-finder.md",
@@ -183,8 +243,8 @@
     },
     {
       "path": "commands/plan.md",
-      "bytes": 2514,
-      "sha256": "8e574657705eb5c42bdb662cafdc861f3c6fe741b649172f84c7a00ff975a5a9"
+      "bytes": 4136,
+      "sha256": "111205e41027c28d7894ed75f98b356b2e9742c18f8be7143b377ca7745e3d83"
     },
     {
       "path": "commands/ponytail.md",
@@ -193,18 +253,18 @@
     },
     {
       "path": "commands/rules.md",
-      "bytes": 3626,
-      "sha256": "40d2b80e3c8aedc9ae2e2e13863551ccf751920aacd20d0ee01e21c2a4cee311"
+      "bytes": 4004,
+      "sha256": "eb8fe74c1dc619732d0bee5c680f8adebbe8e0bdfa580ce4c85ebfc5db659a7f"
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 20331,
-      "sha256": "6b209f34b7e5ce7b31fdbdb16a54f3bbfbec26ad7a39eeff3b8dbe8487822e56"
+      "bytes": 21840,
+      "sha256": "12e2b34604cdae5a8bc32a6c0d170fddce103617acb14577f0314e02be7f7b06"
     },
     {
       "path": "commands/ship.md",
-      "bytes": 1453,
-      "sha256": "6b544548cb30c4fdd987b42271b6afef96f37704b67176f95e56bb64fee32d2d"
+      "bytes": 1450,
+      "sha256": "6103282a6d0bef6140a65def89d6ee38b7a7f16fac7ff104e92b330933df3f2a"
     },
     {
       "path": "commands/skill-finder.md",
@@ -213,168 +273,258 @@
     },
     {
       "path": "commands/spec.md",
-      "bytes": 1576,
-      "sha256": "fc1b2b115f9817954efb110591d391838b11515518b989d38c7760b87684e24b"
+      "bytes": 1573,
+      "sha256": "5c4de5d61a51d7a0ad9d43fa98a0312118bd1a52ebed90d0041f7708b6800db3"
     },
     {
       "path": "commands/tasks.md",
-      "bytes": 1095,
-      "sha256": "8881b392c217e124093d492204ca269b15035e8bf7a4069cca26d57e0f4a8f96"
+      "bytes": 1092,
+      "sha256": "5651d1f7c5f43494e14124c9db6833941d214996371df751a0992bfe25715fb4"
+    },
+    {
+      "path": "commands/teach.md",
+      "bytes": 2042,
+      "sha256": "1372614ae1e88ad5975313ba24c5071f53812a9340396c02b013cc7805d34dc6"
+    },
+    {
+      "path": "commands/technology-profiles.md",
+      "bytes": 4190,
+      "sha256": "9a5a9ba0165f005bfa009592af64183aec483dec7d4eed4cdad9ac5d4c248725"
     },
     {
       "path": "commands/tester.md",
-      "bytes": 6696,
-      "sha256": "00582389eb131388ad4f8d7b2f52cabf13b91337dba39f0312022894405a2f47"
+      "bytes": 6651,
+      "sha256": "616140d142edffe6c144176f763552acbe63ad7c731f77d12ee84d92d25c095d"
     },
     {
       "path": "commands/tickets.md",
-      "bytes": 2083,
-      "sha256": "0965934173b0a69c7473d0c1daa6cc72b1fc4145681935628c5722718fe1193e"
+      "bytes": 2135,
+      "sha256": "c0d66f9f108590c808066c24064bd95bc48d20ce6aed4fcd6ab0bf8073544b5f"
     },
     {
       "path": "commands/verify.md",
-      "bytes": 1507,
-      "sha256": "d452edd7b9ae0baee69931bee6a3e4e02ca3d733b55a91348608476c34836bf7"
+      "bytes": 1504,
+      "sha256": "0ca038c949059edb509bb4866381857b4ef526850dc6903412de1d8e78f9b686"
+    },
+    {
+      "path": "docs/COMPANION-SKILLS.md",
+      "bytes": 2917,
+      "sha256": "41cf0eb59a0bf18c8583b216d77b0c1af5647b875c39e21b6563fa372d4dac65"
     },
     {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 15334,
-      "sha256": "c95470564761d514e867578802f69ed45c0f7ac4df595c201a0b38aa80cf8b23"
+      "bytes": 40149,
+      "sha256": "b3730d856d9eb9f2cf5fcb45fffc3a2944e1eb45664944a5785284e442429294"
     },
     {
       "path": "docs/GUARDRAILS.md",
-      "bytes": 2953,
-      "sha256": "55e545680a6a2e35ea60d639084441c9cc26bfb1f96ce108d4d8d78c66e8fbc8"
+      "bytes": 2941,
+      "sha256": "5f20a99d3124030914cc1031bcd1956644ff9bc9c75592b72d6513b5c76a8c0c"
     },
     {
       "path": "docs/MCP-SERVERS.md",
-      "bytes": 4004,
-      "sha256": "ad1f388b3b4835f995f8015a0b0fdc262e60a92d45d0d6de09d653f5ca9d180a"
+      "bytes": 3998,
+      "sha256": "620774940b06f16a7e4136501c938d33f7f59a286d7dde70663163f754efaf03"
+    },
+    {
+      "path": "docs/RUN-STATE.md",
+      "bytes": 2884,
+      "sha256": "2d97ad98e6651154fefc0927a1da370d36f7078eedaa329dcf52651551df091d"
+    },
+    {
+      "path": "docs/rfcs/0001-neutral-install-route.md",
+      "bytes": 1277,
+      "sha256": "3112ea04e61af053989a853a4276b29977c99442a136248c652069c2d9bac3d1"
+    },
+    {
+      "path": "docs/rfcs/0002-learning-statuses.md",
+      "bytes": 1119,
+      "sha256": "06496ceecd99627cb0f22205b0062aa0af8c015ffb0e565a08416d005b378b66"
+    },
+    {
+      "path": "docs/rfcs/0003-receipt-schema-3-and-finalize.md",
+      "bytes": 24453,
+      "sha256": "d10723adfea55b694f4074415a64772d4a8d8cc7e700a0006f41d38e9058cc8c"
+    },
+    {
+      "path": "docs/rfcs/0004-install-record-update-and-run-state.md",
+      "bytes": 18200,
+      "sha256": "491d9465f0214e952ad1331c1426232b8df65480ca14abd91e4f866589a22aa5"
+    },
+    {
+      "path": "examples/react-ts-minimal/CONVENTIONS.md",
+      "bytes": 235,
+      "sha256": "4a998a56b5579b2db356b41abf78a031e4cd9289fa74a58b03519c34c6cd7cab"
+    },
+    {
+      "path": "examples/react-ts-minimal/README.md",
+      "bytes": 317,
+      "sha256": "060dc9a52e80f30bc6cd001c44f01487671047b5a994162383f2058d4a9cdcbe"
+    },
+    {
+      "path": "examples/react-ts-minimal/package.json",
+      "bytes": 346,
+      "sha256": "aab69e1edccab5c91293f98f52265a01fd1d6bc8180c60b9c004b1012377f493"
+    },
+    {
+      "path": "examples/react-ts-minimal/src/index.ts",
+      "bytes": 176,
+      "sha256": "662f33f9992772918eb8237c96921958fb43a03ea4223c23a1beac7906116cb3"
+    },
+    {
+      "path": "examples/react-ts-minimal/src/money.ts",
+      "bytes": 323,
+      "sha256": "3a6d108ffffcfc918cc349bc4d9f084f4dc978d1e4f4684415780db511ebc6ca"
     },
     {
       "path": "install-manifest.json",
-      "bytes": 26200,
-      "sha256": "6507c421b244deb4741ed1297a5f87357e521630c2f467e8b6ee95a9384cdc91"
+      "bytes": 30251,
+      "sha256": "d03883d89c41bf5d05f098677278da92efddfe54da0777ba7e6b89dadf5a8b59"
+    },
+    {
+      "path": "install-migrations.tsv",
+      "bytes": 271,
+      "sha256": "fdffefec72b7469e643bf864066df7cf33eb579b56f2a378e308288ecd105733"
+    },
+    {
+      "path": "learning_human.html",
+      "bytes": 44510,
+      "sha256": "f74b91e838524615ed210e89b949e24ab432aa3d8e5cd6fa63826a0872061ee0"
     },
     {
       "path": "package.json",
-      "bytes": 1060,
-      "sha256": "718f611d12fabf4ce382ea088c0e82e449ac109322c354d0c91766ff8689cf90"
+      "bytes": 1190,
+      "sha256": "5554c1dd4d74749b1889f84bee9fbece0bb5fe1d2a586c69cada13b80f7ee282"
     },
     {
       "path": "skills/spec-harness-audit/SKILL.md",
-      "bytes": 1256,
-      "sha256": "c3fecd9340404e4306e17cb42842f8afcc67c83c305cb93c79efe2118d2b607f"
+      "bytes": 1220,
+      "sha256": "0b6c32a2e499f310bbdfe14543c505574e0e779b3f6ef245a163d1ef335df96e"
     },
     {
       "path": "skills/spec-harness-build/SKILL.md",
-      "bytes": 1329,
-      "sha256": "f9fb57493b6b8bcb396bebed5c56ad3e0e108104f9194cdf47157a9bf31df694"
+      "bytes": 1317,
+      "sha256": "9cb6640b565b9a0009720135a79636788e81ecf23c352d8434bc6b83533ae6e1"
+    },
+    {
+      "path": "skills/spec-harness-conventions/SKILL.md",
+      "bytes": 1177,
+      "sha256": "1569ea984ed5bc9e6acdebaf4106c06b02fd11514b500eac19acec4488097840"
     },
     {
       "path": "skills/spec-harness-generate-agents/SKILL.md",
-      "bytes": 1718,
-      "sha256": "ddaaa2941313d73c7100d4e67be7fe2afb0e85f154a30efcd18a2cfb5e02441c"
+      "bytes": 1869,
+      "sha256": "94cf46ef8d203b47b6afaae6fbb1ac2afb7f97aa5a6c48f258dc28e6805f3d6a"
     },
     {
       "path": "skills/spec-harness-grill-me/SKILL.md",
-      "bytes": 1086,
-      "sha256": "56c9456dd72a7a891caf1c8005bb1c6e7d72c47327c48fe067a87a4c1a351b5d"
+      "bytes": 1080,
+      "sha256": "718137de87532b69c6a9478d9d21c002e30a8c31ed57c2570b03499e7c553c6d"
     },
     {
       "path": "skills/spec-harness-install/SKILL.md",
-      "bytes": 1595,
-      "sha256": "2d79d52413c55da730c1dd7a6ae7cf3a10de93afabb0d7e1f28c7dcd0c199432"
+      "bytes": 1615,
+      "sha256": "39cc29c93730ef89e5700345da7ded70d08b7a9f9f6d26a458c89530cd6046cd"
     },
     {
       "path": "skills/spec-harness-learn/SKILL.md",
-      "bytes": 1460,
-      "sha256": "cbc2fb894a242c0b07123051d7259457cdf0542f594a570e32f0cdab6410e282"
+      "bytes": 1451,
+      "sha256": "60b548fc0ce07e765c7b08a74bdaea79c8a0c9e8587e308efe40a3b00d18b54c"
     },
     {
       "path": "skills/spec-harness-package-finder/SKILL.md",
-      "bytes": 1122,
-      "sha256": "607aea125a03c183129e060935e2b9f276abfcba16e3cb7e5fec4a9d2ab62c29"
+      "bytes": 1116,
+      "sha256": "978625d7a5042741985062d3a19b0fe2465e2e5973343b243e78cba7bffa7514"
     },
     {
       "path": "skills/spec-harness-plan/SKILL.md",
-      "bytes": 1375,
-      "sha256": "37f9d97cc5ee1f809c903ca5ca4dd607ba9a62fc09fbca8741646107eead1375"
+      "bytes": 1363,
+      "sha256": "bf3a2ffdd27083f8cf0e35022b7e809363c6600ec58fef8679b6765c162ff5fd"
     },
     {
       "path": "skills/spec-harness-ponytail/SKILL.md",
-      "bytes": 1113,
-      "sha256": "7ca469897b3f85c984182d96f805af31b61374ad457b9dee354ae0293bd50ec1"
+      "bytes": 1107,
+      "sha256": "bbd3c11de689bd0b7fedf98e50b67d28153074ba577841e913c2812080b4443b"
     },
     {
       "path": "skills/spec-harness-rules/SKILL.md",
-      "bytes": 1503,
-      "sha256": "2eb212e10840a99b184592b00fca198b60396bccf7ec8435232937172bb5eb63"
+      "bytes": 1494,
+      "sha256": "158cdd51adc0cedda88df602709b57e4587c7212f4260f68144de31b5b9f79dc"
     },
     {
       "path": "skills/spec-harness-skill-finder/SKILL.md",
-      "bytes": 1110,
-      "sha256": "b8a8e214bc373cceb3dde9bb6f670291689febffb520454f428baf868bba3f8d"
+      "bytes": 1104,
+      "sha256": "eec1198e5045fa5184993f7fb28704895290c52a36772ca909ccf91824caf095"
     },
     {
       "path": "skills/spec-harness-spec/SKILL.md",
-      "bytes": 1265,
-      "sha256": "d31683ee73903f7154660bddf4871cc36e8bef2ec99c04390dfc391cefdaecde"
+      "bytes": 1253,
+      "sha256": "a29ddfaffd693515c18d40276a9e21c07fc45ec2b2efbafca4ab1f794d752d55"
     },
     {
       "path": "skills/spec-harness-tasks/SKILL.md",
-      "bytes": 1226,
-      "sha256": "940ed845775c1ee2be438ff8b4ce192ea1983a1ae9d9bf5fa3ec1799f019c380"
+      "bytes": 1214,
+      "sha256": "f66dfe9fe20033beb0a813de35eb863574b068a40f931ac16a6a6f283aae9ab4"
+    },
+    {
+      "path": "skills/spec-harness-teach/SKILL.md",
+      "bytes": 1363,
+      "sha256": "1f7d01f3275370d7348d957e0d5df7280a7dddebf0f45bd7e5135159356006ac"
+    },
+    {
+      "path": "skills/spec-harness-technology-profiles/SKILL.md",
+      "bytes": 1219,
+      "sha256": "55da510c4e8b61cf5e034fbc6cef6460e91eae78b3b3f5cff9b3973e7c6e9527"
     },
     {
       "path": "skills/spec-harness-tester/SKILL.md",
-      "bytes": 2250,
-      "sha256": "afe3c47371c5d4e661bbfd114bf331cf6f41a193b276549d40220b62e6bab169"
+      "bytes": 2238,
+      "sha256": "3682f43525470837a5f43447316eefa316eb7b291ca829201a986f5464726c1e"
     },
     {
       "path": "skills/spec-harness-tickets/SKILL.md",
-      "bytes": 1455,
-      "sha256": "216d6fe60efc1a750b0ebebf8391c47740014f87e858384c5705e171443d37a8"
+      "bytes": 1443,
+      "sha256": "03ddee75207191baa675272fb83cd9046aaac7422f9f3ce8430f915c9a46ca39"
     },
     {
       "path": "skills/spec-harness-verify/SKILL.md",
-      "bytes": 1291,
-      "sha256": "557a1ed330c6cf55373b3d0d00c7cee813ab1af52372ee62dfc494f6ae6c20ed"
+      "bytes": 1279,
+      "sha256": "bb80fc7a80e4afb0102308f22044121361fa3c1734d2973320c5a251b0d1abc3"
     },
     {
       "path": "skills/spec-harness/SKILL.md",
-      "bytes": 1646,
-      "sha256": "2bf1b4a219fd94993886854484ac990a19583ce586eb2920377be22a67bee7cc"
+      "bytes": 1936,
+      "sha256": "335ca8be1300fe8ad5f3320ab32a6dd91e08a9bc51e24677ac62e723a6230e54"
     },
     {
       "path": "templates/AGENTS.md",
-      "bytes": 2136,
-      "sha256": "d5f2fe7b42d141196399ec37e350ac21b8b36b1d99394e750f4665490b3d0fbe"
+      "bytes": 2428,
+      "sha256": "c393222f4b2d8f02aa34c82a1d442e44fb3264a62bd9fc26701b1a0878f94706"
     },
     {
       "path": "templates/CLAUDE.md",
-      "bytes": 2440,
-      "sha256": "54ad3db271b9f088b2ac3e222a18c0ded79e35974b114369af9d3f86c584729c"
+      "bytes": 2731,
+      "sha256": "6780ce611082d2bcdf1c9d103658691307efff1110416eab8f2f93942798f456"
     },
     {
       "path": "templates/RULES.md",
-      "bytes": 1746,
-      "sha256": "7daad920397cb43517fbfa6105038dc81e0b0393b7706cb6d5dd4da4cc7707a2"
+      "bytes": 1740,
+      "sha256": "d70edee153309d6f777392bb10e998101ff11fe44b435273633dcc4189dcc5f1"
     },
     {
       "path": "templates/constitution.md",
-      "bytes": 2633,
-      "sha256": "e9f68723a1a3d6368d616fbb48994458b4b8e5cb2ac8877b0f3e24c3f134223f"
+      "bytes": 2621,
+      "sha256": "df52b50698edab5d9bc9bd8119ec0443be308eabed28347db31ed2659cfcc978"
     },
     {
       "path": "templates/goal.template.md",
-      "bytes": 820,
-      "sha256": "0000c4badb30cb3d8eb4bcebddb3c9eba7b5083d47ffc3e684980286519b53ed"
+      "bytes": 811,
+      "sha256": "8cda27d2d0f92c017dff461d28aa723e9c3fc994e5731a38f522bf897e64fed4"
     },
     {
       "path": "templates/install/SPEC-HARNESS.md",
-      "bytes": 1112,
-      "sha256": "8fc9169e735662fbca33796db2cf066c2d7a6a49fbeee3e95906b1ab9f0c5db6"
+      "bytes": 1487,
+      "sha256": "e7034605e2dc104566b3f7b34775ab87fb9ab7a508e9a0a599a33f4cdf064f74"
     },
     {
       "path": "templates/install/agents-skill-sdd.md",
@@ -383,158 +533,287 @@
     },
     {
       "path": "templates/install/ai_rules/context_map.md",
-      "bytes": 96,
-      "sha256": "1faaa30001f967fbbb276d429237186716658098bc32537ac66f9cfc7dfed145"
+      "bytes": 93,
+      "sha256": "5df069187fd46a6f603d775fb146c5b9a543fde96613b84a67f202121f143158"
     },
     {
       "path": "templates/install/ai_rules/globalRules.md",
-      "bytes": 409,
-      "sha256": "391f0e715e3eb87da00aafefdadc4a77ce3eb8dbc3f20f893f764d061f092c2c"
+      "bytes": 391,
+      "sha256": "b2c8c66b31a1b30f29188a9e1d7dd3169561db2d4722a5aac64d74ce966a35d5"
     },
     {
       "path": "templates/install/ai_rules/rules/context_management.md",
-      "bytes": 214,
-      "sha256": "1cfc6b2da580c9a5ad2bf8b9987e078efe5417dc0f080d7fd2a6224302476b80"
+      "bytes": 211,
+      "sha256": "cda96042ea737649b494965cc2023aca55bd615e3ab3d161be75378b07cac8c9"
     },
     {
       "path": "templates/install/ai_rules/rules/core.md",
-      "bytes": 236,
-      "sha256": "de5063fd5f004f8079986f63926008c3a473a908a657e611895858db0a44a4de"
+      "bytes": 233,
+      "sha256": "c83d51bc1b5682ee6570632aca4c10e75a227c0ad8a6cfc85318dffed0a4d2e2"
     },
     {
       "path": "templates/install/ai_rules/rules/frequent_rules.md",
-      "bytes": 188,
-      "sha256": "8a5b266ccca44c7eb24046041b7423693c68cdb622f145c3fce402886d44d228"
+      "bytes": 185,
+      "sha256": "e1753a54e9f8b2813bbab65ed67575b238332994f850703cd54604d4ee6a6eaf"
     },
     {
       "path": "templates/install/ai_rules/updated_rules.md",
-      "bytes": 112,
-      "sha256": "8ad465abaf07efca167ebaa1ba544dac458a96b51b7c35298b05ef7c34054d46"
+      "bytes": 109,
+      "sha256": "c107f2aed9c8d55b60ae46eb339cac4fb38c38c8150fd1f2997bc6c25a76a37e"
     },
     {
       "path": "templates/install/learning/NOTES.md",
-      "bytes": 121,
-      "sha256": "72daedbb3a5b3a9865ed263a4e99375d918d864bb5b7e0e458162f9642ca0fce"
+      "bytes": 118,
+      "sha256": "35c3984bc84c2787f0fb22da2ef07993ae89b0a81d4551aa6e10b62e5f317190"
     },
     {
       "path": "templates/install/memory/00-description.md",
-      "bytes": 175,
-      "sha256": "7b19f1af8b99ba8e5cc451d4d7de5f559d8d4f332c4d4d014e67315f4cec1e85"
+      "bytes": 172,
+      "sha256": "59a5b8092030e68b95658565655263189e81951c4d6e66216761232a364400af"
     },
     {
       "path": "templates/install/memory/01-brief.md",
-      "bytes": 178,
-      "sha256": "4b6ca6c05655866eaaa6ede92f98a2e47fb2fc5b3696b3cccf56d833b4258a71"
+      "bytes": 175,
+      "sha256": "e9f415f3a32c97b7f8ec8883bc06bdd68813f6fd7722504a7ce5935912857f4f"
     },
     {
       "path": "templates/install/memory/10-product.md",
-      "bytes": 181,
-      "sha256": "c06279abf52b290b30c70c298bc7c4afd87538390b908a52029ba8339ed3f2db"
+      "bytes": 178,
+      "sha256": "f01fcb60b620c37ce72ef0f2d632af5d5ba1614ef71960fa2ea4f99941060f5a"
     },
     {
       "path": "templates/install/memory/20-system.md",
-      "bytes": 183,
-      "sha256": "ad8115d19b0089d63a62fe605ec5a4976510a3dc0f52962f4e56fe0542a40886"
+      "bytes": 180,
+      "sha256": "86653710c01462e6d0b96fe0b6955b7acc72782a1b22ff0f8da43af9f835e9cf"
     },
     {
       "path": "templates/install/memory/30-tech.md",
-      "bytes": 191,
-      "sha256": "a7ac1a323369efb38058dd4937a5cfec75f2978359ff92102b3825edc3e81a2f"
+      "bytes": 188,
+      "sha256": "0d42135761ae78a1fd47b856aedf1bc565b13a91795ca572cfd0e9e495a0182f"
     },
     {
       "path": "templates/install/memory/40-active.md",
-      "bytes": 172,
-      "sha256": "59755f966499ce6cf279340615b96d52a2a25a37b0818412d9c0dbbcb2423dc6"
+      "bytes": 169,
+      "sha256": "e191d1f09c7732c9cb91a3de29e3ec677bd63f90be110c75d9dc01a428bcf2e1"
     },
     {
       "path": "templates/install/memory/50-progress.md",
-      "bytes": 163,
-      "sha256": "fa8b813ad04420312e1540b1e191d008090dcece534ef9a7240652d8c7d6cdd5"
+      "bytes": 160,
+      "sha256": "3027838ac2702aa4945f6fd63d8ab892e3349f1a3007a84d22cfacb913f82a20"
     },
     {
       "path": "templates/install/memory/60-decisions.md",
-      "bytes": 185,
-      "sha256": "5bf94d3fa6202165bf7e40e32302488b7b327b71291e1a13a817f729c6fee6fd"
+      "bytes": 182,
+      "sha256": "706929a90398ee7c0f5b6ba49525571d658bbe89ebb298ef86404f0bb2a0b828"
     },
     {
       "path": "templates/install/memory/70-knowledge.md",
-      "bytes": 175,
-      "sha256": "314c59ba72d517a98db29eacf6ff5dd3bbd3a3d57e7f9746e10e8441809c7f2f"
+      "bytes": 172,
+      "sha256": "bdb7108628e71a187de0885b33c42ed4a243140716f89707e505888addfa30bc"
     },
     {
       "path": "templates/install/memory/80-feedback.md",
-      "bytes": 164,
-      "sha256": "2d0836e81f7c0545f7793b045cf312c338fd03bbb8a409f2e2163512ee4685c6"
+      "bytes": 161,
+      "sha256": "511c9973dd025d1e387981ca63b68c0639ed2cc75340d31a793bd5cde50a6f98"
     },
     {
       "path": "templates/project-skills/spec-harness-architecture.md",
-      "bytes": 2402,
-      "sha256": "6467c6118ef1b940f2ed316bc1e7112cf4698ea9ea339de47820f2eac9a4a05b"
+      "bytes": 2486,
+      "sha256": "b02d5d23f714df58621afba575cf9de5b6924a19c0cd9a2aece98e2855d8e79e"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-conduct.md",
+      "bytes": 2439,
+      "sha256": "8b78ad564d28ab6de4fb3568714394b2e5962f99a6a58001e0e80a8f5bbc86fb"
     },
     {
       "path": "templates/project-skills/spec-harness-packages.md",
-      "bytes": 2500,
-      "sha256": "db12b8aa54af35eae9c6fa6b707b1367392123f61196760c10968fdfab846143"
+      "bytes": 2584,
+      "sha256": "27f107b07a7c79f95a9a616c9cbbbbc86753c249c93593516ef7881d2621b110"
     },
     {
       "path": "templates/project-skills/spec-harness-performance.md",
-      "bytes": 2177,
-      "sha256": "f0c5ade9565cf43f717b002b86da4ca5bbc3e48e01bc48d39a036f5c0386d7e3"
+      "bytes": 2261,
+      "sha256": "6a8f5e5aa2448f4b06f2e0ddf1fc915d985434e0f808c155701b1a83b66f90c6"
+    },
+    {
+      "path": "templates/project-skills/spec-harness-quality.md",
+      "bytes": 2179,
+      "sha256": "3410367eb1889cedbd7f4e9da3ce26ec216363c0181b9c2afa055529bf5b8f9c"
     },
     {
       "path": "templates/project-skills/spec-harness-tech.md",
-      "bytes": 2483,
-      "sha256": "d2c16e7a9cf2c3d1681d6b3c805ca5571c98c1e96fb624788221938a054a385d"
+      "bytes": 2561,
+      "sha256": "ed560edca6a3196d9f4b8b8264a5e022270914534f49c43a82613cc454445bac"
     },
     {
       "path": "templates/workflows/EXAMPLE.md",
-      "bytes": 2573,
-      "sha256": "a248ee193f87038661f7a4449a812fa15478caeb261707a04cc87556261abdb5"
+      "bytes": 2555,
+      "sha256": "442c790c293f1e6e5e7da0168daccfa49591bf680d128e53ddccef562561e8e7"
     },
     {
       "path": "templates/workflows/README.md",
-      "bytes": 4161,
-      "sha256": "c89407e88870a57d55e9c5c06093d839480bdf7e49b9484baf495f86919c5c10"
+      "bytes": 4146,
+      "sha256": "5231cb124d6c6f39d1fe83580b1c3e92f42ceb18ac72f2552c8a82756f4620e3"
+    },
+    {
+      "path": "tests/doctor-fixtures.sh",
+      "bytes": 6348,
+      "sha256": "bd27902324fbecaf41ed33ad643a5dcf0e6151850f350b21b06f9f5b8f28e87b"
+    },
+    {
+      "path": "tests/examples-smoke.sh",
+      "bytes": 2187,
+      "sha256": "3e3518dd719baea5ac4a768ef6417f93067a6dcc8f7bea5640e3fc938f95334e",
+      "executable": true
+    },
+    {
+      "path": "tests/finalize-fixtures.sh",
+      "bytes": 47778,
+      "sha256": "2f59e0fe419e2e597cbc1212a90c1e9d084e00d6f44f35e45e561c5360cd5fcf"
+    },
+    {
+      "path": "tests/fixtures/python-state/README.md",
+      "bytes": 461,
+      "sha256": "045b34ab5c985f06a686516e42e97ffc25fd6a011448edde8216469990c86a62"
+    },
+    {
+      "path": "tests/fixtures/python-state/manual-ticket/IMPLEMENTATION.md",
+      "bytes": 207,
+      "sha256": "2807642c1f9a15824e1e88a1d4dbf3f57b3b76f51975840fb64113df1b423ad4"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/.memory/30-tech.md",
+      "bytes": 150,
+      "sha256": "f3a6dfdfbd702999f9e04f8041db64f5de7c70dfdfde074742f22a8230a2e33b"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/.memory/40-active.md",
+      "bytes": 91,
+      "sha256": "ed0f3cf6499d7b373dbc86b74d6f41fc12433925b70244544004b83751e3f4fa"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/.memory/50-progress.md",
+      "bytes": 201,
+      "sha256": "fb58452b7c1b50dcff554f3d4519b4e1e15e687a1746aa2fb7dfbca158b34678"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/RULES.md",
+      "bytes": 116,
+      "sha256": "b919768a000f8136dc0f54bd8c7e54a472240cbf595d64a0a83a746d02bdf127"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/pyproject.toml",
+      "bytes": 58,
+      "sha256": "67c6f2b479a1a4db7b053aae53165097e30981d5a5dd0a4988d6b76deaac4162"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/reviewer.md",
+      "bytes": 33,
+      "sha256": "ed7775f93d8dac4a6c0c3e6596707ac0aabaf17308a6e7a11e300184077f9c6d"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/tester.md",
+      "bytes": 31,
+      "sha256": "863f5eabee8d0edfc9c443096052458403d6db9b013793a8e9e21adeb20d65f2"
+    },
+    {
+      "path": "tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/verifier.md",
+      "bytes": 33,
+      "sha256": "c7ad48726b1a7ab1e1453a8253b962c4b3906aeaaad3271d312758b7b9b33283"
     },
     {
       "path": "tests/index-fixtures.sh",
-      "bytes": 25185,
-      "sha256": "071c6ea5ea2b92d3f4c701b87b1dd955a61774d3a0227244448867f07007bd1a",
+      "bytes": 26899,
+      "sha256": "18fd819f067d71037513f57f959be8464a942a0b0668fa6f2c00b463714f9046",
       "executable": true
     },
     {
       "path": "tests/install-manifest-contract.sh",
-      "bytes": 10987,
-      "sha256": "89d042020d82e1cfba4cfee99b123c357b132d1094316652203e87838c709f4d",
+      "bytes": 12920,
+      "sha256": "649d3e74b783ca7b9ab89d4e45303999e9f306586f97b7d47a0f3da7cdf48663",
       "executable": true
     },
     {
       "path": "tests/installed-init-contract.sh",
-      "bytes": 4124,
-      "sha256": "88056456a0cab853b440ba9715626790e5c08528667b70f354d98d874eb07010",
+      "bytes": 4196,
+      "sha256": "9f5eebebaadcd4024e368d518ef795d67107f0be20676f882e1270c8c7c80dd5",
       "executable": true
     },
     {
       "path": "tests/installer-fixtures.sh",
-      "bytes": 15045,
-      "sha256": "d29063932630dcb1f93871fd2955b992e7ebf4b8931f086e46c6ac8d660313cb"
+      "bytes": 20908,
+      "sha256": "08a10e6f65cffb02bf4d7812e5245a91ccae277f7e001f2b26a175b123627d30"
+    },
+    {
+      "path": "tests/lib/portable.sh",
+      "bytes": 1809,
+      "sha256": "e1287f97c52eade8c15b1d5ad35ffbb12157df0d405c5c37cfa4924903706584"
+    },
+    {
+      "path": "tests/lib/ready_fixture.py",
+      "bytes": 4575,
+      "sha256": "bb045969a332a3a8b5f062c62ad21c6a2134f7b7ae4642092a5ea0bb93d5bba6"
     },
     {
       "path": "tests/portable-skills-contract.sh",
-      "bytes": 12495,
-      "sha256": "fff8f8c3fc69428bd06f12375efd0b20dec6c2fffd12fe995f95d0a0b49a2fc8",
+      "bytes": 15048,
+      "sha256": "ef423eb90e6eee12aeb41d699c76f84f3b76ce5a1fd3e5bab14ed71236f8f258",
       "executable": true
+    },
+    {
+      "path": "tests/python-isolation-fixtures.sh",
+      "bytes": 8479,
+      "sha256": "91752860bf64d1f2cd56881b173138f6ea3cd968d391e104aa6f0d7cf258f5fd"
+    },
+    {
+      "path": "tests/receipt-index-fixtures.sh",
+      "bytes": 13186,
+      "sha256": "2a5039f562c3bc5c0f2aa88f57bdf13ade47282a38318c79925bab57b8278d08"
+    },
+    {
+      "path": "tests/run-all.sh",
+      "bytes": 2162,
+      "sha256": "dbfd5457d64139975bd80de0f0617ef8767de3b86f31393bfd3b248864471759",
+      "executable": true
+    },
+    {
+      "path": "tests/run-state-fixtures.sh",
+      "bytes": 8606,
+      "sha256": "98a606ebdb2a1bbc6e27ee9ffb72f2c55d49e646d15a154fff15377d097484b1",
+      "executable": true
+    },
+    {
+      "path": "tests/safe-read-fixtures.sh",
+      "bytes": 11902,
+      "sha256": "5517a0baff2df2dbe6323d7afe86377d387e28d83b1b963bff600773844dfe34"
     },
     {
       "path": "tests/sdd-fixtures.sh",
-      "bytes": 41200,
-      "sha256": "463ebdce57e09ac327d9aaab9587266b4b429090a0fd2f6e9a36a4ad4e3d08e2"
+      "bytes": 45700,
+      "sha256": "8d0ac8c9e37d207d59ec60853850b991962208aefc00e6f91188796ba24e31eb"
+    },
+    {
+      "path": "tests/sdd-rule-carriers.sh",
+      "bytes": 3162,
+      "sha256": "c1d4ad66191ba19afc28957928183e398c01c1a185a0504e72af8aa17d2c86f0"
     },
     {
       "path": "tests/synthesis-contract.sh",
-      "bytes": 27355,
-      "sha256": "2968cdff7f4f32a6c2082dfb66b9b4b2416f292208d35bc2cd7d440ee574db96",
+      "bytes": 37468,
+      "sha256": "8321fdfd8b3c4844d3aefa492d9f251e8f9abf3297513583c1217fdd3ff678e2",
       "executable": true
+    },
+    {
+      "path": "tests/tools/update-install-manifest.sh",
+      "bytes": 2377,
+      "sha256": "88b3229f72bf0b4b08fd7187a69746716061f1b15fac84eb7195f08470e42872",
+      "executable": true
+    },
+    {
+      "path": "tests/update-fixtures.sh",
+      "bytes": 20158,
+      "sha256": "5217c1e19d9404990ef5aeecfaff7a7086d7d671cb2c5eb76f87cc5fc1b758c4"
     }
   ]
 }

@@ -1,4 +1,4 @@
-# Command: `sdd` — initialize the harness or execute one ticket
+# Command: `sdd`, initialize the harness or execute one ticket
 
 > One shared, model-led procedure for project initialization and ticket work. Claude's `/sdd`
 > command and the Codex `sdd` project skill are thin entrypoints to this file. Shell commands only
@@ -20,10 +20,10 @@ project-specific role and skill paths. Do not maintain a second copy of those ge
 
 ## 1. Check the route and project state
 
-For `init`, follow `.claude/commands/spec-harness/init.md`,
+For `init`, first open `learning_human.html` for the user as `init.md` describes, then follow `.claude/commands/spec-harness/init.md`,
 `.claude/commands/spec-harness/rules.md` and
 `.claude/commands/spec-harness/generate-agents.md`: inventory the target, preserve its policy,
-derive package-scoped rules, the three core project skills and a skill per major technology, then bind the core roles. Run
+derive package-scoped rules, the core project skills (five on first initialisation) and a skill per major technology, then bind the core roles. Run
 `spec-harness index "$PWD"` before synthesis and
 `spec-harness generate-agents --check "$PWD"` after it. That result proves structure and
 provenance only. A separate fresh reviewer must accept the cited claims before overall
@@ -31,14 +31,14 @@ initialization is READY. Missing evidence or an unavailable reviewer leaves it P
 `spec-harness` is not on `PATH`, run the same subcommand through
 `npx -y github:chohra-med/spec-harness-oss <subcommand> ...`. If neither is available, report that limitation and keep initialization PENDING. If `init` also carries optional ticket text or a connected reference, continue through input resolution and the ticket steps after initialization. If no optional ticket is present, complete the initialization gates and return; init-only work does not request ticket content or classify a ticket.
 
-Initialization reads project rules, structure, manifests/lockfiles, representative source and project-local installed skills before selecting reusable methods. The four portable method owners at `.claude/commands/spec-harness/{ponytail,grill-me,package-finder,skill-finder}.md` are usable before synthesis or a feature goal exists. Keep the project-specific outputs and schema-1 receipt unchanged.
+Initialization reads project rules, structure, manifests/lockfiles, representative source and project-local installed skills before selecting reusable methods. The portable method owners at `.claude/commands/spec-harness/{ponytail,grill-me,package-finder,skill-finder,conventions,technology-profiles}.md` are usable before synthesis or a feature goal exists. Receipt schemas 1 and 2 keep their meaning and are not asked for a policy ledger; schema 3 adds the ledger (`policy_sources` and `policy_coverage`; RFC 0003 in the Spec Harness repository).
 
 For ticket work, record the current source state before planning:
 
 - Git source: `git rev-parse HEAD` and SHA-256 of the exact `git diff --binary HEAD` bytes. MICRO records `HEAD` only.
 - Non-Git source: mark Git state unavailable and hash the relevant files and rule inputs.
 - Record the applicable rule paths and hashes. Read the target's `AGENTS.md`, `RULES.md`,
-  `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, `.cursor/rules/`, `.Codex/` and README, following
+  `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, `.cursor/rules/`, `.agents/` and README, following
   their startup instructions. Load only the package/source evidence needed for this ticket.
 - Read `.claude/agents/.init-synthesis.json` and validate it with
   `spec-harness generate-agents --check "$PWD"`. Use only role and skill paths named by the receipt.
@@ -181,6 +181,12 @@ relevant. Record evidence, selected/excluded candidates and unavailable capabili
 keep affected decisions PENDING when required evidence is unavailable. These method owners define
 the procedures; this shared route records their outcomes and does not duplicate their ladders.
 
+For LITE and FULL, also ground any branch, commit, pull-request or task-splitting choice in
+`.claude/commands/spec-harness/conventions.md`, and stop at the Grill Me checkpoint described in
+`.claude/commands/spec-harness/plan.md`: the owner approves the plan (recorded in the run state's
+`checkpoint`, with the SHA-256 of the approved `plan.md`) before the implementer starts. Without that
+approval the run stays PENDING.
+
 ## 5. Pin a feature-owned packet
 
 Choose a filesystem-safe feature slug. If `specs/<feature>/` already exists, inspect it and stop on
@@ -239,6 +245,8 @@ section 3. For LITE and FULL the minimum order is:
 5. A third fresh bound reviewer checks the changed files against the accepted spec, rules, scope,
    and test evidence; record findings and revision identity in `gates/reviewer.md`.
 
+The reviewer also applies Ponytail to LITE and FULL tickets: it checks the plan's Ponytail receipt and labels each finding `NEEDED` or `ADDITION`, and only `NEEDED` findings can produce `REQUEST-CHANGES`. The definitions of both labels are in the bound `sdd-reviewer` role file.
+
 The implementer cannot write its own acceptance result. A fresh `sdd-verifier` remains mandatory for
 MICRO, LITE and FULL and checks every literal criterion in the accepted feature goal. Tester, verifier
 and reviewer answer distinct questions. Reuse a prior manual gate receipt only when its recorded exact
@@ -274,6 +282,15 @@ including MICRO. It follows
 `.claude/commands/spec-harness/learn.md`: it captures the signal, proposes one change to one rule or
 project skill, and applies it only after the project's review authority approves. A clean ticket with
 no correction and no new decision skips this stage.
+
+## Resumable run state
+
+A ticket run records its stage in `.spec-harness/runs/<ticket>/run-state.json` (schema in
+`docs/RUN-STATE.md`). Write it when a stage completes, not before: the spec path, the plan path, the
+checkpoint approver with the plan's SHA-256, the reviewer verdict with `context: fresh`, and the test
+command with its result. Before resuming, run `spec-harness run-state --check <ticket>` and resume only
+from the stage it reports. A state that skips a stage, or whose plan changed after approval, is not
+resumable: take the approval again.
 
 ## Output
 

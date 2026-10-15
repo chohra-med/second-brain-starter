@@ -1,4 +1,4 @@
-# Command: `migrate` — inventory an existing repository
+# Command: `migrate`, inventory an existing repository
 
 > Migration starts with bounded read-only inventory. It does not derive architecture from a path
 > list or write README files into product source.
@@ -6,7 +6,7 @@
 ## Invocation
 
 ```text
-spec-harness index <target>
+spec-harness index <target>   # with no install: npx -y github:chohra-med/spec-harness-oss index <target>
 /sdd init
 ```
 

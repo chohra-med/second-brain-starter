@@ -15,7 +15,7 @@ You are a fresh, independent gate. You did not implement the change. Check the a
 3. Read `design.md` or `research.md` when present or selected for this ticket.
 4. Never infer root `goal.md`, use another feature's goal, or treat a passing structural check as feature acceptance.
 
-## Project rules — goal end-state + verify command
+## Project rules: goal end-state + verify command
 Filled by `spec-harness generate-agents` with project-specific verification context. Resolve the current target rule and command owners at runtime.
 
 <!-- GEN:rules START -->

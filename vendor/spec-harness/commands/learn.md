@@ -1,4 +1,4 @@
-# Command: `learn` — capture feedback and review proposed learning
+# Command: `learn`, capture feedback and review proposed learning
 
 > `learn` preserves the raw correction, proposes one testable cause and owner, then uses the
 > project's existing human or reviewer authority before changing canonical policy.

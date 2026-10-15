@@ -130,7 +130,7 @@ async function writeHarnessManifest(w) {
 
 // A synthetic workspace: an installed hub (real applyInstall), a plain repo directory and a
 // source root with a template manifest plus a synthetic harness. Everything is a mkdtemp path.
-async function world(t, { harness = true } = {}) {
+async function world(t, { harness = true, index = false } = {}) {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const w = { root, sourceRoot: path.join(root, 'source'), hub: path.join(root, 'hub'), repo: path.join(root, 'my-repo') };
@@ -142,10 +142,12 @@ async function world(t, { harness = true } = {}) {
     ['Home.md', `# Home ${nonce}\n`],
     ['01-Projects/README.md', `# Projects ${nonce}\n`],
     ...PROJECT_FILES.map((file) => [`03-Resources/_templates/project/${file}`, `# project template ${file} ${nonce}\n`]),
+    // v1.4.0 workspaces also manage the project index seed; older ones (the default here) do not.
+    ...(index ? [['01-Projects/Index.md', `# Project index ${nonce}\n\n| Project | Record map | Source location | Status |\n| --- | --- | --- | --- |\n| Selected-Project | [s](Selected-Project/README.md) | none | Active |\n`]] : []),
   ];
   for (const [destination, text] of templates) {
     await put(w.sourceRoot, `template/${destination}`, text);
-    entries.push({ source: `template/${destination}`, destination, sha256: digestOf(text), mergeKind: 'managed-file' });
+    entries.push({ source: `template/${destination}`, destination, sha256: digestOf(text), mergeKind: destination === '01-Projects/Index.md' ? 'seed-file' : 'managed-file' });
   }
   w.manifest = { schemaVersion: 1, metadata: { templateVersion: '1.2.0' }, entries };
   w.manifestBytes = Buffer.from(JSON.stringify(w.manifest));
@@ -900,7 +902,8 @@ test('apply: creates exactly the planned set in both roots, never touches instal
   assert.equal(connections.connections[result.connectionId].stage, 'STAGED');
 
   const receipt = JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8'));
-  assert.deepEqual(Object.keys(receipt).sort(), ['connectionsPreimage', 'createdDirectories', 'detection', 'harness', 'hub', 'name', 'operation', 'planDigest', 'receiptId', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
+  assert.deepEqual(Object.keys(receipt).sort(), ['connectionsPreimage', 'createdDirectories', 'detection', 'harness', 'hub', 'indexRow', 'name', 'operation', 'planDigest', 'receiptId', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
+  assert.equal(receipt.indexRow, null, 'a workspace that does not manage the project index gets no row');
   assert.equal(receipt.operation, 'connect');
   assert.equal(receipt.receiptId, result.receiptId);
   assert.equal(receipt.repo, w.repo);
@@ -1812,12 +1815,14 @@ test('a SIGKILL against the REAL vendored harness at the spread of positions (re
   const repoFiles = plan.entries.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
   const hubDirs = plan.directories.filter((entry) => entry.root === 'hub' && entry.status === 'CREATE').length;
   const hubFiles = plan.entries.filter((entry) => entry.root === 'hub' && entry.kind === 'file' && entry.status === 'CREATE').length;
-  const total = 1 + repoDirs + repoFiles + hubDirs + hubFiles + 3;
-  const positions = [2, 1 + repoDirs + 1, 1 + repoDirs + Math.floor(repoFiles / 2), 1 + repoDirs + repoFiles, 1 + repoDirs + repoFiles + hubDirs + 1, total - 2, total - 1, total];
+  // One more durable write, the project index row, between the hub files and the connections state.
+  assert.ok(plan.indexRow, 'a current workspace manages the project index, so connect adds its row');
+  const total = 1 + repoDirs + repoFiles + hubDirs + hubFiles + 1 + 3;
+  const positions = [2, 1 + repoDirs + 1, 1 + repoDirs + Math.floor(repoFiles / 2), 1 + repoDirs + repoFiles, 1 + repoDirs + repoFiles + hubDirs + 1, total - 3, total - 2, total - 1, total];
   const note = [];
   for (const kill of positions) await killProbe(w, kill, before, plan, note);
   t.diagnostic(note.join('\n'));
-  assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', 'file', 'file', 'state', 'receipt', 'pending-clear']);
+  assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', 'file', 'file', 'index', 'state', 'receipt', 'pending-clear']);
 });
 
 test('a recovery that is itself killed at ANY step can be run again until it finishes, with no residue (T05-2)', async (t) => {
@@ -2141,7 +2146,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
     if (mid <= 3 || kills % 10 === 0) {
       const fresh = await connectNow(w);
-      assert.equal(treeFiles((await snap(w)).repo).length, 84, 'a fresh connect stages exactly the 84 harness files');
+      assert.equal(treeFiles((await snap(w)).repo).length, 95, 'a fresh connect stages exactly the 95 harness files of Spec Harness 0.4.0');
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before);
     }
@@ -2221,7 +2226,7 @@ async function settleAfterKill(w, before, initId) {
   assert.equal(connected.length, 1, `one connection at most, saw ${connected.join(', ')}`);
   const [id] = connected;
   assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
-  assert.equal(treeFiles(after.repo).length, 84, 'the connection is fully present with all 84 staged files');
+  assert.equal(treeFiles(after.repo).length, 95, 'the connection is fully present with all 95 staged files');
   await assertReceiptFilesPresent(w, id);
   assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
   await rollbackReceipt({ targetPath: w.hub, receiptId: id });
@@ -2533,7 +2538,14 @@ test('cross-check: the vendored bash installer and applyConnect produce the same
   await connectNow(w, { name });
   const bash = await treeInventory(reference);
   const ours = await treeInventory(w.repo);
-  assert.deepEqual(ours, bash, 'diff -r equivalent: same files, same bytes, same directories');
+  // Spec Harness 0.4.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
+  // later three-way updates). connect writes no such record: its plan is the approved, digest-bound set and it writes nothing
+  // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly.
+  const isRecord = (key) => key === '.spec-harness' || key.startsWith('.spec-harness/');
+  assert.ok(Object.keys(bash).some(isRecord), 'control: the bash installer writes its .spec-harness/ install record');
+  assert.equal(Object.keys(ours).some(isRecord), false, 'connect writes no .spec-harness/ install record');
+  const bashWithoutRecord = Object.fromEntries(Object.entries(bash).filter(([key]) => !isRecord(key)));
+  assert.deepEqual(ours, bashWithoutRecord, 'diff -r equivalent outside .spec-harness/: same files, same bytes, same directories');
   assert.ok(((await lstat(path.join(reference, 'loop.sh'))).mode & 0o111) !== 0, 'bash installer stages loop.sh executable');
   assert.equal((await lstat(rel(w.repo, 'loop.sh'))).mode & 0o111, 0, 'connect stages loop.sh without the executable bit (documented, D3-c)');
 });
@@ -2577,4 +2589,115 @@ test('the engine has no child_process, network or git invocation (positive contr
   for (const name of names) {
     assert.ok(!FORBIDDEN_ENGINE_PATTERN.test(await readFile(path.join(lib, name), 'utf8')), `${name} must not shell out or use the network`);
   }
+});
+
+
+// ---------------------------------------------------------------------------
+// The project index row
+// ---------------------------------------------------------------------------
+
+const INDEX = '01-Projects/Index.md';
+const rowLines = (text) => text.split('\n').filter((line) => line.startsWith('| my-repo |'));
+
+test('index: connect adds exactly one row inside the table, and rollback removes only that row, keeping hand edits', async (t) => {
+  const w = await world(t, { index: true });
+  const original = await readFile(rel(w.hub, INDEX), 'utf8');
+  const plan = await planConnect(args(w));
+  const entry = plan.entries.find((item) => item.destination === INDEX);
+  assert.equal(entry.status, 'APPEND');
+  assert.equal(entry.undo.action, 'remove-row');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  const connected = await readFile(rel(w.hub, INDEX), 'utf8');
+  assert.equal(rowLines(connected).length, 1);
+  assert.equal(rowLines(connected)[0], '| my-repo | [my-repo/README.md](<my-repo/README.md>) | [Connection.md](<my-repo/Connection.md>) | Connected: STAGED |');
+  const lines = connected.split('\n');
+  assert.ok(lines[lines.indexOf(rowLines(connected)[0]) - 1].startsWith('|'), 'the row sits inside the table');
+  // A later hand edit elsewhere in the index survives the rollback.
+  const edited = `${connected}\nMy own note under the table.\n`;
+  await writeFile(rel(w.hub, INDEX), edited);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  const after = await readFile(rel(w.hub, INDEX), 'utf8');
+  assert.equal(rowLines(after).length, 0);
+  assert.equal(after, `${original}\nMy own note under the table.\n`);
+});
+
+test('index: a hand-edited index keeps every line; a project already listed is not listed twice', async (t) => {
+  const w = await world(t, { index: true });
+  const custom = '# My index\n\n| Project | Record map | Source location | Status |\n| --- | --- | --- | --- |\n| Notes | [n](Notes/README.md) | none | Active |\n\nText after the table.\n';
+  await writeFile(rel(w.hub, INDEX), custom);
+  const plan = await planConnect(args(w));
+  await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  const after = await readFile(rel(w.hub, INDEX), 'utf8');
+  assert.equal(after, custom.replace('| Notes | [n](Notes/README.md) | none | Active |\n', `| Notes | [n](Notes/README.md) | none | Active |\n${plan.indexRow.row}\n`));
+
+  const w2 = await world(t, { index: true });
+  await writeFile(rel(w2.hub, INDEX), `${await readFile(rel(w2.hub, INDEX), 'utf8')}| my-repo | listed by hand | elsewhere | Active |\n`);
+  const listed = await planConnect(args(w2));
+  assert.equal(listed.entries.find((item) => item.destination === INDEX).status, 'LISTED');
+  assert.equal(listed.indexRow, null);
+  const before = await readFile(rel(w2.hub, INDEX));
+  const applied = await applyConnect({ ...args(w2), approvedDigest: listed.digest });
+  assert.deepEqual(await readFile(rel(w2.hub, INDEX)), before, 'a listed project is left as the person wrote it');
+  await rollbackReceipt({ targetPath: w2.hub, receiptId: applied.receiptId });
+  assert.deepEqual(await readFile(rel(w2.hub, INDEX)), before);
+});
+
+test('index: a deleted index is created with the seed table and the row, and rollback removes the file it created', async (t) => {
+  const w = await world(t, { index: true });
+  await rm(rel(w.hub, INDEX));
+  const plan = await planConnect(args(w));
+  assert.equal(plan.entries.find((item) => item.destination === INDEX).status, 'CREATE');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(rowLines(await readFile(rel(w.hub, INDEX), 'utf8')).length, 1);
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  await assert.rejects(readFile(rel(w.hub, INDEX)), { code: 'ENOENT' });
+});
+
+test('index: rollback refuses a row that now appears twice, and an interrupted connect removes its row on recovery', async (t) => {
+  const w = await world(t, { index: true });
+  const plan = await planConnect(args(w));
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  const doubled = `${await readFile(rel(w.hub, INDEX), 'utf8')}${plan.indexRow.row}\n`;
+  await writeFile(rel(w.hub, INDEX), doubled);
+  await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
+  assert.equal(await readFile(rel(w.hub, INDEX), 'utf8'), doubled, 'nothing was removed');
+
+  const w2 = await world(t, { index: true });
+  const original = await readFile(rel(w2.hub, INDEX));
+  const plan2 = await planConnect(args(w2));
+  const durable = plan2.directories.filter((entry) => entry.status === 'CREATE').length + plan2.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length;
+  // Fail right after the index write: the undo of the failed apply removes the row again.
+  await assert.rejects(applyConnect({ ...args(w2), approvedDigest: plan2.digest, injectFailureAfterWrite: 1 + durable + 1 }), (error) => error.code === 'INJECTED_WRITE_FAILURE');
+  assert.deepEqual(await readFile(rel(w2.hub, INDEX)), original);
+});
+
+test('index: a v1.3.0 connect receipt without indexRow still rolls back', async (t) => {
+  const w = await world(t, { index: true });
+  await writeFile(rel(w.hub, INDEX), '# no table here\n');
+  const plan = await planConnect(args(w));
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  const receiptPath = rel(w.hub, result.receiptPath);
+  const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+  delete receipt.indexRow;
+  await writeFile(receiptPath, JSON.stringify(receipt));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  // Without the record, the row this connect added is not known to the undo, so it stays: that is the v1.3.0 contract.
+  assert.match(await readFile(rel(w.hub, INDEX), 'utf8'), /^\| my-repo \|/m);
+});
+
+test('index: the row links Connection.md and never stores the repository path', async (t) => {
+  const w = await world(t, { index: true });
+  await connectNow(w);
+  const index = await readFile(rel(w.hub, INDEX), 'utf8');
+  // The repository path comes from what connect recorded, not from this test's own variable.
+  const recorded = JSON.parse(await readFile(rel(w.hub, CONNECTIONS), 'utf8'));
+  const [record] = Object.values(recorded.connections);
+  assert.ok(path.isAbsolute(record.repo), 'connect recorded an absolute repository path');
+  const recordedReal = await realpath(record.repo);
+  const [row] = rowLines(index);
+  assert.ok(row, 'the index has the connected row');
+  assert.ok(!index.includes(record.repo), 'Index.md does not contain the recorded repository path');
+  assert.ok(!index.includes(recordedReal), 'Index.md does not contain the repository realpath');
+  assert.ok(!/\/(Users|home)\//.test(row), 'the new row holds no home-folder path');
+  assert.equal(row, '| my-repo | [my-repo/README.md](<my-repo/README.md>) | [Connection.md](<my-repo/Connection.md>) | Connected: STAGED |');
 });

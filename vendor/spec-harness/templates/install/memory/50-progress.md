@@ -1,4 +1,4 @@
-# 50-progress — {{PROJECT_NAME}}
+# 50-progress: {{PROJECT_NAME}}
 
 > Tier: Hot. dated progress log
 
