@@ -70,6 +70,68 @@ if [[ -f "$HARNESS_DIR/commands/sdd.md" ]]; then
   done
 fi
 
+# Dirty-tree rule (commands/sdd.md section 3), its init sentences (commands/init.md, Output) and the verifier
+# clause (agents/sdd-verifier.md). Each sentence is matched on whitespace-flattened text. A planted run replaces
+# one sentence in memory and must report it missing: a check that cannot fail is not evidence.
+RULE_LABELS=(
+  "class-first dirty-tree check"
+  "MICRO stops on other uncommitted paths"
+  "sdd: pre-init baseline before init's first write"
+  "sdd: same-run init paths exempt only when absent from the baseline"
+  "same-run init paths exempt from the verifier"
+  "recorded path changed further still fails"
+  "init: pre-init baseline before the first write"
+  "init: same-run paths exempt"
+  "init: later run still stops MICRO"
+  "verifier: baseline clause"
+  "verifier: hash clause"
+  "verifier: absent clause"
+  "verifier: baseline path fails"
+  "sdd: MICRO route never asks Grill Me"
+  "sdd: Grill Me for LITE only"
+)
+dirty_rule_missing() { # [SDD_FILE] [INIT_FILE] [VERIFIER_FILE]: prints "MISSING: <label>" per absent sentence
+  python3 -I -B - "${1:-$HARNESS_DIR/commands/sdd.md}" "${2:-$HARNESS_DIR/commands/init.md}" "${3:-$HARNESS_DIR/agents/sdd-verifier.md}" <<'PYDIRTY'
+import os, sys
+def flat(path):
+    return " ".join(open(path, encoding="utf-8").read().split())
+texts = {"sdd": flat(sys.argv[1]), "init": flat(sys.argv[2]), "verifier": flat(sys.argv[3])}
+plant = os.environ.get("PLANT_RULE", "")
+RULES = [
+    ("sdd", "class-first dirty-tree check", "Uncommitted changes, checked once the class is recorded."),
+    ("sdd", "MICRO stops on other uncommitted paths", "Any other listed path stops a MICRO run with `PENDING: uncommitted changes; commit or stash them first`"),
+    ("sdd", "sdd: pre-init baseline before init's first write", "record `git status --porcelain --untracked-files=all` as the pre-init baseline before init's first write"),
+    ("sdd", "sdd: same-run init paths exempt only when absent from the baseline", "Only the paths that `init` wrote in the same run are exempt, and only those that are absent from the pre-init baseline (section 1)."),
+    ("sdd", "same-run init paths exempt from the verifier", 'Pre-ticket paths that `ticket.md` records from same-run `init` output are exempt from the "changed path it did not expect" check'),
+    ("sdd", "recorded path changed further still fails", "A recorded path changed further than its recorded state fails"),
+    ("init", "init: pre-init baseline before the first write", "the ticket takes a pre-init baseline (`git status --porcelain --untracked-files=all`) before init's first write"),
+    ("init", "init: same-run paths exempt", "only the paths `init` wrote that are absent from that baseline, and its verifier exempts them"),
+    ("init", "init: later run still stops MICRO", "When the ticket is a later run, uncommitted init output still makes a MICRO ticket stop"),
+    ("verifier", "verifier: baseline clause", "Only the paths `init` wrote are exempt, those absent from the pre-init baseline."),
+    ("verifier", "verifier: hash clause", "An exempt path stays exempt only while its current SHA-256 still equals its recorded hash"),
+    ("verifier", "verifier: baseline path fails", "An exempt path that `ticket.md` records in the pre-init baseline fails."),
+    ("sdd", "sdd: MICRO route never asks Grill Me", "a MICRO route never asks Grill Me, whatever the block says"),
+    ("sdd", "sdd: Grill Me for LITE only", "and the Grill Me method owner for LITE only (MICRO never asks Grill Me)"),
+    ("verifier", "verifier: absent clause", "a path recorded as `absent` (deleted) stays exempt only while it is still absent"),
+]
+for key, label, needle in RULES:
+    text = texts[key]
+    if label == plant:
+        text = text.replace(needle, "[planted omission]")
+    if needle not in text:
+        print("MISSING: " + label)
+PYDIRTY
+}
+rule_missing="$(dirty_rule_missing)"; rule_status=$?
+if [[ "$rule_status" -ne 0 ]]; then
+  fail "dirty-tree rule check could not read its sources (python exit $rule_status)"
+elif [[ -z "$rule_missing" ]]; then pass "dirty-tree rule, init sentences and verifier clause are in the real text"; else fail "dirty-tree rule text: ${rule_missing//$'\n'/; }"; fi
+for label in "${RULE_LABELS[@]}"; do
+  planted="$(PLANT_RULE="$label" dirty_rule_missing)"; planted_status=$?
+  if [[ "$planted_status" -ne 0 ]]; then fail "planted break could not run: $label (python exit $planted_status)"; continue; fi
+  if [[ "$planted" == *"MISSING: $label"* ]]; then pass "planted break caught: $label"; else fail "planted break not caught: $label"; fi
+done
+
 if [[ -f "$HARNESS_DIR/commands/sdd.md" && -f "$HARNESS_DIR/commands/build.md" ]]; then
   if ! python3 -I -B - "$HARNESS_DIR/commands/sdd.md" "$HARNESS_DIR/commands/build.md" <<'PYCONTRACT'
 from pathlib import Path
@@ -482,6 +544,16 @@ def tier_contract(text, owns_table=False):
         )
     return result
 
+def size_tier_contract(text):
+    """The size table names each class's tiers; the MICRO acceptance verifier runs on the fast tier."""
+    micro_rows = [l for l in text.splitlines() if l.startswith("| MICRO |")]
+    return "### Size picks the tiers" in text and len(micro_rows) == 1 and micro_rows[0].endswith("| one fresh verifier on the fast tier |")
+
+def micro_stage_contract(text):
+    """The MICRO light route's Two stages bullet dispatches its one verifier on the fast tier."""
+    start, end = text.find("- **Two stages.**"), text.find("- **Still required.**")
+    return start >= 0 and end > start and "`sdd-verifier`, dispatched on the fast tier" in text[start:end]
+
 LIGHT_ROUTE = (
     "### MICRO light route", "specs/<feature>/ticket.md", "not record file or diff hashes",
     "No separate tester, reviewer, planner", "is not the implementer's",
@@ -515,7 +587,7 @@ def learner_contract(d):
 
 TIER_ROLES = {
     "strong": ("planner", "merger"),
-    "fast": ("implementer", "tester", "researcher", "documenter"),
+    "fast": ("implementer", "tester", "researcher", "documenter", "router"),
     "review": ("verifier", "reviewer", "architect", "learner", "design-verifier", "workflow-tester"),
 }
 
@@ -552,6 +624,10 @@ for label, result in checks.items():
     require(result, label)
 require(all(x in d["sdd"] for x in ("specs/<feature>/input.md", "specs/<feature>/goal.md", "specs/<feature>/plan.md", "specs/<feature>/tasks.md")), "shared route aligns with ticket packet")
 require(tier_contract(d["sdd"], owns_table=True), "shared route owns the single model-tier table and its rules")
+require(size_tier_contract(d["sdd"]), "size table pins the tiers per class and MICRO acceptance on the fast tier")
+require(not size_tier_contract(d["sdd"].replace("| one fresh verifier on the fast tier |", "| one fresh verifier on the review tier |")), "RED control: MICRO verifier moved back to the review tier")
+require(micro_stage_contract(d["sdd"]), "MICRO light route dispatches its one verifier on the fast tier")
+require(not micro_stage_contract(d["sdd"].replace("`sdd-verifier`, dispatched on the fast tier", "`sdd-verifier`, dispatched on the review tier")), "RED control: Two stages bullet flipped back to the review tier")
 require(tier_contract(d["plan"]), "plan route asks for tiers and names no model")
 models = role_models(root)
 require(frontmatter_matches_table(d["sdd"], models), "role frontmatter matches the Claude column of the tier table")

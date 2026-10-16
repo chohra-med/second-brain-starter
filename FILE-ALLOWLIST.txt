@@ -157,6 +157,7 @@ vendor/spec-harness/agents/sdd-merger.md
 vendor/spec-harness/agents/sdd-planner.md
 vendor/spec-harness/agents/sdd-researcher.md
 vendor/spec-harness/agents/sdd-reviewer.md
+vendor/spec-harness/agents/sdd-router.md
 vendor/spec-harness/agents/sdd-tester.md
 vendor/spec-harness/agents/sdd-verifier.md
 vendor/spec-harness/agents/sdd-workflow-tester.md
@@ -287,6 +288,8 @@ vendor/spec-harness/tests/lib/ready_fixture.py
 vendor/spec-harness/tests/portable-skills-contract.sh
 vendor/spec-harness/tests/python-isolation-fixtures.sh
 vendor/spec-harness/tests/receipt-index-fixtures.sh
+vendor/spec-harness/tests/role-binding-messages.sh
+vendor/spec-harness/tests/router-contract.sh
 vendor/spec-harness/tests/run-all.sh
 vendor/spec-harness/tests/run-state-fixtures.sh
 vendor/spec-harness/tests/safe-read-fixtures.sh

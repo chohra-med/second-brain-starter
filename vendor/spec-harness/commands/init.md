@@ -61,3 +61,12 @@ The receipt checker can print `READY` for structural/provenance integrity while 
 ## Output
 
 Report the inventory source and completeness, every package path and rule file, every skill path, selected and excluded roles with reasons, citations, unsupported formats, exact readiness command/output, and any PENDING reasons. Do not claim a model dispatch occurred unless the current client confirms it.
+
+End by handing the init output to the user: show `git status` and the diff of what initialization
+wrote, and ask them to review and commit it (or tell you to) before the first ticket. Do not commit
+without that word. When `init` and a ticket run in the same invocation, the ticket takes a pre-init
+baseline (`git status --porcelain --untracked-files=all`) before init's first write. For a MICRO ticket, it records
+as present, with a SHA-256 of each, only the paths `init` wrote that are absent from that baseline, and its
+verifier exempts them (`commands/sdd.md` section 3). LITE and FULL record every listed path in `input.md`. A path already in the baseline is an ordinary
+uncommitted path. When the ticket is a later run, uncommitted init output still makes a MICRO ticket stop
+(`PENDING: uncommitted changes`), because its verifier fails on any path it did not expect.

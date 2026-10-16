@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Re-pins the vendored Spec Harness to `6c688183918c0e773772d23bf4b68c486ee79fb6`, the router and first-run fixes merged upstream as `311979a` (still 0.4.0 plus unreleased changes). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, and fixes two first-run blockers in `/sdd init`. A connect now stages 96 harness files instead of 95. The pin is the merged upstream commit, so no further re-pin is needed before release.
+
 ## v1.5.0 (2026-10-15)
 
 - Adds the shared skill `usage-dashboard`, installed to `.agents/skills/` and `.claude/skills/`. It is one script, `usage-dashboard.mjs`, that reads the Claude Code transcript files on this machine and prints, per session, the tokens used, an estimated cost at list prices, the peak context, and how often each skill and slash command was used. The skill is written for this repository, see [ATTRIBUTION.md](ATTRIBUTION.md).

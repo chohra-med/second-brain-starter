@@ -155,7 +155,7 @@ What lands in the repository:
 | Path | What it is |
 |---|---|
 | `.claude/commands/sdd.md`, `.claude/commands/spec-harness/` | the procedures |
-| `.claude/agents/sdd-*.md` | the twelve roles, next to any agents you already have |
+| `.claude/agents/sdd-*.md` | the thirteen roles, next to any agents you already have |
 | `.claude/skills/spec-harness*`, `.agents/skills/` | skill entry points for Claude Code and Codex |
 | `.memory/` | the project memory bank |
 | `ai_rules/`, `RULES.md`, `AGENTS.md`, `CLAUDE.md`, `constitution.md` | rules, only where you had none |
@@ -276,12 +276,14 @@ Pick a real, small, low-risk fix: one or two files and a test. Paste the full ti
 uses > where the rule is >=. Add a test for an order of exactly 50.00.
 ```
 
-A small fix is classed **MICRO** and takes the light route:
+A small model reads the ticket before it is classified and returns its route: the size, the model tier for each
+stage and the files to read first (`sdd-router`). A small fix is classed **MICRO** and takes the
+light route:
 
 1. The orchestrator writes one file, `specs/<feature>/ticket.md`, with the goal checks and the
    paths expected to change.
 2. A fast-tier **implementer** writes a failing test, then the fix.
-3. One **fresh verifier** on the review tier runs the tests, checks each goal line, reads the diff
+3. One **fresh verifier** on the fast tier runs the tests, checks each goal line, reads the diff
    and returns `RESULT: PASS` or `FAIL`.
 
 Nothing is committed, pushed or merged for you. Review the diff and commit it yourself, or say so
@@ -320,7 +322,7 @@ Roles ask for a tier. The mapping lives in one table in `.claude/commands/sdd.md
 | Tier | Roles | Model |
 |---|---|---|
 | strong | planner, merger | your provider's strongest |
-| fast | implementer, tester, researcher, documenter | a cheap, fast one |
+| fast | implementer, tester, researcher, documenter, router | a cheap, fast one; the router on its smallest |
 | review | verifier, reviewer, architect, learner | strong when the token budget allows, otherwise fast |
 
 To change it for your project or your provider, add a `Model tiers` table with the same columns to

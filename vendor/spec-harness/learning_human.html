@@ -466,9 +466,9 @@
     { k: "test", name: "Test", sub: "fast", cls: "n-box", micro: false, title: "A tester runs it and tries to break it",
       does: "A new agent runs the real test commands and adversarial cases. It reports what it observed and fixes nothing.",
       tier: "Fast", touch: "Runs commands, reads files", out: "Commands, outputs, pass or fail" },
-    { k: "verify", name: "Verify", sub: "review", cls: "n-focal", micro: true, title: "A verifier checks every line of the goal",
+    { k: "verify", name: "Verify", sub: "fast / review", cls: "n-focal", micro: true, title: "A verifier checks every line of the goal",
       does: "A different new agent checks each goal line with a real command or by reading the real file. This is the one gate that exists on every route, including the smallest fix.",
-      tier: "Review: strong when the budget allows, otherwise fast", touch: "Runs commands, reads files. Cannot edit.", out: "RESULT: PASS or FAIL, with evidence per line" },
+      tier: "Review: strong when the budget allows, otherwise fast. A MICRO ticket: fast.", touch: "Runs commands, reads files. Cannot edit.", out: "RESULT: PASS or FAIL, with evidence per line" },
     { k: "review", name: "Review", sub: "review", cls: "n-box", micro: false, title: "A reviewer reads the diff against your rules",
       does: "A third new agent reads the change for scope, your project rules and anything the tests would not catch.",
       tier: "Review", touch: "Reads the diff and the rules", out: "Findings, ranked" },
@@ -560,7 +560,7 @@
   /* 5. Layers */
   var LAYERS = [
     { k: "roles", idx: "L4", name: "Roles", path: ".claude/agents/sdd-*.md", cls: "", title: "Roles: who does what, with which tools",
-      text: "Twelve small files, one per job. Each lists the tools it may use. The core ones (planner, implementer, tester, verifier, reviewer) also carry a block of rules taken from your project. The verifier, for example, can run commands and read files but cannot edit.", read: "The agent, when it is dispatched in that role", yours: "Yes, after setup. They are plain markdown." },
+      text: "Thirteen small files, one per job. Each lists the tools it may use. The core ones (planner, implementer, tester, verifier, reviewer) also carry a block of rules taken from your project. The verifier, for example, can run commands and read files but cannot edit.", read: "The agent, when it is dispatched in that role", yours: "Yes, after setup. They are plain markdown." },
     { k: "proc", idx: "L3", name: "Procedures", path: ".claude/commands/sdd.md", cls: "", title: "Procedures: the workflow itself",
       text: "The steps for setup and for running a ticket, the three ticket sizes, the model tiers table, and what each gate must record. This is what /sdd runs.", read: "The orchestrating agent, at the start of every run", yours: "Only the model tiers, through your own AGENTS.md" },
     { k: "rules", idx: "L2", name: "Rules", path: "RULES.md · ai_rules/", cls: "focal", title: "Rules: what is true of this codebase",
