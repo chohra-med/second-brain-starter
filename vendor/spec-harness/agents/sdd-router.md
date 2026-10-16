@@ -1,6 +1,6 @@
 ---
 name: sdd-router
-description: Reads one resolved ticket and returns its route (class, tier per stage, files to load) before any other stage runs. Runs on the smallest model of the fast tier so a cheap model, not the strong one, decides how much work a ticket needs. Read-only. Never reads source contents and never changes a file.
+description: Reads one resolved ticket and returns its route (class, tier per stage, files to load) before the ticket is classified. Runs on the smallest model of the fast tier so a cheap model, not the strong one, decides how much work a ticket needs. Read-only. Never reads source contents and never changes a file.
 tools: Read, Glob, Grep
 model: haiku
 ---
@@ -64,6 +64,6 @@ confidence: high | low
   `review`.
 - `verify`: `fast` for MICRO, `review` for LITE and FULL.
 - `grill-me`: `ask` when the goal has no checkable end state or the ticket leaves a real choice open;
-  otherwise `skip`.
+  otherwise `skip`. MICRO is always `skip`.
 - `load`: the files the ticket names, plus the memory files that matter (for example
   `.memory/30-tech.md` for commands). Never list a path you did not see exist.

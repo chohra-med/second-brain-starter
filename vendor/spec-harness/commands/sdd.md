@@ -35,13 +35,12 @@ Initialization reads project rules, structure, manifests/lockfiles, representati
 
 For ticket work, record the current source state before planning:
 
-- **Uncommitted changes at the start.** Run `git status --porcelain --untracked-files=all`. For a
-  MICRO ticket, anything listed (uncommitted init output included) stops the run with `PENDING:
-  uncommitted changes; commit or stash them first` and the list: its single verifier fails on any
-  path it did not expect. For LITE and FULL, record the listed paths in `input.md` as present before
-  the ticket, so no gate attributes them to it. Do not commit or stash for the user.
-
-- Git source: `git rev-parse HEAD` and SHA-256 of the exact `git diff --binary HEAD` bytes. MICRO records `HEAD` only.
+- **Uncommitted changes.** When `init` carries the ticket, record `git status --porcelain --untracked-files=all`
+  as the pre-init baseline before init's first write. The check itself runs once the ticket class is
+  recorded, in section 3.
+- Git source: `git rev-parse HEAD` and SHA-256 of the exact `git diff --binary HEAD` bytes. MICRO records
+  `HEAD` only, plus the pre-init baseline (when `init` carried the ticket) and the pre-ticket path hashes
+  that section 3 requires.
 - Non-Git source: mark Git state unavailable and hash the relevant files and rule inputs.
 - Record the applicable rule paths and hashes. Read the target's `AGENTS.md`, `RULES.md`,
   `CONTRIBUTING.md`, `ai_rules/`, `.memory/`, `.cursor/rules/`, `.agents/` and README, following
@@ -157,7 +156,7 @@ complete classification before optional history, research or broad package recal
 fast-tier model, with the exact input. It reads startup rules and file names, never source contents,
 and returns a `## Route` block: class, reason, the tier for each stage, whether to ask Grill Me, and
 the files to load first. Copy that block into the class record (`ticket.md` for MICRO, `input.md`
-for LITE and FULL) and follow it:
+for LITE and FULL) and follow it (a MICRO route never asks Grill Me, whatever the block says):
 
 - **Raise, never lower.** Keep the router's class unless the input or the startup rules show a risk
   it missed; then raise it and record why. Nothing lowers a class below what the definitions below
@@ -182,6 +181,19 @@ For MICRO it then writes `ticket.md`, which records the class, and dispatches; b
 fast-tier implementer's job. For LITE it reads only what the inline plan needs and dispatches the
 planner only for material decisions.
 
+**Uncommitted changes, checked once the class is recorded.** Run
+`git status --porcelain --untracked-files=all` and record the listed paths. Only the paths that
+`init` wrote in the same run are exempt, and only those that are absent from the pre-init baseline
+(section 1). The ticket then records each exempt path as present before the ticket, with a SHA-256
+of its bytes (`absent` for a path that is deleted). It does not stop, because `init` still ends by
+asking the user to commit before the first ticket (`commands/init.md`, Output). A path already in
+the baseline is an ordinary uncommitted path, even when `init` also wrote to it. With no baseline,
+nothing is exempt. Any other listed path stops a MICRO run with
+`PENDING: uncommitted changes; commit or stash them first` and the list, because its single verifier
+fails on any path it did not expect. For LITE and FULL, record every listed path (the baseline's and
+`init`'s) in `input.md` as present before the ticket, so no gate attributes them to it. Do not
+commit or stash for the user.
+
 Record the class and reason in the packet. Every class retains exact input provenance, a literal
 goal, source identity, the applicable rules and independent acceptance. LITE and FULL also keep an
 accepted `spec.md`/`goal.md`, rule paths and hashes, and declared dependencies. LITE may keep concise inline intent in the existing `plan.md` and `tasks.md` and skip a
@@ -200,18 +212,25 @@ MICRO.
 - **One file.** Before implementation the orchestrator writes `specs/<feature>/ticket.md` with the
   exact input, one to five literal goal checks, the starting `git rev-parse HEAD` and the paths
   expected to change. Do not create `spec.md`, `goal.md`, `plan.md`, `tasks.md` or `gates/`, and do
-  not record file or diff hashes. The implementer never edits `ticket.md`. Only the orchestrator does.
+  not record file or diff hashes, except the pre-init baseline and the pre-ticket hashes for same-run
+  `init` output that section 3 requires. The implementer never edits `ticket.md`. Only the orchestrator does.
 - **Two stages.** The fast-tier implementer makes the change with a test that fails first. Then one
   fresh `sdd-verifier`, dispatched on the fast tier, receives the goal checks and expected paths in its
   dispatch, together with the `ticket.md` path. It is not the implementer's context. It runs on the
   tester's model from the `Model tiers` table: where that table gives the fast tier a separate tester
   model, the verifier's model differs from the implementer's, and where the fast tier has one model for
   every role, a fresh context on that model is accepted for MICRO and the user can ask for the review
-  tier. It runs the project's test command, checks every goal line and
-  reads the diff against the applicable rules. It returns FAIL when the goal checks in `ticket.md`
-  differ from the dispatched ones, or when `git diff --name-only <starting HEAD>` on the working tree or
-  `git status --porcelain --untracked-files=all` lists a path outside the expected ones and `ticket.md` itself. It returns `RESULT: PASS|FAIL` with its evidence, and the
-  orchestrator copies that return unchanged into `ticket.md`. No separate tester, reviewer, planner
+  tier. It runs the project's test command, checks every goal line and reads the diff against the
+  applicable rules. It returns FAIL when the goal checks in `ticket.md` differ from the dispatched ones,
+  or when `git diff --name-only <starting HEAD>` on the working tree or `git status --porcelain
+  --untracked-files=all` lists a path outside the expected ones and `ticket.md` itself. Pre-ticket paths
+  that `ticket.md` records from same-run `init` output are exempt from the "changed path it did not
+  expect" check. Only the paths `init` wrote are exempt, those absent from the pre-init baseline; a
+  baseline path never reaches the verifier, because MICRO stops first. An exempt path stays exempt only
+  while its current SHA-256 still equals its recorded hash, and a path recorded as `absent` (deleted)
+  stays exempt only while it is still absent. A recorded path changed further than its recorded state
+  fails, and so does every other unexpected path. It returns `RESULT: PASS|FAIL` with its evidence, and
+  the orchestrator copies that return unchanged into `ticket.md`. No separate tester, reviewer, planner
   or finisher stage runs.
 - **Still required.** The target's startup rules and security constraints, a verifier context that
   is not the implementer's, and explicit authority before any commit, push or merge. A merge
@@ -222,12 +241,13 @@ MICRO.
   security-sensitive code, or the verifier fails twice.
 
 Evidence is proportional for every class: record what this procedure names and nothing more. Do not
-produce manifests or hashes of unchanged files, copies of reports, or receipts about receipts.
+produce manifests or hashes of unchanged files (the pre-init baseline and the pre-ticket hashes in section
+3 are the exception), copies of reports, or receipts about receipts.
 
 ## 4. Ground and resolve the work
 
-For MICRO and LITE the orchestrator's own reading is limited as section 3's hand-off rule says. Open relevant source, tests, package manifests and rules, then follow the installed Grill Me and
-Ponytail method owners in `.claude/commands/spec-harness/` (source checkout fallback:
+For MICRO and LITE the orchestrator's own reading is limited as section 3's hand-off rule says. Open relevant source, tests, package manifests and rules, then follow the installed Ponytail method owner, and the Grill Me method owner for LITE only (MICRO never
+asks Grill Me), in `.claude/commands/spec-harness/` (source checkout fallback:
 `commands/`). Package Finder and Skill Finder apply when package or reusable-skill discovery is
 relevant. Record evidence, selected/excluded candidates and unavailable capabilities in the plan;
 keep affected decisions PENDING when required evidence is unavailable. These method owners define

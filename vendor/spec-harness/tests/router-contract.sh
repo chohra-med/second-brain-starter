@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The router contract: sdd-router is read-only, runs on the fast tier's smallest model, answers in
-# one fixed block, and /sdd dispatches it first with a raise-only, fall-back-on-failure rule.
+# one fixed block, and /sdd dispatches it before classifying with a raise-only, fall-back-on-failure rule.
 # An install stages it into the target. Each broken promise fails by name.
 set -u
 
@@ -62,12 +62,13 @@ for phrase, why in [
     ("never reads source contents", "the router must not read source contents"),
     ("Risk beats size", "risk must beat size"),
     ("pick the bigger class", "uncertainty must pick the bigger class"),
+    ("MICRO is always `skip`", "MICRO must always skip Grill Me"),
 ]:
     if phrase.lower() not in router.lower():
         bad.append(f"router file: {why} ({phrase!r} missing)")
 sec3 = sdd.split("## 3. Classify", 1)[-1].split("### MICRO light route", 1)[0]
 for phrase, why in [
-    ("Dispatch `sdd-router`", "/sdd section 3 must dispatch sdd-router first"),
+    ("Dispatch `sdd-router`", "/sdd section 3 must dispatch sdd-router before classifying"),
     ("Raise, never lower", "/sdd must only raise the router's class"),
     ("A missing router never stops the run", "/sdd must fall back when the router is unavailable"),
     ("confidence: low", "/sdd must fall back on low confidence"),
@@ -96,6 +97,7 @@ mutate "router model drifts from the table" router 't.replace("model: haiku","mo
 mutate "route block loses a field" router 't.replace("confidence: high | low\n","")'
 mutate "sdd stops dispatching the router" sdd 't.replace("Dispatch `sdd-router`","Consider `sdd-router`")'
 mutate "sdd allows lowering" sdd 't.replace("Raise, never lower","Raise or lower")'
+mutate "router lets MICRO ask Grill Me" router 't.replace("MICRO is always `skip`.","MICRO may be `ask`.")'
 
 # 3. An install stages the router into the target.
 target="$TMP/target"

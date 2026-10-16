@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Re-pins the vendored Spec Harness to `3c6597415eee396f92075a1c2627e85558c5e31d` (branch `feat/v1-router-and-first-run-fixes`, still 0.4.0 plus unreleased changes). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, and fixes two first-run blockers in `/sdd init`. A connect now stages 96 harness files instead of 95. Re-pin again to the merged upstream commit before release.
+- Re-pins the vendored Spec Harness to `6c688183918c0e773772d23bf4b68c486ee79fb6`, the router and first-run fixes merged upstream as `311979a` (still 0.4.0 plus unreleased changes). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, and fixes two first-run blockers in `/sdd init`. A connect now stages 96 harness files instead of 95. The pin is the merged upstream commit, so no further re-pin is needed before release.
 
 ## v1.5.0 (2026-10-15)
 

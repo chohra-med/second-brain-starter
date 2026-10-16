@@ -8,7 +8,7 @@ All notable changes to this project are recorded here. The format follows
 ### Added
 
 - `sdd-router`, a read-only role on the fast tier's smallest model (`haiku` on Claude). `/sdd`
-  dispatches it first; it reads the ticket, the startup rules and file names (never source contents)
+  dispatches it before the ticket is classified; it reads the ticket, the startup rules and file names (never source contents)
   and returns a `## Route` block: class, the tier for each stage, whether to ask Grill Me and the
   files to load first. The orchestrator may raise its class, never lower it. Low confidence, a
   malformed block or no separate context falls back to the orchestrator's own classification.
@@ -22,7 +22,8 @@ All notable changes to this project are recorded here. The format follows
   the role row's exact shape, and the check names which of status, path or `package_paths` is wrong.
 - The first ticket after `/sdd init` failed its verifier on the uncommitted init output. Init now
   ends by asking the user to review and commit it. A MICRO ticket stops with a named PENDING on a
-  dirty tree instead of failing later; LITE and FULL record the pre-existing paths in `input.md`.
+  dirty tree instead of failing later; LITE and FULL record every listed path in `input.md`, the baseline's and init's. A
+  same-run `init`'s own paths are exempt, and a path already dirty before `init` ran is not.
 
 ### Changed
 

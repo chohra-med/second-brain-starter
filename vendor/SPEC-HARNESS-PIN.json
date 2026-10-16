@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "3c6597415eee396f92075a1c2627e85558c5e31d",
-  "tree": "39d182549cc5639da92f2cea4d1765c052bd89dd",
+  "commit": "6c688183918c0e773772d23bf4b68c486ee79fb6",
+  "tree": "81d17bdc237dc225d662d0726006a851729980ce",
   "harnessVersion": "0.4.0",
   "license": {
     "spdx": "MIT",
@@ -42,8 +42,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 10712,
-      "sha256": "16d24ff1ad5e44e96778ecd752c7622181d7989945b4d0ecfbc1be4e69966f97"
+      "bytes": 10855,
+      "sha256": "8a1b223095b4636b5247289672901a266719ba0a129e3f7271f8035b5de09c8e"
     },
     {
       "path": "CLAUDE.md",
@@ -62,8 +62,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 24995,
-      "sha256": "c4f7105c9d3e744f7ec6f86d58419a3b10407a63c589c1e98715586dd8ef926f"
+      "bytes": 25013,
+      "sha256": "922dcafe76640d3cd87df1a3d01c0cc443c8681dca45530ddea75ece3cb8efba"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -112,8 +112,8 @@
     },
     {
       "path": "agents/sdd-router.md",
-      "bytes": 3224,
-      "sha256": "9fe13b88a54b0b96694e385c411c4a53c54445965aed8bec4b07a78225567b09"
+      "bytes": 3252,
+      "sha256": "8940479539104bbe70690886496d700eae4414539e518678a7605deca85b381b"
     },
     {
       "path": "agents/sdd-tester.md",
@@ -122,8 +122,8 @@
     },
     {
       "path": "agents/sdd-verifier.md",
-      "bytes": 3337,
-      "sha256": "b6e7471576042eee6ef44c97836bf7ec34185af3d910175e324269dd7e1efca0"
+      "bytes": 3767,
+      "sha256": "3345028a3474b59b36b2df3887f64fddb8963c132a1b2995ee8849b562609034"
     },
     {
       "path": "agents/sdd-workflow-tester.md",
@@ -228,8 +228,8 @@
     },
     {
       "path": "commands/init.md",
-      "bytes": 13301,
-      "sha256": "bc4a1e4ce8bf5ab6b7481fad8301dc54936487d973a3832b70e6ea5d49e0e7e0"
+      "bytes": 13802,
+      "sha256": "26bdbaa3c83bdbaec4c7a3c260d2f968c095453e7c029165d62ef29aa4959837"
     },
     {
       "path": "commands/learn.md",
@@ -263,8 +263,8 @@
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 25875,
-      "sha256": "46b1418d88323d94c97d4374cd1add2190f0b87181f5a78443f2f8815ba91a0e"
+      "bytes": 27689,
+      "sha256": "e3636a1d77c3177087811929b389bac1fa787346b0baca55a29f2dc192f79a7b"
     },
     {
       "path": "commands/ship.md",
@@ -318,8 +318,8 @@
     },
     {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 40329,
-      "sha256": "caa626b19ab6f1c36d4d2deeab6697a9022d33eefad56de5710657979ce435ed"
+      "bytes": 40347,
+      "sha256": "e5ca3fcd4cc3b7dedb4f899b94ae9cf6a33aacd1ca49032b89a1adb5cef18a56"
     },
     {
       "path": "docs/GUARDRAILS.md",
@@ -384,7 +384,7 @@
     {
       "path": "install-manifest.json",
       "bytes": 30506,
-      "sha256": "6d863835dc29c76f750466e80f4371ccfb53999db3c4e73b27188ccec59ba669"
+      "sha256": "9e187563034e10de2db064cf54e34b8399076b7e1f403de8c4201ca463ea7c9d"
     },
     {
       "path": "install-migrations.tsv",
@@ -783,8 +783,8 @@
     },
     {
       "path": "tests/router-contract.sh",
-      "bytes": 5470,
-      "sha256": "9b8997a0ea5981b25df7b0ae207123c637d150b06843c9b407d44b1a22948d9d"
+      "bytes": 5671,
+      "sha256": "8c1a3bad57361f01ae5bbe79926b1d31eda45fe17df3a78c60e159f53a10cdb8"
     },
     {
       "path": "tests/run-all.sh",
@@ -805,8 +805,8 @@
     },
     {
       "path": "tests/sdd-fixtures.sh",
-      "bytes": 47019,
-      "sha256": "3bb17a67bc719f01eef9f05cf1846fade92a62fe48b219624a6e9aef8536f24b"
+      "bytes": 51599,
+      "sha256": "f3ae5ca15b7e699db4c86ec3c963e6c4349c5ec160d3319d23400fb83f84d315"
     },
     {
       "path": "tests/sdd-rule-carriers.sh",

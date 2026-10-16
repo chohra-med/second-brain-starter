@@ -276,7 +276,7 @@ Pick a real, small, low-risk fix: one or two files and a test. Paste the full ti
 uses > where the rule is >=. Add a test for an order of exactly 50.00.
 ```
 
-A small model first reads the ticket and returns its route: the size, the model tier for each
+A small model reads the ticket before it is classified and returns its route: the size, the model tier for each
 stage and the files to read first (`sdd-router`). A small fix is classed **MICRO** and takes the
 light route:
 

@@ -23,7 +23,7 @@ The method stages the harness, inspects the target repository, derives project-b
 Roles ask for a model tier, not a model: plan on the strongest model, implement on a fast cheap one,
 and review on whichever the token budget allows. One table in [`commands/sdd.md`](./commands/sdd.md)
 maps tiers to models per provider, so changing provider means filling one column.
-A small model reads each ticket first (`sdd-router`) and decides its size, the tier for each stage
+A small model reads each ticket before it is classified (`sdd-router`) and decides its size, the tier for each stage
 and the files to load, so the strong model only works on what needs it.
 
 Small fixes take a light route: one ticket file, one implementer and one fresh verifier. Larger or
