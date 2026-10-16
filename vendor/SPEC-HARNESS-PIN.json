@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "b7ea02973a331d8664f6005e0e358ae3c6fc0700",
-  "tree": "c77212ce8b7d6c1fe370d72eac29db4547f4ea3d",
+  "commit": "3c6597415eee396f92075a1c2627e85558c5e31d",
+  "tree": "39d182549cc5639da92f2cea4d1765c052bd89dd",
   "harnessVersion": "0.4.0",
   "license": {
     "spdx": "MIT",
@@ -32,8 +32,8 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 16207,
-      "sha256": "0d8145d10d571af802c7c561e49e86c8a7543681607c24010717d29448733ab5"
+      "bytes": 16421,
+      "sha256": "b217fdd0247eac17637cad50da861500204c303ba4d11fbc7bacfa0693ee89b2"
     },
     {
       "path": "ARCHITECTURE.md",
@@ -42,8 +42,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 9156,
-      "sha256": "81b4a1bfd317153c323b96a7c9e555ec3eb18a6a78b5326a34c223cb1f3ecdd0"
+      "bytes": 10712,
+      "sha256": "16d24ff1ad5e44e96778ecd752c7622181d7989945b4d0ecfbc1be4e69966f97"
     },
     {
       "path": "CLAUDE.md",
@@ -62,8 +62,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 24824,
-      "sha256": "d6fc9e5f1e28a06400ade2a24c62df08253533bfcdc8459cc7cc3e8dedc329c5"
+      "bytes": 24995,
+      "sha256": "c4f7105c9d3e744f7ec6f86d58419a3b10407a63c589c1e98715586dd8ef926f"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -111,6 +111,11 @@
       "sha256": "5ca154315967f5e544e6a57f6e75a875a05591db037a6edfa622ca4111c76858"
     },
     {
+      "path": "agents/sdd-router.md",
+      "bytes": 3224,
+      "sha256": "9fe13b88a54b0b96694e385c411c4a53c54445965aed8bec4b07a78225567b09"
+    },
+    {
       "path": "agents/sdd-tester.md",
       "bytes": 3181,
       "sha256": "78c160bd8d1c52cff1ca7055b4de39263d8eb7162898f50ca1454303d9baea57"
@@ -143,8 +148,8 @@
     },
     {
       "path": "bin/sh-gen-agents.sh",
-      "bytes": 36770,
-      "sha256": "4901a98ba1be2eb1a26b0fdaf1e40b0a9820a0472320b60b29925fca1b8eae5d",
+      "bytes": 37118,
+      "sha256": "d11c0d2975e2fd5a6ae2fc81042a48184d349a7e9fd627800b6212005e3dcea1",
       "executable": true
     },
     {
@@ -213,8 +218,8 @@
     },
     {
       "path": "commands/generate-agents.md",
-      "bytes": 8247,
-      "sha256": "5ba3909e35e6720482e518a83dcc19b31760bd1caf8648899e43a81da1aaefa8"
+      "bytes": 8769,
+      "sha256": "7d4f42bb40e6e512a37050dd4e2dc4078359c350aabfb8d629b066dc899342d9"
     },
     {
       "path": "commands/grill-me.md",
@@ -223,8 +228,8 @@
     },
     {
       "path": "commands/init.md",
-      "bytes": 12928,
-      "sha256": "ff14c480599edf46beb977654c03c96b8e877a6b9cacdc7f95ebb3279b50242f"
+      "bytes": 13301,
+      "sha256": "bc4a1e4ce8bf5ab6b7481fad8301dc54936487d973a3832b70e6ea5d49e0e7e0"
     },
     {
       "path": "commands/learn.md",
@@ -258,8 +263,8 @@
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 21840,
-      "sha256": "12e2b34604cdae5a8bc32a6c0d170fddce103617acb14577f0314e02be7f7b06"
+      "bytes": 25875,
+      "sha256": "46b1418d88323d94c97d4374cd1add2190f0b87181f5a78443f2f8815ba91a0e"
     },
     {
       "path": "commands/ship.md",
@@ -303,8 +308,8 @@
     },
     {
       "path": "commands/verify.md",
-      "bytes": 1504,
-      "sha256": "0ca038c949059edb509bb4866381857b4ef526850dc6903412de1d8e78f9b686"
+      "bytes": 1553,
+      "sha256": "ddf3a6ce09686a6dac1d36703fe22af728045e9c43e03b1913d744d59c691882"
     },
     {
       "path": "docs/COMPANION-SKILLS.md",
@@ -313,8 +318,8 @@
     },
     {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 40149,
-      "sha256": "b3730d856d9eb9f2cf5fcb45fffc3a2944e1eb45664944a5785284e442429294"
+      "bytes": 40329,
+      "sha256": "caa626b19ab6f1c36d4d2deeab6697a9022d33eefad56de5710657979ce435ed"
     },
     {
       "path": "docs/GUARDRAILS.md",
@@ -378,8 +383,8 @@
     },
     {
       "path": "install-manifest.json",
-      "bytes": 30251,
-      "sha256": "d03883d89c41bf5d05f098677278da92efddfe54da0777ba7e6b89dadf5a8b59"
+      "bytes": 30506,
+      "sha256": "6d863835dc29c76f750466e80f4371ccfb53999db3c4e73b27188ccec59ba669"
     },
     {
       "path": "install-migrations.tsv",
@@ -388,8 +393,8 @@
     },
     {
       "path": "learning_human.html",
-      "bytes": 44510,
-      "sha256": "f74b91e838524615ed210e89b949e24ab432aa3d8e5cd6fa63826a0872061ee0"
+      "bytes": 44542,
+      "sha256": "94d5427bfd2f8e053b622310b33fbcce8fed6161bed7a3400934b82af2900b6c"
     },
     {
       "path": "package.json",
@@ -772,6 +777,16 @@
       "sha256": "2a5039f562c3bc5c0f2aa88f57bdf13ade47282a38318c79925bab57b8278d08"
     },
     {
+      "path": "tests/role-binding-messages.sh",
+      "bytes": 2201,
+      "sha256": "c9751f7a60b33e04a7589bd3ea46988712e90a85d4fa10bf7aad3e52fb9343c7"
+    },
+    {
+      "path": "tests/router-contract.sh",
+      "bytes": 5470,
+      "sha256": "9b8997a0ea5981b25df7b0ae207123c637d150b06843c9b407d44b1a22948d9d"
+    },
+    {
       "path": "tests/run-all.sh",
       "bytes": 2162,
       "sha256": "dbfd5457d64139975bd80de0f0617ef8767de3b86f31393bfd3b248864471759",
@@ -790,8 +805,8 @@
     },
     {
       "path": "tests/sdd-fixtures.sh",
-      "bytes": 45700,
-      "sha256": "8d0ac8c9e37d207d59ec60853850b991962208aefc00e6f91188796ba24e31eb"
+      "bytes": 47019,
+      "sha256": "3bb17a67bc719f01eef9f05cf1846fade92a62fe48b219624a6e9aef8536f24b"
     },
     {
       "path": "tests/sdd-rule-carriers.sh",

@@ -402,8 +402,15 @@ for name, row in roles.items():
     path = row.get("path")
     packages_for_role = row.get("package_paths")
     expected_role_path = f".claude/agents/{name}.md"
-    if row.get("status") != "BOUND" or path != expected_role_path or not safe_rel(path) or packages_for_role != package_paths:
-        fail(f"role {name}: binding is missing, unsafe or not scoped to every package")
+    reasons = []
+    if row.get("status") != "BOUND":
+        reasons.append(f'status must be "BOUND" (got {row.get("status")!r})')
+    if path != expected_role_path or not safe_rel(path):
+        reasons.append(f'path must be "{expected_role_path}" (got {path!r})')
+    if packages_for_role != package_paths:
+        reasons.append(f"package_paths must equal the receipt's package_paths {package_paths!r} (got {packages_for_role!r})")
+    if reasons:
+        fail(f"role {name}: binding is missing, unsafe or not scoped to every package: " + "; ".join(reasons))
         continue
     data = safe_file(path)
     if data is None or digest(data) != row.get("sha256"):

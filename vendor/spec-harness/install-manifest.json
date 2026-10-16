@@ -173,6 +173,14 @@
       "mode": "0644"
     },
     {
+      "destination": ".claude/agents/sdd-router.md",
+      "source": "agents/sdd-router.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "9fe13b88a54b0b96694e385c411c4a53c54445965aed8bec4b07a78225567b09",
+      "mode": "0644"
+    },
+    {
       "destination": ".claude/agents/sdd-tester.md",
       "source": "agents/sdd-tester.md",
       "render": "copy",
@@ -201,7 +209,7 @@
       "source": "commands/sdd.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "12e2b34604cdae5a8bc32a6c0d170fddce103617acb14577f0314e02be7f7b06",
+      "sha256": "46b1418d88323d94c97d4374cd1add2190f0b87181f5a78443f2f8815ba91a0e",
       "mode": "0644"
     },
     {
@@ -233,7 +241,7 @@
       "source": "commands/generate-agents.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "5ba3909e35e6720482e518a83dcc19b31760bd1caf8648899e43a81da1aaefa8",
+      "sha256": "7d4f42bb40e6e512a37050dd4e2dc4078359c350aabfb8d629b066dc899342d9",
       "mode": "0644"
     },
     {
@@ -249,7 +257,7 @@
       "source": "commands/init.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "ff14c480599edf46beb977654c03c96b8e877a6b9cacdc7f95ebb3279b50242f",
+      "sha256": "bc4a1e4ce8bf5ab6b7481fad8301dc54936487d973a3832b70e6ea5d49e0e7e0",
       "mode": "0644"
     },
     {
@@ -377,7 +385,7 @@
       "source": "commands/verify.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "0ca038c949059edb509bb4866381857b4ef526850dc6903412de1d8e78f9b686",
+      "sha256": "ddf3a6ce09686a6dac1d36703fe22af728045e9c43e03b1913d744d59c691882",
       "mode": "0644"
     },
     {
@@ -821,7 +829,7 @@
       "source": "learning_human.html",
       "render": "copy",
       "tokens": [],
-      "sha256": "f74b91e838524615ed210e89b949e24ab432aa3d8e5cd6fa63826a0872061ee0",
+      "sha256": "94d5427bfd2f8e053b622310b33fbcce8fed6161bed7a3400934b82af2900b6c",
       "mode": "0644"
     },
     {

@@ -35,6 +35,12 @@ Initialization reads project rules, structure, manifests/lockfiles, representati
 
 For ticket work, record the current source state before planning:
 
+- **Uncommitted changes at the start.** Run `git status --porcelain --untracked-files=all`. For a
+  MICRO ticket, anything listed (uncommitted init output included) stops the run with `PENDING:
+  uncommitted changes; commit or stash them first` and the list: its single verifier fails on any
+  path it did not expect. For LITE and FULL, record the listed paths in `input.md` as present before
+  the ticket, so no gate attributes them to it. Do not commit or stash for the user.
+
 - Git source: `git rev-parse HEAD` and SHA-256 of the exact `git diff --binary HEAD` bytes. MICRO records `HEAD` only.
 - Non-Git source: mark Git state unavailable and hash the relevant files and rule inputs.
 - Record the applicable rule paths and hashes. Read the target's `AGENTS.md`, `RULES.md`,
@@ -97,22 +103,41 @@ provider means filling one column. A `Model tiers` table in the target's own `AG
 | Tier | Roles | Claude | Codex/OpenAI |
 |---|---|---|---|
 | strong | planner, finisher, merger | `opus` | `gpt-6-sol` |
-| fast | implementer, tester, researcher, documenter | `sonnet`; `haiku` for the tester | `gpt-6-luna` |
-| review | verifier, reviewer, architect, learner, design and workflow testers | strong when budget allows, otherwise fast | same rule |
+| fast | implementer, tester, researcher, documenter, router | `sonnet`; `haiku` for the tester, the router and the MICRO verifier | `gpt-6-luna` |
+| review | verifier (fast on MICRO, see `Size picks the tiers`), reviewer, architect, learner, design and workflow testers | strong when budget allows, otherwise fast | same rule |
 
+- **Route small.** `sdd-router` runs on the smallest model in the fast cell: the model named after
+  the semicolon, or the only one when the cell names one. To give another provider a smaller router,
+  write it the same way: `<fast model>; <small model> for the router`.
 - **Plan strong, implement fast.** The plan carries the detail, so a cheaper model can execute it.
 - **Budget picks the review tier.** Review on the strong tier when the token budget allows. Drop to
-  the fast tier when the user says the budget is low or the client reports it.
+  the fast tier when the user says the budget is low or the client reports it. A MICRO ticket's
+  verifier is on the fast tier; see `Size picks the tiers`.
 - **Unavailable model: use the nearest available tier and say so.** Record the requested tier, the
   model that ran and the reason in that stage's gate file (`ticket.md` for MICRO). A missing model
   does not stop the run.
   Never carry one provider's model IDs to another provider.
 - **Independence never bends.** The implementer cannot write its own acceptance. Tester, verifier
   and reviewer are separate fresh contexts, on a different model from the implementer when one is
-  available. If a separate context cannot be had, that gate stays PENDING; separate manual contexts
+  available (MICRO's fast-tier verifier: see `Size picks the tiers` and the light route). If a separate context cannot be had, that gate stays PENDING; separate manual contexts
   count only when their independence is real.
 - For a provider without a column, add one naming its strongest model and its cheapest capable model.
 - The finisher is the orchestrator's own final strong-tier judgment, not a role file.
+
+### Size picks the tiers
+
+Ticket class (section 3) decides which tier plans, implements and accepts. Easy work skips the strong
+planner; the gates never do.
+
+| Class | Plans | Implements | Accepts |
+|---|---|---|---|
+| MICRO | no planner; the orchestrator writes `ticket.md` | fast | one fresh verifier on the fast tier |
+| LITE | the orchestrator, inline; a delegated strong planner only for material architecture or reuse decisions | fast | fresh tester on the fast tier; verifier and reviewer on the review tier |
+| FULL | strong planner | fast | tester on the fast tier; verifier and reviewer on the review tier; strong finisher |
+
+- **Risk beats size.** Security-sensitive, shared-contract or externally consequential work is FULL
+  whatever its size, as section 3 says.
+- **The user may ask for a stronger tier on any stage.** Record that choice like any other tier choice.
 
 ## 2. Resolve the ticket input
 
@@ -126,13 +151,36 @@ reference`. Do not invent requirements or write back to the provider.
 ## 3. Classify after resolving ticket input
 
 For ticket runs only, after the exact inline text or connected-reference body is resolved and hashed,
-complete classification before optional history, research or broad package recall. Use the exact input,
-touched scope and risk:
+complete classification before optional history, research or broad package recall.
+
+**Route first.** Dispatch `sdd-router` (`.claude/agents/sdd-router.md`) in a fresh context on its
+fast-tier model, with the exact input. It reads startup rules and file names, never source contents,
+and returns a `## Route` block: class, reason, the tier for each stage, whether to ask Grill Me, and
+the files to load first. Copy that block into the class record (`ticket.md` for MICRO, `input.md`
+for LITE and FULL) and follow it:
+
+- **Raise, never lower.** Keep the router's class unless the input or the startup rules show a risk
+  it missed; then raise it and record why. Nothing lowers a class below what the definitions below
+  give. The user may raise any stage's tier.
+- **Low confidence or no router.** When the block says `confidence: low`, is missing or malformed, or
+  no separate small-model context can be dispatched, classify here yourself as below and record that
+  the router did not decide. A missing router never stops the run.
+- **`load` guides reading, it does not limit it.** Give the list to the implementer as its first
+  reads. Required startup rules and security constraints are read whatever the list says.
+
+Use the exact input, touched scope and risk:
 
 - **MICRO:** one bounded, reversible local change with no shared contract or security-sensitive effect.
 - **LITE:** a small multi-file change or one contained behavior change with declared local dependencies.
 - **FULL:** multi-repository, shared-interface, security-sensitive, externally consequential, or otherwise
   high-risk work. When uncertain, use FULL.
+
+Once the class is MICRO or LITE, an orchestrator running on the strong tier does not explore the code
+itself. Its reading is the ticket input, the target's startup rules (its `CLAUDE.md` or `AGENTS.md` and
+any startup sequence it declares; required reading for both classes), and the files the ticket names.
+For MICRO it then writes `ticket.md`, which records the class, and dispatches; broad reading is the
+fast-tier implementer's job. For LITE it reads only what the inline plan needs and dispatches the
+planner only for material decisions.
 
 Record the class and reason in the packet. Every class retains exact input provenance, a literal
 goal, source identity, the applicable rules and independent acceptance. LITE and FULL also keep an
@@ -154,8 +202,12 @@ MICRO.
   expected to change. Do not create `spec.md`, `goal.md`, `plan.md`, `tasks.md` or `gates/`, and do
   not record file or diff hashes. The implementer never edits `ticket.md`. Only the orchestrator does.
 - **Two stages.** The fast-tier implementer makes the change with a test that fails first. Then one
-  fresh review-tier `sdd-verifier` receives the goal checks and expected paths in its dispatch,
-  together with the `ticket.md` path. It runs the project's test command, checks every goal line and
+  fresh `sdd-verifier`, dispatched on the fast tier, receives the goal checks and expected paths in its
+  dispatch, together with the `ticket.md` path. It is not the implementer's context. It runs on the
+  tester's model from the `Model tiers` table: where that table gives the fast tier a separate tester
+  model, the verifier's model differs from the implementer's, and where the fast tier has one model for
+  every role, a fresh context on that model is accepted for MICRO and the user can ask for the review
+  tier. It runs the project's test command, checks every goal line and
   reads the diff against the applicable rules. It returns FAIL when the goal checks in `ticket.md`
   differ from the dispatched ones, or when `git diff --name-only <starting HEAD>` on the working tree or
   `git status --porcelain --untracked-files=all` lists a path outside the expected ones and `ticket.md` itself. It returns `RESULT: PASS|FAIL` with its evidence, and the
@@ -165,7 +217,7 @@ MICRO.
   is not the implementer's, and explicit authority before any commit, push or merge. A merge
   decision uses the verifier's PASS in `ticket.md` as its gate set and records the grant there.
 - **Not required.** Rule hashes, Grill Me and Ponytail receipts, and a stage map beyond the two
-  models used. Apply Ponytail directly while implementing.
+  stages above. Apply Ponytail directly while implementing.
 - **Escalate to LITE** when the change grows past the stated files, touches a shared contract or
   security-sensitive code, or the verifier fails twice.
 
@@ -174,7 +226,7 @@ produce manifests or hashes of unchanged files, copies of reports, or receipts a
 
 ## 4. Ground and resolve the work
 
-Open relevant source, tests, package manifests and rules, then follow the installed Grill Me and
+For MICRO and LITE the orchestrator's own reading is limited as section 3's hand-off rule says. Open relevant source, tests, package manifests and rules, then follow the installed Grill Me and
 Ponytail method owners in `.claude/commands/spec-harness/` (source checkout fallback:
 `commands/`). Package Finder and Skill Finder apply when package or reusable-skill discovery is
 relevant. Record evidence, selected/excluded candidates and unavailable capabilities in the plan;

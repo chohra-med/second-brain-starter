@@ -34,7 +34,7 @@ If you cannot tell which, ask. Do not start installing anything on a guess.
 | **MICRO / LITE / FULL** | The three ticket sizes. MICRO is one small, reversible, local fix. LITE is a small multi-file change. FULL is anything shared, security-sensitive, multi-repo, externally consequential or otherwise high-risk. When unsure, FULL. |
 | **Light route** | How a MICRO ticket runs: one file `specs/<feature>/ticket.md`, one implementer, one fresh verifier. |
 | **Packet** | The folder `specs/<feature>/` that a LITE or FULL ticket keeps: input, spec, goal, plan, tasks and gate records. |
-| **Role** | One agent file with one job: planner, implementer, tester (runs things), verifier (checks each goal line), reviewer (reads the diff against the rules), merger, learner. |
+| **Role** | One agent file with one job: router (sizes the ticket on a small model), planner, implementer, tester (runs things), verifier (checks each goal line), reviewer (reads the diff against the rules), merger, learner. |
 | **Tier** | The class of model a role asks for: `strong`, `fast` or `review`. Never a model name. |
 | **Inventory** | The output of `index` in the target: its packages and a few sampled source files. It is `ai_rules/context_map.md`, or `ai_rules/project_inventory.json` when the target keeps its own `context_map.md` (see `docs/GETTING-STARTED.md` step 4). |
 | **Receipt** | `.claude/agents/.init-synthesis.json` in the target: what initialisation produced, with hashes. |
@@ -133,7 +133,7 @@ from. Read them here to understand the method; act on the installed copies in th
 | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | Diagrams of the layers and the flow | you need the design |
 | [`commands/sdd.md`](./commands/sdd.md) | **The central procedure**: routes, model tiers, ticket classes, light route, gates | almost always; start here |
 | `commands/*.md` | One contract per stage (`init`, `plan`, `build`, `verify`, `learn`, ...) | you touch that stage |
-| `agents/sdd-*.md` | The twelve role files, with `model:` and `tools:` frontmatter | you touch a role |
+| `agents/sdd-*.md` | The thirteen role files, with `model:` and `tools:` frontmatter | you touch a role |
 | `bin/spec-harness` | CLI dispatcher | you add or trace a subcommand |
 | `bin/sh-install.sh` | Stages files into a target; refuses unsafe paths | install behaviour |
 | `bin/sh-index.sh` | Writes the project inventory | inventory behaviour |
@@ -164,6 +164,8 @@ from. Read them here to understand the method; act on the installed copies in th
 ### Run the tests
 
 They need `bash`, `git`, `python3` 3.11 or newer, `npm`, `tar`, `shasum` and `cmp` on `PATH`.
+Run them as a normal user, not root: root ignores file permissions, so the unreadable-file and
+read-only fixtures in `index`, `installer` and `update` fail under root.
 
 ```sh
 for t in tests/*.sh; do

@@ -13,7 +13,7 @@ spec-harness verify --goal specs/<feature>/goal.md   # prints a PENDING manual h
 Read `.claude/commands/sdd.md` and the packet's `spec.md`, `goal.md`, source state and relevant
 rules. Use the `sdd-verifier` path recorded in `.claude/agents/.init-synthesis.json` and a fresh
 review-tier context distinct from the implementer and tester (`Model tiers` in
-`.claude/commands/sdd.md`). If no separate context is available, keep the gate PENDING/UNVERIFIED.
+`.claude/commands/sdd.md`; a MICRO ticket's verifier runs on the fast tier). If no separate context is available, keep the gate PENDING/UNVERIFIED.
 
 ## Verifier result
 

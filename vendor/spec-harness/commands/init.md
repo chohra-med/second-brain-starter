@@ -61,3 +61,8 @@ The receipt checker can print `READY` for structural/provenance integrity while 
 ## Output
 
 Report the inventory source and completeness, every package path and rule file, every skill path, selected and excluded roles with reasons, citations, unsupported formats, exact readiness command/output, and any PENDING reasons. Do not claim a model dispatch occurred unless the current client confirms it.
+
+End by handing the init output to the user: show `git status` and the diff of what initialization
+wrote, and ask them to review and commit it (or tell you to) before the first ticket. Do not commit
+without that word. A ticket records its starting `HEAD` and its verifier fails on any changed path it
+did not expect, so uncommitted init output makes the first ticket fail.

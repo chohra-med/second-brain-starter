@@ -42,6 +42,16 @@ Do not fill unselected roles merely because a template exists. A change to the i
 - the core skill names `spec-harness-architecture`, `spec-harness-performance`, `spec-harness-packages`, plus `spec-harness-quality` and `spec-harness-conduct` on a first initialisation (schema 2; an existing schema-1 receipt keeps only the first three), plus at most five `spec-harness-tech-<technology>` skills scoped to the packages that use that technology, each with output paths/hashes, package paths and citations;
 - selected `roles` and `excluded_roles`, with role file paths/hashes, package paths, citations, and selection/exclusion reasons.
 
+Status words differ by row: the receipt, each package row and each skill row say `"READY"`; each
+selected role row says `"BOUND"`. A role row has exactly this shape (one per selected role; the
+`package_paths` list equals the receipt's own):
+
+```json
+{ "name": "sdd-implementer", "path": ".claude/agents/sdd-implementer.md", "status": "BOUND",
+  "sha256": "<sha256 of the role file after its GEN:rules block is filled>",
+  "package_paths": ["."], "citations": [ ... ], "reason": "core role required for ticket work" }
+```
+
 A package row may also list `rule_modules`: package-local topic files at `<package>/ai_rules/rules/<topic>.md` (`ai_rules/rules/<topic>.md` for the root), each with `name`, `path`, `sha256` and `citations`. Each module carries the raw-inventory source-bound marker, cites its own lines, and is linked from that package's `RULES.md`. While a router or module still matches the receipt, `index` records it as `receipt-generated` without a hash, so refreshing its marker does not change the inventory.
 
 **Schema 3 (policy coverage).** Use `schema_version: 3` when the receipt also records how the project's own policy files were covered. Schema 3 keeps every schema 2 requirement, including the five core skills, and adds:
