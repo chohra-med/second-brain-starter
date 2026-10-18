@@ -1,5 +1,13 @@
 # Upgrading the free starter
 
+## Upgrading to v1.6.0
+
+This version changes the vendored Spec Harness, not the workspace template. Your workspace files do not change.
+
+Measured on a scratch workspace made by `init` from the v1.5.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.5.0 -> available 1.6.0` and `Summary: 115 IDENTICAL`. There is nothing to create, update or merge, and nothing is deleted.
+
+What changes is what `connect` stages into a repository you connect from now on: Spec Harness 0.5.0 instead of 0.4.0, which is 96 files instead of 95 (the new `sdd-router` role). `upgrade` does not touch a repository you connected earlier, and this release did not measure moving one to 0.5.0; Spec Harness's own `update` command is the route for that.
+
 ## Upgrading to v1.5.0
 
 This version adds one shared skill, `usage-dashboard`, and changes how an upgrade treats a file you have edited. Nothing in it deletes a file. Read the plan line by line before you approve it. From this release, `Home.md`, `01-Projects/README.md` and `01-Projects/Index.md` are seed files, which are yours to edit, and so are the two `usage-prices.json` files.

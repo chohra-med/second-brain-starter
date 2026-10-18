@@ -99,7 +99,7 @@ round3 = {
     "spec-harness-install/SKILL.md": "39cc29c93730ef89e5700345da7ded70d08b7a9f9f6d26a458c89530cd6046cd",
     "spec-harness-learn/SKILL.md": "60b548fc0ce07e765c7b08a74bdaea79c8a0c9e8587e308efe40a3b00d18b54c",
     "spec-harness-package-finder/SKILL.md": "978625d7a5042741985062d3a19b0fe2465e2e5973343b243e78cba7bffa7514",
-    "spec-harness-plan/SKILL.md": "bf3a2ffdd27083f8cf0e35022b7e809363c6600ec58fef8679b6765c162ff5fd",
+    "spec-harness-plan/SKILL.md": "8b8bf5e856166b2dbefb219c171d7763fb6de376df8e71bf1bec33581a78d139",
     "spec-harness-ponytail/SKILL.md": "bbd3c11de689bd0b7fedf98e50b67d28153074ba577841e913c2812080b4443b",
     "spec-harness-rules/SKILL.md": "158cdd51adc0cedda88df602709b57e4587c7212f4260f68144de31b5b9f79dc",
     "spec-harness-skill-finder/SKILL.md": "eec1198e5045fa5184993f7fb28704895290c52a36772ca909ccf91824caf095",
@@ -122,6 +122,7 @@ trigger = Path(sys.argv[3]).read_text().splitlines()[2]
 assert "implementation work" in trigger and "code" in trigger, "generated Ponytail trigger omits implementation/code work"
 # round3 is the frozen generated-skill map. A deliberate generator change moves it in the same commit.
 # 2026-10-14: the generator's em dashes became ':' or '.', so the entries were re-frozen from the new output.
+# 2026-10-18: spec-harness-plan gained the MICRO carve-out for Grill Me, so its entry was re-frozen.
 changed = sorted(path for path in round3 if round3[path] != after[path])
 assert changed == [], f"generated skill text differs from frozen round 3: {changed}"
 assert not any("Malik" in (Path(sys.argv[3]).parents[1] / path).read_text() for path in round3), "generated skill names the author"

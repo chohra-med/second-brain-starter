@@ -1,8 +1,8 @@
 # Changelog
 
-## Unreleased
+## v1.6.0 (2026-10-18)
 
-- Re-pins the vendored Spec Harness to `6c688183918c0e773772d23bf4b68c486ee79fb6`, the router and first-run fixes merged upstream as `311979a` (still 0.4.0 plus unreleased changes). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, and fixes two first-run blockers in `/sdd init`. A connect now stages 96 harness files instead of 95. The pin is the merged upstream commit, so no further re-pin is needed before release.
+- Re-pins the vendored Spec Harness to `49fad7c694feacc530d5e79ab905c7990090397e`, Spec Harness 0.5.0 (merged upstream as PR 35). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, fixes two first-run blockers in `/sdd init`, and says in the plan skill that Grill Me is for LITE and FULL tickets only. A connect now stages 96 harness files instead of 95. Before this release the vendored copy was 0.4.0 at commit `b7ea02973a331d8664f6005e0e358ae3c6fc0700`.
 
 ## v1.5.0 (2026-10-15)
 

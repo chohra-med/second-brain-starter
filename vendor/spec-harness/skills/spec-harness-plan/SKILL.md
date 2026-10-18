@@ -1,11 +1,11 @@
 ---
 name: spec-harness-plan
-description: Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail and source-grounded Grill Me before finalizing the plan.
+description: Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail, and source-grounded Grill Me for LITE and FULL tickets only (a MICRO ticket never asks Grill Me), before finalizing the plan.
 ---
 
 # spec-harness-plan
 
-Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices. Keep the plan tied to the feature goal and source/rule hashes.
+Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices (none for a MICRO ticket, which never asks Grill Me). Keep the plan tied to the feature goal and source/rule hashes.
 
 ## Run it
 1. **Load the shared SDD procedure first**: `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.
