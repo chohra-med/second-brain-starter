@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "harnessVersion": "0.4.0",
+  "harnessVersion": "0.5.0",
   "description": "Record of the file set bin/sh-install.sh stages into a target. The installer does not read this file; tests/install-manifest-contract.sh proves a real install produces exactly this set, byte for byte.",
   "substitutions": {
     "placeholder": "{name}",
@@ -193,7 +193,7 @@
       "source": "agents/sdd-verifier.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "3345028a3474b59b36b2df3887f64fddb8963c132a1b2995ee8849b562609034",
+      "sha256": "40dd68a412bf8de4d1078d675a54894c22e3dfc58cc0586f283a2f90d20ca850",
       "mode": "0644"
     },
     {
@@ -209,7 +209,7 @@
       "source": "commands/sdd.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "e3636a1d77c3177087811929b389bac1fa787346b0baca55a29f2dc192f79a7b",
+      "sha256": "4ade709b176429836a530a9267a68e31f66fa6bca266ad93fd22418416efe2a6",
       "mode": "0644"
     },
     {
@@ -449,7 +449,7 @@
       "source": "skills/spec-harness-plan/SKILL.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "bf3a2ffdd27083f8cf0e35022b7e809363c6600ec58fef8679b6765c162ff5fd",
+      "sha256": "8b8bf5e856166b2dbefb219c171d7763fb6de376df8e71bf1bec33581a78d139",
       "mode": "0644"
     },
     {

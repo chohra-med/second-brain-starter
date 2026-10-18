@@ -2146,7 +2146,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
     if (mid <= 3 || kills % 10 === 0) {
       const fresh = await connectNow(w);
-      assert.equal(treeFiles((await snap(w)).repo).length, 96, 'a fresh connect stages exactly the 96 harness files of Spec Harness (0.4.0 plus sdd-router)');
+      assert.equal(treeFiles((await snap(w)).repo).length, 96, 'a fresh connect stages exactly the 96 harness files of Spec Harness (0.5.0, which includes sdd-router)');
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before);
     }
@@ -2538,7 +2538,7 @@ test('cross-check: the vendored bash installer and applyConnect produce the same
   await connectNow(w, { name });
   const bash = await treeInventory(reference);
   const ours = await treeInventory(w.repo);
-  // Spec Harness 0.4.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
+  // Spec Harness 0.5.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
   // later three-way updates). connect writes no such record: its plan is the approved, digest-bound set and it writes nothing
   // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly.
   const isRecord = (key) => key === '.spec-harness' || key.startsWith('.spec-harness/');

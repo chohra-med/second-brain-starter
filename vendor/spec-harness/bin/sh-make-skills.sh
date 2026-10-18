@@ -75,8 +75,8 @@ emit spec-harness-spec "spec" "researcher" \
 "Write \`specs/<feature>/spec.md\` with provenance and checkable acceptance, then derive \`specs/<feature>/goal.md\`. Keep root \`goal.md\` untouched." yes
 
 emit spec-harness-plan "plan" "planner" \
-"Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail and source-grounded Grill Me before finalizing the plan." \
-"Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices. Keep the plan tied to the feature goal and source/rule hashes." yes
+"Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail, and source-grounded Grill Me for LITE and FULL tickets only (a MICRO ticket never asks Grill Me), before finalizing the plan." \
+"Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices (none for a MICRO ticket, which never asks Grill Me). Keep the plan tied to the feature goal and source/rule hashes." yes
 
 for method in ponytail grill-me package-finder skill-finder conventions technology-profiles; do
   description="Use the portable Spec Harness $method method when initializing a project or planning a ticket that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."

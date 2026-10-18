@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "6c688183918c0e773772d23bf4b68c486ee79fb6",
-  "tree": "81d17bdc237dc225d662d0726006a851729980ce",
-  "harnessVersion": "0.4.0",
+  "commit": "49fad7c694feacc530d5e79ab905c7990090397e",
+  "tree": "a9fa008eb39ee5411310466aeb821d862da6c208",
+  "harnessVersion": "0.5.0",
   "license": {
     "spdx": "MIT",
     "path": "LICENSE",
@@ -42,8 +42,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 10855,
-      "sha256": "8a1b223095b4636b5247289672901a266719ba0a129e3f7271f8035b5de09c8e"
+      "bytes": 11114,
+      "sha256": "6b5a604321d12ccec4ada32ea6715dc95c462ac55e8e3338760c9af969ebcfa9"
     },
     {
       "path": "CLAUDE.md",
@@ -63,7 +63,7 @@
     {
       "path": "README.md",
       "bytes": 25013,
-      "sha256": "922dcafe76640d3cd87df1a3d01c0cc443c8681dca45530ddea75ece3cb8efba"
+      "sha256": "bdbbe8cbd3d4e7b657ae53d5e16e55b407bd94cc95e00220fea4dcfdbe0a9b82"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -123,7 +123,7 @@
     {
       "path": "agents/sdd-verifier.md",
       "bytes": 3767,
-      "sha256": "3345028a3474b59b36b2df3887f64fddb8963c132a1b2995ee8849b562609034"
+      "sha256": "40dd68a412bf8de4d1078d675a54894c22e3dfc58cc0586f283a2f90d20ca850"
     },
     {
       "path": "agents/sdd-workflow-tester.md",
@@ -172,8 +172,8 @@
     },
     {
       "path": "bin/sh-make-skills.sh",
-      "bytes": 16239,
-      "sha256": "ba6a7b3efea82412531a7082a8328510e4b2ee41e765ef424288c26aac3fbb91"
+      "bytes": 16362,
+      "sha256": "954cd30af346bf17d6830d21375cde747bac4e670ee117bd6a93ffb6661a5402"
     },
     {
       "path": "bin/sh-run-state.py",
@@ -263,8 +263,8 @@
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 27689,
-      "sha256": "e3636a1d77c3177087811929b389bac1fa787346b0baca55a29f2dc192f79a7b"
+      "bytes": 27691,
+      "sha256": "4ade709b176429836a530a9267a68e31f66fa6bca266ad93fd22418416efe2a6"
     },
     {
       "path": "commands/ship.md",
@@ -384,7 +384,7 @@
     {
       "path": "install-manifest.json",
       "bytes": 30506,
-      "sha256": "9e187563034e10de2db064cf54e34b8399076b7e1f403de8c4201ca463ea7c9d"
+      "sha256": "02d36f16c7414f8e0b5d492efdab34a91a4301faaeb7a089a27d4fc5f8994c05"
     },
     {
       "path": "install-migrations.tsv",
@@ -399,7 +399,7 @@
     {
       "path": "package.json",
       "bytes": 1190,
-      "sha256": "5554c1dd4d74749b1889f84bee9fbece0bb5fe1d2a586c69cada13b80f7ee282"
+      "sha256": "1b460eef8a7fa5e3c3550810077a8c856fd1e92b4f30f3449f1364100e58fe2b"
     },
     {
       "path": "skills/spec-harness-audit/SKILL.md",
@@ -443,8 +443,8 @@
     },
     {
       "path": "skills/spec-harness-plan/SKILL.md",
-      "bytes": 1363,
-      "sha256": "bf3a2ffdd27083f8cf0e35022b7e809363c6600ec58fef8679b6765c162ff5fd"
+      "bytes": 1486,
+      "sha256": "8b8bf5e856166b2dbefb219c171d7763fb6de376df8e71bf1bec33581a78d139"
     },
     {
       "path": "skills/spec-harness-ponytail/SKILL.md",
@@ -762,8 +762,8 @@
     },
     {
       "path": "tests/portable-skills-contract.sh",
-      "bytes": 15048,
-      "sha256": "ef423eb90e6eee12aeb41d699c76f84f3b76ce5a1fd3e5bab14ed71236f8f258",
+      "bytes": 15149,
+      "sha256": "83b9f91dd0b2be7684d3eb3424d2946887b921a1e8bcda8fd36c1ca179c5b810",
       "executable": true
     },
     {

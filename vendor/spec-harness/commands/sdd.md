@@ -118,8 +118,9 @@ provider means filling one column. A `Model tiers` table in the target's own `AG
   Never carry one provider's model IDs to another provider.
 - **Independence never bends.** The implementer cannot write its own acceptance. Tester, verifier
   and reviewer are separate fresh contexts, on a different model from the implementer when one is
-  available (MICRO's fast-tier verifier: see `Size picks the tiers` and the light route). If a separate context cannot be had, that gate stays PENDING; separate manual contexts
-  count only when their independence is real.
+  available (MICRO's fast-tier verifier: see `Size picks the tiers` and the light route). If a
+  separate context cannot be had, that gate stays PENDING; separate manual contexts count only when
+  their independence is real.
 - For a provider without a column, add one naming its strongest model and its cheapest capable model.
 - The finisher is the orchestrator's own final strong-tier judgment, not a role file.
 
