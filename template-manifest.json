@@ -674,7 +674,25 @@
     {
       "source": "template/shared-skills/scroll-story-component/SKILL.md",
       "destination": ".agents/skills/scroll-story-component/SKILL.md",
-      "sha256": "13ba8b9ee56a7ad473152523e371578f4f667a8621c4f1b399f18c8b0d8a928b",
+      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/example.tsx",
+      "destination": ".agents/skills/scroll-story-component/assets/example.tsx",
+      "sha256": "87ab546fc9f533db1daf087bec2621705656af7c491906d90b7e75ea2b46279e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/scroll-story.tsx",
+      "destination": ".agents/skills/scroll-story-component/assets/scroll-story.tsx",
+      "sha256": "869c6b78d605957f37917f5a47ade1076fdcfd7bcebdf1f9fc65271d51d394db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/api.md",
+      "destination": ".agents/skills/scroll-story-component/references/api.md",
+      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
       "mergeKind": "managed-file"
     },
     {
@@ -686,19 +704,37 @@
     {
       "source": "template/shared-skills/scroll-story-component/references/integration.md",
       "destination": ".agents/skills/scroll-story-component/references/integration.md",
-      "sha256": "7e88a94472d3dfe1b5f70776b697a347fc1a3d27738af4f290f9bd431178ee92",
+      "sha256": "c851bc624264abd5fe6acaf490738e204d4e2299442ef000047fea11a77c363b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
       "destination": ".agents/skills/scroll-story-component/references/media-brief.md",
-      "sha256": "3e88a516b94b739e1a51c214082ccb839d214b70776845ce6cc6e05530c2002f",
+      "sha256": "69591ab731f72aa9294c3877573564a67d2b1e9bef2a83a808d6a0f8600a5d24",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/scroll-story-component/SKILL.md",
       "destination": ".claude/skills/scroll-story-component/SKILL.md",
-      "sha256": "13ba8b9ee56a7ad473152523e371578f4f667a8621c4f1b399f18c8b0d8a928b",
+      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/example.tsx",
+      "destination": ".claude/skills/scroll-story-component/assets/example.tsx",
+      "sha256": "87ab546fc9f533db1daf087bec2621705656af7c491906d90b7e75ea2b46279e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/scroll-story.tsx",
+      "destination": ".claude/skills/scroll-story-component/assets/scroll-story.tsx",
+      "sha256": "869c6b78d605957f37917f5a47ade1076fdcfd7bcebdf1f9fc65271d51d394db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/api.md",
+      "destination": ".claude/skills/scroll-story-component/references/api.md",
+      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
       "mergeKind": "managed-file"
     },
     {
@@ -710,13 +746,13 @@
     {
       "source": "template/shared-skills/scroll-story-component/references/integration.md",
       "destination": ".claude/skills/scroll-story-component/references/integration.md",
-      "sha256": "7e88a94472d3dfe1b5f70776b697a347fc1a3d27738af4f290f9bd431178ee92",
+      "sha256": "c851bc624264abd5fe6acaf490738e204d4e2299442ef000047fea11a77c363b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
       "destination": ".claude/skills/scroll-story-component/references/media-brief.md",
-      "sha256": "3e88a516b94b739e1a51c214082ccb839d214b70776845ce6cc6e05530c2002f",
+      "sha256": "69591ab731f72aa9294c3877573564a67d2b1e9bef2a83a808d6a0f8600a5d24",
       "mergeKind": "managed-file"
     },
     {

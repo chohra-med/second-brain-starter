@@ -84,7 +84,7 @@ The sixteen skills:
 | `readme-generator` | Writes a README for a project. |
 | `graphify` | Suggests links in your notes from a graph file. It needs an optional outside tool. |
 | `usage-dashboard` | Prints how much Claude Code was used, from its transcript files on this machine: tokens, an estimated cost at list prices, and skill and command use. It runs only when you run it. |
-| `scroll-story-component` | Wires a scroll-driven video story into a React site with the open-source [scroll-story](https://github.com/chohra-med/scroll-story) package: chapters, reading pauses, phone framing and the film encode. |
+| `scroll-story-component` | Adds a scroll-driven video story to a React site: it copies one runtime file into your project, then builds the chapters, reading pauses, phone framing and film encode on it. |
 | `writing-skills` | Explains how to write your own skill. |
 
 ## Day 1, day 7 and day 14

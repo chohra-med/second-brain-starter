@@ -1,34 +1,37 @@
 ---
 name: scroll-story-component
-description: Integrate or maintain a shared React scroll-story component across websites, with reversible video seeking, an idle loop and site-specific chapters. Use when reusing the same scroll behavior or fixing its shared runtime.
+description: Add a scroll-driven video story to a React site, where scrolling scrubs a film through chapters, pauses at each labelled moment so the visitor can read, and falls back to static chapters. Ships the runtime as one file to copy into the project. Use when a page should explain an idea by scrolling through a film, or when fixing an existing scroll story.
 license: MIT
 ---
 
-# Shared scroll story component
+# Scroll story component
 
-Use the supplied React runtime instead of recreating scroll and video effects in each page. Read the target project's rules and the package README before changing its consumer.
+This skill carries the whole runtime: [assets/scroll-story.tsx](assets/scroll-story.tsx), one React 19 file with no dependency beyond React. Copy it into the target project and build the page on it. Do not recreate scroll or video seeking by hand. Read the target project's own rules before changing it.
 
 ## Required inputs
 
-- Target website and page, existing component/package revision and build instructions.
-- Approved story film, optional fixed-camera idle loop, matching stills and actual duration/frame rate.
-- Chapters: stable IDs, starting times, navigation seek times and one short paragraph per concept.
-- Existing styles, phone/desktop composition and measured label coordinates.
+- Target project and page, its framework (React 19; Next.js, Vite or similar) and its build and test commands.
+- The story film, an optional fixed-camera idle loop for the opening, matching stills, and the film's real duration and frame rate.
+- Chapters: stable ids, start times, navigation seek times and one short paragraph per idea.
+- The measured positions of anything a label points at, and the moments where the film holds still on it.
+- The page's existing styles and its phone and desktop layout.
 
-For a new scene, use [the media brief](references/media-brief.md), settle the storyboard and inspect film continuity first. A player cannot repair camera resets or drifting geometry. Keep writing and labels in HTML.
+No film yet? Use [the media brief](references/media-brief.md) and settle the storyboard first. A player cannot repair camera resets or drifting geometry. Keep all writing and labels in HTML.
 
 ## Workflow
 
-1. Locate the runtime: install it with `npm install github:chohra-med/scroll-story` (public source), or use the release included in `assets/scroll-story` or a checkout's own `packages/scroll-story`. Read [integration](references/integration.md). Install or link one shared revision; preserve the prior revision for rollback.
-2. Keep scroll clock, latest-time seeking, idle/story recovery and chapter navigation in the shared runtime. Keep content, media URLs, labels and styling in the website adapter. Change the runtime once for a shared defect.
-3. Mount the story using the package's example. Give each story a unique ID namespace and adapt its chapter times to the supplied film. Keep an optional idle loop separate from the paused story movie. Design the page with [the design patterns](references/design-patterns.md): reading pauses with snap points at every labelled moment, copy that fades with film time, one display-size line per screen, a chapter rail that never overflows, an enlarged and panned frame on phones, and an encode with dense keyframes.
-4. Preserve decoded-time copy synchronization and target-matched still recovery. Before client motion admission, with JavaScript disabled or under reduced motion, render all chapters in flow with stable stills and real fragment targets. Forward both availability and explicit failure callbacks; loading and bounded recovery are distinct from an error. During camera travel use a semantic label; connect it to a specific node only at a measured hold.
-5. Own a persistent accessible Pause/Resume control outside decorative media and pass controlled `idlePaused`. Preserve native modified links, host history and back/forward behavior. Keep pointer targets stationary until click release.
-6. Build the consumer and inspect the opening, chapter clicks, an intermediate seek and reverse scroll at desktop and narrow-phone widths. Check keyboard focus without moving a pointer target before click release. Exercise actual no-JS and reduced-motion modes, loading/recovery, independent media failure, pause and terminal continuation. Report the observed scope and limits; simulated fixtures do not qualify a real browser mode.
-7. For a shared fix, release a new package revision, update each declared consumer and rebuild it. A source edit does not change websites that already shipped an older bundle. Do not publish or deploy without the task's authorization.
+1. Copy [assets/scroll-story.tsx](assets/scroll-story.tsx) into the project, for example `src/components/scroll-story.tsx`. It is now the project's own code. Read [the API](references/api.md) and [integration](references/integration.md).
+2. Start from [assets/example.tsx](assets/example.tsx): change its import to the path you chose, then replace the demo chapters, media and styles with the page's own. Keep scroll clock, seeking, recovery and chapter navigation in the copied runtime; keep content, media URLs, labels and styling in the page's adapter.
+3. Set `chapters` and `duration` from the decoded film. Give each story a unique `id`. Keep an optional idle loop separate from the paused story film.
+4. Design the page with [the design patterns](references/design-patterns.md): reading pauses (`holds`) with snap points at every labelled moment, copy that fades with film time, one display-size line per screen, a chapter rail that never overflows, an enlarged and panned frame on phones, and a film encoded with dense keyframes.
+5. Keep decoded-time copy sync and matching stills for recovery. Before JavaScript runs and under reduced motion, render every chapter in flow with stable stills and real fragment targets. Pass all three callbacks (`onTimeSettled`, `onFailureChange`, `onAvailabilityChange`). During camera travel use a short semantic label; point a label at a node only during a measured hold.
+6. Add an accessible Pause/Resume control for the idle loop outside the decorative media and pass `idlePaused`. Keep native modified links and back/forward behaviour.
+7. Build the project and check in a real browser at desktop, tablet and two phone widths, portrait and landscape: the opening, every reading pause, a chapter-link click, a hash deep link, a reverse scroll, reduced motion and no horizontal scroll. Report what you checked and what you could not.
+
+## Updating
+
+The copied file does not update itself. To take a newer runtime, diff the project's copy against the newer `assets/scroll-story.tsx`, keep any local edits, rebuild and recheck. Do not publish or deploy without the task's authorization.
 
 ## Outputs
 
-Return the shared source/package revision, changed adapter, local preview, source/media identities, installation instructions and observed checks. List which websites consume that revision and which still need updating. Keep paid generation and public release separate from local integration.
-
-The portable export contains original code/instructions and a media-free example. Bring your own media; generated CasaInnov films and commercial launcher code are not included.
+Return the changed files, where the runtime was copied, a local preview, the media used and the checks you ran, with their limits. Bring your own media; no film ships with this skill.

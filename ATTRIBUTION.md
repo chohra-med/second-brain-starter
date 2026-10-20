@@ -20,7 +20,7 @@ The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-ski
 
 ## Original skills: grill-me, readme-generator, graphify, writing-skills, usage-dashboard and scroll-story-component
 
-The skills `grill-me`, `readme-generator`, `graphify`, `writing-skills`, `usage-dashboard` and `scroll-story-component` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. `scroll-story-component` points to the separate MIT package `chohra-med/scroll-story` by the same author and does not copy its code. For `graphify`, the outside tool it describes is separate software, as the note below explains.
+The skills `grill-me`, `readme-generator`, `graphify`, `writing-skills`, `usage-dashboard` and `scroll-story-component` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. `scroll-story-component` includes its own runtime, `assets/scroll-story.tsx`, written by the same author and under the same MIT licence. For `graphify`, the outside tool it describes is separate software, as the note below explains.
 
 ## Optional companion: graphify
 

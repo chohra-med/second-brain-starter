@@ -1,28 +1,18 @@
 # Integrating the shared scroll runtime
 
-## Locate and install
+## Copy the runtime
 
-The local development owner is the target checkout's `packages/scroll-story/`. The portable release includes a generated copy at `assets/scroll-story/` and an installable archive at `assets/scroll-story.tgz`. `RELEASE.json` binds the package revision and delivered files. Edit the canonical source, then regenerate exports; do not maintain two runtimes.
+The runtime is one file in this skill, `assets/scroll-story.tsx`. Copy it into the project, for example to `src/components/scroll-story.tsx`, and import from that path:
 
-From an existing React 19 website, install the public source, which builds on install:
-
-```bash
-npm install github:chohra-med/scroll-story
+```tsx
+import { ScrollStory, ScrollVideo, type Chapters, type ScrollChapter } from '@/components/scroll-story'
 ```
 
-Or install the portable archive using its actual full path:
-
-```bash
-npm install /absolute/path/scroll-story-component/assets/scroll-story.tgz
-```
-
-Import from `@casainnov/scroll-story`. The built package is ESM, uses React as its only runtime peer, and includes TypeScript declarations. It does not depend on Next.js, Tailwind or a vault. React 18 and CommonJS compatibility are not claimed. A Next.js consumer calling render callbacks must be a client component; retain server metadata outside it.
-
-For source-linked development, map one import to the canonical package source. CasaInnov uses `@/scroll-story` in its TypeScript paths. Other websites can install the same built revision. A copied source file is a fork, not shared maintenance.
+It needs React 19 and nothing else: no Next.js, Tailwind or animation library. Its first statement is `'use client'`, so in Next.js it works as a client component; keep server metadata in a separate server file. Keep one copy per project. Two stories on one page share the same file and need different `id` values.
 
 ## Compose the page
 
-Read the package README and shipped examples for the exact API.
+Read [the API](api.md) and `assets/example.tsx` for the exact props.
 
 - `ScrollStory` owns progress, reduced motion, visibility, displayed-time chapter selection, URL restoration, chapter links, keyboard focus and overflow state. Its render callback returns the website's section and stage; the runtime adds no layout wrapper.
 - `ScrollVideo` owns latest-target seeking, movie readiness, separate story/idle failures and ambient playback. Its render callback supplies managed props for the video elements and a fallback flag.
@@ -37,24 +27,20 @@ CSS owns the long scroll container and sticky viewport. Derive marker positions 
 
 ## Availability and playback controls
 
-The exact API belongs to the package README. `ScrollVideo` attaches neither MP4 before client motion admission and attaches neither source under initial reduced motion. First-load unavailable frames use matching stills and target-time copy. A subsequent pending seek enters still recovery after five visible seconds without decoded progress; changing scroll targets does not renew that budget. Hidden or offscreen time pauses it. Late matching frames restore synchronization without reloading or labeling slow media failed. Preserve `onAvailabilityChange` separately from explicit `onFailureChange`.
+The exact props are in [the API](api.md). `ScrollVideo` attaches neither MP4 before client motion admission and attaches neither source under initial reduced motion. First-load unavailable frames use matching stills and target-time copy. A subsequent pending seek enters still recovery after five visible seconds without decoded progress; changing scroll targets does not renew that budget. Hidden or offscreen time pauses it. Late matching frames restore synchronization without reloading or labeling slow media failed. Preserve `onAvailabilityChange` separately from explicit `onFailureChange`.
 
 The adapter owns an accessible Pause/Resume control and passes controlled `idlePaused` (default false). Keep this control outside any decorative `aria-hidden` scene. Retain pause across reverse scrolling and visibility changes; pausing the opening does not disable story seeking.
 
 Managed primary chapter links preserve host history state. Modified clicks, alternate buttons, target and download anchors remain native. Preserve back/forward and meaningful static fragments. Automatic nav centering must not move a hovered, pressed or focused pointer target. Supply a native terminal link to the next meaningful section when the story ends.
 
-## Shared fixes across websites
+## Fixes and updates
 
-1. Reproduce the issue in the runtime's canonical source and fix it there.
-2. Build and pack a new revision; inspect the actual installed output.
-3. Update each declared website's package pin or shared source import.
-4. Build and review that consumer, then deploy under its own authority.
-5. Retain the previous package and consumer build for rollback.
-
-Source-linked development can reflect one change on the next rebuild. Websites already deployed with a versioned package retain their old bundle until updated and rebuilt. Do not promise automatic propagation to live sites.
+1. Reproduce the issue in the project's copy of `scroll-story.tsx` and fix it there.
+2. If the fix belongs in the runtime itself, apply the same change to the skill's `assets/scroll-story.tsx` so the next project gets it.
+3. A project that copied the file earlier keeps its old copy until you diff, update, rebuild and deploy it.
 
 ## Bounded acceptance
 
 Inspect ordinary forward/reverse scrolling, a pending seek followed by a newer target, direct chapter entry before metadata, first pointer click, keyboard focus/Enter, phone nav overflow, a resize after navigation, independent story/idle failure, pause persistence, bounded stalled-seek recovery, all-chapter JavaScript-disabled and reduced-motion layout, and terminal navigation. Use two differently configured story instances to expose accidental shared state or hash ownership. Browser/media differences require their own evidence; a successful compile does not qualify every browser.
 
-The skill explains integration. Film preparation and narrative planning remain separate methods; no amount of package reuse can join unrelated camera states into the same physical graph.
+The skill explains integration. Film preparation and narrative planning remain separate methods; no amount of runtime reuse can join unrelated camera states into the same physical graph.
