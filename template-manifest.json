@@ -672,6 +672,54 @@
       "mergeKind": "seed-file"
     },
     {
+      "source": "template/shared-skills/scroll-story-component/SKILL.md",
+      "destination": ".agents/skills/scroll-story-component/SKILL.md",
+      "sha256": "13ba8b9ee56a7ad473152523e371578f4f667a8621c4f1b399f18c8b0d8a928b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/design-patterns.md",
+      "destination": ".agents/skills/scroll-story-component/references/design-patterns.md",
+      "sha256": "f0da67fac74dec0b7c840b80adfd5bfa325224a45b0246a7f214eab47b133e11",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/integration.md",
+      "destination": ".agents/skills/scroll-story-component/references/integration.md",
+      "sha256": "7e88a94472d3dfe1b5f70776b697a347fc1a3d27738af4f290f9bd431178ee92",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
+      "destination": ".agents/skills/scroll-story-component/references/media-brief.md",
+      "sha256": "3e88a516b94b739e1a51c214082ccb839d214b70776845ce6cc6e05530c2002f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/SKILL.md",
+      "destination": ".claude/skills/scroll-story-component/SKILL.md",
+      "sha256": "13ba8b9ee56a7ad473152523e371578f4f667a8621c4f1b399f18c8b0d8a928b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/design-patterns.md",
+      "destination": ".claude/skills/scroll-story-component/references/design-patterns.md",
+      "sha256": "f0da67fac74dec0b7c840b80adfd5bfa325224a45b0246a7f214eab47b133e11",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/integration.md",
+      "destination": ".claude/skills/scroll-story-component/references/integration.md",
+      "sha256": "7e88a94472d3dfe1b5f70776b697a347fc1a3d27738af4f290f9bd431178ee92",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
+      "destination": ".claude/skills/scroll-story-component/references/media-brief.md",
+      "sha256": "3e88a516b94b739e1a51c214082ccb839d214b70776845ce6cc6e05530c2002f",
+      "mergeKind": "managed-file"
+    },
+    {
       "source": "template/shared-skills/writing-skills/SKILL.md",
       "destination": ".agents/skills/writing-skills/SKILL.md",
       "sha256": "8328bb5fd54689e3e10d6b1f5c54ccf3afc5a95415d4d12302b8646e3964c23a",

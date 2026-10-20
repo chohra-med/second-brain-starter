@@ -127,6 +127,10 @@ template/shared-skills/humanizer/references/always-on-templates.md
 template/shared-skills/humanizer/references/patterns.md
 template/shared-skills/humanizer/references/patterns.zh.md
 template/shared-skills/readme-generator/SKILL.md
+template/shared-skills/scroll-story-component/SKILL.md
+template/shared-skills/scroll-story-component/references/design-patterns.md
+template/shared-skills/scroll-story-component/references/integration.md
+template/shared-skills/scroll-story-component/references/media-brief.md
 template/shared-skills/usage-dashboard/SKILL.md
 template/shared-skills/usage-dashboard/usage-dashboard.mjs
 template/shared-skills/usage-dashboard/usage-prices.json

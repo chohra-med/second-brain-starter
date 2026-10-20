@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Adds the shared skill `scroll-story-component`, installed to `.agents/skills/` and `.claude/skills/`: `SKILL.md` and three references (`design-patterns.md`, `integration.md`, `media-brief.md`). It guides an assistant through wiring a scroll-driven video story into a React site with the separate open-source package [chohra-med/scroll-story](https://github.com/chohra-med/scroll-story): chapter timing, an idle opening loop, reading pauses with snap points, phone framing, the film encode, and the browser checks to run. The skill is written for this repository by its author, see [ATTRIBUTION.md](ATTRIBUTION.md).
+- Design decision, a pointer skill (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): the skill carries instructions only. The React code stays in its own repository and is installed by the user into their own site with `npm install github:chohra-med/scroll-story`; the initializer installs no code, media or dependency for it, and nothing runs unless the user asks for it. It reads and writes nothing in the workspace.
+- The installed skill set grows from fifteen to sixteen. The README, the two docs that count the skills and the installer test now say sixteen.
+- The version is not changed by this entry; the release that ships it sets it.
+
 ## v1.6.0 (2026-10-18)
 
 - Re-pins the vendored Spec Harness to `49fad7c694feacc530d5e79ab905c7990090397e`, Spec Harness 0.5.0 (merged upstream as PR 35). It adds `sdd-router`, a read-only role on a small model that sizes each code ticket before the other stages, fixes two first-run blockers in `/sdd init`, and says in the plan skill that Grill Me is for LITE and FULL tickets only. A connect now stages 96 harness files instead of 95. Before this release the vendored copy was 0.4.0 at commit `b7ea02973a331d8664f6005e0e358ae3c6fc0700`.
