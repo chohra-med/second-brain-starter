@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.9.0 (2026-10-21)
+
+- Adds the shared skill `today`, installed to `.agents/skills/` and `.claude/skills/`, with the procedure `03-Resources/Procedures/today.md`. `/today` returns the day's briefing from the workspace records: it reads `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and the daily notes for today and yesterday, lists every open task from the plan's Today and Open decisions or blockers sections (all of them, none dropped), copies yesterday's Open and Next lines as the carry-over, and ends with one first action and the check that shows it is done. A plan whose `Date:` line is not today is labelled `stale plan dated YYYY-MM-DD` and is not treated as today's focus. It writes no file.
+- Adds the shared skill `context`, the `/context` command, installed the same way. It reads the existing procedure `03-Resources/Procedures/context-modes.md` (default, scoped and full modes), so `/context`, `/context <project>` and `/context full` now work by that name. `context-modes` stays installed and reads the same procedure, so an existing workspace loses nothing.
+- Design decision, two skills with no code (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): both are procedures an assistant follows. They add no command line tool, run nothing and write nothing. `today` reads only the three named records and never scans the project folders, the inbox or older notes; when a project matters it offers `context <project>`. `context` is a second name for an existing procedure, not a second procedure, so the reads and stop rules have one owner.
+- The installed skill set grows from eighteen to twenty. The README, the two docs that count the skills and the installer test now say twenty.
+- Version: the source moves from `v1.8.0` to `v1.9.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
 ## v1.8.0 (2026-10-21)
 
 - Adds the shared skill `handover`, installed to `.agents/skills/` and `.claude/skills/`, with the procedure `03-Resources/Procedures/handover.md`. When a chat is nearly full or full of side trails, it writes one short note (goal, state with evidence, decisions, one next action, up to five paths to read first), shows it, and saves it to `00-Meta/Handovers/` only after a yes. You then clear the chat and paste one restart prompt, so the fresh chat reads only that note. It exists because two things make an assistant worse as a chat grows: a nearly full context window, where it loses track and guesses, and a window full of material the task no longer needs. The installed skill set grows from sixteen to eighteen with this release (`handover` and `api-anything`). The README, the two docs that count the skills and the installer test now say eighteen.

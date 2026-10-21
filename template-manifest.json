@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.8.0",
+    "templateVersion": "1.9.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -844,6 +844,36 @@
       "destination": "01-Projects/Index.md",
       "sha256": "4bb378586735c2a286a70206ea6ac37755992166b1b61544910c2c9ead7b80ca",
       "mergeKind": "seed-file"
+    },
+    {
+      "source": "template/shared-skills/today/SKILL.md",
+      "destination": ".agents/skills/today/SKILL.md",
+      "sha256": "6d2736f768e6ea91ede055bdd1b64c1356f615f43d8a80ce3ff45e1a4c7ec6b8",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/today/SKILL.md",
+      "destination": ".claude/skills/today/SKILL.md",
+      "sha256": "6d2736f768e6ea91ede055bdd1b64c1356f615f43d8a80ce3ff45e1a4c7ec6b8",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/context/SKILL.md",
+      "destination": ".agents/skills/context/SKILL.md",
+      "sha256": "fabc3393c30d444ba0b92f6bb786acf8c074151573b62e45f67af8dbd56e0661",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/context/SKILL.md",
+      "destination": ".claude/skills/context/SKILL.md",
+      "sha256": "fabc3393c30d444ba0b92f6bb786acf8c074151573b62e45f67af8dbd56e0661",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/today.md",
+      "destination": "03-Resources/Procedures/today.md",
+      "sha256": "2142fa7f46e30cd55bba89a2b8863cdadb56a97cccc91301ada3ae838ebf339e",
+      "mergeKind": "managed-file"
     }
   ]
 }
