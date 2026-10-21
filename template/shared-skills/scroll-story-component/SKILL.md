@@ -18,6 +18,10 @@ This skill carries the whole runtime: [assets/scroll-story.tsx](assets/scroll-st
 
 No film yet? Use [the media brief](references/media-brief.md) and settle the storyboard first. A player cannot repair camera resets or drifting geometry. Keep all writing and labels in HTML.
 
+## Demo
+
+What a finished page looks like, recorded on a live page built with this skill: [desktop scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-desktop.mp4), [phone scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-phone.mp4), [short GIF](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo.gif), and every reading pause on [desktop](https://github.com/chohra-med/second-brain-starter/blob/main/docs/media/scroll-story-holds-desktop.jpg) and [phone](https://github.com/chohra-med/second-brain-starter/blob/main/docs/media/scroll-story-holds-phone.jpg). The film scrubs with scroll, stops on each labelled moment while the copy is read, and pans toward the label on phones.
+
 ## Workflow
 
 1. Copy [assets/scroll-story.tsx](assets/scroll-story.tsx) into the project, for example `src/components/scroll-story.tsx`. It is now the project's own code. Read [the API](references/api.md) and [integration](references/integration.md).

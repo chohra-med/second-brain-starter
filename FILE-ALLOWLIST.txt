@@ -12,6 +12,8 @@ docs/connect-a-repository.md
 docs/first-loop-and-projects.md
 docs/free-and-builder-ai-os.md
 docs/install-and-recovery.md
+docs/media/scroll-story-holds-desktop.jpg
+docs/media/scroll-story-holds-phone.jpg
 docs/verify-update-rollback.md
 FILE-ALLOWLIST.txt
 LICENSE

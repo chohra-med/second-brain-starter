@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.7.0",
+    "templateVersion": "1.7.1",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -674,7 +674,7 @@
     {
       "source": "template/shared-skills/scroll-story-component/SKILL.md",
       "destination": ".agents/skills/scroll-story-component/SKILL.md",
-      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "sha256": "db8f22d85229193bb6e54e5b63eb6e331228cfe39079c87417d8cb5987ad1671",
       "mergeKind": "managed-file"
     },
     {
@@ -716,7 +716,7 @@
     {
       "source": "template/shared-skills/scroll-story-component/SKILL.md",
       "destination": ".claude/skills/scroll-story-component/SKILL.md",
-      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "sha256": "db8f22d85229193bb6e54e5b63eb6e331228cfe39079c87417d8cb5987ad1671",
       "mergeKind": "managed-file"
     },
     {
