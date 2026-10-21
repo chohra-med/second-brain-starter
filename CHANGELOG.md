@@ -2,7 +2,7 @@
 
 ## v1.7.1 (2026-10-21)
 
-- `scroll-story-component` gains a Demo section: links to a desktop and a phone scroll-through recorded on a live page built with the skill, a short GIF, and a still of every reading pause. The two stills live in `docs/media/` and are shown in the README; the recordings and the GIF are assets of the v1.7.0 release, because a 5 MB GIF overflows the package scanner and every skill file is installed twice into each workspace.
+- `scroll-story-component` gains a Demo section: links to a desktop and a phone scroll-through recorded on a live page built with the skill, a short GIF, and a still of every reading pause. The README now plays a short GIF of the scroll story inline, above the two stills in `docs/media/`. The GIF lives on the separate `media` branch, outside the package, because GIF bytes overflow the package scanner (even at 1.7 MB) and every skill file is installed twice into each workspace. The full recordings stay assets of the v1.7.0 release.
 - Version: the source moves from `v1.7.0` to `v1.7.1` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
 
 ## v1.7.0 (2026-10-21)

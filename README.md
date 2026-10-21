@@ -89,9 +89,11 @@ The sixteen skills:
 
 ### What `scroll-story-component` builds
 
+![A scroll story in motion: the film scrubs with scroll and stops on each labelled moment while the copy is read](https://raw.githubusercontent.com/chohra-med/second-brain-starter/media/scroll-story-demo.gif)
+
 ![Every reading pause of a scroll story on desktop: intro, context, four PARA labels, CODE, skill, workflow and review](docs/media/scroll-story-holds-desktop.jpg)
 
-Recorded on a live page built with the skill ([casainnov.com/second-brain](https://casainnov.com/second-brain)). The film scrubs as you scroll and stops at each labelled moment so the text can be read. Watch the [desktop scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-desktop.mp4), the [phone scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-phone.mp4) or a [short GIF](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo.gif). On phones the frame is enlarged and pans toward the label:
+Recorded on a live page built with the skill ([casainnov.com/second-brain](https://casainnov.com/second-brain)). The film scrubs as you scroll and stops at each labelled moment so the text can be read. Full-length video: [desktop](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-desktop.mp4) and [phone](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-phone.mp4) (mp4). On phones the frame is enlarged and pans toward the label:
 
 ![Every reading pause of the same story on a phone](docs/media/scroll-story-holds-phone.jpg)
 
