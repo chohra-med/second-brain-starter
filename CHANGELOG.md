@@ -1,11 +1,11 @@
 # Changelog
 
-## Unreleased
+## v1.7.0 (2026-10-21)
 
 - Adds the shared skill `scroll-story-component`, installed to `.agents/skills/` and `.claude/skills/`: `SKILL.md`, four references (`api.md`, `design-patterns.md`, `integration.md`, `media-brief.md`) and two assets (`scroll-story.tsx`, `example.tsx`). It guides an assistant through adding a scroll-driven video story to a React site: chapter timing, an idle opening loop, reading pauses with snap points, phone framing, the film encode, and the browser checks to run. The skill is written for this repository by its author, see [ATTRIBUTION.md](ATTRIBUTION.md).
 - Design decision, a skill that carries its own code (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): the runtime is one React 19 file, `assets/scroll-story.tsx`, inside the skill. The assistant copies it into the user's own site when the user asks for a scroll story; from then on it is the site's code. Nothing is installed as a package, nothing runs in the workspace, the initializer only writes the skill files like any other skill, and the skill reads and writes nothing in the workspace. The two `.tsx` files are the first source files in the template meant to be copied into another project. A copied file does not update itself; the skill says how to diff and update it.
 - The installed skill set grows from fifteen to sixteen. The README, the two docs that count the skills and the installer test now say sixteen.
-- The version is not changed by this entry; the release that ships it sets it.
+- Version: the source moves from `v1.6.0` to `v1.7.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
 
 ## v1.6.0 (2026-10-18)
 

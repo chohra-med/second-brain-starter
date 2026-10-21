@@ -1,5 +1,13 @@
 # Upgrading the free starter
 
+## Upgrading to v1.7.0
+
+This version adds one shared skill, `scroll-story-component`. Nothing is updated, merged or deleted.
+
+Measured on a scratch workspace made by `init` from the v1.6.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.6.0 -> available 1.7.0` and `Summary: 14 CREATE, 115 IDENTICAL`. The 14 new files are the skill's seven files (`SKILL.md`, four references and two assets) in both `.agents/skills/` and `.claude/skills/`. After the approved apply, `verify` reports `Verification: OK`.
+
+The skill's `assets/scroll-story.tsx` is a React file for a website. The upgrade only writes it into the skill folder; it is copied into a site only when you ask an assistant to add a scroll story there.
+
 ## Upgrading to v1.6.0
 
 This version changes the vendored Spec Harness, not the workspace template. Your workspace files do not change.
