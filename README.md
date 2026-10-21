@@ -62,11 +62,11 @@ The first command prints the plan and its digest. The second applies that exact 
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships fifteen shared skills. The initializer installs them as fifteen local skills in `.claude/skills/` and `.agents/skills/`. |
+| Skills | The starter ships sixteen shared skills. The initializer installs them as sixteen local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
-The fifteen skills:
+The sixteen skills:
 
 | Skill | What it does |
 |---|---|
@@ -84,6 +84,7 @@ The fifteen skills:
 | `readme-generator` | Writes a README for a project. |
 | `graphify` | Suggests links in your notes from a graph file. It needs an optional outside tool. |
 | `usage-dashboard` | Prints how much Claude Code was used, from its transcript files on this machine: tokens, an estimated cost at list prices, and skill and command use. It runs only when you run it. |
+| `scroll-story-component` | Adds a scroll-driven video story to a React site: it copies one runtime file into your project, then builds the chapters, reading pauses, phone framing and film encode on it. |
 | `writing-skills` | Explains how to write your own skill. |
 
 ## Day 1, day 7 and day 14
@@ -117,7 +118,7 @@ This package also bundles Spec Harness under `vendor/spec-harness/` with its own
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.6.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.7.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Remove the starter
 

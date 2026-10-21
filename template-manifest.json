@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.6.0",
+    "templateVersion": "1.7.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -670,6 +670,90 @@
       "destination": ".claude/skills/usage-dashboard/usage-prices.json",
       "sha256": "9de23784c09f36120a7c4335feb3115fc28404f6fa9ef47880c362a4784beb5c",
       "mergeKind": "seed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/SKILL.md",
+      "destination": ".agents/skills/scroll-story-component/SKILL.md",
+      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/example.tsx",
+      "destination": ".agents/skills/scroll-story-component/assets/example.tsx",
+      "sha256": "87ab546fc9f533db1daf087bec2621705656af7c491906d90b7e75ea2b46279e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/scroll-story.tsx",
+      "destination": ".agents/skills/scroll-story-component/assets/scroll-story.tsx",
+      "sha256": "869c6b78d605957f37917f5a47ade1076fdcfd7bcebdf1f9fc65271d51d394db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/api.md",
+      "destination": ".agents/skills/scroll-story-component/references/api.md",
+      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/design-patterns.md",
+      "destination": ".agents/skills/scroll-story-component/references/design-patterns.md",
+      "sha256": "f0da67fac74dec0b7c840b80adfd5bfa325224a45b0246a7f214eab47b133e11",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/integration.md",
+      "destination": ".agents/skills/scroll-story-component/references/integration.md",
+      "sha256": "c851bc624264abd5fe6acaf490738e204d4e2299442ef000047fea11a77c363b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
+      "destination": ".agents/skills/scroll-story-component/references/media-brief.md",
+      "sha256": "69591ab731f72aa9294c3877573564a67d2b1e9bef2a83a808d6a0f8600a5d24",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/SKILL.md",
+      "destination": ".claude/skills/scroll-story-component/SKILL.md",
+      "sha256": "1881a0b9285efccb3288d83cbed0ac455f91438251da54270bfe429fd5f0d99d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/example.tsx",
+      "destination": ".claude/skills/scroll-story-component/assets/example.tsx",
+      "sha256": "87ab546fc9f533db1daf087bec2621705656af7c491906d90b7e75ea2b46279e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/assets/scroll-story.tsx",
+      "destination": ".claude/skills/scroll-story-component/assets/scroll-story.tsx",
+      "sha256": "869c6b78d605957f37917f5a47ade1076fdcfd7bcebdf1f9fc65271d51d394db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/api.md",
+      "destination": ".claude/skills/scroll-story-component/references/api.md",
+      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/design-patterns.md",
+      "destination": ".claude/skills/scroll-story-component/references/design-patterns.md",
+      "sha256": "f0da67fac74dec0b7c840b80adfd5bfa325224a45b0246a7f214eab47b133e11",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/integration.md",
+      "destination": ".claude/skills/scroll-story-component/references/integration.md",
+      "sha256": "c851bc624264abd5fe6acaf490738e204d4e2299442ef000047fea11a77c363b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/scroll-story-component/references/media-brief.md",
+      "destination": ".claude/skills/scroll-story-component/references/media-brief.md",
+      "sha256": "69591ab731f72aa9294c3877573564a67d2b1e9bef2a83a808d6a0f8600a5d24",
+      "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/writing-skills/SKILL.md",
