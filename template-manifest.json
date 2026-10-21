@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "metadata": {
     "edition": "free",
-    "templateVersion": "1.7.1",
+    "templateVersion": "1.8.0",
     "stateNamespace": ".second-brain",
     "contract": {
       "entry": {
@@ -30,9 +30,27 @@
   },
   "entries": [
     {
+      "source": "template/shared-skills/handover/SKILL.md",
+      "destination": ".agents/skills/handover/SKILL.md",
+      "sha256": "f1f9dc9dd0d74b2aadd640a254fed6840f66c114ba4db91d4c9f7bb8f59d7f7a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/handover/SKILL.md",
+      "destination": ".claude/skills/handover/SKILL.md",
+      "sha256": "f1f9dc9dd0d74b2aadd640a254fed6840f66c114ba4db91d4c9f7bb8f59d7f7a",
+      "mergeKind": "managed-file"
+    },
+    {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
       "sha256": "6a4acd117facddd40e26d39ab8b5aca61328c27a351bbe5a276511f4d0c08f02",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/handover.md",
+      "destination": "03-Resources/Procedures/handover.md",
+      "sha256": "5ae5bfe9154e947f09aec465f13e4632f61ecf39de4ba6ff806413abe44f3870",
       "mergeKind": "managed-file"
     },
     {

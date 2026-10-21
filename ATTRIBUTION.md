@@ -28,6 +28,6 @@ The `graphify` skill in [template/shared-skills/graphify/](template/shared-skill
 
 ## Bundled third-party system: Spec Harness
 
-[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `49fad7c694feacc530d5e79ab905c7990090397e`, harness version 0.5.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
+[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `1a7680bd48b4e8be9fa652fa697a86e4898292a2`, harness version 0.6.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
 
 The copy is not part of the workspace template. The `connect` command reads the vendored install manifest and the files it names, and writes rendered copies of them into a repository you name. No code in `lib` or `bin` starts a process, so the vendored shell scripts are never executed; `bin/loop.sh` is copied as bytes only. `vendor/SPEC-HARNESS-PIN.json` records the commit, tree and a SHA-256 for every vendored file, and `test/vendor.test.mjs` checks the folder against that record.

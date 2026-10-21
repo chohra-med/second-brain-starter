@@ -22,7 +22,7 @@ what the initialiser wrote; allow longer on a large app.
 | Tool | Needed for |
 |---|---|
 | `git`, `bash` 3.2 or newer | everything |
-| Python 3.11 or newer | `index`, `doctor`, `finalize-init` and `generate-agents` (the structural check is `generate-agents --check`) |
+| Python 3.11 or newer | `index`, `stack`, `doctor`, `finalize-init` and `generate-agents` (the structural check is `generate-agents --check`) |
 | Node.js | only the `npx` route; a checkout needs none |
 | Claude Code, or Codex | the model-led steps (`/sdd init`, `/sdd <ticket>`) |
 

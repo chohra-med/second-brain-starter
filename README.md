@@ -62,11 +62,11 @@ The first command prints the plan and its digest. The second applies that exact 
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships sixteen shared skills. The initializer installs them as sixteen local skills in `.claude/skills/` and `.agents/skills/`. |
+| Skills | The starter ships seventeen shared skills. The initializer installs them as seventeen local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
-The sixteen skills:
+The seventeen skills:
 
 | Skill | What it does |
 |---|---|
@@ -78,6 +78,7 @@ The sixteen skills:
 | `second-brain-icm` | Guides changes to the workspace's rules, skills and routes. |
 | `context-modes` | Loads bounded workspace context in one of three modes: default, one project or task, or full. |
 | `end-session` | Closes a work session: writes the records, captures learning, lists the gaps and the next actions. |
+| `handover` | Writes a short note so a long or cluttered chat can be cleared and restarted fresh. |
 | `icm-architect` | The bundled method that `second-brain-icm` relies on. |
 | `humanizer` | Finds and removes common AI writing patterns. |
 | `grill-me` | Settles a confused idea by checking real files and asking one question at a time. |
@@ -128,7 +129,7 @@ This package also bundles Spec Harness under `vendor/spec-harness/` with its own
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.7.1`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.8.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Remove the starter
 

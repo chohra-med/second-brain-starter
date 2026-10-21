@@ -19,6 +19,7 @@ This source procedure is a generic scaffold. During initialization, create one p
 2. Record how this project uses the technology, from its own source. Cite exact `path:line` spans and SHA-256, and label these `OBSERVED`.
 3. Add the practices from the technology's official documentation that this project should follow for its installed version. Cite the URL and access date, and label these `RECOMMENDATION`. Where the project's code contradicts one, surface the conflict for a human decision.
 4. Keep the skill short: what to do, what to avoid, and which project file shows the pattern. State `not established` where evidence is absent.
+5. Name rules by ID and never copy them. The technology's rules live once, in `ai_rules/rules/tool-<package>.md` (from a rule pack or official documentation) or in a project rule module; its versions live only in `ai_rules/stack.md`. The skill lists the rule IDs it applies and links to the stack, so an upgrade or a rule change is made in one place and every skill that uses the technology follows it.
 
 ## Output contract
 

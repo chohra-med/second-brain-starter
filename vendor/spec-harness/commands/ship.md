@@ -26,3 +26,9 @@ Each external or repository effect requires its own explicit authorization at th
 ticket write-back, commit, push, merge, deploy, release or publication. Apply the project's secret,
 protected-path and release checks where they exist. Report unavailable checks; never imply a PR or
 release exists from instructions or a green local suite.
+
+A pipeline check that makes outbound requests or cannot run locally (for example remote-config SAST
+or dependency scanners) may be left to CI, but only when the project decides so. The project records
+that choice in its decisions file (`.memory/60-decisions.md`), with the check names and the date. The
+report then lists the check as `left to CI`, not as passed. Before the next push, wait for that
+commit's pipeline to finish and report its result.

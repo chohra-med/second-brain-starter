@@ -223,6 +223,10 @@ def build_plan(root, name_override=None):
                            note=f"no valid base copy to merge with; the new harness version is in {rel}{PROPOSED}")
         elif record is None:
             row.update(state="CUSTOMIZED-KEEP", note="no install record: a local edit cannot be told from an older template")
+        elif rel.startswith((".claude/commands/", ".claude/spec-harness/", ".agents/skills/")):
+            # A harness procedure the project replaced before install: keeping it means the project keeps
+            # running the old procedure, so say so on the plan line.
+            row.update(state="CUSTOMIZED-KEEP", note="your copy of a harness procedure; the shipped version differs: merge it by hand or the old procedure stays in use")
         else:
             row.update(state="CUSTOMIZED-KEEP", note="your file from before the install; not managed by the harness")
         rows.append(row)

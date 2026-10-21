@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.8.0 (2026-10-21)
+
+- Adds the shared skill `handover`, installed to `.agents/skills/` and `.claude/skills/`, with the procedure `03-Resources/Procedures/handover.md`. When a chat is nearly full or full of side trails, it writes one short note (goal, state with evidence, decisions, one next action, up to five paths to read first), shows it, and saves it to `00-Meta/Handovers/` only after a yes. You then clear the chat and paste one restart prompt, so the fresh chat reads only that note. It exists because two things make an assistant worse as a chat grows: a nearly full context window, where it loses track and guesses, and a window full of material the task no longer needs. The installed skill set grows from sixteen to seventeen. The README, the two docs that count the skills and the installer test now say seventeen.
+- Design decision, a skill with no code (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): `handover` is a procedure an assistant follows. It adds no command, runs nothing and reads nothing beyond the chat and the files the note names. It never overwrites a note and never writes one without a yes. It is separate from `end-session`, which writes the project records when work is finished, and from `context-modes`, which loads workspace context.
+- Re-pins the vendored Spec Harness to `1a7680bd48b4e8be9fa652fa697a86e4898292a2`, Spec Harness 0.6.0 (merged upstream as PR 36). It adds readable one-line rules in layers (receipt schema 4), curated rule packs for baseline, tool and standard rules, a standards step in init, `spec-harness stack`, `index --exclude-dir`, and a PR preparation checklist with a packet check. A connect now stages 114 harness files and 46 folders instead of 96 and 43. Before this release the vendored copy was 0.5.0 at commit `49fad7c694feacc530d5e79ab905c7990090397e`.
+- Version: the source moves from `v1.7.1` to `v1.8.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
 ## v1.7.1 (2026-10-21)
 
 - `scroll-story-component` gains a Demo section: links to a desktop and a phone scroll-through recorded on a live page built with the skill, a short GIF, and a still of every reading pause. The README now plays a short GIF of the scroll story inline, above the two stills in `docs/media/`. The GIF lives on the separate `media` branch, outside the package, because GIF bytes overflow the package scanner (even at 1.7 MB) and every skill file is installed twice into each workspace. The full recordings stay assets of the v1.7.0 release.

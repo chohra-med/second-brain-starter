@@ -127,7 +127,7 @@ receipt = fixture(root, ["."])
 assert index(root).returncode == 0
 inventory = root / "ai_rules/project_inventory.json"
 before = inventory.read_bytes()
-bad = [[], None, 1, "value", {}, dict(receipt, schema_version=True), dict(receipt, schema_version=4),
+bad = [[], None, 1, "value", {}, dict(receipt, schema_version=True), dict(receipt, schema_version=5),
        dict(receipt, packages={}), dict(receipt, packages=[[]]),
        dict(receipt, packages=[dict(receipt["packages"][0], path="../escape")]),
        dict(receipt, packages=[dict(receipt["packages"][0], rules_path="other/RULES.md")]),

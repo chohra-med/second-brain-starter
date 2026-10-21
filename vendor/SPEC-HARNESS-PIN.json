@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "49fad7c694feacc530d5e79ab905c7990090397e",
-  "tree": "a9fa008eb39ee5411310466aeb821d862da6c208",
-  "harnessVersion": "0.5.0",
+  "commit": "1a7680bd48b4e8be9fa652fa697a86e4898292a2",
+  "tree": "dbbda0abc9d2e2b4ae0c395b9fe6336c387fd755",
+  "harnessVersion": "0.6.0",
   "license": {
     "spdx": "MIT",
     "path": "LICENSE",
@@ -42,8 +42,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 11114,
-      "sha256": "6b5a604321d12ccec4ada32ea6715dc95c462ac55e8e3338760c9af969ebcfa9"
+      "bytes": 17469,
+      "sha256": "676281640819bec0ce1be59c1c2e8aad84b13195a6ecd608ee4053e56016a61e"
     },
     {
       "path": "CLAUDE.md",
@@ -62,8 +62,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 25013,
-      "sha256": "bdbbe8cbd3d4e7b657ae53d5e16e55b407bd94cc95e00220fea4dcfdbe0a9b82"
+      "bytes": 26174,
+      "sha256": "db2a77f5e1b4891ec3102344c35489325ffaa3ad64ae2b81de1d0cb994c892d7"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -92,8 +92,8 @@
     },
     {
       "path": "agents/sdd-merger.md",
-      "bytes": 1593,
-      "sha256": "7f068d356ee571871f09a1566b6ac5eb94e668a36de869244d87a62d8a93b9d8"
+      "bytes": 2343,
+      "sha256": "c6f98c280e90146a3e4b754571844a0e30bd0da472eb57171231edf9edd55653"
     },
     {
       "path": "agents/sdd-planner.md",
@@ -148,14 +148,14 @@
     },
     {
       "path": "bin/sh-gen-agents.sh",
-      "bytes": 37118,
-      "sha256": "d11c0d2975e2fd5a6ae2fc81042a48184d349a7e9fd627800b6212005e3dcea1",
+      "bytes": 40519,
+      "sha256": "b7c849dfc9f2ebf2d6ae8a0fdfdc45f745b725fed0f4559e8ab535f0a767fba2",
       "executable": true
     },
     {
       "path": "bin/sh-index.sh",
-      "bytes": 40329,
-      "sha256": "542071e6a6be85bcc3ad58fbf8238cdb3cbb0a98a490820385cbc757cd5cfb35",
+      "bytes": 41845,
+      "sha256": "c7a49504c59be8f5d95ff531808764b4ad09c29f449ae446f83114c5156f54f0",
       "executable": true
     },
     {
@@ -166,14 +166,19 @@
     },
     {
       "path": "bin/sh-install.sh",
-      "bytes": 17951,
-      "sha256": "fbe5543c586372ed0b739ebb73f8c041f19a8b16a6478e121b0dbdecbff5bc04",
+      "bytes": 18219,
+      "sha256": "9d31b3f1ce670785568a06591206ab72a82fb108edb517beca84deec5fbad999",
       "executable": true
     },
     {
       "path": "bin/sh-make-skills.sh",
-      "bytes": 16362,
-      "sha256": "954cd30af346bf17d6830d21375cde747bac4e670ee117bd6a93ffb6661a5402"
+      "bytes": 16877,
+      "sha256": "96a790511ea9857faf9c17d30d741344907fb890d36460c55ada098049de0f7a"
+    },
+    {
+      "path": "bin/sh-pr-packet.py",
+      "bytes": 9127,
+      "sha256": "b4690be7320efd7d8150b41d224b7dc68deb3627e6220b2f73ac3713404ce0ce"
     },
     {
       "path": "bin/sh-run-state.py",
@@ -182,8 +187,13 @@
     },
     {
       "path": "bin/sh-update.py",
-      "bytes": 20356,
-      "sha256": "da52bf6bb10768564d073549d47b77c6865f9861301349dca572f535d2f56fc3"
+      "bytes": 20797,
+      "sha256": "7d084d20a948298077d9bceb799ab0f91ecaa8ff146880d1797ceb15dec8750c"
+    },
+    {
+      "path": "bin/sh_rule_layers.py",
+      "bytes": 12954,
+      "sha256": "29397ec2e5facfe0537fc7d89268a4356f46cbdcffa121012a7f507120abe204"
     },
     {
       "path": "bin/sh_safe_io.py",
@@ -191,9 +201,14 @@
       "sha256": "4e5428632fdba326f31f779f3a5629a48c3a60408b2e0b7dd062450f02ec19fa"
     },
     {
+      "path": "bin/sh_stack.py",
+      "bytes": 11612,
+      "sha256": "89141436fa9be195d4ff08f0c1b5a575dae53dedfb04091908da83fe4e4235f8"
+    },
+    {
       "path": "bin/spec-harness",
-      "bytes": 5176,
-      "sha256": "413913acc291fe46216e72dd5271602ba19a1dfd3ae465000b27dc6be0edeaca",
+      "bytes": 5536,
+      "sha256": "d6b172c201c6aa4c3cff944bcbe27383e9959fd7b9edfc0d0c397191e448c780",
       "executable": true
     },
     {
@@ -208,8 +223,8 @@
     },
     {
       "path": "commands/conventions.md",
-      "bytes": 3473,
-      "sha256": "3cb12ed6375879ed72ca3d4382004272a1a7b8d16e27734a73cc86f67df9c7e6"
+      "bytes": 3933,
+      "sha256": "37abd0ee4b9b830a8452a22dba20cfd070a6f1cd358d2b974458f458eba89cb8"
     },
     {
       "path": "commands/document.md",
@@ -218,8 +233,8 @@
     },
     {
       "path": "commands/generate-agents.md",
-      "bytes": 8769,
-      "sha256": "7d4f42bb40e6e512a37050dd4e2dc4078359c350aabfb8d629b066dc899342d9"
+      "bytes": 10762,
+      "sha256": "a41f1a37d74a3d6d300e94eba758ea135b1ad19c57ca1b1296971a2bdf945f47"
     },
     {
       "path": "commands/grill-me.md",
@@ -228,13 +243,13 @@
     },
     {
       "path": "commands/init.md",
-      "bytes": 13802,
-      "sha256": "26bdbaa3c83bdbaec4c7a3c260d2f968c095453e7c029165d62ef29aa4959837"
+      "bytes": 18091,
+      "sha256": "41afacbebaf1fac2f36d737c4de5204a61308f4857740a898c2ad7196e308258"
     },
     {
       "path": "commands/learn.md",
-      "bytes": 3563,
-      "sha256": "aafc4a7227bfd0413d22563f8ed3f3e36525e404c8d183429509315107707a0b"
+      "bytes": 4326,
+      "sha256": "1011e4656693230296a9bd7502fe2de4a3e3dc94bb811e48e28c4c1a7d073168"
     },
     {
       "path": "commands/migrate.md",
@@ -257,9 +272,14 @@
       "sha256": "c17e80699028241c922e072ecfe7936a2b9fc2e3cbaef46ba83db9e031df6e3a"
     },
     {
+      "path": "commands/pr-prepare.md",
+      "bytes": 3707,
+      "sha256": "7f6b5cd36791d3d9ee9dd927094d1bc6117086621da1b30c75ba6ebfd1519e94"
+    },
+    {
       "path": "commands/rules.md",
-      "bytes": 4004,
-      "sha256": "eb8fe74c1dc619732d0bee5c680f8adebbe8e0bdfa580ce4c85ebfc5db659a7f"
+      "bytes": 8796,
+      "sha256": "95674f6770cd39ad92e85387dd671a02327feef06e8ba855fed352a562fba96f"
     },
     {
       "path": "commands/sdd.md",
@@ -268,8 +288,8 @@
     },
     {
       "path": "commands/ship.md",
-      "bytes": 1450,
-      "sha256": "6103282a6d0bef6140a65def89d6ee38b7a7f16fac7ff104e92b330933df3f2a"
+      "bytes": 1901,
+      "sha256": "b042034c86f044425777a070b59c272ec434dcbf58ebbf53c052805630656440"
     },
     {
       "path": "commands/skill-finder.md",
@@ -280,6 +300,11 @@
       "path": "commands/spec.md",
       "bytes": 1573,
       "sha256": "5c4de5d61a51d7a0ad9d43fa98a0312118bd1a52ebed90d0041f7708b6800db3"
+    },
+    {
+      "path": "commands/standards.md",
+      "bytes": 5287,
+      "sha256": "fa911b9937f81de6f15bfee113ec1ca1e85d058c9e54ae87ab3af4645b4b628a"
     },
     {
       "path": "commands/tasks.md",
@@ -293,8 +318,8 @@
     },
     {
       "path": "commands/technology-profiles.md",
-      "bytes": 4190,
-      "sha256": "9a5a9ba0165f005bfa009592af64183aec483dec7d4eed4cdad9ac5d4c248725"
+      "bytes": 4838,
+      "sha256": "f585164f011176b373c98fce7ab906902a6f0e1036c4344804a4bac402462716"
     },
     {
       "path": "commands/tester.md",
@@ -313,13 +338,13 @@
     },
     {
       "path": "docs/COMPANION-SKILLS.md",
-      "bytes": 2917,
-      "sha256": "41cf0eb59a0bf18c8583b216d77b0c1af5647b875c39e21b6563fa372d4dac65"
+      "bytes": 4443,
+      "sha256": "56d4c10144fb40ac513f0abc2bd1a81ea703159df533ac2ed65c1d3a7e01e6c7"
     },
     {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 40347,
-      "sha256": "e5ca3fcd4cc3b7dedb4f899b94ae9cf6a33aacd1ca49032b89a1adb5cef18a56"
+      "bytes": 40356,
+      "sha256": "027a6ad546eb65604b9574663c4e644963baaf7836ade87340f022128c219586"
     },
     {
       "path": "docs/GUARDRAILS.md",
@@ -357,6 +382,16 @@
       "sha256": "491d9465f0214e952ad1331c1426232b8df65480ca14abd91e4f866589a22aa5"
     },
     {
+      "path": "docs/rfcs/0005-pr-prepare-and-packet-check.md",
+      "bytes": 2414,
+      "sha256": "ea89339653b70e6a9549ff784be3b20f99ca88c41224b3ea0d7d76d798f3d00d"
+    },
+    {
+      "path": "docs/rfcs/0006-rule-layers.md",
+      "bytes": 5601,
+      "sha256": "2cde2a5df66e1d366993b94e87ce1d66792f1269527c55afc9ff64846fb2df0e"
+    },
+    {
       "path": "examples/react-ts-minimal/CONVENTIONS.md",
       "bytes": 235,
       "sha256": "4a998a56b5579b2db356b41abf78a031e4cd9289fa74a58b03519c34c6cd7cab"
@@ -383,8 +418,8 @@
     },
     {
       "path": "install-manifest.json",
-      "bytes": 30506,
-      "sha256": "02d36f16c7414f8e0b5d492efdab34a91a4301faaeb7a089a27d4fc5f8994c05"
+      "bytes": 35873,
+      "sha256": "09f18d2bb52ee314a861d051147fde91df3a2748d706a412ac0e1e970c497efd"
     },
     {
       "path": "install-migrations.tsv",
@@ -399,7 +434,7 @@
     {
       "path": "package.json",
       "bytes": 1190,
-      "sha256": "1b460eef8a7fa5e3c3550810077a8c856fd1e92b4f30f3449f1364100e58fe2b"
+      "sha256": "6df952442b767dbc5a5fca0bb25cbc66ce82a9a7fa655db55f82eac2b93c8317"
     },
     {
       "path": "skills/spec-harness-audit/SKILL.md",
@@ -465,6 +500,11 @@
       "path": "skills/spec-harness-spec/SKILL.md",
       "bytes": 1253,
       "sha256": "a29ddfaffd693515c18d40276a9e21c07fc45ec2b2efbafca4ab1f794d752d55"
+    },
+    {
+      "path": "skills/spec-harness-standards/SKILL.md",
+      "bytes": 1311,
+      "sha256": "d5434c7abf09f54a7d8706dec981fe4be321c4db47f00d7522cbcf3afe74d1c2"
     },
     {
       "path": "skills/spec-harness-tasks/SKILL.md",
@@ -543,8 +583,8 @@
     },
     {
       "path": "templates/install/ai_rules/globalRules.md",
-      "bytes": 391,
-      "sha256": "b2c8c66b31a1b30f29188a9e1d7dd3169561db2d4722a5aac64d74ce966a35d5"
+      "bytes": 1063,
+      "sha256": "a8f470c3252167cbefb862e53c90eb3adf7ce9027902b7bc48b9d7fa86de860c"
     },
     {
       "path": "templates/install/ai_rules/rules/context_management.md",
@@ -583,8 +623,8 @@
     },
     {
       "path": "templates/install/memory/10-product.md",
-      "bytes": 178,
-      "sha256": "f01fcb60b620c37ce72ef0f2d632af5d5ba1614ef71960fa2ea4f99941060f5a"
+      "bytes": 1234,
+      "sha256": "8cb621c7f93cbae3d4d845646d5e890801ecf5da6a8faae374f499358f8833c2"
     },
     {
       "path": "templates/install/memory/20-system.md",
@@ -608,8 +648,8 @@
     },
     {
       "path": "templates/install/memory/60-decisions.md",
-      "bytes": 182,
-      "sha256": "706929a90398ee7c0f5b6ba49525571d658bbe89ebb298ef86404f0bb2a0b828"
+      "bytes": 706,
+      "sha256": "4ce1b99c6c9b6f6c9f04e272b054bdfbdf9b9b0f14eec7e4da35dd126f482e69"
     },
     {
       "path": "templates/install/memory/70-knowledge.md",
@@ -648,8 +688,78 @@
     },
     {
       "path": "templates/project-skills/spec-harness-tech.md",
-      "bytes": 2561,
-      "sha256": "ed560edca6a3196d9f4b8b8264a5e022270914534f49c43a82613cc454445bac"
+      "bytes": 2964,
+      "sha256": "aca655ac47109814c07cf48d6d937c574aac3c618c7f38a57fa8823569c8bb1c"
+    },
+    {
+      "path": "templates/rule-packs/README.md",
+      "bytes": 1470,
+      "sha256": "3227fa8c64bf3b3c951d698d24b8d271a090351dcbccaebcfcebfd8100cdfd6e"
+    },
+    {
+      "path": "templates/rule-packs/baseline-accessibility.md",
+      "bytes": 1050,
+      "sha256": "0e9c38c00d13a0629621a497fa4d892a333a56e9bf0c521b91030c84b3460b32"
+    },
+    {
+      "path": "templates/rule-packs/baseline-clean-code.md",
+      "bytes": 1136,
+      "sha256": "d0f7b41695e7f22b12e64c3eb5fca8b3a0af8054045e60b90ac35c8ea18ab6c5"
+    },
+    {
+      "path": "templates/rule-packs/baseline-error-handling.md",
+      "bytes": 782,
+      "sha256": "d38a5cb1d3eee5fefc0471cd31be6f890920d51292e9fc49fb96f52aea599cf0"
+    },
+    {
+      "path": "templates/rule-packs/baseline-performance.md",
+      "bytes": 668,
+      "sha256": "94a1db788e2c01806b2e381740be2402c8f9fea8406f407f125582bf30fd401d"
+    },
+    {
+      "path": "templates/rule-packs/baseline-security.md",
+      "bytes": 1264,
+      "sha256": "f53f7ef21dbc59ade0ddcb9108c7dceb7306ad36ea713e983d99a191c424e48c"
+    },
+    {
+      "path": "templates/rule-packs/baseline-testing.md",
+      "bytes": 1323,
+      "sha256": "829ff7e763a439a493b7ffa2e1eb7c249ca151344cf29187cd50aa209dda79e0"
+    },
+    {
+      "path": "templates/rule-packs/standard-eu-accessibility.md",
+      "bytes": 1767,
+      "sha256": "f38fc3c2f1f66a460d562f4f2c88f8c251cb7cbc23c59cd504d8e81fbba9549a"
+    },
+    {
+      "path": "templates/rule-packs/standard-owasp-masvs.md",
+      "bytes": 1013,
+      "sha256": "acfd90d66dc4ec1e51ea58f20300574c48c86829762a220c304c91ce7e62c4f8"
+    },
+    {
+      "path": "templates/rule-packs/tool-expo-router.md",
+      "bytes": 722,
+      "sha256": "6230398ebd795056829aff381127c319633a3c5c1424b0b2b5184b5023f50313"
+    },
+    {
+      "path": "templates/rule-packs/tool-expo.md",
+      "bytes": 735,
+      "sha256": "334106fbbf1229d59b826897c24c710291a09aebcd86d910771f9323974582ae"
+    },
+    {
+      "path": "templates/rule-packs/tool-react-native.md",
+      "bytes": 1225,
+      "sha256": "0858e16969425bdf89c786347cc0c830f254b65939cf3660aefb8fc85e04620f"
+    },
+    {
+      "path": "templates/rule-packs/tool-sentry.md",
+      "bytes": 1121,
+      "sha256": "de3df02d82839c5e74f6b980f797d6f255711b3148190f9d9b59960f58d20a2b"
+    },
+    {
+      "path": "templates/rule-packs/tool-tanstack-query.md",
+      "bytes": 846,
+      "sha256": "1a69cbbaf59f765dada4d258b8b27f9ac98ab413ee216231abee75a1e6744cab"
     },
     {
       "path": "templates/workflows/EXAMPLE.md",
@@ -728,6 +838,11 @@
       "sha256": "c7ad48726b1a7ab1e1453a8253b962c4b3906aeaaad3271d312758b7b9b33283"
     },
     {
+      "path": "tests/index-exclusion-fixtures.sh",
+      "bytes": 3392,
+      "sha256": "65e7a96504ffee694cf76b79721ce5be60065845953fa7400e453828643436c0"
+    },
+    {
       "path": "tests/index-fixtures.sh",
       "bytes": 26899,
       "sha256": "18fd819f067d71037513f57f959be8464a942a0b0668fa6f2c00b463714f9046",
@@ -762,9 +877,14 @@
     },
     {
       "path": "tests/portable-skills-contract.sh",
-      "bytes": 15149,
-      "sha256": "83b9f91dd0b2be7684d3eb3424d2946887b921a1e8bcda8fd36c1ca179c5b810",
+      "bytes": 15740,
+      "sha256": "8388b23366ecb58d7689c39942b313f420cd5107f0105c5a6b86cbb204d3fb86",
       "executable": true
+    },
+    {
+      "path": "tests/pr-packet-fixtures.sh",
+      "bytes": 6353,
+      "sha256": "078837875bd8fc12944e4ebb89f1ee5e2ff2329ce8f13498b2ee40c7367510fc"
     },
     {
       "path": "tests/python-isolation-fixtures.sh",
@@ -774,7 +894,7 @@
     {
       "path": "tests/receipt-index-fixtures.sh",
       "bytes": 13186,
-      "sha256": "2a5039f562c3bc5c0f2aa88f57bdf13ade47282a38318c79925bab57b8278d08"
+      "sha256": "35e6f0e34ab8efdf10f2c398ee9a456810d02ec5e2d83562106f7746ce9d6308"
     },
     {
       "path": "tests/role-binding-messages.sh",
@@ -785,6 +905,11 @@
       "path": "tests/router-contract.sh",
       "bytes": 5671,
       "sha256": "8c1a3bad57361f01ae5bbe79926b1d31eda45fe17df3a78c60e159f53a10cdb8"
+    },
+    {
+      "path": "tests/rule-layers-fixtures.sh",
+      "bytes": 22323,
+      "sha256": "aef32e6ea11eb8d09e48bbf0955d68dc70099898077a7a8bdee0401788904f5a"
     },
     {
       "path": "tests/run-all.sh",
@@ -815,8 +940,8 @@
     },
     {
       "path": "tests/synthesis-contract.sh",
-      "bytes": 37468,
-      "sha256": "8321fdfd8b3c4844d3aefa492d9f251e8f9abf3297513583c1217fdd3ff678e2",
+      "bytes": 37774,
+      "sha256": "b050f5ee0e36ca1d8c3d0a02cdd0d089320998ee2e43df743c94c380177a8ba5",
       "executable": true
     },
     {
@@ -827,8 +952,8 @@
     },
     {
       "path": "tests/update-fixtures.sh",
-      "bytes": 20158,
-      "sha256": "5217c1e19d9404990ef5aeecfaff7a7086d7d671cb2c5eb76f87cc5fc1b758c4"
+      "bytes": 21063,
+      "sha256": "6f921620bee9c588b174400d9b2dc0623712e51e4ae9e14ff66acdea164aecfc"
     }
   ]
 }

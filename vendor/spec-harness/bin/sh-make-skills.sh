@@ -78,13 +78,16 @@ emit spec-harness-plan "plan" "planner" \
 "Plan a ticket against actual source and target rules. Use when the user says 'plan the implementation', 'how should we build this', or 'design this'. Apply full Ponytail, and source-grounded Grill Me for LITE and FULL tickets only (a MICRO ticket never asks Grill Me), before finalizing the plan." \
 "Use the bound planner. Record source-backed decisions, the highest successful Ponytail rung, reuse and exclusions, and only material unresolved Grill Me choices (none for a MICRO ticket, which never asks Grill Me). Keep the plan tied to the feature goal and source/rule hashes." yes
 
-for method in ponytail grill-me package-finder skill-finder conventions technology-profiles; do
+for method in ponytail grill-me package-finder skill-finder conventions technology-profiles standards; do
   description="Use the portable Spec Harness $method method when initializing a project or planning a ticket that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
   if [ "$method" = conventions ]; then
     description="Use the portable Spec Harness conventions method to find the repository's branch, commit, pull-request and task-splitting conventions from its own policy and bounded Git history, during initialization or when a ticket touches them. Read actual target evidence first; never create branches or commits."
   fi
   if [ "$method" = technology-profiles ]; then
     description="Use the portable Spec Harness technology-profiles method to select a technology profile and give every package and direct dependency a disposition from manifests, lockfiles and imports, during initialization or planning. Read actual target evidence first; do not install packages or third-party skills."
+  fi
+  if [ "$method" = standards ]; then
+    description="Use the portable Spec Harness standards method to find which named standards and laws (for example the European Accessibility Act with EN 301 549, OWASP MASVS, GDPR, ISO/IEC 27001) the project has, must meet or plans to meet, record the owner's commitment and turn it into rules, during initialization or when a ticket touches accessibility, personal data, payments or security. Read actual target evidence first; it never certifies compliance."
   fi
   if [ "$method" = ponytail ]; then
     description="Use the portable Spec Harness Ponytail method for code or implementation work, project initialization, or ticket planning that needs this method. Read actual target evidence first; do not install third-party skills or dependencies automatically."
