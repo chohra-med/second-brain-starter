@@ -25,6 +25,12 @@ build tools). Give every other direct dependency one visible disposition and def
 research with a reason. Research a transitive dependency when it touches a trust boundary or a
 critical path.
 
+Read versions from `ai_rules/stack.md` (`spec-harness stack <target>`), never from memory. When a
+curated tool pack exists in `.claude/spec-harness/rule-packs/` (source checkout: `templates/rule-packs/`)
+and the stack version is inside its `applies` range, it is the package's rule source: copy it as
+`rules.md` describes. A package with no pack gets its rules from official documentation, each with
+the URL and the date checked.
+
 Record each package's identity, version and evidence of use, the documentation source and the date
 you checked it, the rule or skill it links to, its platform or runtime limits, and one status:
 `covered`, `not-used`, `no-specific-resource-found`, `research-pending`, `version-unverified` or
@@ -36,7 +42,10 @@ during discovery.
 
 For every supported package, assess security and privacy, correctness and error handling, clean
 code, architecture and SOLID boundaries, performance, tests, and accessibility where it applies.
-Mark that guidance `ADOPTED BASELINE` with its source and scope. Keep explicit project policy and
+Mark that guidance `ADOPTED BASELINE` with its source and scope. The baseline is
+the curated `baseline-*` rule packs (clean code, security, error handling, performance, testing,
+accessibility); copy them, do not rewrite them, so every project states the baseline in the same
+words. Keep explicit project policy and
 observed behaviour separate from it. Do not infer a ban, an architecture rule, a security posture or
 a performance requirement from a dependency name or a single code example. Security work during
 initialization maps the relevant trust and data surfaces; it is not a penetration test or an audit.

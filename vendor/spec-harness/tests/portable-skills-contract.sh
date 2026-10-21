@@ -89,7 +89,7 @@ from pathlib import Path
 import sys
 before = {line.split(None, 1)[1].removeprefix('./'): line.split(None, 1)[0] for line in Path(sys.argv[1]).read_text().splitlines()}
 after = {line.split(None, 1)[1].removeprefix('./'): line.split(None, 1)[0] for line in Path(sys.argv[2]).read_text().splitlines()}
-assert len(before) == len(after) == 20, f"expected 20 generated skill files, got {len(before)} and {len(after)}"
+assert len(before) == len(after) == 21, f"expected 21 generated skill files, got {len(before)} and {len(after)}"
 round3 = {
     "spec-harness/SKILL.md": "335ca8be1300fe8ad5f3320ab32a6dd91e08a9bc51e24677ac62e723a6230e54",
     "spec-harness-audit/SKILL.md": "0b6c32a2e499f310bbdfe14543c505574e0e779b3f6ef245a163d1ef335df96e",
@@ -110,12 +110,14 @@ round3 = {
     "spec-harness-tickets/SKILL.md": "03ddee75207191baa675272fb83cd9046aaac7422f9f3ce8430f915c9a46ca39",
     "spec-harness-verify/SKILL.md": "bb80fc7a80e4afb0102308f22044121361fa3c1734d2973320c5a251b0d1abc3",
 }
-# Two method adapters were added after round 3 (conventions, technology profiles); they are frozen too.
+# Method adapters added after round 3 (conventions, technology profiles, standards) are frozen too.
 added = {
     "spec-harness-conventions/SKILL.md": "1569ea984ed5bc9e6acdebaf4106c06b02fd11514b500eac19acec4488097840",
     "spec-harness-technology-profiles/SKILL.md": "55da510c4e8b61cf5e034fbc6cef6460e91eae78b3b3f5cff9b3973e7c6e9527",
+    # 2026-10-21: the standards method (commands/standards.md) was added and frozen.
+    "spec-harness-standards/SKILL.md": "d5434c7abf09f54a7d8706dec981fe4be321c4db47f00d7522cbcf3afe74d1c2",
 }
-assert set(round3) | set(added) == set(before) == set(after), "generated skill path set differs from frozen round 3 plus the two added methods"
+assert set(round3) | set(added) == set(before) == set(after), "generated skill path set differs from frozen round 3 plus the added methods"
 for path, digest in added.items():
     assert after[path] == digest, f"added method adapter changed: {path}"
 trigger = Path(sys.argv[3]).read_text().splitlines()[2]
@@ -197,6 +199,10 @@ assert "After steps 1-2, apply relevant reusable methods" in steps[3][1]
 owners = re.findall(r"`([A-Za-z0-9_.-]+\.md)`", steps[3][1])
 missing = [name for name in owners if not (Path(sys.argv[2]) / "commands" / name).is_file()]
 assert owners and not missing, f"work-order step 3 names owner files absent from commands/: {missing}"
+# And it must name every method the installer stages, so an installed method is not skipped at init.
+installed = re.search(r"^for method in ([a-z -]+); do$", (Path(sys.argv[2]) / "bin" / "sh-install.sh").read_text(), re.M).group(1).split()
+unnamed = [name for name in installed if f"{name}.md" not in owners]
+assert installed and not unnamed, f"work-order step 3 does not name installed methods: {unnamed}"
 PY
 
 custom="$TMP/custom"

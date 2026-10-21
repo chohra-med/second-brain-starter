@@ -114,6 +114,7 @@ PRESERVED=()
 CONFLICTS=()
 INSTALL_DIRS=(
   .claude/agents .claude/commands .claude/commands/spec-harness .claude/skills .claude/spec-harness/methods
+  .claude/spec-harness/rule-packs
   .agents/skills .agents/skills/sdd .memory
   ai_rules/rules learning learning/lessons specs workflows
 )
@@ -194,11 +195,16 @@ for source in "$SYS_DIR"/commands/*.md; do
 done
 plan_copy .claude/commands/sdd.md "$SYS_DIR/commands/sdd.md"
 plan_copy .agents/skills/sdd/SKILL.md "$SYS_DIR/templates/install/agents-skill-sdd.md"
-for method in ponytail grill-me package-finder skill-finder conventions technology-profiles; do
+for method in ponytail grill-me package-finder skill-finder conventions technology-profiles standards; do
   plan_copy ".agents/skills/spec-harness-$method/SKILL.md" "$SYS_DIR/skills/spec-harness-$method/SKILL.md"
 done
 for method in architecture performance packages tech quality conduct; do
   plan_copy ".claude/spec-harness/methods/spec-harness-${method}.md" "$SYS_DIR/templates/project-skills/spec-harness-${method}.md"
+done
+
+# Curated rule packs that init copies into ai_rules/rules/ (commands/rules.md, Rule layers).
+for source in "$SYS_DIR"/templates/rule-packs/*.md; do
+  plan_copy ".claude/spec-harness/rule-packs/${source##*/}" "$source"
 done
 
 for skill_dir in "$SYS_DIR"/skills/spec-harness*; do

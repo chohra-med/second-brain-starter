@@ -9,9 +9,43 @@ checks for them and uses them when present. It never installs one without your y
 | **Ponytail** | Yes (`commands/ponytail.md`) | The smallest correct change: reuse first, no speculative abstraction | planning, implementing |
 | **Grill Me** | Yes (`commands/grill-me.md`) | Questions that ground a plan in the real source before any code | planning |
 | **teach** | Yes (`commands/teach.md`) | Explains a system to a human as one interactive page | onboarding, after setup |
+| **Understand-Anything** | No; offered on every `init` | A knowledge graph of the codebase with a dashboard, guided tours and diff impact | indexing, onboarding, review |
 | **graphify** | No | A visual, queryable map of the codebase | indexing |
 | **diagram-design** | No | An editorial design system for diagrams | every diagram |
 | **Superpowers** | No | Planned companion; not wired in yet | later |
+
+## Understand-Anything: a map you can ask questions
+
+[Understand-Anything](https://github.com/Egonex-AI/Understand-Anything) (MIT) builds a knowledge
+graph of a codebase and gives you a dashboard, guided tours, plain-language explanations of a file
+or function, and the likely impact of a diff. `/sdd init` offers it every time; it is installed only
+when you say yes.
+
+In Claude Code:
+
+```text
+/plugin marketplace add Egonex-AI/Understand-Anything
+/plugin install understand-anything
+```
+
+Pin what you reviewed: note the plugin version `/plugin` shows after the install in
+`.memory/30-tech.md`, and read the release notes before you update it. It needs Node.js 18 or newer.
+
+Then, from your project root:
+
+```text
+/understand              # build the graph; later runs only re-read what changed
+/understand-dashboard    # open the map
+```
+
+The first `/understand` reads the whole codebase and spends many tokens; run it once, on purpose.
+It writes `.ua/knowledge-graph.json` and `.ua/config.json`, which a team can commit. Add
+`.ua/intermediate/` and `.ua/diff-overlay.json` to `.gitignore`. Other commands include
+`/understand-chat`, `/understand-diff`, `/understand-explain`, `/understand-onboard` and
+`/understand-domain`.
+
+The graph helps an agent find where to look. It is never evidence: a rule, plan or review still
+cites the real file and line.
 
 ## graphify: see what was indexed
 

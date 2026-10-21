@@ -43,6 +43,16 @@ spec-harness learn --from .memory/80-feedback.md
    refresh in `.claude/commands/sdd.md` and the structural check. Until that passes, readiness is
    PENDING.
 
+## Resolving a lesson that conflicts with an adopted rule
+
+The learner never overrides an adopted rule. When a proposed lesson conflicts with one, record it as
+proposed in `.memory/80-feedback.md` with both rule citations, report PENDING and ask the project's
+review authority to decide. If the decision is for the lesson, add a dated `EXPLICIT` carve-out to the
+adopted rule file, directly after the conflicting rule. Scope the carve-out as narrowly as the decision
+(name the case, package or path it covers, and nothing wider), and record the decision in
+`.memory/60-decisions.md`. Only then report `LEARNED`, with the carve-out as the applied file. If the
+decision keeps the rule, leave the rule unchanged and record the lesson as rejected with the decision.
+
 ## Human learning (optional)
 
 After review, a reusable technique may be recorded in `learning/NOTES.md` or

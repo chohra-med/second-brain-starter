@@ -18,6 +18,12 @@ This starter's own differences from the method live in the separate `second-brai
 
 The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
 
+## Bundled third-party skill: api-anything
+
+The `api-anything` skill in [template/shared-skills/api-anything/](template/shared-skills/api-anything/SKILL.md) was written by Tianjun Zheng. Its upstream repository is https://github.com/goodnight000/api-anything, subpath `skills/api-anything`, and the files here were copied unmodified from commit `20cb677039fcfe92d3d9c777aa9362e30ff1fdb8`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/api-anything/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
+
+The skill describes how to drive the `api-anything` command, which turns a website into calls you can make directly. That command is separate software. It is not bundled and not installed by this starter, and its licence is set by its own project. Check that licence before you install it. The skill works only if you install the command yourself. The command's `login` step can import cookies from your everyday browser; that is the behaviour of that project, and it happens only if you or your client run it.
+
 ## Original skills: grill-me, readme-generator, graphify, writing-skills, usage-dashboard and scroll-story-component
 
 The skills `grill-me`, `readme-generator`, `graphify`, `writing-skills`, `usage-dashboard` and `scroll-story-component` in `template/shared-skills/` were written for this repository by its author. They are original to this repository and are licensed under the repository's own MIT licence, see [LICENSE](LICENSE). `writing-skills` points to an optional outside `skill-creator` folder and does not copy it. `scroll-story-component` includes its own runtime, `assets/scroll-story.tsx`, written by the same author and under the same MIT licence. For `graphify`, the outside tool it describes is separate software, as the note below explains.
@@ -28,6 +34,6 @@ The `graphify` skill in [template/shared-skills/graphify/](template/shared-skill
 
 ## Bundled third-party system: Spec Harness
 
-[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `49fad7c694feacc530d5e79ab905c7990090397e`, harness version 0.5.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
+[Spec Harness](vendor/spec-harness/README.md) was written by Malik Chohra. Its upstream repository is https://github.com/chohra-med/spec-harness-oss and the files in `vendor/spec-harness/` were copied unmodified from commit `1a7680bd48b4e8be9fa652fa697a86e4898292a2`, harness version 0.6.0. It is MIT-licensed, and the upstream [LICENSE](vendor/spec-harness/LICENSE) ships inside the vendored folder.
 
 The copy is not part of the workspace template. The `connect` command reads the vendored install manifest and the files it names, and writes rendered copies of them into a repository you name. No code in `lib` or `bin` starts a process, so the vendored shell scripts are never executed; `bin/loop.sh` is copied as bytes only. `vendor/SPEC-HARNESS-PIN.json` records the commit, tree and a SHA-256 for every vendored file, and `test/vendor.test.mjs` checks the folder against that record.

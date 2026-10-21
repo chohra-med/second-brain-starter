@@ -56,3 +56,9 @@ when it has one; otherwise in a `Conventions` subsection of the root `RULES.md` 
 the ticket's `plan.md` during planning. Record missing Git history and unsupported clients
 explicitly. Preserve human-authored text. When no stable rule exists, leave the proposal visibly
 unaccepted instead of presenting it as history.
+
+During initialisation, code-consistency patterns (where errors are reported, how data is fetched,
+where new screens go, naming) follow the same path: show each `OBSERVED` pattern to the owner as a
+proposal with a recommended answer. An accepted one becomes one project rule line and one `DEC-` line
+in `.memory/60-decisions.md` with who accepted it and when (`rules.md`, Rule layers). A schema 4
+receipt refuses READY while a rule is still marked `PROPOSED`.

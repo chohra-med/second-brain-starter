@@ -119,7 +119,7 @@ To install the CLI from a local tarball instead, run `npm pack` from the checkou
 filename it prints. For the current version, that is:
 
 ```sh
-npm install --global ./spec-harness-0.5.0.tgz
+npm install --global ./spec-harness-0.6.0.tgz
 ```
 
 Staging reports `PENDING`. It copies a scaffold; it does not synthesize project rules, run agents,
@@ -142,16 +142,20 @@ matching, and the result of a first real-ticket run remain unverified for this r
 | [`init`](./commands/init.md) | Stage then synthesize project-specific rules, five core skills plus one per major technology, and source-bound roles. Overall READY requires structural checks and a separate fresh semantic review. |
 | [`index`](./bin/sh-index.sh) / [`migrate`](./commands/migrate.md) | Adopt an existing repo: inventory the codebase into the index layer, then enrich. |
 | `index <target> --preview` | Prints the bytes `index` would write and writes nothing. |
+| `index <target> --exclude-dir <dir>` | Leaves a generated or vendored directory (for example `ios`, `android`) out of the scan and records it in the inventory. Repeat it on every refresh. |
+| [`stack`](./bin/sh_stack.py) `<target> [--check]` | Writes `ai_rules/stack.md` from the manifests and lockfiles: the only file that names package versions. `--check` compares it and changes nothing. |
 | [`doctor`](./bin/sh-doctor.py) `<target>` | Read-only setup report with separate structural, semantic and client fields. |
 | [`finalize-init`](./bin/sh-finalize-init.py) `<target> [--apply\|--recover] --evidence-dir <dir>` | Guarded refresh of a READY synthesis receipt. It rewrites only the inventory hash markers and the receipt hashes, and it stops when a semantic inventory input changes (packages, rule files, workspace files, lockfiles, workspace declarations, exclusions, scan and limitations; its own synthesis outputs and visit counters are ignored). A dry run by default; `--apply` writes through a journal kept outside the target. It refuses a Markdown context map, which is what `index` writes by default. The refresh works only when the inventory is `ai_rules/project_inventory.json`, and the policy-drift check in `generate-agents --check` does nothing for a Markdown map. |
 | [`tickets`](./commands/tickets.md) | Accept exact ticket text or a retrieved body from an explicitly connected provider → one `specs/<feature>/` packet with its own `goal.md`. Unretrievable names stop for clarification. |
-| [`rules`](./commands/rules.md) | **Per-directory rules.** Resolve the nearest `RULES.md` for a path (coding/architecture/packages/testing/reviewing), or generate it from a directory's real code. Each section owned by one agent; deepest-wins cascade. Built for mixed-stack monorepos. |
+| [`rules`](./commands/rules.md) | **Per-directory rules**, one line each (`- **ID** sentence. (source: ...)`), in layers with one home per fact: business and decisions in the memory bank, project rules, tool rules and baseline rules (curated packs in `templates/rule-packs/`), standards the owner committed to such as the European Accessibility Act with EN 301 549 ([`standards`](./commands/standards.md)), versions only in `ai_rules/stack.md`. Resolve the nearest `RULES.md` for a path (coding/architecture/packages/testing/reviewing), or generate it from a directory's real code. Each section owned by one agent; deepest-wins cascade. Built for mixed-stack monorepos. |
 | [`spec`](./commands/spec.md) → [`plan`](./commands/plan.md) → [`tasks`](./commands/tasks.md) | Ticket input → checkable feature spec/goal → reuse-aware plan → atomic ordered units. |
 | [`build`](./commands/build.md) | Execute one task at a time with separate fresh tester, verifier and reviewer evidence tied to the feature goal and source revision. |
 | [`verify`](./commands/verify.md) | A separate fresh verifier checks `specs/<feature>/goal.md`. The shell CLI returns PENDING and does not run the check. |
 | [`tester`](./commands/tester.md) | Adversarially validate the critical `workflows/`: per journey, a clean-context agent **runs it + tries to break it** (bad inputs, kill mid-flow, races, offline, boundaries), reporting what's BROKEN, ranked P0 first. `--scan` derives candidate workflows from the app; every BROKEN feeds `learn`. The proactive complement to `verify`. |
 | [`document`](./commands/document.md) | Docs + comments to **the project technology's own standard** (Python docstrings, TS/JS TSDoc/JSDoc, GoDoc, rustdoc, Javadoc, …) + truthful README/ARCHITECTURE. Comments the WHY, never the WHAT. Behavior-locked (re-runs the suite to prove zero logic change). |
 | [`ship`](./commands/ship.md) | Records delivery evidence and applies explicit merger authority. Green gates do not authorize a commit, push, merge, deploy or release. |
+| [`pr-prepare`](./commands/pr-prepare.md) | Ordered checklist before a pull request is written, pushed or updated. Grants no permission to push or merge. |
+| [`pr-packet`](./bin/sh-pr-packet.py) `PR_BODY.md` | Read-only structural check of a saved PR body: sections, one Before/After image, no video or local path, real test names. Claims stay UNVERIFIED. |
 | [`teach`](./commands/teach.md) | Explain a system to a human as one self-contained interactive page: the idea, the flow, the structure, how to use it, evidence and limits. Never edits application source. |
 | [`learn`](./commands/learn.md) | Classify feedback/corrections and add durable rules only after review (+ optional human lesson). |
 | [`audit`](./commands/audit.md) | Health-check the bank, rules, and index. Flag stale or contradictory entries. |
@@ -267,7 +271,7 @@ adopted.
 2. [`ARCHITECTURE.md`](./ARCHITECTURE.md). The diagrams: the 3 pillars, the SDD flow, the
    ratchet, and the verifier + learning loop wired in.
 3. [`docs/GUARDRAILS.md`](./docs/GUARDRAILS.md). Current procedures for evidence, reviewed learning, and delivery authority.
-4. [`docs/COMPANION-SKILLS.md`](./docs/COMPANION-SKILLS.md). Graphify, diagram-design and the methods that ship inside.
+4. [`docs/COMPANION-SKILLS.md`](./docs/COMPANION-SKILLS.md). Understand-Anything, graphify, diagram-design and the methods that ship inside.
 5. [`docs/MCP-SERVERS.md`](./docs/MCP-SERVERS.md). A dated illustrative MCP map; recheck vendor details before use.
 6. [`commands/init.md`](./commands/init.md). Start here to use it on a project.
 

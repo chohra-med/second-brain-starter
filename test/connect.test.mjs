@@ -2146,7 +2146,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
     if (mid <= 3 || kills % 10 === 0) {
       const fresh = await connectNow(w);
-      assert.equal(treeFiles((await snap(w)).repo).length, 96, 'a fresh connect stages exactly the 96 harness files of Spec Harness (0.5.0, which includes sdd-router)');
+      assert.equal(treeFiles((await snap(w)).repo).length, 114, 'a fresh connect stages exactly the 114 harness files of Spec Harness (0.6.0, which includes sdd-router and the rule packs)');
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before);
     }
@@ -2226,7 +2226,7 @@ async function settleAfterKill(w, before, initId) {
   assert.equal(connected.length, 1, `one connection at most, saw ${connected.join(', ')}`);
   const [id] = connected;
   assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
-  assert.equal(treeFiles(after.repo).length, 96, 'the connection is fully present with all 96 staged files');
+  assert.equal(treeFiles(after.repo).length, 114, 'the connection is fully present with all 114 staged files');
   await assertReceiptFilesPresent(w, id);
   assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
   await rollbackReceipt({ targetPath: w.hub, receiptId: id });
@@ -2538,7 +2538,7 @@ test('cross-check: the vendored bash installer and applyConnect produce the same
   await connectNow(w, { name });
   const bash = await treeInventory(reference);
   const ours = await treeInventory(w.repo);
-  // Spec Harness 0.5.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
+  // Spec Harness 0.6.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
   // later three-way updates). connect writes no such record: its plan is the approved, digest-bound set and it writes nothing
   // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly.
   const isRecord = (key) => key === '.spec-harness' || key.startsWith('.spec-harness/');

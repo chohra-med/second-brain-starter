@@ -61,6 +61,16 @@ A package row may also list `rule_modules`: package-local topic files at `<packa
 
 For schema 3 the check also rejects a policy file whose bytes changed after `index` hashed it. Schema 1 and 2 receipts keep their meaning and are not asked for a ledger.
 
+**Schema 4 (rule layers).** A first initialisation writes `schema_version: 4`. It keeps every schema 2 requirement, checks the schema 3 ledger when the receipt has one (in v1 the ledger is optional), and checks the rule layers in `rules.md` (`Rule layers`):
+
+- `stack`: `{ "path": "ai_rules/stack.md", "sha256": "<hash>" }`. The check rebuilds the file from the manifests and lockfiles (`spec-harness stack <target>`) and refuses READY when it differs.
+- Every rule module declares `<!-- rule-layer: baseline|tool|project -->`; a tool module also declares `<!-- applies: <package> <range> -->`, and the stack version must be inside that range. A module made from a pack keeps `<!-- pack: <name> -->` and copies the pack's rule lines byte for byte.
+- A standard module (`<!-- rule-layer: standard -->`) names the owner's commitment with `<!-- commitment: STD-<n> -->`; each `STD-` line in `.memory/10-product.md` states `status: in place|required|planned` and has at least one standard module. Standard packs are never required by default.
+- `rule_conflicts`: `[{ "ids": ["SEC-04", "DEC-007"], "status": "resolved", "winner": "DEC-007", "reason": "..." }]`. An open conflict refuses READY.
+- A `captured` ledger row's `rule_anchor` is the ID of a rule line in its `rule_path`, never free text or a list of requirement IDs. The `rule_path` may be `.memory/10-product.md` or `.memory/60-decisions.md` when the requirement is a business rule or a decision.
+
+The check parses every rule line in the package `RULES.md` files, the rule modules, `.memory/10-product.md` and `.memory/60-decisions.md`, and fails on an unreadable or pointer line, an ID defined twice, two rules with the same words, an override by a lower layer, a `PROPOSED` rule, a package version outside `ai_rules/stack.md` (in a rule, a skill or a role's `GEN:rules` block), and a skill or role block that copies a rule sentence instead of naming its ID. Schema 1, 2 and 3 receipts keep their meaning and are not asked for layers.
+
 Each citation has `package_path`, `path`, `line_start`, `line_end` and `sha256`. Cite representative code/config/test paths actually listed by the inventory. The readiness check rejects missing files, changed hashes, out-of-package citations, invalid line spans, generic/stub rule text, unsupported or incomplete inventory, skill conflicts, missing required roles, missing markers or stale role blocks. It prints each detected defect and exits nonzero. PENDING is the only honest result when synthesis or evidence is unresolved.
 
 A passing `--check` proves structural integrity and current cited bytes only. Before declaring overall initialization READY, a separate fresh reviewer must check that every cited span supports its claim, package boundaries are respected, and policy conflicts or unsupported recommendations are surfaced. Record the review outcome; if no independent review context is available, keep overall initialization PENDING even when this checker prints READY. The check does not prove a role was dispatched or that a feature goal passed; feature acceptance remains separate.

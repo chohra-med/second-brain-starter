@@ -324,12 +324,13 @@ no_conduct = purpose_check(
 assert "missing: spec-harness-conduct" in no_conduct, no_conduct
 three_under_two = purpose_check("purpose-schema-2-three", 2, PURPOSE_CORE_1, 1)
 assert "missing: spec-harness-conduct, spec-harness-quality" in three_under_two, three_under_two
-# Schema 3 (policy coverage) is accepted; its own fixtures are below. 4 is the next unknown version.
-for label, bad in (("bool-true", True), ("float-2.0", 2.0), ("string-2", "2"), ("integer-4", 4)):
+# Schema 3 (policy coverage) is accepted; its own fixtures are below. Schema 4 (rule layers) is
+# covered by tests/rule-layers-fixtures.sh. 5 is the next unknown version.
+for label, bad in (("bool-true", True), ("float-2.0", 2.0), ("string-2", "2"), ("integer-5", 5)):
     rejected = purpose_check(f"purpose-schema-bad-{label}", bad, PURPOSE_CORE_2, 1)
     assert "schema_version must be" in rejected, (label, rejected)
 print("PASS: schema 1 accepts three core skills; schema 2 accepts five and names a missing quality or conduct skill")
-print("PASS: schema_version true, 2.0, \"2\" and 4 are rejected; only integer 1, 2 or 3 is accepted")
+print("PASS: schema_version true, 2.0, \"2\" and 5 are rejected; only integer 1, 2, 3 or 4 is accepted")
 
 # Human-authored policy can contain code examples whose syntax resembles a
 # template marker. JSX object props and TypeScript generics belong in a valid
@@ -345,6 +346,7 @@ Inline styles are forbidden. Example: `<View style={{ marginTop: 16 }}>...</View
 Avoid `any` types. Example: `const ref = useRef<any>(null);`.
 JSX shorthand: `<Component data={{value}} />`.
 JSX uppercase prop: `<Component data={{MY_VALUE}} />`.
+Before a push, update every pending PR description. Pending reviews block merge.
 """)
 root_rules_path = human_examples / "RULES.md"
 with root_rules_path.open("a") as file:
@@ -353,12 +355,14 @@ with root_rules_path.open("a") as file:
     file.write("JSX shorthand: `<Component data={{value}} />`.\n")
     file.write("JSX uppercase prop: `<Component data={{MY_VALUE}} />`.\n")
     file.write("TypeScript generic: `useRef<any>(null)`.\n")
+    file.write("Prose: list each pending migration in the PR.\n")
 root_rules_row = next(row for row in human_receipt["packages"] if row["path"] == ".")
 root_rules_row["sha256"] = sha(root_rules_path)
 write(human_receipt_path, json.dumps(human_receipt, indent=2) + "\n")
 human_green = run(["bash", str(bind), "--check", str(human_examples)], 0, "human JSX/generic examples GREEN control")
 assert "READY: 3 packages, 3 skills, 5 selected roles" in human_green
 print("PASS: readiness accepts human JSX and generic examples")
+print("PASS: readiness accepts lower-case and title-case \"pending\" in human prose")
 
 def placeholder_red(label, path, text, diagnostic):
     preimage = path.read_bytes()

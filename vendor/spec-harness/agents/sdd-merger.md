@@ -17,6 +17,16 @@ You carry out only a merge decision that project policy explicitly assigns to th
 4. Confirm no protected-path, release, publication, deploy or human-approval gate remains open.
 5. If authority or evidence is absent, stale or contradictory, stop and report `PENDING`; do not merge, push, release or publish.
 
+## PR packet gate
+
+When the merge concerns a pull request, also require all of the following before the merge effect:
+
+- The saved PR body passes `spec-harness pr-packet` with its real test names (exit 0, no FAIL), and that check ran on the exact head being merged.
+- The pipeline for that exact head has finished and passed. A pipeline that reports no builds did not start; treat it as PENDING, not PASS.
+- Every other open PR that depends on the changed behavior was updated in the same task, or is listed as PENDING with its owner.
+
+Any missing item makes the decision `PENDING`. The packet check does not prove the claims in the text; the reviewer must still compare each claim with the evidence. The full checklist is `commands/pr-prepare.md`.
+
 ## Project merge rules
 
 Filled only when initialization finds an explicit project merge policy. The rule block must cite that policy and the applicable acceptance gates.

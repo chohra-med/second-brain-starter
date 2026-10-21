@@ -4,7 +4,7 @@
 set -euo pipefail
 
 if [[ $# -lt 1 ]]; then
-  printf 'Usage: %s <target-dir> [--source <repo-relative-path> ...] [--preview]\n--preview prints the bytes index would write and writes nothing.\nPython 3.11+ is required for safe TOML manifest parsing.\n' "$0" >&2
+  printf 'Usage: %s <target-dir> [--source <repo-relative-path> ...] [--exclude-dir <repo-relative-directory> ...] [--preview]\n--exclude-dir leaves a generated or vendored directory (for example ios, android) out of the scan; repeat it on every refresh.\n--preview prints the bytes index would write and writes nothing.\nPython 3.11+ is required for safe TOML manifest parsing.\n' "$0" >&2
   exit 2
 fi
 target="$1"
@@ -49,6 +49,7 @@ MAX_SOURCE_BYTES = 128 * 1024
 MAX_SAMPLE_BYTES = 2 * 1024 * 1024
 MAX_SOURCES_PER_PACKAGE = 5
 MAX_EXPLICIT_SOURCES = 5
+MAX_EXPLICIT_EXCLUSIONS = 20
 MAX_OUTPUT_BYTES = 8 * 1024 * 1024
 GENERATED_IDENTITY_PATHS = {
     "ai_rules/project_inventory.json",
@@ -109,6 +110,7 @@ GENERATED_PATTERNS = (
 requested = Path(sys.argv[1]).expanduser()
 source_args = sys.argv[2:]
 explicit_source_paths = []
+explicit_excluded_dirs = []
 preview = False
 index = 0
 while index < len(source_args):
@@ -118,8 +120,9 @@ while index < len(source_args):
         preview = True
         index += 1
         continue
-    if source_args[index] != "--source" or index + 1 >= len(source_args):
-        raise SystemExit("usage error: expected repeated --source <repo-relative-path> options")
+    option = source_args[index]
+    if option not in {"--source", "--exclude-dir"} or index + 1 >= len(source_args):
+        raise SystemExit("usage error: expected repeated --source <repo-relative-path> or --exclude-dir <repo-relative-directory> options")
     path = source_args[index + 1]
     if (
         not path
@@ -129,18 +132,28 @@ while index < len(source_args):
         or any(part in {"", ".", ".."} for part in path.split("/"))
         or Path(path).as_posix() != path
     ):
-        raise SystemExit(f"invalid --source path; expected a normalized in-root relative path: {path!r}")
-    if path in explicit_source_paths:
-        raise SystemExit(f"duplicate --source path: {path}")
-    explicit_source_paths.append(path)
-    if len(explicit_source_paths) > MAX_EXPLICIT_SOURCES:
-        raise SystemExit(f"too many --source paths: maximum is {MAX_EXPLICIT_SOURCES} total")
+        raise SystemExit(f"invalid {option} path; expected a normalized in-root relative path: {path!r}")
+    selected = explicit_source_paths if option == "--source" else explicit_excluded_dirs
+    if path in selected:
+        raise SystemExit(f"duplicate {option} path: {path}")
+    selected.append(path)
+    limit = MAX_EXPLICIT_SOURCES if option == "--source" else MAX_EXPLICIT_EXCLUSIONS
+    if len(selected) > limit:
+        raise SystemExit(f"too many {option} paths: maximum is {limit} total")
     index += 2
 
 root_path = Path(os.path.realpath(requested))
 if not root_path.is_dir():
     raise SystemExit(f"target is not a readable directory: {requested}")
 root = str(root_path)
+for excluded in explicit_excluded_dirs:
+    candidate = root_path
+    for component in Path(excluded).parts:
+        candidate = candidate / component
+        if candidate.is_symlink() or (candidate.exists() and not candidate.is_dir()):
+            raise SystemExit(f"excluded directory is a symlink or non-directory: {excluded}")
+    if root_path not in candidate.resolve().parents:
+        raise SystemExit(f"excluded directory escapes the selected root: {excluded}")
 exclusions = []
 manifest_paths = {}
 lockfiles = []
@@ -179,7 +192,7 @@ def receipt_owned_rule_digests():
     if receipt.get("format") == "spec-harness-synthesis" and "schema_version" not in receipt and "packages" not in receipt:
         return {}
     version = receipt.get("schema_version")
-    if receipt.get("format") != "spec-harness-synthesis" or type(version) is not int or version not in (1, 2, 3):
+    if receipt.get("format") != "spec-harness-synthesis" or type(version) is not int or version not in (1, 2, 3, 4):
         reject("unsupported format/schema_version")
     rows = receipt.get("packages")
     if not isinstance(rows, list):
@@ -270,7 +283,9 @@ def is_manifest_name(name):
 def is_instruction_file(path):
     name = os.path.basename(path)
     parts = path.split("/")
-    in_rule_library = "ai_rules" in parts and name != "context_map.md"
+    # context_map.md is the inventory itself and stack.md is generated from the manifests
+    # (bin/sh_stack.py, checked against them directly); neither is project policy.
+    in_rule_library = "ai_rules" in parts and name != "context_map.md" and parts[-2:] != ["ai_rules", "stack.md"]
     in_cursor_rules = any(parts[index:index + 2] == [".cursor", "rules"] for index in range(len(parts) - 1))
     return (
         name in RULE_NAMES
@@ -416,6 +431,8 @@ for directory, dirnames, filenames in os.walk(root, topdown=True, followlinks=Fa
         path_rel = rel(path)
         if os.path.islink(path):
             add_exclusion(path_rel, "symbolic link", "directory symlinks are not followed")
+        elif path_rel in explicit_excluded_dirs:
+            add_exclusion(path_rel, "explicit directory exclusion", "excluded by --exclude-dir")
         elif name == ".git":
             add_exclusion(path_rel, "repository metadata", "repository metadata is not scanned")
         elif name == ".spec-harness" and relative_dir == ".":
@@ -672,6 +689,9 @@ inventory = {
         "Lockfile contents, environment values, symlink targets, nested repositories, generated/dependency trees, signing assets, and datasets are excluded.",
     ],
 }
+if explicit_excluded_dirs:
+    inventory["scan"]["excluded_directories"] = sorted(explicit_excluded_dirs)
+    inventory["limitations"].append("Explicit directory exclusions are outside the declared inventory scope; repeat --exclude-dir options on refresh.")
 
 
 def canonical_bytes(value):

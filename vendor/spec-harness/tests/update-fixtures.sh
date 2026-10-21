@@ -309,5 +309,18 @@ run(CLI + ["update", str(owned), "--apply", digest], 0, "apply after the user de
 assert not (owned / "goal.md").exists(), "N1: update restored a file the record says is the user's"
 assert json.loads((owned / ".spec-harness/install.json").read_text())["files"]["goal.md"] == {"managed": False}
 print("PASS: a user-owned record entry is never adopted, flipped or restored by update; uninstall lists it under YOURS")
+# A project's own copy of a harness procedure, present before install, is kept; the plan line says the
+# shipped procedure differs, so the project does not silently keep running the old one.
+proc = tmp / "own-procedure"
+proc.mkdir()
+(proc / ".claude/commands/spec-harness").mkdir(parents=True)
+(proc / ".claude/commands/spec-harness/init.md").write_text("# Our own init procedure\n")
+(proc / "goal.md").write_text("# Our goal\n")
+install(proc, "proc")
+states, digest, out = plan(proc)
+assert states.get(".claude/commands/spec-harness/init.md") == "CUSTOMIZED-KEEP", (states.get(".claude/commands/spec-harness/init.md"), out)
+assert "your copy of a harness procedure; the shipped version differs" in out, out
+assert "goal.md  (your file from before the install; not managed by the harness)" in out, out
+print("PASS: a project's own harness procedure is kept and the plan says the shipped version differs")
 print("All update fixtures passed.")
 PY

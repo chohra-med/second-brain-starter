@@ -3,6 +3,85 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## 0.6.0 - 2026-10-21
+
+### Added
+
+- `commands/pr-prepare.md`: an ordered checklist before a pull request is written, pushed or updated. It is
+  procedure only and grants no permission to commit, push, open or merge. Proposal: RFC 0005.
+- `spec-harness pr-packet PR_BODY.md [--test-names FILE] [--repo DIR --base REF --head REF]`: a read-only
+  structural check of a saved PR body (sections, one Before/After image, no video, no local path, no
+  placeholder, Merge Danger bullets, real test names). Claims stay UNVERIFIED. Tests:
+  `tests/pr-packet-fixtures.sh`.
+- The merger role has a PR packet gate: a passing packet check and a passing pipeline on the exact head,
+  and dependent PRs updated or listed as PENDING.
+- Rule layers, receipt schema 4 (RFC 0006). Every rule is one readable line, `- **ID** sentence. (source:
+  ...)`, defined once. Each fact has one home: business rules in `.memory/10-product.md`, decisions and
+  accepted conventions in `.memory/60-decisions.md`, project rules in `RULES.md` and rule modules, tool
+  rules in `ai_rules/rules/tool-<package>.md`, baseline rules in `ai_rules/rules/baseline-<topic>.md`,
+  and package versions only in `ai_rules/stack.md`. Conflicts follow precedence (business, decision,
+  project, tool, baseline) with `overrides <ID>`; what precedence cannot settle stays open in
+  `rule_conflicts`. A first initialisation writes schema 4. v1 keeps it light: packs are recommended,
+  not required; the policy ledger is optional and checked when present; duplicates are rules with the same
+  words; a stray version is a stack version written in full.
+- `spec-harness stack <target> [--check]` (`bin/sh_stack.py`): writes `ai_rules/stack.md` from
+  `package.json`, `pyproject.toml` and their lockfiles (`package-lock.json`, `yarn.lock`, `uv.lock`,
+  `poetry.lock`). The readiness check rebuilds it and refuses READY when it is stale.
+- Curated rule packs in `templates/rule-packs/`, staged to `.claude/spec-harness/rule-packs/`: baseline
+  clean code, security, error handling, performance, testing and accessibility, and tool packs for Expo,
+  React Native, Expo Router, TanStack Query and Sentry for React Native, each rule citing official
+  documentation (checked 2026-10-21). Targets copy pack lines byte for byte; a tool pack applies only
+  inside its declared version range.
+- `generate-agents --check` with schema 4 (`bin/sh_rule_layers.py`) rejects pointer lines such as "Apply
+  the canonical ... Coverage IDs: ...", unreadable rule lines, a rule ID defined twice, two rules with the
+  same words, a reworded pack rule, a tool module outside its range, a `PROPOSED` convention, an override by a lower layer, an
+  open rule conflict, a package version outside the stack, and a skill or role block that copies a rule
+  instead of naming its ID. A captured ledger row anchors to a rule ID. Tests:
+  `tests/rule-layers-fixtures.sh`.
+- Standards and compliance (`commands/standards.md`, skill `spec-harness-standards`): init looks for
+  signals (markets, personal, payment or health data, an accessibility statement or certificate), asks
+  the owner once which named standards the company has (`in place`), must meet (`required`) or plans
+  (`planned`), records each as a `STD-` line in `.memory/10-product.md`, and carries it out with an
+  `ai_rules/rules/standard-<name>.md` module. Standard packs: `standard-eu-accessibility` (European
+  Accessibility Act, Directive (EU) 2019/882, with harmonised standard EN 301 549) and
+  `standard-owasp-masvs`. The catalogue also names GDPR, ISO/IEC 27001, ISO/IEC 27701, SOC 2, PCI DSS,
+  HIPAA and IEC 62304. Precedence becomes business, standard, decision, project, tool, baseline. The check
+  refuses a commitment without a status or a module, and a standard module without a commitment.
+  Recording a commitment never claims compliance.
+- `spec-harness index <target> --exclude-dir <dir>` (repeatable, at most 20): leaves a generated or
+  vendored directory out of the scan, records it in `scan.excluded_directories`, and refuses a path that
+  escapes the root, is a symlink, a file or a duplicate. Tests: `tests/index-exclusion-fixtures.sh`.
+- `init` offers Understand-Anything on every run (installed only on the user's yes, pinned and recorded
+  in `.memory/30-tech.md`); `docs/COMPANION-SKILLS.md` has the install lines.
+- Memory bank templates: `10-product.md` has Business, Goals, Users and Domain rules sections;
+  `60-decisions.md` states the one-line decision format.
+
+### Changed
+
+- `update` names a project's own copy of a harness procedure on its plan line ("the shipped version
+  differs: merge it by hand"), so a target does not silently keep running an old `init` or `sdd` procedure.
+- Schema 4 check: a business rule or decision is captured in its memory-bank home (`rule_path`
+  `.memory/10-product.md` or `.memory/60-decisions.md`); the memory bank is read as human prose, where only
+  well-formed rule lines are rules; and a generated output or installed harness file listed as a policy
+  source is refused. `ai_rules/rules/frequent_rules.md` is a `WHEN ...: <rule IDs>` index.
+- `index` leaves the generated `ai_rules/stack.md` out of the policy files it hashes, as it does the
+  context map, so regenerating the stack is not policy drift.
+- Technology skills and role blocks name rule IDs and link to `ai_rules/stack.md`; they no longer restate
+  rules or versions (`templates/project-skills/spec-harness-tech.md`, `commands/init.md`).
+- `commands/ship.md`: a check that cannot run locally may be left to CI only by a recorded project
+  decision, and the report lists it as `left to CI`, not as passed.
+- `commands/learn.md`: a lesson that conflicts with an adopted rule is resolved by the review authority,
+  as a narrow, dated `EXPLICIT` carve-out after the rule, or as a rejected lesson.
+
+### Fixed
+
+- The `generate-agents` work order (step 3) now names the `conventions` and `technology-profiles`
+  methods, which every install stages. `tests/portable-skills-contract.sh` checks that step 3 names each
+  installed method.
+- `generate-agents --check` no longer treats the lower-case word "pending" in human rule prose (for
+  example "update every pending PR") as an unfinished stub. Only the upper-case marker `PENDING` counts,
+  as `commands/init.md` step 5 states. `tests/synthesis-contract.sh` covers lower- and title-case prose.
+
 ## 0.5.0 - 2026-10-18
 
 ### Added
