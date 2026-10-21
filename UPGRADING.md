@@ -2,9 +2,9 @@
 
 ## Upgrading to v1.8.0
 
-This version adds one shared skill, `handover`, and changes the vendored Spec Harness. Nothing in it changes or deletes a file you already have.
+This version adds two shared skills, `handover` and `api-anything`, and changes the vendored Spec Harness. Nothing in it changes or deletes a file you already have.
 
-Measured on a scratch workspace made by `init` from the v1.7.1 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.7.1 -> available 1.8.0` and `Summary: 3 CREATE, 129 IDENTICAL`. The three new files are `.agents/skills/handover/SKILL.md`, `.claude/skills/handover/SKILL.md` and `03-Resources/Procedures/handover.md`. There is nothing to update or merge. A handover note is saved to `00-Meta/Handovers/` the first time you approve one.
+Measured on a scratch workspace made by `init` from the v1.7.1 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.7.1 -> available 1.8.0` and `Summary: 7 CREATE, 129 IDENTICAL`. The seven new files are `SKILL.md` and `LICENSE` for `api-anything` and `SKILL.md` for `handover`, each under both `.agents/skills/` and `.claude/skills/`, plus `03-Resources/Procedures/handover.md`. There is nothing to update or merge. A handover note is saved to `00-Meta/Handovers/` the first time you approve one.
 
 What else changes is what `connect` stages into a repository you connect from now on: Spec Harness 0.6.0 instead of 0.5.0, which is 114 files and 46 folders instead of 96 and 43. `upgrade` does not touch a repository you connected earlier, and this release did not measure moving one to 0.6.0; Spec Harness's own `update` command is the route for that.
 

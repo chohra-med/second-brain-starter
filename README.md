@@ -62,11 +62,11 @@ The first command prints the plan and its digest. The second applies that exact 
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships seventeen shared skills. The initializer installs them as seventeen local skills in `.claude/skills/` and `.agents/skills/`. |
+| Skills | The starter ships eighteen shared skills. The initializer installs them as eighteen local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
-The seventeen skills:
+The eighteen skills:
 
 | Skill | What it does |
 |---|---|
@@ -81,6 +81,7 @@ The seventeen skills:
 | `handover` | Writes a short note so a long or cluttered chat can be cleared and restarted fresh. |
 | `icm-architect` | The bundled method that `second-brain-icm` relies on. |
 | `humanizer` | Finds and removes common AI writing patterns. |
+| `api-anything` | Turns a website that has no API into calls you can make directly. Needs the outside `api-anything` command, which is not bundled. |
 | `grill-me` | Settles a confused idea by checking real files and asking one question at a time. |
 | `readme-generator` | Writes a README for a project. |
 | `graphify` | Suggests links in your notes from a graph file. It needs an optional outside tool. |

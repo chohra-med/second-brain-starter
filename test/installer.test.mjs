@@ -522,6 +522,7 @@ const bundledMethodFiles = new Map([
   ['references/system-map.md', 'd8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739'],
 ]);
 const installedSkills = [
+  'api-anything',
   'context-modes',
   'end-session',
   'graphify',
@@ -563,8 +564,8 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /seventeen local skills/);
-  assert.match(readme, /seventeen shared skills/);
+  assert.match(readme, /eighteen local skills/);
+  assert.match(readme, /eighteen shared skills/);
   assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 

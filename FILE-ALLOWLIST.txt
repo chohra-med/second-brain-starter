@@ -118,6 +118,8 @@ template/shared-skills/icm-architect/references/core.md
 template/shared-skills/icm-architect/references/forms.md
 template/shared-skills/icm-architect/references/reference-integrity.md
 template/shared-skills/icm-architect/references/system-map.md
+template/shared-skills/api-anything/LICENSE
+template/shared-skills/api-anything/SKILL.md
 template/shared-skills/context-modes/SKILL.md
 template/shared-skills/end-session/SKILL.md
 template/shared-skills/graphify/SKILL.md
