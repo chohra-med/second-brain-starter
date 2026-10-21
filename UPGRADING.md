@@ -1,5 +1,11 @@
 # Upgrading the free starter
 
+## Upgrading to v1.9.0
+
+This version adds two shared skills, `today` and `context`. Nothing in it changes or deletes a file you already have.
+
+Measured on a scratch workspace made by `init` from the v1.8.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.8.0 -> available 1.9.0` and `Summary: 5 CREATE, 136 IDENTICAL`. The five new files are `SKILL.md` for `today` and for `context`, each under both `.agents/skills/` and `.claude/skills/`, plus `03-Resources/Procedures/today.md`. There is nothing to update or merge. `context-modes` is unchanged and still works.
+
 ## Upgrading to v1.8.0
 
 This version adds two shared skills, `handover` and `api-anything`, and changes the vendored Spec Harness. Nothing in it changes or deletes a file you already have.
