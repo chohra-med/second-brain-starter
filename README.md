@@ -87,6 +87,14 @@ The sixteen skills:
 | `scroll-story-component` | Adds a scroll-driven video story to a React site: it copies one runtime file into your project, then builds the chapters, reading pauses, phone framing and film encode on it. |
 | `writing-skills` | Explains how to write your own skill. |
 
+### What `scroll-story-component` builds
+
+![Every reading pause of a scroll story on desktop: intro, context, four PARA labels, CODE, skill, workflow and review](docs/media/scroll-story-holds-desktop.jpg)
+
+Recorded on a live page built with the skill ([casainnov.com/second-brain](https://casainnov.com/second-brain)). The film scrubs as you scroll and stops at each labelled moment so the text can be read. Watch the [desktop scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-desktop.mp4), the [phone scroll-through](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-phone.mp4) or a [short GIF](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo.gif). On phones the frame is enlarged and pans toward the label:
+
+![Every reading pause of the same story on a phone](docs/media/scroll-story-holds-phone.jpg)
+
 ## Day 1, day 7 and day 14
 
 - **Day 1:** Start. Finish one small result and check it.
@@ -118,7 +126,7 @@ This package also bundles Spec Harness under `vendor/spec-harness/` with its own
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.7.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.7.1`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Remove the starter
 

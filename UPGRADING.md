@@ -1,5 +1,11 @@
 # Upgrading the free starter
 
+## Upgrading to v1.7.1
+
+This version adds a Demo section to the `scroll-story-component` skill. Nothing is created, merged or deleted.
+
+Measured on a scratch workspace made by `init` from the v1.7.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.7.0 -> available 1.7.1` and `Summary: 2 MANAGED-UPDATE, 127 IDENTICAL`. The two updates are the skill's `SKILL.md` in `.agents/skills/` and `.claude/skills/`. After the approved apply, `verify` reports `Verification: OK`. If you edited that `SKILL.md`, the plan shows it as a merge or a kept file instead.
+
 ## Upgrading to v1.7.0
 
 This version adds one shared skill, `scroll-story-component`. Nothing is updated, merged or deleted.

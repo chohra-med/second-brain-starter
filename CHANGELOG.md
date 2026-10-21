@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 (2026-10-21)
+
+- `scroll-story-component` gains a Demo section: links to a desktop and a phone scroll-through recorded on a live page built with the skill, a short GIF, and a still of every reading pause. The two stills live in `docs/media/` and are shown in the README; the recordings and the GIF are assets of the v1.7.0 release, because a 5 MB GIF overflows the package scanner and every skill file is installed twice into each workspace.
+- Version: the source moves from `v1.7.0` to `v1.7.1` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
 ## v1.7.0 (2026-10-21)
 
 - Adds the shared skill `scroll-story-component`, installed to `.agents/skills/` and `.claude/skills/`: `SKILL.md`, four references (`api.md`, `design-patterns.md`, `integration.md`, `media-brief.md`) and two assets (`scroll-story.tsx`, `example.tsx`). It guides an assistant through adding a scroll-driven video story to a React site: chapter timing, an idle opening loop, reading pauses with snap points, phone framing, the film encode, and the browser checks to run. The skill is written for this repository by its author, see [ATTRIBUTION.md](ATTRIBUTION.md).
