@@ -27,9 +27,11 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 2. Open the source folder in Claude Code, Codex CLI or the Codex app, with local file access.
 
-3. Type:
+3. Type this sentence to your assistant:
 
-> Set this up for me
+   ```text
+   Set this up for me
+   ```
 
 <br>
 
