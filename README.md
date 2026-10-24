@@ -1,6 +1,6 @@
 <div align="center">
 
-# Second Brain Starter
+<h1><img src="docs/images/hero.svg" alt="Second Brain Starter: a memory your AI can continue" width="100%"></h1>
 
 **A workspace that connects your repositories to a memory your AI can continue.**
 
@@ -17,27 +17,38 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ---
 
-> **Need the learning layer too?** Start free here. **[Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=builder-ai-os)** is the optional paid version. It adds prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog. [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md) sets the two side by side.
-
-## What it is
-
-Second Brain Starter sets up a workspace. A workspace is a folder of plain Markdown files. It keeps your facts, decisions, progress and next steps. An AI assistant can read them, so a new chat picks up where the last one stopped.
-
-## Who it is for
-
-It is for people who build software and people who do other work. You need a folder, a text editor and an AI assistant that can read local files.
-
 ## Start
 
-1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter). Cloning gives the newest files. Or download and extract a release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases). A release ZIP gives the last published release, which can be older than this page.
+1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), which gives the newest files. A release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases) also works, but it can be older than this page.
+
+   ```sh
+   git clone https://github.com/chohra-med/second-brain-starter.git
+   ```
+
 2. Open the source folder in Claude Code, Codex CLI or the Codex app, with local file access.
+
 3. Type:
 
 > Set this up for me
 
+<br>
+
+<img src="docs/images/start-steps.svg" alt="Clone it, open it in Claude Code or Codex, say Set this up for me, approve the plan and your Home page opens" width="100%">
+
+<br>
+
+### What happens next
+
 The assistant asks for one project folder and shows the full setup plan. You approve that exact plan. Then it checks the result and opens your Home page. Keep the source copy separate from your project. The starter needs Node.js 22 or newer and has no production dependencies.
 
 Ordinary web chat cannot do this setup. Your client and your operating system still control file access and permission prompts.
+
+<br>
+
+<details>
+<summary><strong>Other ways to start, and the command line</strong></summary>
+
+<br>
 
 Three ways to start, from fastest to fullest. Each one drafts first and writes nothing until you say yes:
 
@@ -55,7 +66,25 @@ node ./bin/second-brain.mjs verify --target "$PROJECT"
 
 The first command prints the plan and its digest. The second applies that exact plan. The third checks the result. The shell variants and the damage cases are in [install and recovery](docs/install-and-recovery.md).
 
-## What you get
+</details>
+
+<br>
+
+## Why this exists
+
+Every new AI chat starts blank. You explain the project again, repeat decisions you already made, and the assistant guesses what is done. Second Brain Starter gives the assistant a folder to read first, so a new chat picks up where the last one stopped.
+
+A workspace is a folder of plain Markdown files. It keeps your facts, decisions, progress and next steps. It is for people who build software and people who do other work. You need a folder, a text editor and an AI assistant that can read local files.
+
+<br>
+
+## How it works
+
+<img src="docs/images/workspace-map.svg" alt="Home.md on top, then six numbered folders: Meta, Projects, Areas, Resources, Archives and Daily. Each record has one home." width="100%">
+
+<br>
+
+### What you get
 
 | Part | What it is for |
 |---|---|
@@ -66,7 +95,10 @@ The first command prints the plan and its digest. The second applies that exact 
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
-The twenty skills:
+<details>
+<summary><strong>The twenty skills</strong></summary>
+
+<br>
 
 | Skill | What it does |
 |---|---|
@@ -91,7 +123,10 @@ The twenty skills:
 | `scroll-story-component` | Adds a scroll-driven video story to a React site: it copies one runtime file into your project, then builds the chapters, reading pauses, phone framing and film encode on it. |
 | `writing-skills` | Explains how to write your own skill. |
 
-### What `scroll-story-component` builds
+</details>
+
+<details>
+<summary><strong>Demo: what <code>scroll-story-component</code> builds</strong></summary>
 
 ![A scroll story in motion: the film scrubs with scroll and stops on each labelled moment while the copy is read](https://raw.githubusercontent.com/chohra-med/second-brain-starter/media/scroll-story-demo.gif)
 
@@ -100,6 +135,14 @@ The twenty skills:
 Recorded on a live page built with the skill ([casainnov.com/second-brain](https://casainnov.com/second-brain)). The film scrubs as you scroll and stops at each labelled moment so the text can be read. Full-length video: [desktop](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-desktop.mp4) and [phone](https://github.com/chohra-med/second-brain-starter/releases/download/v1.7.0/scroll-story-demo-phone.mp4) (mp4). On phones the frame is enlarged and pans toward the label:
 
 ![Every reading pause of the same story on a phone](docs/media/scroll-story-holds-phone.jpg)
+
+</details>
+
+<br>
+
+> **Need the learning layer too?** Start free here. **[Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=builder-ai-os)** is the optional paid version. It adds prepared diagnostics, worked sessions and a controlled learning ratchet that records approved improvements in the changelog. [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md) sets the two side by side.
+
+<br>
 
 ## Day 1, day 7 and day 14
 
