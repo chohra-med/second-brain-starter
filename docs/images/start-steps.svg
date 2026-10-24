@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="t d">
+  <title id="t">Start in three steps</title>
+  <desc id="d">Clone the repository, open it in Claude Code or Codex, type Set this up for me, then approve the plan and your Home page opens.</desc>
+  <rect x="1" y="1" width="1198" height="258" rx="16" fill="#0E0E10" stroke="#26262A" stroke-width="2"/>
+  <g font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <g>
+      <rect x="40" y="40" width="258" height="180" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+      <circle cx="74" cy="80" r="16" fill="none" stroke="#3BA9AE" stroke-width="2"/>
+      <text x="74" y="86" font-size="17" font-weight="600" text-anchor="middle" fill="#3BA9AE">1</text>
+      <text x="64" y="132" font-size="24" font-weight="600" fill="#FAFAF8">Clone it</text>
+      <text x="64" y="164" font-size="15" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">git clone</text>
+      <text x="64" y="188" font-size="15" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">second-brain-starter</text>
+    </g>
+    <path d="M298 130 H322" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+    <g>
+      <rect x="322" y="40" width="258" height="180" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+      <circle cx="356" cy="80" r="16" fill="none" stroke="#3BA9AE" stroke-width="2"/>
+      <text x="356" y="86" font-size="17" font-weight="600" text-anchor="middle" fill="#3BA9AE">2</text>
+      <text x="346" y="132" font-size="24" font-weight="600" fill="#FAFAF8">Open it</text>
+      <text x="346" y="164" font-size="15" fill="#71717A">in Claude Code or Codex,</text>
+      <text x="346" y="188" font-size="15" fill="#71717A">with local file access</text>
+    </g>
+    <path d="M580 130 H604" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+    <g>
+      <rect x="604" y="40" width="258" height="180" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+      <circle cx="638" cy="80" r="16" fill="none" stroke="#3BA9AE" stroke-width="2"/>
+      <text x="638" y="86" font-size="17" font-weight="600" text-anchor="middle" fill="#3BA9AE">3</text>
+      <text x="628" y="132" font-size="24" font-weight="600" fill="#FAFAF8">Say it</text>
+      <text x="628" y="170" font-size="18" fill="#3BA9AE" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">Set this up</text>
+      <text x="628" y="194" font-size="18" fill="#3BA9AE" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">for me</text>
+    </g>
+    <path d="M862 130 H886" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+    <g>
+      <rect x="886" y="40" width="274" height="180" rx="12" fill="#0E0E10" stroke="#3BA9AE" stroke-width="2"/>
+      <text x="910" y="86" font-size="14" letter-spacing="1.5" fill="#3BA9AE" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">RESULT</text>
+      <text x="910" y="132" font-size="24" font-weight="600" fill="#FAFAF8">You approve</text>
+      <text x="910" y="164" font-size="15" fill="#71717A">the plan, then your</text>
+      <text x="910" y="188" font-size="15" fill="#71717A">Home page opens</text>
+    </g>
+  </g>
+</svg>
