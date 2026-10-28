@@ -8,6 +8,10 @@ Before proposing a feature, check whether the documented initializer and the man
 
 Do not include credentials, client data, private journals, unpublished product material, or private application files in a suggestion or shared copy.
 
+## Send a fix or a skill
+
+The short path is [docs/contribute.md](docs/contribute.md): reproduce in an empty folder, write the failing test, change the least you can, fill in the [pull request template](.github/PULL_REQUEST_TEMPLATE.md). A new skill is registered with `node tools/add-skill.mjs <name>`. Maintainers judge every pull request by [docs/review-a-pr.md](docs/review-a-pr.md), so read it before you open one. Contributors do not change the version; the maintainer sets it at release.
+
 ## Guidelines for code changes
 
 Behavioural guidelines for code changes (think before coding, simplicity first, surgical changes, goal-driven execution): see the upstream rules at https://github.com/multica-ai/andrej-karpathy-skills. Apply them only where they do not conflict with this file.
