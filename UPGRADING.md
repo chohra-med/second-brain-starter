@@ -1,5 +1,11 @@
 # Upgrading the free starter
 
+## Upgrading to v1.10.0
+
+This version adds three shared skills, `next-session`, `verify-end-session` and `harness-session`. Nothing in it changes or deletes a file you already have.
+
+Measured on a scratch workspace made by `init` from the v1.9.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.9.0 -> available 1.10.0` and `Summary: 8 CREATE, 141 IDENTICAL`. The eight new files are `SKILL.md` for each of the three skills, under both `.agents/skills/` and `.claude/skills/`, plus `03-Resources/Procedures/verify-end-session.md` and `03-Resources/Procedures/harness-session.md`. There is nothing to update or merge. `handover` is unchanged and still works; `next-session` reads the same procedure.
+
 ## Upgrading to v1.9.0
 
 This version adds two shared skills, `today` and `context`. Nothing in it changes or deletes a file you already have.
