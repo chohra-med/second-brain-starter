@@ -28,6 +28,15 @@ Change a task row in [00-Meta/Daily-Task-Plan.md](../../00-Meta/Daily-Task-Plan.
 4. After you write, read the row back and confirm it holds the expected text.
 5. If any step fails, stop and report what actually happened. Do not claim a partial success. Never delete a historical row, a note or evidence. Move it or mark it instead.
 
+## Memory index check (always)
+
+Run this check in every mode, also when the session had no work. After a session with no work it is the only step, followed by a one-line recap.
+
+1. If the assistant keeps a memory index that loads into every session (for Claude Code, `MEMORY.md` in its project memory folder), measure its size in bytes and report the figure.
+2. The budget is the one the [Working Agreement](../../00-Meta/Working-Agreement.md) sets. Without one, it is 3,200 bytes.
+3. Over budget: propose concrete merges or removals, and change nothing without a yes from the person.
+4. No such index, or it cannot be read: say so in one line, and say the check did not run. Never claim it ran when it did not.
+
 ## Phase 0: Whole-conversation audit (before write-back)
 
 Read the complete conversation, from the first ask to the final message. Build a scratch ledger with one row for every request, correction, preference, decision, mistake, blocker and reversal. Do not rely on the last turn or on a summary alone. If earlier turns are no longer available, build the ledger from the available conversation and the durable evidence, and label the missing coverage. Do not call it a whole-session audit.

@@ -13,4 +13,6 @@ Do not use this when:
 - The person wants one roadmap item matched to its evidence. Use `second-brain-close`.
 - The person wants context loaded, not a closeout. Use `context-modes`.
 
+If it is invoked anyway after a session with no work, run only the procedure's memory index check.
+
 Read and follow `03-Resources/Procedures/end-session.md`. That procedure owns the phases, their order, the checks and the closing recap. This skill only names when to use it.
