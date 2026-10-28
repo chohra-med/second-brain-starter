@@ -93,12 +93,12 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships twenty shared skills. The initializer installs them as twenty local skills in `.claude/skills/` and `.agents/skills/`. |
+| Skills | The starter ships twenty-three shared skills. The initializer installs them as twenty-three local skills in `.claude/skills/` and `.agents/skills/`. |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
 <details>
-<summary><strong>The twenty skills</strong></summary>
+<summary><strong>The twenty-three skills</strong></summary>
 
 <br>
 
@@ -115,6 +115,9 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `context-modes` | Loads bounded workspace context in one of three modes: default, one project or task, or full. |
 | `end-session` | Closes a work session: writes the records, captures learning, lists the gaps and the next actions. |
 | `handover` | Writes a short note so a long or cluttered chat can be cleared and restarted fresh. |
+| `next-session` | The `/next-session` command: writes the same short note as `handover`, so the work continues in a fresh chat. |
+| `verify-end-session` | The `/verify-end-session` command: before you close a chat, lists every ask, checks each once, and ends with SAFE TO CLOSE or DO NOT CLOSE. |
+| `harness-session` | The `/harness-session` command: finds every correction you made in a chat, traces each to the rule that should have prevented it, and fixes that rule after you approve. |
 | `icm-architect` | The bundled method that `second-brain-icm` relies on. |
 | `humanizer` | Finds and removes common AI writing patterns. |
 | `api-anything` | Turns a website that has no API into calls you can make directly. Needs the outside `api-anything` command, which is not bundled. |
