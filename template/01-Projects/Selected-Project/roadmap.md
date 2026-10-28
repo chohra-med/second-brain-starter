@@ -6,6 +6,8 @@
 
 Status vocabulary: `Open`, `In progress`, `Blocked`, `Done`, `Verified`. `Done` means the work was performed. `Verified` means the stated evidence was checked. Keep an item open until its evidence exists.
 
+Rotate rows that read `Verified` as the close procedure (`03-Resources/Procedures/close.md`, step 5) says. Put the pointer line immediately above or below the table, never inside it.
+
 ## Fictional demonstration
 
 This example is separate from your task table. It is not assigned work or completed evidence; adapt it only after agreeing your goal and exact plan.
