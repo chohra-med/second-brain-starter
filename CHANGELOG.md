@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.10.0 (2026-10-28)
+
+- Adds the shared skills `next-session`, `verify-end-session` and `harness-session`, installed to `.agents/skills/` and `.claude/skills/`, with the procedures `03-Resources/Procedures/verify-end-session.md` and `03-Resources/Procedures/harness-session.md`. `/next-session` writes the continuation note for a fresh chat. `/verify-end-session` lists every ask in a chat, checks each once against the real files, and ends with `SAFE TO CLOSE` or `DO NOT CLOSE: <reason>`; `dry` writes nothing. `/harness-session` finds each correction in a chat, traces it to the rule that should have prevented it, and fixes that owner after approval, in files you own only.
+- Adds a contribution route: `docs/contribute.md`, `docs/review-a-pr.md`, a pull request template, and `tools/add-skill.mjs`, which registers a new skill in the manifest and the allowlist. Contributors never change the version; the maintainer sets it at release.
+- Design decision, three skills with no code (recorded as [CONTRIBUTING.md](CONTRIBUTING.md) requires): all three are procedures an assistant follows. They add no command line tool and run nothing. `next-session` is a second name for `handover`, the same pattern as `context` for `context-modes`, so the reads and stop rules have one owner. `verify-end-session` never starts work and writes at most one task row at a time, after a yes. `harness-session` writes only to user-owned files; a defect in a shipped file is reported as a fix to send upstream, not patched locally.
+- The installed skill set grows from twenty to twenty-three. The README, the two docs that count the skills and the installer test now say twenty-three.
+- Version: the source moves from `v1.9.0` to `v1.10.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
 ## v1.9.0 (2026-10-21)
 
 - Adds the shared skill `today`, installed to `.agents/skills/` and `.claude/skills/`, with the procedure `03-Resources/Procedures/today.md`. `/today` returns the day's briefing from the workspace records: it reads `00-Meta/Profile.md`, `00-Meta/Daily-Task-Plan.md` and the daily notes for today and yesterday, lists every open task from the plan's Today and Open decisions or blockers sections (all of them, none dropped), copies yesterday's Open and Next lines as the carry-over, and ends with one first action and the check that shows it is done. A plan whose `Date:` line is not today is labelled `stale plan dated YYYY-MM-DD` and is not treated as today's focus. It writes no file.
