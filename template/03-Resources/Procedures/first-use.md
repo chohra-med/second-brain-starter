@@ -57,6 +57,8 @@ Follow the same personalization and artifact approvals above. See [PARA + CODE](
 
 Follow [Close](close.md). Record Done, Verified, Open and Next in existing progress, and reconcile the roadmap with actual evidence. Done means produced; Verified means the agreed check passed. Keep unresolved work visible. Show the artifact path and check result to the user.
 
+The seeded `Selected-Project` holds your first project and keeps its name. If you no longer use it, mark it closed in its own records and work in a project created beside it from the template.
+
 ## 6. Continue in a NEW chat
 
 Start a new chat in the installed target. Read root `AGENTS.md` manually if the client has not confirmed loading it, then read `00-Meta/AGENTS.md` and the owners required by [Context](context.md). Recover the goal, constraints, output evidence and Next from those files, not the previous chat's memory. Name any contradiction and stop a success claim until it is resolved.

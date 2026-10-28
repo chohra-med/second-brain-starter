@@ -68,13 +68,13 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "6a4acd117facddd40e26d39ab8b5aca61328c27a351bbe5a276511f4d0c08f02",
+      "sha256": "5ea1a2b58901c40ca65fd1e54b85326b9e2e4211f2d135d9f185ee23c192e767",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/handover.md",
       "destination": "03-Resources/Procedures/handover.md",
-      "sha256": "5ae5bfe9154e947f09aec465f13e4632f61ecf39de4ba6ff806413abe44f3870",
+      "sha256": "1a0d50159e756e33b1660e74bef1c16b831a393d76d61c120bd30241f15fa783",
       "mergeKind": "managed-file"
     },
     {
@@ -98,7 +98,7 @@
     {
       "source": "template/Home.md",
       "destination": "Home.md",
-      "sha256": "337c634d41ddcddd10872620dba137540f5d66c8343f4671d2f0a5de10ec0382",
+      "sha256": "08dec0618f558902f98380ee41ccfcb12a10efe84acb881dd185175361bbe450",
       "mergeKind": "seed-file"
     },
     {
@@ -120,6 +120,12 @@
       "mergeKind": "seed-file"
     },
     {
+      "source": "template/00-Meta/Working-Agreement.md",
+      "destination": "00-Meta/Working-Agreement.md",
+      "sha256": "7344de36f8603ba5c6cb94e8602aca1c50294907a13011ca295f3318e35347aa",
+      "mergeKind": "seed-file"
+    },
+    {
       "source": "template/01-Projects/Selected-Project/FACTS.md",
       "destination": "01-Projects/Selected-Project/FACTS.md",
       "sha256": "df4c9133ba75cfbd0782ec45e36a227d791e8c329feec84b153a7b3d0f9f01c6",
@@ -128,7 +134,7 @@
     {
       "source": "template/01-Projects/Selected-Project/Decisions.md",
       "destination": "01-Projects/Selected-Project/Decisions.md",
-      "sha256": "f397bc98e27713a24f8c73c17fa66e64d995024281bd4885d8808de83897eb53",
+      "sha256": "df7009fd46e145b336f186b820b4634cc5a1c9a6d05673c7c6753aa74a71b798",
       "mergeKind": "seed-file"
     },
     {
@@ -140,7 +146,7 @@
     {
       "source": "template/01-Projects/Selected-Project/roadmap.md",
       "destination": "01-Projects/Selected-Project/roadmap.md",
-      "sha256": "715ff4e41a497059e0988bad424657fa5abe76ce1b65c558f2b11f19c6738133",
+      "sha256": "e2eb9483912ecb1d3d2a92e5d23414a18219a9806750416b00f620e79feca895",
       "mergeKind": "seed-file"
     },
     {
@@ -164,7 +170,7 @@
     {
       "source": "template/03-Resources/Procedures/close.md",
       "destination": "03-Resources/Procedures/close.md",
-      "sha256": "e4923d1718d285001807e75982ac530c74b690157006bde9208c162053470681",
+      "sha256": "fe7ce4903b99a2639e10656472336b553d02e7dcdad5942fc8202c220c593e9e",
       "mergeKind": "managed-file"
     },
     {
@@ -176,13 +182,13 @@
     {
       "source": "template/03-Resources/Procedures/context-modes.md",
       "destination": "03-Resources/Procedures/context-modes.md",
-      "sha256": "03b8b71736ebcacc7d10c7cb1cb6025ab2d1bb38f367ec006d7548fed9ce2a91",
+      "sha256": "b83b55763e01bea818a5bb6735aecf27d9d8faf8830e6a1fce21a71adc33587a",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/end-session.md",
       "destination": "03-Resources/Procedures/end-session.md",
-      "sha256": "e73c3ece04e2c10ba1d7d7cb94709515380946c2b88c26e4023b0cd96d4f4f0e",
+      "sha256": "a0ff95c3c9f29bd108896a608facff32b93aca5c9e1af1bb99ad4af8f0226387",
       "mergeKind": "managed-file"
     },
     {
@@ -194,13 +200,13 @@
     {
       "source": "template/03-Resources/Procedures/review.md",
       "destination": "03-Resources/Procedures/review.md",
-      "sha256": "7f3535e20f17f112cd4204d2df8114cde6762ec2ab24bd51452d6966ff1ac603",
+      "sha256": "5cd2eb9a1467dc24870bd1b610236d60bbd09f1ffaf596a32204f93176de46d2",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/04-Archives/Projects/Archive-Guide.md",
       "destination": "04-Archives/Projects/Archive-Guide.md",
-      "sha256": "89814ebb46d7db3fb57c7f0a4b6177f46b6689dbe037df39b3df461278369750",
+      "sha256": "c48b71275c384dddcdbe195e0836756daceca730876b32bdee7cd80c80f3d685",
       "mergeKind": "managed-file"
     },
     {
@@ -272,7 +278,7 @@
     {
       "source": "template/00-Meta/README.md",
       "destination": "00-Meta/README.md",
-      "sha256": "2c60f3560f115dd51d26d5fb3969d13ab6778c1b5e894df4a778012159e86b59",
+      "sha256": "ddde37dadcf3e86014514c3a8c2c2e0050ac26b1686b0d4b8776711a4d95a3a3",
       "mergeKind": "managed-file"
     },
     {
@@ -296,13 +302,13 @@
     {
       "source": "template/03-Resources/Procedures/README.md",
       "destination": "03-Resources/Procedures/README.md",
-      "sha256": "43b2455d5a19807b335140a8c0a16ceb43e424a8098a5af7bd24aac9a8abcffa",
+      "sha256": "edc6b2462e413201d46bd148e69c7939f22eb08d2e6dd8f3016996d123e3b088",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/first-use.md",
       "destination": "03-Resources/Procedures/first-use.md",
-      "sha256": "97631abc218c88cca54b1aaf72b1cec523fc0a86085e805f862f83084de63099",
+      "sha256": "2543f892d131e7c7d3da0d2d53a8019764286feea8f399eea429e27ec4ff52fb",
       "mergeKind": "managed-file"
     },
     {
@@ -548,25 +554,25 @@
     {
       "source": "template/shared-skills/end-session/SKILL.md",
       "destination": ".agents/skills/end-session/SKILL.md",
-      "sha256": "ce5f23acd8db01f380e79d11c9724fdfb5e13f6467a9b4fd9045823a00077942",
+      "sha256": "d0890aefa826e256689289c02ddcde8d7037cc1d4c0b91e00196afaeb0b07002",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/end-session/SKILL.md",
       "destination": ".claude/skills/end-session/SKILL.md",
-      "sha256": "ce5f23acd8db01f380e79d11c9724fdfb5e13f6467a9b4fd9045823a00077942",
+      "sha256": "d0890aefa826e256689289c02ddcde8d7037cc1d4c0b91e00196afaeb0b07002",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/graphify/SKILL.md",
       "destination": ".agents/skills/graphify/SKILL.md",
-      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
+      "sha256": "10dcb1aa8076b520816a3ca9c13d6093ca855239da37ccd172114193e79210bd",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/graphify/SKILL.md",
       "destination": ".claude/skills/graphify/SKILL.md",
-      "sha256": "7fd4588ac256c7975b63a9886fbf01ccb9fcbcb768e96cd873acf19d371074fd",
+      "sha256": "10dcb1aa8076b520816a3ca9c13d6093ca855239da37ccd172114193e79210bd",
       "mergeKind": "managed-file"
     },
     {
@@ -824,13 +830,13 @@
     {
       "source": "template/03-Resources/_templates/project/roadmap.md",
       "destination": "03-Resources/_templates/project/roadmap.md",
-      "sha256": "715ff4e41a497059e0988bad424657fa5abe76ce1b65c558f2b11f19c6738133",
+      "sha256": "e2eb9483912ecb1d3d2a92e5d23414a18219a9806750416b00f620e79feca895",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/_templates/project/Decisions.md",
       "destination": "03-Resources/_templates/project/Decisions.md",
-      "sha256": "2862a0cf3df93b8520aa2b7b810654f585ea1406393716ca48bded8809c04803",
+      "sha256": "5fa894f88da6c54358e65d3aca275444a42cdd99d1e100c0b9c56b52a6b46240",
       "mergeKind": "managed-file"
     },
     {

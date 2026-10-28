@@ -10,6 +10,7 @@ const expectedSeedDestinations = [
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
+  '00-Meta/Working-Agreement.md',
   '01-Projects/Index.md',
   '01-Projects/README.md',
   '01-Projects/Selected-Project/Decisions.md',

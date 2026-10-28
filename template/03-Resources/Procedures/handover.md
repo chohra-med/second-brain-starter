@@ -22,8 +22,8 @@ A fresh chat that reads one clean note beats a long chat that remembers everythi
 2. Collect from this chat only what the next chat needs, in the five parts below. Keep each part short.
 3. Check every line of State against the file or output it rests on. A line you cannot check is written as `unverified`. Never write `done` because it was discussed.
 4. Leave out dead ends, tool output, old drafts, long logs and anything a workspace record already holds. Point to that record by its full path instead of copying it. Never write a secret, a key or a password.
-5. Show the whole draft. Write it only after the person says yes, to `00-Meta/Handovers/YYYY-MM-DD-<short-slug>.md`. If that file exists, add `-2`. Never overwrite a note.
-6. Tell the person the two steps that follow: type `/clear` (or open a new chat), then paste the restart prompt below with the real path filled in.
+5. Show the whole draft. Write it only after the person says yes, to `00-Meta/Handovers/<session-name>-YYYY-MM-DD-part<N>.md`: the session's name (the name the person gave the chat, else a short slug), the date, and the next free part number for that session name, starting at `part1`. Never overwrite a note.
+6. End your reply with the hand-off block below, filled in: the folder to start the new session in, and the restart prompt as one paste-ready line. The person keeps several sessions, so this block is what they copy; never make them build the line from a path.
 
 ## The note
 
@@ -31,6 +31,8 @@ Keep it under 60 lines.
 
 ```
 # Handover: <short name>
+
+Start the new session in: <full folder path>
 
 ## Goal
 <one sentence>
@@ -52,11 +54,20 @@ Keep it under 60 lines.
 
 Read first holds at most five paths, in reading order.
 
-## The restart prompt
+## The hand-off block
+
+Give it at the end of the reply, in this shape:
+
+1. Type `/clear` or open a new session in `<full folder path>`.
+2. Paste this line:
 
 ```
-Read <full path of the note> and continue from its Next action. Ask before reading anything it does not name.
+Read "<full absolute path of the note>" and continue from its Next action. Ask before reading anything it does not name.
 ```
+
+To look at the note first: `open "<full absolute path of the note>"`.
+
+Always use the full absolute path in double quotes, because workspace paths can contain spaces. A bare file name or a relative path is wrong: the new session may start in another folder.
 
 ## In the fresh chat
 

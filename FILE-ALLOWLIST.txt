@@ -44,6 +44,7 @@ template/00-Meta/AGENTS.md
 template/00-Meta/Daily-Task-Plan.md
 template/00-Meta/Decisions.md
 template/00-Meta/Profile.md
+template/00-Meta/Working-Agreement.md
 template/01-Projects/Selected-Project/Decisions.md
 template/01-Projects/Selected-Project/FACTS.md
 template/01-Projects/Selected-Project/progress.md
@@ -101,6 +102,8 @@ test/transaction.test.mjs
 test/workspace-plan.test.mjs
 test/upgrade.test.mjs
 test/usage-dashboard.test.mjs
+test/graphify-skill.test.mjs
+test/working-agreement.test.mjs
 template/00-Meta/README.md
 template/01-Projects/Index.md
 template/01-Projects/README.md
