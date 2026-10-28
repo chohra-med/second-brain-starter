@@ -21,9 +21,10 @@ For every mode, what the person says in the current conversation overrides the f
 
 1. Do the default reads first.
 2. Resolve the target to exactly one project folder under [01-Projects/](../../01-Projects/README.md), or to exactly one task in the current-task plan. If it matches nothing or more than one thing, stop and ask for a clearer target. Never guess.
-3. Read the records that the route lists for that project, at the depth it states. For the seeded project, that is its facts, roadmap, decisions and the newest progress entries named in the route. Open a `progress.md` only for the project in scope.
-4. If the target is a repository the person named and registered, read that repository's own rule files before you read or change its files, as the route requires.
-5. Answer from those records only. Name any conflict between them, such as a completed progress entry under an open roadmap item. Do not call the project ready if a conflict is open.
+3. Before you read the target's records, list their paths and report their byte total as file bytes only, as in full mode. Name every record file over the rotation limit in [close.md](close.md) step 5 and offer to rotate it; do not rotate it in this run.
+4. Read the records that the route lists for that project, at the depth it states. For the seeded project, that is its facts, roadmap, decisions and the newest progress entries named in the route. Open a `progress.md` only for the project in scope.
+5. If the target is a repository the person named and registered, read that repository's own rule files before you read or change its files, as the route requires.
+6. Answer from those records only. Name any conflict between them, such as a completed progress entry under an open roadmap item. Do not call the project ready if a conflict is open.
 
 ## Full mode (`context full`)
 
