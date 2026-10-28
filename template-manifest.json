@@ -874,6 +874,54 @@
       "destination": "03-Resources/Procedures/today.md",
       "sha256": "2142fa7f46e30cd55bba89a2b8863cdadb56a97cccc91301ada3ae838ebf339e",
       "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/next-session/SKILL.md",
+      "destination": ".agents/skills/next-session/SKILL.md",
+      "sha256": "2eedbaceccfea27882bd8bbd6c2bf799ee7c3a5415d2f305aec74b8911bc6138",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/next-session/SKILL.md",
+      "destination": ".claude/skills/next-session/SKILL.md",
+      "sha256": "2eedbaceccfea27882bd8bbd6c2bf799ee7c3a5415d2f305aec74b8911bc6138",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/verify-end-session/SKILL.md",
+      "destination": ".agents/skills/verify-end-session/SKILL.md",
+      "sha256": "450d5fc3fbc6e796bba39d1dbc86069bb04bb44f7040c18c7545c4f05a5ed97d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/verify-end-session/SKILL.md",
+      "destination": ".claude/skills/verify-end-session/SKILL.md",
+      "sha256": "450d5fc3fbc6e796bba39d1dbc86069bb04bb44f7040c18c7545c4f05a5ed97d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/harness-session/SKILL.md",
+      "destination": ".agents/skills/harness-session/SKILL.md",
+      "sha256": "79bc41b68718ef67ea1239810d94c5e197def53576df5ee9a74b688f5c1eb5e1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/harness-session/SKILL.md",
+      "destination": ".claude/skills/harness-session/SKILL.md",
+      "sha256": "79bc41b68718ef67ea1239810d94c5e197def53576df5ee9a74b688f5c1eb5e1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/verify-end-session.md",
+      "destination": "03-Resources/Procedures/verify-end-session.md",
+      "sha256": "d838bd6130469bc39203257271fa307196c9b6a6304aa53cca289b76cb936965",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/harness-session.md",
+      "destination": "03-Resources/Procedures/harness-session.md",
+      "sha256": "ff917ba81581923a95c45de2e8e6948ff1738bb1f09b8655e215a7c256cf5c3e",
+      "mergeKind": "managed-file"
     }
   ]
 }

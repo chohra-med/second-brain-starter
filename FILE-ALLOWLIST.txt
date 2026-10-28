@@ -58,7 +58,9 @@ template/03-Resources/Procedures/end-session.md
 template/03-Resources/Procedures/handover.md
 template/03-Resources/Procedures/learning-and-scaling.md
 template/03-Resources/Procedures/review.md
+template/03-Resources/Procedures/harness-session.md
 template/03-Resources/Procedures/today.md
+template/03-Resources/Procedures/verify-end-session.md
 template/04-Archives/Projects/Archive-Guide.md
 template/05-Daily/daily-template.md
 template/AGENTS.md
@@ -92,6 +94,7 @@ test/pin-tool.test.mjs
 test/plan.test.mjs
 test/records.test.mjs
 test/security.test.mjs
+test/session-skills.test.mjs
 test/release-bases.test.mjs
 test/status.test.mjs
 test/transaction.test.mjs
@@ -154,6 +157,9 @@ template/shared-skills/usage-dashboard/SKILL.md
 template/shared-skills/usage-dashboard/usage-dashboard.mjs
 template/shared-skills/usage-dashboard/usage-prices.json
 template/shared-skills/writing-skills/SKILL.md
+template/shared-skills/next-session/SKILL.md
+template/shared-skills/verify-end-session/SKILL.md
+template/shared-skills/harness-session/SKILL.md
 template/03-Resources/_templates/project/README.md
 template/03-Resources/_templates/project/FACTS.md
 template/03-Resources/_templates/project/roadmap.md
