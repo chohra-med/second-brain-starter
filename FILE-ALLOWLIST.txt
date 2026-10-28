@@ -1,3 +1,4 @@
+.github/PULL_REQUEST_TEMPLATE.md
 .github/workflows/test.yml
 .gitattributes
 .gitignore
@@ -9,9 +10,11 @@ CLAUDE.md
 CHANGELOG.md
 CONTRIBUTING.md
 docs/connect-a-repository.md
+docs/contribute.md
 docs/first-loop-and-projects.md
 docs/free-and-builder-ai-os.md
 docs/install-and-recovery.md
+docs/review-a-pr.md
 docs/media/scroll-story-holds-desktop.jpg
 docs/media/scroll-story-holds-phone.jpg
 docs/images/hero.svg
@@ -72,6 +75,7 @@ test/cli-approval.test.mjs
 test/docs-contract.test.mjs
 test/easy-start.test.mjs
 test/cli-connect.test.mjs
+test/add-skill.test.mjs
 test/append-and-privacy.test.mjs
 test/cli.test.mjs
 test/connect.test.mjs
@@ -344,5 +348,6 @@ vendor/spec-harness/tests/tools/update-install-manifest.sh
 vendor/spec-harness/tests/update-fixtures.sh
 test/today-context.test.mjs
 test/vendor.test.mjs
+tools/add-skill.mjs
 tools/build-release-bases.mjs
 tools/update-harness-pin.mjs

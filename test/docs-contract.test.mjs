@@ -154,7 +154,7 @@ test('the version check fires when one carrier disagrees (positive control)', as
 // (iii) every relative link in the changed documents resolves to a file, and every in-page anchor resolves to a heading.
 // ---------------------------------------------------------------------------
 
-const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md'];
+const LINKED_DOCUMENTS = ['README.md', 'ONBOARDING.md', 'PRIVACY.md', 'CONTRIBUTING.md', 'UPGRADING.md', 'CHANGELOG.md', 'ATTRIBUTION.md', 'AGENTS.md', 'docs/install-and-recovery.md', 'docs/verify-update-rollback.md', 'docs/connect-a-repository.md', 'docs/first-loop-and-projects.md', 'docs/free-and-builder-ai-os.md', 'docs/contribute.md', 'docs/review-a-pr.md'];
 
 // GitHub's heading slug: lower case, punctuation removed, spaces become hyphens.
 function slug(heading) {
