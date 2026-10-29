@@ -40,6 +40,7 @@ const ROOT_INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md', 'RULES.md'];
 const HARNESS_RECEIPT = '.claude/agents/.init-synthesis.json';
 const RECEIPT_IDS_IN_TEXT = /tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
 const DERIVED_TEMP_PATTERN = /^\.(tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\.json\.second-brain-\1\.tmp$/;
+const TRANSACTION_ID = /^tx-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CHANGED_SENTENCE = 'CHANGED: some files this connect wrote are missing or differ now. You can roll the connection back, or keep the files as they are.';
 const LABEL_SENTENCES = {
   STAGED: 'STAGED: the harness files this connect wrote are present and unchanged, and the repository is waiting for /sdd init.',
@@ -149,6 +150,10 @@ async function printPlan(plan) {
     output.write(`Base snapshots: ${plan.baseWrites.length} template ${plan.baseWrites.length === 1 ? 'copy' : 'copies'} to record under .second-brain/base/ for the next three-way upgrade.\n`);
   }
   output.write(`Summary: ${statusCounts(plan.entries).map(([status, count]) => `${count} ${status}`).join(', ')}\n`);
+  // DEPRECATED deletes nothing, so a retired file the client still loads, such as a skill, stays active until the person deletes it.
+  if (plan.entries.some((entry) => entry.status === 'DEPRECATED')) {
+    output.write('Deprecated: each DEPRECATED file above is no longer part of the template. The upgrade leaves it as it is, and verify and upgrade no longer manage or check it. Delete it if you do not want it.\n');
+  }
   for (const entry of plan.entries.filter((item) => item.status === 'MERGE')) {
     output.write(`Merged: ${entry.destination} keeps your edits and takes the template's non-overlapping changes; undo restores your current bytes.\n`);
   }
@@ -348,6 +353,15 @@ function printConnectPlan(plan) {
   ];
   if (plan.detection.status === 'NONE') {
     lines.push('Repository writes: harness files will be staged; files that already exist are kept as they are.');
+    // One line on what the registration does in this plan. The merge line only when an entry is actually written.
+    const registration = plan.entries.find((entry) => entry.kind === 'registration');
+    if (registration && ['CREATE', 'MERGE'].includes(registration.status)) {
+      lines.push('Hook registration: the edit guard entry is merged into .claude/settings.local.json (never .claude/settings.json), and in a git repository that file is added to .git/info/exclude unless the line is already there. The registration and exclude lines below say what happens and why.');
+    } else if (registration?.status === 'REGISTERED') {
+      lines.push('Hook registration: .claude/settings.local.json already has an entry that runs the edit guard, so connect adds none. In a git repository that file is added to .git/info/exclude unless the line is already there. The exclude line below says what happens.');
+    } else if (registration) {
+      lines.push('Hook registration: none. connect writes no edit guard entry and leaves .git/info/exclude alone. The registration line below says why.');
+    }
   } else {
     lines.push('Repository writes: none (register only)', `Reason: ${registerOnlyReason(plan.detection)}`);
   }
@@ -355,7 +369,10 @@ function printConnectPlan(plan) {
     if (directory.status === 'CREATE') lines.push(`CREATE\t${directory.root}:${directory.destination}/\tundo=remove-created-directory`);
   }
   for (const entry of plan.entries) {
-    const suffix = entry.status === 'PRESERVED' && entry.differs ? ' (differs)' : '';
+    let suffix = '';
+    if (entry.status === 'PRESERVED' && entry.differs) suffix = ' (differs)';
+    else if (entry.status === 'CREATE' && entry.mode && entry.mode !== '0644') suffix = ` (mode ${entry.mode})`;
+    else if (entry.note) suffix = ` (${entry.note})`;
     lines.push(`${entry.status}\t${entry.root}:${entry.destination}\tundo=${entry.undo.action}${suffix}`);
   }
   const preserved = plan.entries.filter((entry) => entry.status === 'PRESERVED');
@@ -384,6 +401,21 @@ function printConnectPlan(plan) {
   output.write(`Apply this exact plan with: ${cliCommand('connect', { target: plan.hub, repo: plan.repo, name: plan.name, apply: plan.digest })}\n`);
 }
 
+// What to do about an edit guard connect did not register. When the hook itself was refused, the file at the hook
+// path is the refused one, so the guard is never called staged; the lines say instead what runs that file, or that
+// connect cannot tell. The registrar's remove command only touches .claude/settings.local.json.
+function registrationNextLines(plan, entry) {
+  const registrar = path.join(plan.sourceRoot, 'vendor', 'spec-harness', 'bin', 'sh-hook-register.py');
+  const add = `python3 -I -B ${word(registrar)} add ${word(plan.repo)}`;
+  if (!entry.hookRefused) return [`Next: the edit guard is staged but not active. Once the reason above is dealt with, register it with: ${add}`];
+  const lines = entry.activeIn.map((file) => (file === '.claude/settings.local.json'
+    ? `Next: the entry in ${file} runs that file on every edit. If you did not put it there, remove it with: python3 -I -B ${word(registrar)} remove ${word(plan.repo)}`
+    : `Next: the entry in ${file} runs that file on every edit. connect never writes ${file}; if you did not put the entry there, take it out of that file by hand.`));
+  for (const file of entry.unknownIn) lines.push(`Next: connect could not read ${file}, so it cannot tell whether an entry there runs that file. Check ${file} yourself.`);
+  if (entry.activeIn.length === 0) lines.push(`Next: the edit guard is not registered. Once the reason above is dealt with, register it with: ${add}`);
+  return lines;
+}
+
 function printConnectHandoff(plan, receiptId) {
   const lines = [`Applied receipt: ${receiptId}`];
   if (plan.detection.status === 'NONE') {
@@ -395,6 +427,10 @@ function printConnectHandoff(plan, receiptId) {
     lines.push('Status: INITIALISED, registered', 'Next: no repository file was written. Open the repository in your client as usual.');
   } else {
     lines.push('Status: already has harness files, registered', 'Next: no repository file was written. If /sdd commands do not work in this repository, run /sdd init inside it.');
+  }
+  for (const entry of plan.entries.filter((item) => item.status === 'NOT-REGISTERED' || item.status === 'MANUAL')) {
+    lines.push(`Not done: ${entry.note}`);
+    if (entry.status === 'NOT-REGISTERED') lines.push(...registrationNextLines(plan, entry));
   }
   lines.push(`Record: ${path.join(plan.hub, '01-Projects', plan.name, 'Connection.md')}`);
   if (plan.detection.status === 'NONE') {
@@ -632,6 +668,16 @@ async function inertResidueLines(targetPath, livePendingIds) {
       if (DERIVED_TEMP_PATTERN.test(name)) {
         lines.push(`RESIDUE\t.second-brain/receipts/${name}\tthe temporary copy of a receipt left behind by a connect; the next approved connect or a rollback clears it.`);
       }
+    }
+  }
+  // The copy of a repository's settings file that a connect keeps while it runs, left when a finished connect was
+  // stopped before it deleted it. A copy whose connect still has a pending record belongs to that record, not here.
+  const backupsFolder = path.join(targetPath, '.second-brain', 'backups');
+  if ((await lstat(backupsFolder).catch(() => null))?.isDirectory()) {
+    for (const id of (await readdir(backupsFolder)).sort()) {
+      const copy = `.second-brain/backups/${id}/repo/.claude/settings.local.json`;
+      if (!TRANSACTION_ID.test(id) || livePendingIds.has(id) || !(await lstat(path.join(targetPath, ...copy.split('/'))).catch(() => null))?.isFile()) continue;
+      lines.push(`RESIDUE\t${copy}\ta copy of a repository's settings file that a finished connect did not get to delete; the next approved connect, a rollback or a recovery deletes it.`);
     }
   }
   const stateFolder = path.join(targetPath, '.second-brain');
