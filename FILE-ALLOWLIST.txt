@@ -104,6 +104,7 @@ test/upgrade.test.mjs
 test/usage-dashboard.test.mjs
 test/graphify-skill.test.mjs
 test/working-agreement.test.mjs
+test/optional-skill.test.mjs
 template/00-Meta/README.md
 template/01-Projects/Index.md
 template/01-Projects/README.md
@@ -133,8 +134,8 @@ template/shared-skills/icm-architect/references/core.md
 template/shared-skills/icm-architect/references/forms.md
 template/shared-skills/icm-architect/references/reference-integrity.md
 template/shared-skills/icm-architect/references/system-map.md
-template/shared-skills/api-anything/LICENSE
-template/shared-skills/api-anything/SKILL.md
+template/optional-skills/api-anything/LICENSE
+template/optional-skills/api-anything/SKILL.md
 template/shared-skills/context-modes/SKILL.md
 template/shared-skills/context/SKILL.md
 template/shared-skills/end-session/SKILL.md

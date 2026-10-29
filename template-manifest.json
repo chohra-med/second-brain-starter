@@ -30,33 +30,9 @@
   },
   "entries": [
     {
-      "source": "template/shared-skills/api-anything/LICENSE",
-      "destination": ".agents/skills/api-anything/LICENSE",
-      "sha256": "9c57c501762e9acf850474f081cdd44914f8820f0ca0099d54f8754109a47999",
-      "mergeKind": "managed-file"
-    },
-    {
-      "source": "template/shared-skills/api-anything/SKILL.md",
-      "destination": ".agents/skills/api-anything/SKILL.md",
-      "sha256": "c32ff1d430898f96ce0182d15e6c58a3dbaf9b1ce6c3c6611ccd4607426d04c5",
-      "mergeKind": "managed-file"
-    },
-    {
       "source": "template/shared-skills/handover/SKILL.md",
       "destination": ".agents/skills/handover/SKILL.md",
       "sha256": "f1f9dc9dd0d74b2aadd640a254fed6840f66c114ba4db91d4c9f7bb8f59d7f7a",
-      "mergeKind": "managed-file"
-    },
-    {
-      "source": "template/shared-skills/api-anything/LICENSE",
-      "destination": ".claude/skills/api-anything/LICENSE",
-      "sha256": "9c57c501762e9acf850474f081cdd44914f8820f0ca0099d54f8754109a47999",
-      "mergeKind": "managed-file"
-    },
-    {
-      "source": "template/shared-skills/api-anything/SKILL.md",
-      "destination": ".claude/skills/api-anything/SKILL.md",
-      "sha256": "c32ff1d430898f96ce0182d15e6c58a3dbaf9b1ce6c3c6611ccd4607426d04c5",
       "mergeKind": "managed-file"
     },
     {
