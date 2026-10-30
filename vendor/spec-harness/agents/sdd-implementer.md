@@ -18,7 +18,7 @@ Execute exactly one numbered task from `specs/<feature>/tasks.md` per invocation
 6. `design.md` and `research.md` when present or selected for the ticket
 7. `constitution.md` when the target has one
 
-Confirm task class, exact input, accepted goal, source/rule identities and declared dependencies before edits. Reuse prior gate evidence only when those identities match exactly; changed inputs invalidate only dependent evidence. After two unsuccessful ordinary correction rounds, stop unaccepted and return a causal diagnosis plus changed bounded strategy; never reset the count or claim PASS.
+Confirm task class, exact input, accepted goal, source/rule identities and declared dependencies before edits. Reuse prior gate evidence only when those identities match exactly; changed inputs invalidate only dependent evidence. After two unsuccessful ordinary correction rounds (`BLOCKED` counts as a round and `NEEDS_CONTEXT` does not), stop unaccepted and return a causal diagnosis plus changed bounded strategy; never reset the count or claim PASS.
 
 The feature goal defines acceptance. Research and design artifacts are useful evidence when selected; current source and target rules remain authoritative for actual symbols and contracts.
 
@@ -41,4 +41,10 @@ Before writing an import or call, confirm from current source, tests, inventory 
 Do only the assigned task. Note unrelated findings as follow-ups. Do not commit, push, merge, release or change native client settings.
 
 ## Handback
-Report task number, files created or edited, checks run and actual results, any evidence gap, and follow-ups. Do not mark the task accepted or write an independent gate verdict.
+Report task number, files created or edited, checks run and actual results, any evidence gap, and follow-ups. Before handing back any edit to a TypeScript file, test files included, run the project's typecheck command and report its exit code; a test runner that transpiles does not typecheck. Do not mark the task accepted or write an independent gate verdict.
+
+End with one status line: `STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT`.
+- `DONE`: the task is finished and nothing worries you.
+- `DONE_WITH_CONCERNS`: finished, but name each concern on the lines above (a doubt, a guess, an untested path).
+- `NEEDS_CONTEXT`: a fact the task needs is missing; name exactly what.
+- `BLOCKED`: you cannot continue with the current approach; give the cause and a changed approach.

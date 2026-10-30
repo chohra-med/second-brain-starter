@@ -1,5 +1,7 @@
 # {{PROJECT_NAME}}: Spec Harness entry point
 
+@AGENTS.md
+
 Auto-loaded by Claude Code at session start. Read fully before any other action.
 
 ## 🧠 Behavioral foundation (override everything below on ambiguity)

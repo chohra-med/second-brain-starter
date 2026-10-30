@@ -26,8 +26,8 @@ For `init`, first open `learning_human.html` for the user as `init.md` describes
 derive package-scoped rules, the core project skills (five on first initialisation) and a skill per major technology, then bind the core roles. Run
 `spec-harness index "$PWD"` before synthesis and
 `spec-harness generate-agents --check "$PWD"` after it. That result proves structure and
-provenance only. A separate fresh reviewer must accept the cited claims before overall
-initialization is READY. Missing evidence or an unavailable reviewer leaves it PENDING. When
+provenance only. Overall initialization is READY only when `spec-harness doctor "$PWD"` also
+reports `structural: READY` and a separate fresh reviewer accepts the cited claims. Missing evidence or an unavailable reviewer leaves it PENDING. When
 `spec-harness` is not on `PATH`, run the same subcommand through
 `npx -y github:chohra-med/spec-harness-oss <subcommand> ...`. If neither is available, report that limitation and keep initialization PENDING. If `init` also carries optional ticket text or a connected reference, continue through input resolution and the ticket steps after initialization. If no optional ticket is present, complete the initialization gates and return; init-only work does not request ticket content or classify a ticket.
 
@@ -67,7 +67,8 @@ replace existing bytes.
    review is missing, or a concurrent edit changes a captured byte, preserve it and mark that output
    `CONFLICT/PENDING`.
 2. Reindex only after preserving those preimages. Read the changed representative source and current
-   applicable policy, then re-ground affected claims, citations, line spans and hashes. Compute the
+   applicable policy, then re-ground affected claims, citations, line spans and hashes (a ledger row
+   for a `.memory/` source also gets its `text_sha256`). Compute the
    raw inventory hash and enumerate every skill and selected role GEN block whose embedded inventory
    marker changed, including consumers outside the edited package. Refresh only verified generated
    content and its receipt rows. Preserve human policy, custom files and all role bytes outside
@@ -159,6 +160,9 @@ and returns a `## Route` block: class, reason, the tier for each stage, whether 
 the files to load first. Copy that block into the class record (`ticket.md` for MICRO, `input.md`
 for LITE and FULL) and follow it (a MICRO route never asks Grill Me, whatever the block says):
 
+- **Task type (LITE and FULL).** Copy `type` with the class into `input.md`. A MICRO `ticket.md`
+  records no `type`; this bullet does not apply to it. A missing `type` reads as `code`. For a type other
+  than `code`, "tests" means the checks that the goal and the lens name; run the project test command only when code changes.
 - **Raise, never lower.** Keep the router's class unless the input or the startup rules show a risk
   it missed; then raise it and record why. Nothing lowers a class below what the definitions below
   give. The user may raise any stage's tier.
@@ -296,7 +300,7 @@ selected for the ticket, never required for every ticket. The reviewer reads the
 and assigned tasks alongside the diff, rules and gate evidence. `spec.md` states the problem, testable
 acceptance criteria, constraints and scope.
 `goal.md` converts those criteria into literal true/false end-state checks. `plan.md` holds the
-architecture/reuse decisions and Ponytail receipt. `tasks.md` breaks the plan into ordered units
+architecture/reuse decisions, Ponytail receipt and, for LITE and FULL, `## Gate briefs`. `tasks.md` breaks the plan into ordered units
 with changed paths, checkable acceptance, test commands and dependencies. Do not use root `goal.md`
 as the verifier target for this ticket.
 
@@ -318,6 +322,12 @@ section 3. For LITE and FULL the minimum order is:
 5. A third fresh bound reviewer checks the changed files against the accepted spec, rules, scope,
    and test evidence; record findings and revision identity in `gates/reviewer.md`.
 
+Briefs, statuses and the lens (LITE and FULL; MICRO takes none of this: it has no briefs, no lens verdicts and no two-pass review):
+
+- **Briefs.** `plan.md` holds `## Gate briefs`. The tester gets the `### Tester brief`. The reviewer gets the `### Reviewer brief` for Pass 2 only; Pass 1 is blind to it and to all gate records (see the bound `sdd-reviewer` role file). A plan without briefs is valid.
+- **Lens.** When the target has `ai_rules/review-lens.md`, the reviewer gives every `LENS-<n>` item a verdict (`MET`, `VIOLATED`, `NOT-APPLICABLE`). `VIOLATED` is a `NEEDED` finding; a missing verdict makes the review incomplete. A brief may add checks, never remove a lens item. Lens items are the lines of the form `- **LENS-<n>** ...`; lines inside HTML comments are not items, and a lens with no items means no lens. Without the file, review is unchanged.
+- **Implementer status.** The implementer's hand-back ends with `STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT`. The gates run only after `DONE` or `DONE_WITH_CONCERNS`. `DONE`: run the gates. `DONE_WITH_CONCERNS`: copy the concerns into the tester dispatch and the reviewer's Pass 2 dispatch, never into Pass 1, then run the gates. Hand the concerns to the reviewer by quoting them in the Pass 2 dispatch. `NEEDS_CONTEXT`: supply the missing context and re-dispatch; `NEEDS_CONTEXT` does not count as a correction round. `BLOCKED`: stop, record the cause and propose a changed strategy; `BLOCKED` counts as a correction round. A hand-back with no status line counts as `DONE_WITH_CONCERNS` with the concern "no status given".
+
 The reviewer also applies Ponytail to LITE and FULL tickets: it checks the plan's Ponytail receipt and labels each finding `NEEDED` or `ADDITION`, and only `NEEDED` findings can produce `REQUEST-CHANGES`. The definitions of both labels are in the bound `sdd-reviewer` role file.
 
 The implementer cannot write its own acceptance result. A fresh `sdd-verifier` remains mandatory for
@@ -330,7 +340,7 @@ contract, not an automatic cache or scheduler. If an independent context or
 required project role is unavailable, record PENDING/UNVERIFIED rather than borrowing an earlier
 agent's context. Fixes that change an accepted input or source revision invalidate only evidence tied to the affected
 input and its declared dependents; widen review for shared-interface changes. After two unsuccessful
-ordinary correction rounds, stop: keep the work unaccepted, record a causal diagnosis, and propose a
+ordinary correction rounds, stop (a `BLOCKED` status counts as one round, `NEEDS_CONTEXT` does not): keep the work unaccepted, record a causal diagnosis, and propose a
 changed bounded strategy before another attempt. Do not reset the count or record PASS. This ordinary
 limit does not replace or shorten the separate adversarial release loop.
 
@@ -356,6 +366,9 @@ including MICRO. It follows
 project skill, and applies it only after the project's review authority approves. A clean ticket with
 no correction and no new decision skips this stage.
 
+Each confirmed miss becomes a rule plus a hook or a `doctor` check where one is possible, so the next
+session is stopped by a check that runs by itself and not only by text.
+
 ## Resumable run state
 
 A ticket run records its stage in `.spec-harness/runs/<ticket>/run-state.json` (schema in
@@ -365,6 +378,40 @@ command with its result. Before resuming, run `spec-harness run-state --check <t
 from the stage it reports. A state that skips a stage, or whose plan changed after approval, is not
 resumable: take the approval again.
 
+### Edit guard hook
+
+An installed target registers `.claude/spec-harness/hooks/sdd-gate.sh` as a Claude Code `PreToolUse`
+hook for `Edit`, `Write`, `MultiEdit` and `NotebookEdit` (in the untracked `.claude/settings.local.json`),
+but only when that file is byte for byte the hook this harness ships and is executable. Otherwise install and
+update say why, remove an earlier entry for it, and the guard is off: `doctor` reports `hook_registered: MISSING`.
+The hook guards the repo that registered it (`CLAUDE_PROJECT_DIR`, else the repo around the script), never
+the session's current working folder, and it compares folders by identity, so a differently cased path
+is the same folder.
+It reads the run state described above: source files may be edited only while some
+`.spec-harness/runs/*/run-state.json` lists `checkpoint` in `completed` and does not list `summary`. So
+write `checkpoint` when the owner approves the plan, before the implementer starts, and `summary` when the
+ticket ends (see Output). A run-state, or an open MICRO `ticket.md`, not modified for 7 days is expired and
+no longer opens the gate; the block message names an expired run. A write is blocked when it lands inside
+another git working tree: a `.git` entry (a folder, or a file as in a linked worktree) between the root and
+the file, also under `.claude/`, `specs/` or any other allowed folder, or above a file outside the root; or
+when it reaches outside the root through a link. Memory, plan, scratch and temp files outside the root and
+outside any git tree are allowed. `specs/`, `.spec-harness/`, `.memory/`, `.claude/`, `ai_rules/`, `learning/`, `.agents/`, `SPEC-HARNESS.md`, `AGENTS.md`, `CLAUDE.md` and every `RULES.md` (the files `/sdd init` and learn write) are always allowed, unless another working tree sits in the way. A MICRO ticket records no checkpoint, so source edits are also allowed
+while some `specs/<feature>/ticket.md` exists and has no line `RESULT: PASS` (the verifier's return that the
+light route copies in). That is a weaker rule than a checkpoint: it only shows that a ticket was opened.
+
+A block means run `/sdd` and reach its checkpoint; never bypass it to get the edit through. `SDD_BYPASS=1`
+exists for the person's own decision and appends a line to `.spec-harness/bypass.log` only when the call
+would otherwise have been blocked. This is a gate against mistakes, not a sandbox: `.claude/`, `.spec-harness/`
+and `specs/` stay writable. The hook covers the edit tools only: a `Bash` write (a redirect, `sed -i`) is not checked. It
+also lives in this repository's own settings, so a session started in another folder does not load it.
+Side effect: when a folder above the root (for example the person's home folder) is itself a git
+repository, every file outside the root below it, such as Claude Code's own memory files, counts as inside
+another git working tree and is blocked. Keep such files outside any git tree, or bypass that one write by
+your own decision.
+An internal error in the hook allows the call and prints a warning. `spec-harness doctor` reports
+whether the hook is registered with the expected matcher, whether python3 is available to it, and which
+runs are open or expired.
+
 ## Output
 
 Report the selected input and provenance, packet and feature goal paths, source/rule revisions,
@@ -372,3 +419,8 @@ Ponytail and Grill Me receipts, each independent gate path and observed result, 
 capabilities, and the next action. For MICRO, report the `ticket.md` path and its result in place of
 packet, receipt and gate paths. File presence, a shell handoff, a structural checker, or a green
 review is not a completed feature or authorization to ship.
+
+When the ticket ends, accepted or abandoned, the orchestrator writes the existing `summary` stage into
+`.spec-harness/runs/<ticket>/run-state.json` (after `test` when accepted; when abandoned, at the point where the run stopped),
+which closes the edit guard for that run. A run that lists `summary` in `completed` is closed and is not validated by
+`spec-harness run-state --check` (that checker rejects it), accepted or abandoned alike. No role file writes it, and a run left open stays open for 7 days at most.

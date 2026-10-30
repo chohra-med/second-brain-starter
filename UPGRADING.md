@@ -1,5 +1,15 @@
 # Upgrading the free starter
 
+## Upgrading to v1.11.0
+
+This version adds one seed file, updates procedures and two skills, and stops installing the optional `api-anything` skill. It deletes nothing.
+
+Measured on a scratch workspace made by `init` from the v1.10.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.10.0 -> available 1.11.0` and `Summary: 1 CREATE, 16 MANAGED-UPDATE, 3 SEED-UPDATE, 126 IDENTICAL, 4 DEPRECATED`. The new file is `00-Meta/Working-Agreement.md`, yours from the start and never overwritten. The updates are the procedure and skill changes in the changelog; a file you edited is kept or merged as the plan shows.
+
+The four `DEPRECATED` files are the `api-anything` copies under `.claude/skills/` and `.agents/skills/`. The upgrade leaves them in place, your client still loads that skill, and `verify` and `upgrade` no longer manage them. To remove it, delete `.claude/skills/api-anything/` and `.agents/skills/api-anything/`; deleting them before the upgrade works too. To keep it on purpose, read `template/optional-skills/api-anything/SKILL.md` and [ATTRIBUTION.md](ATTRIBUTION.md) first.
+
+A repository you connect from now on gets Spec Harness 0.7.0: 122 files and 52 folders instead of 114 and 46, with the edit guard executable and registered in `.claude/settings.local.json`. A repository connected earlier keeps its harness; update it with the harness's own `spec-harness update`.
+
 ## Upgrading to v1.10.0
 
 This version adds three shared skills, `next-session`, `verify-end-session` and `harness-session`. Nothing in it changes or deletes a file you already have.

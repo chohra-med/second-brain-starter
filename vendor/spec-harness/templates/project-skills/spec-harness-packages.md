@@ -14,7 +14,7 @@ This source procedure is a generic scaffold. During initialization, create a pro
 ## Read and derive
 
 1. Read the target's applicable instructions and inventory. Enumerate package paths, manifest formats/status, declared dependency names, scripts, representative source, lockfiles, workspace declarations and exclusions.
-2. Open the manifest and actual representative source for each supported package. Cite exact `path:line` spans and SHA-256. The inventory parses `package.json` and `pyproject.toml` only; keep every other manifest format visible as `unsupported` and do not guess its dependency contents.
+2. Open the manifest and actual representative source for each supported package. Cite exact `path:line` spans and SHA-256. The inventory parses `package.json`, `pyproject.toml` and `composer.json` only; keep every other manifest format visible as `unsupported` and do not guess its dependency contents.
 3. Record package-specific boundary rules from observed imports, exports, workspace declarations, tests and configuration. A declared dependency does not prove it is used or approved.
 4. When a dependency recommendation depends on current version behavior, consult that package's official documentation and cite URL plus access date. Label recommendations separately; do not change manifests, versions or architecture as part of this procedure.
 5. Keep package rules separate across different languages, runtimes and deployment boundaries. State `not established` when evidence is absent.

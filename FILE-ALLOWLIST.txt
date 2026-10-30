@@ -198,6 +198,7 @@ vendor/spec-harness/bin/loop.sh
 vendor/spec-harness/bin/sh-doctor.py
 vendor/spec-harness/bin/sh-finalize-init.py
 vendor/spec-harness/bin/sh-gen-agents.sh
+vendor/spec-harness/bin/sh-hook-register.py
 vendor/spec-harness/bin/sh-index.sh
 vendor/spec-harness/bin/sh-init.sh
 vendor/spec-harness/bin/sh-install.sh
@@ -212,6 +213,7 @@ vendor/spec-harness/bin/spec-harness
 vendor/spec-harness/commands/audit.md
 vendor/spec-harness/commands/build.md
 vendor/spec-harness/commands/conventions.md
+vendor/spec-harness/commands/doctor.md
 vendor/spec-harness/commands/document.md
 vendor/spec-harness/commands/generate-agents.md
 vendor/spec-harness/commands/grill-me.md
@@ -238,18 +240,24 @@ vendor/spec-harness/docs/COMPANION-SKILLS.md
 vendor/spec-harness/docs/GETTING-STARTED.md
 vendor/spec-harness/docs/GUARDRAILS.md
 vendor/spec-harness/docs/MCP-SERVERS.md
+vendor/spec-harness/docs/MEMORY.md
 vendor/spec-harness/docs/RUN-STATE.md
+vendor/spec-harness/docs/images/hero.svg
+vendor/spec-harness/docs/images/pillars.svg
+vendor/spec-harness/docs/images/ticket-flow.svg
 vendor/spec-harness/docs/rfcs/0001-neutral-install-route.md
 vendor/spec-harness/docs/rfcs/0002-learning-statuses.md
 vendor/spec-harness/docs/rfcs/0003-receipt-schema-3-and-finalize.md
 vendor/spec-harness/docs/rfcs/0004-install-record-update-and-run-state.md
 vendor/spec-harness/docs/rfcs/0005-pr-prepare-and-packet-check.md
 vendor/spec-harness/docs/rfcs/0006-rule-layers.md
+vendor/spec-harness/docs/rfcs/0007-lens-briefs-statuses.md
 vendor/spec-harness/examples/react-ts-minimal/CONVENTIONS.md
 vendor/spec-harness/examples/react-ts-minimal/README.md
 vendor/spec-harness/examples/react-ts-minimal/package.json
 vendor/spec-harness/examples/react-ts-minimal/src/index.ts
 vendor/spec-harness/examples/react-ts-minimal/src/money.ts
+vendor/spec-harness/hooks/sdd-gate.sh
 vendor/spec-harness/install-manifest.json
 vendor/spec-harness/install-migrations.tsv
 vendor/spec-harness/learning_human.html
@@ -284,6 +292,7 @@ vendor/spec-harness/templates/install/SPEC-HARNESS.md
 vendor/spec-harness/templates/install/agents-skill-sdd.md
 vendor/spec-harness/templates/install/ai_rules/context_map.md
 vendor/spec-harness/templates/install/ai_rules/globalRules.md
+vendor/spec-harness/templates/install/ai_rules/review-lens.md
 vendor/spec-harness/templates/install/ai_rules/rules/context_management.md
 vendor/spec-harness/templates/install/ai_rules/rules/core.md
 vendor/spec-harness/templates/install/ai_rules/rules/frequent_rules.md
@@ -299,6 +308,10 @@ vendor/spec-harness/templates/install/memory/50-progress.md
 vendor/spec-harness/templates/install/memory/60-decisions.md
 vendor/spec-harness/templates/install/memory/70-knowledge.md
 vendor/spec-harness/templates/install/memory/80-feedback.md
+vendor/spec-harness/templates/memory-kinds/automation/pipeline.md
+vendor/spec-harness/templates/memory-kinds/content/audience.md
+vendor/spec-harness/templates/memory-kinds/content/voice-dna.md
+vendor/spec-harness/templates/memory-kinds/research/sources.md
 vendor/spec-harness/templates/project-skills/spec-harness-architecture.md
 vendor/spec-harness/templates/project-skills/spec-harness-conduct.md
 vendor/spec-harness/templates/project-skills/spec-harness-packages.md
@@ -334,6 +347,7 @@ vendor/spec-harness/tests/fixtures/python-state/targets/python/app/pyproject.tom
 vendor/spec-harness/tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/reviewer.md
 vendor/spec-harness/tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/tester.md
 vendor/spec-harness/tests/fixtures/python-state/targets/python/app/specs/normalize-names/gates/verifier.md
+vendor/spec-harness/tests/hook-fixtures.sh
 vendor/spec-harness/tests/index-exclusion-fixtures.sh
 vendor/spec-harness/tests/index-fixtures.sh
 vendor/spec-harness/tests/install-manifest-contract.sh
@@ -348,6 +362,7 @@ vendor/spec-harness/tests/receipt-index-fixtures.sh
 vendor/spec-harness/tests/role-binding-messages.sh
 vendor/spec-harness/tests/router-contract.sh
 vendor/spec-harness/tests/rule-layers-fixtures.sh
+vendor/spec-harness/tests/rule-ownership-contract.sh
 vendor/spec-harness/tests/run-all.sh
 vendor/spec-harness/tests/run-state-fixtures.sh
 vendor/spec-harness/tests/safe-read-fixtures.sh

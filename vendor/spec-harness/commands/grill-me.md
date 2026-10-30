@@ -1,6 +1,6 @@
 # Method: Grill Me
 
-Portable adaptation of Malik Chohra's Grill Me method, dated 2026-10-05. Investigate before asking.
+Portable adaptation of the grill-me skill by Matt Pocock (github.com/mattpocock/skills, MIT), dated 2026-10-05. This version adds one step: investigate before asking.
 
 1. Read applicable project rules and inspect the actual source, rendered artifact or runtime configuration that can establish the claim. Treat inventories and prior summaries as leads.
 2. Compare the artifacts and rules. Rank evidenced contradictions by impact and cite exact paths/lines. Fix mechanical mismatches within the authorized scope.

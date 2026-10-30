@@ -51,7 +51,12 @@ project, tool and baseline rules (`rules.md`, Rule layers).
   describes and add `<!-- commitment: STD-<n> -->`. First check the standard's current version against
   its official source; when it has moved, say so and keep the module PENDING until the pack is updated.
 - When no pack exists, write `ai_rules/rules/standard-<name>.md` with `<!-- rule-layer: standard -->`,
-  the commitment marker, and rules from the official text, each with its URL and `checked YYYY-MM-DD`.
+  the commitment marker, and rules from the official text, each with its URL and `checked YYYY-MM-DD`, or,
+  when you cannot open the text (for example no outbound request is allowed), with `official text: <instrument
+  and article>` naming exactly what the rule carries out, such as `official text: Regulation (EU) 2016/679, Art. 5(1)(c)`.
+  A named citation records that nobody checked the current text: say so to the owner, and keep the module PENDING
+  until the owner or their adviser confirms it, as for a paywalled text. The check accepts the form; it cannot
+  tell whether the article says what the rule says.
   When the text is paywalled (most ISO standards), cite the clause titles the owner's own documents
   use and keep the module PENDING until the owner or their adviser reviews it.
 - Use only generic queries (the standard's name, version, topic). Never send project code, names or data.

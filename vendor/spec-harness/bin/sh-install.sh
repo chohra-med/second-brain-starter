@@ -114,7 +114,7 @@ PRESERVED=()
 CONFLICTS=()
 INSTALL_DIRS=(
   .claude/agents .claude/commands .claude/commands/spec-harness .claude/skills .claude/spec-harness/methods
-  .claude/spec-harness/rule-packs
+  .claude/spec-harness/rule-packs .claude/spec-harness/memory-kinds .claude/spec-harness/hooks .claude/spec-harness/docs
   .agents/skills .agents/skills/sdd .memory
   ai_rules/rules learning learning/lessons specs workflows
 )
@@ -177,6 +177,7 @@ done
 plan_template ai_rules/globalRules.md templates/install/ai_rules/globalRules.md '{{PROJECT_NAME}}' "$NAME"
 plan_template ai_rules/context_map.md templates/install/ai_rules/context_map.md '{{PROJECT_NAME}}' "$NAME"
 plan_template ai_rules/updated_rules.md templates/install/ai_rules/updated_rules.md '{{PROJECT_NAME}}' "$NAME"
+plan_template ai_rules/review-lens.md templates/install/ai_rules/review-lens.md '{{PROJECT_NAME}}' "$NAME"
 plan_template ai_rules/rules/core.md templates/install/ai_rules/rules/core.md '{{PROJECT_NAME}}' "$NAME"
 plan_template ai_rules/rules/context_management.md templates/install/ai_rules/rules/context_management.md '{{PROJECT_NAME}}' "$NAME"
 plan_template ai_rules/rules/frequent_rules.md templates/install/ai_rules/rules/frequent_rules.md '{{PROJECT_NAME}}' "$NAME"
@@ -206,6 +207,18 @@ done
 for source in "$SYS_DIR"/templates/rule-packs/*.md; do
   plan_copy ".claude/spec-harness/rule-packs/${source##*/}" "$source"
 done
+
+# The edit guard hook (hooks/sdd-gate.sh). It is registered in settings.local.json after the copy below.
+plan_copy .claude/spec-harness/hooks/sdd-gate.sh "$SYS_DIR/hooks/sdd-gate.sh"
+
+# Optional memory kinds (content, automation, research) that init copies into .memory/ when they fit (commands/init.md).
+for source in "$SYS_DIR"/templates/memory-kinds/*/*.md; do
+  kind=${source%/*}
+  plan_copy ".claude/spec-harness/memory-kinds/${kind##*/}/${source##*/}" "$source"
+done
+
+# The memory guide (where each fact lives) that init names in commands/init.md. Copied, never filled.
+plan_copy .claude/spec-harness/docs/MEMORY.md "$SYS_DIR/docs/MEMORY.md"
 
 for skill_dir in "$SYS_DIR"/skills/spec-harness*; do
   case "${skill_dir##*/}" in spec-harness-architecture|spec-harness-performance|spec-harness-packages) continue ;; esac
@@ -396,6 +409,21 @@ else
   RECORD_NOTE="not written: no Python found (status and update will treat this as an install without a record)"
 fi
 
+# Register the edit guard in the untracked .claude/settings.local.json (never settings.json). The merge
+# keeps every other key and hook and is idempotent; a settings file it cannot trust is left as it is. A
+# staged hook the registrar refuses is not registered, and an earlier entry for it is removed; the
+# registrar's own line says which, so the PENDING line claims no more than that this run did not register it.
+HOOK_NOTE=
+if command -v python3 >/dev/null 2>&1; then
+  HOOK_NOTE="$(python3 -I -B "$SYS_DIR/bin/sh-hook-register.py" add "$ABS" 2>&1)" || true
+  [ -n "$HOOK_NOTE" ] || HOOK_NOTE="NOT registered: the registration step printed nothing"
+else
+  HOOK_NOTE="NOT registered: no Python found; the hook is staged but not active"
+fi
+case "$HOOK_NOTE" in
+  "NOT registered"*) PENDING+=(".claude/settings.local.json (the edit guard hook was not registered; the hook registration line says why and what to do)") ;;
+esac
+
 for skill in architecture performance packages; do
   rel=".claude/skills/spec-harness-${skill}/SKILL.md"
   if [ -e "$ABS/$rel" ] || [ -L "$ABS/$rel" ]; then
@@ -423,6 +451,7 @@ print_paths PRESERVED "${PRESERVED[@]}"
 print_paths CONFLICTS "${CONFLICTS[@]}"
 print_paths PENDING "${PENDING[@]}"
 printf '  install record: %s\n' "$RECORD_NOTE"
+printf '  hook registration: %s\n' "${HOOK_NOTE//$'\n'/; }"
 if [ "${#CONFLICTS[@]}" -gt 0 ]; then
   printf 'CONFLICTS: your existing files were kept unchanged. If AGENTS.md or CLAUDE.md is listed, add the block from step 3 of https://github.com/chohra-med/spec-harness-oss/blob/main/docs/GETTING-STARTED.md so your client loads the harness.\n'
 fi

@@ -6,23 +6,23 @@
 <title>Spec Harness, explained for humans</title>
 <meta name="description" content="How Spec Harness works, how to use it and why: an interactive ten-minute read.">
 <style>
-  /* Colorway C: dark first, off-black and off-white, one muted-teal accent used as a line. */
+  /* Forest: dark first (Forest Night), cream in light mode, one forest-green accent used as a line. */
   :root {
-    --paper: #0E0E10; --paper-2: #161618; --card: #161618;
-    --ink: #FAFAF8; --muted: rgba(250,250,248,0.74); --soft: #8A8A93;
-    --rule: #26262A; --rule-solid: #3A3A40;
-    --accent: #3BA9AE; --accent-tint: transparent;
-    --link: #3BA9AE; --store: rgba(250,250,248,0.04);
+    --paper: #0E1210; --paper-2: #1B241E; --card: #1B241E;
+    --ink: #F0F0EE; --muted: rgba(240,240,238,0.74); --soft: #9AA39C;
+    --rule: #2A332D; --rule-solid: #3D4A41;
+    --accent: #7FC9A0; --accent-tint: transparent;
+    --link: #7FC9A0; --store: rgba(240,240,238,0.04);
     --serif: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
     --sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: light) {
     :root {
-      --paper: #FAFAF8; --paper-2: #FFFFFF; --card: #FFFFFF;
-      --ink: #0E0E10; --muted: rgba(14,14,16,0.72); --soft: #6B6B73;
-      --rule: #E5E5E2; --rule-solid: #C9C9C4;
-      --accent: #1F6F73; --link: #1F6F73; --store: rgba(14,14,16,0.035);
+      --paper: #ECE5D5; --paper-2: #D9D0BC; --card: #D9D0BC;
+      --ink: #1B2A22; --muted: #4F5A52; --soft: #4F5A52;
+      --rule: #C4BAA3; --rule-solid: #A99F88;
+      --accent: #1F4A35; --link: #1F4A35; --store: rgba(27,42,34,0.05);
     }
   }
   * { box-sizing: border-box; }
@@ -152,6 +152,7 @@
     <div><p class="when">After setup</p><h3>A skill for each technology you use</h3><p>For example one for React Native or one for your API layer: how this project uses it, with the lines that show it.</p></div>
     <div><p class="when">On every ticket</p><h3>A goal written before the code</h3><p>A short list of true-or-false checks, one to five on a small fix. This is what "done" means, in writing, before anyone types.</p></div>
     <div><p class="when">On every ticket</p><h3>A change with a test that failed first</h3><p>Written by one agent on a cheap, fast model.</p></div>
+    <div><p class="when">On every ticket</p><h3>A guard at the moment of the edit</h3><p>In Claude Code, a small hook guards the project that registered it. It blocks a source edit until a ticket run is open (an approved plan, or an open one-file MICRO ticket; a forgotten one expires after 7 days), and blocks a write that lands in another git working tree. It is installed for you and checked by <code>spec-harness doctor</code>.</p></div>
     <div><p class="when">On every ticket</p><h3>A verdict from someone else</h3><p><code>RESULT: PASS</code> or <code>FAIL</code>, with evidence for each check, from a separate agent that never saw the code being written.</p></div>
     <div><p class="when">Over time</p><h3>Fewer repeated mistakes</h3><p>A correction becomes a proposed rule. You say yes or no. Approved rules are read on every later ticket.</p></div>
     <div><p class="when">Always</p><h3>The last word</h3><p>Nothing is committed, pushed or merged without you saying so. Installing never edits your application code.</p></div>
@@ -167,7 +168,7 @@
     </li>
     <li>
       <h3>Stage the files</h3>
-      <p>From the root of your project. It copies files and reports <code>PENDING</code>, which is correct: nothing has read your code yet. Your own <code>CLAUDE.md</code> or <code>AGENTS.md</code> is never overwritten.</p>
+      <p>From the root of your project. It copies files, merges one guard entry into <code>.claude/settings.local.json</code> and reports <code>PENDING</code>, which is correct: nothing has read your code yet. Your own <code>CLAUDE.md</code> or <code>AGENTS.md</code> is never overwritten.</p>
       <div class="cmd"><pre>npx -y github:chohra-med/spec-harness-oss init . integrate</pre><button type="button" data-copy>Copy</button></div>
     </li>
     <li>
@@ -273,7 +274,7 @@
 <section id="lands">
   <p class="eyebrow">05 / In your repository</p>
   <h2>What lands in your project</h2>
-  <p class="kicker">Installing copies files. It never edits your application code and adds no dependency. Click a layer.</p>
+  <p class="kicker">Installing copies files and merges one guard entry into <code>.claude/settings.local.json</code>. It never edits your application code and adds no dependency. Click a layer.</p>
   <div class="diagram narrow">
     <svg viewBox="0 0 800 392" role="img" aria-labelledby="lands-title lands-desc" id="lands-svg">
       <title id="lands-title">The layers Spec Harness adds on top of your code</title>
@@ -367,7 +368,8 @@
         <li><b>Setup is thorough, not light.</b> On a tiny repository it writes more harness than you have code. It pays off on a real codebase.</li>
         <li><b>A green check is not a quality verdict.</b> The structural check proves hashes and citations line up. Only a reviewer finds a wrong rule.</li>
         <li><b>Editing a generated rule costs a refresh.</b> Batch your review edits.</li>
-        <li><b>It needs a capable agent.</b> The shell only copies files; the thinking is done by the model you bring.</li>
+        <li><b>The edit guard covers the edit tools only.</b> A shell redirect is not checked, and a session started in another folder does not load this repository's hook.</li>
+        <li><b>It needs a capable agent.</b> The shell only stages files and registers one hook; the thinking is done by the model you bring.</li>
       </ul>
     </div>
   </div>
@@ -470,7 +472,7 @@
       does: "A different new agent checks each goal line with a real command or by reading the real file. This is the one gate that exists on every route, including the smallest fix.",
       tier: "Review: strong when the budget allows, otherwise fast. A MICRO ticket: fast.", touch: "Runs commands, reads files. Cannot edit.", out: "RESULT: PASS or FAIL, with evidence per line" },
     { k: "review", name: "Review", sub: "review", cls: "n-box", micro: false, title: "A reviewer reads the diff against your rules",
-      does: "A third new agent reads the change for scope, your project rules and anything the tests would not catch.",
+      does: "A third new agent reads the change for scope, your project rules and anything the tests would not catch. It reads blind first, then with the plan's briefs, and checks your standing review lens if you keep one.",
       tier: "Review", touch: "Reads the diff and the rules", out: "Findings, ranked" },
     { k: "merge", name: "Merge", sub: "you decide", cls: "n-user", micro: false, title: "You decide whether it ships",
       does: "Green gates do not grant permission. Commit, push and merge each need your explicit word, every time.",

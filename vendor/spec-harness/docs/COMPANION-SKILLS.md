@@ -40,7 +40,8 @@ Then, from your project root:
 
 The first `/understand` reads the whole codebase and spends many tokens; run it once, on purpose.
 It writes `.ua/knowledge-graph.json` and `.ua/config.json`, which a team can commit. Add
-`.ua/intermediate/` and `.ua/diff-overlay.json` to `.gitignore`. Other commands include
+`.ua/intermediate/` and `.ua/diff-overlay.json` to `.git/info/exclude` (local, untracked); use
+`.gitignore` only when the team wants them shared. Other commands include
 `/understand-chat`, `/understand-diff`, `/understand-explain`, `/understand-onboard` and
 `/understand-domain`.
 
@@ -66,7 +67,7 @@ open graphify-out/graph.html    # the map
 ```
 
 It writes `graphify-out/` with `graph.html`, `graph.json` and `GRAPH_REPORT.md`. Add `graphify-out/`
-to your `.gitignore` unless your team wants the graph in the repository. Inside an agent, `/graphify
+to `.git/info/exclude` (local, untracked); use `.gitignore` only when the team wants it shared. Inside an agent, `/graphify
 .` adds a model-led pass over documents and images as well.
 
 During `/sdd init` the agent checks `command -v graphify`. When it is there, the agent runs

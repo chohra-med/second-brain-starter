@@ -13,7 +13,7 @@ spec-harness tester <id>             # same handoff, with a workflow id
 spec-harness tester --scan [<sub>]   # same handoff; no scan runs
 ```
 The shell invocations print this manual procedure and return `PENDING`; they do not run a workflow.
-In a capable client with the installed route, `/spec-harness:tester` ("test the workflows", "try to
+In a capable client with the installed route, `/tester` ("test the workflows", "try to
 break the app", "which critical flows are broken") invokes the `sdd-workflow-tester` agent, one
 **clean context per workflow**.
 

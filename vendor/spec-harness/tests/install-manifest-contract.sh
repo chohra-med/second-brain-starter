@@ -80,6 +80,8 @@ def check(manifest, root, target, name):
     if not record_rel or not base_dir:
         bad.append("INSTALL RECORD not described in the manifest (installRecord.record / installRecord.baseDir)")
         record_rel, base_dir = ".spec-harness/install.json", ".spec-harness/base"
+    # A registered settings file is merged by bin/sh-hook-register.py, not staged byte for byte.
+    registered = {r["destination"] for r in manifest.get("registrations", [])}
     state_files = {record_rel} | {base_dir + "/" + d for d in want}
     for p in sorted(state_files - files):
         bad.append("MISSING install state file: " + p)
@@ -90,7 +92,7 @@ def check(manifest, root, target, name):
         record = {}
     if record.get("format") != "spec-harness-install-record" or record.get("harness_version") != pkg["version"]:
         bad.append("INSTALL RECORD format or harness_version is wrong")
-    for p in sorted(files - want):
+    for p in sorted(files - want - registered):
         bad.append("EXTRA installed path not in manifest: " + p)
     for p in sorted(want - files):
         bad.append("MISSING manifest path not installed: " + p)

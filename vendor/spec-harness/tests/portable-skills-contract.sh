@@ -93,7 +93,7 @@ assert len(before) == len(after) == 21, f"expected 21 generated skill files, got
 round3 = {
     "spec-harness/SKILL.md": "335ca8be1300fe8ad5f3320ab32a6dd91e08a9bc51e24677ac62e723a6230e54",
     "spec-harness-audit/SKILL.md": "0b6c32a2e499f310bbdfe14543c505574e0e779b3f6ef245a163d1ef335df96e",
-    "spec-harness-build/SKILL.md": "9cb6640b565b9a0009720135a79636788e81ecf23c352d8434bc6b83533ae6e1",
+    "spec-harness-build/SKILL.md": "80740b16e7c3f13bef38c487f4cb2c1d8f50e7d87884bafe3746e9f8d1c5b898",
     "spec-harness-generate-agents/SKILL.md": "94cf46ef8d203b47b6afaae6fbb1ac2afb7f97aa5a6c48f258dc28e6805f3d6a",
     "spec-harness-grill-me/SKILL.md": "718137de87532b69c6a9478d9d21c002e30a8c31ed57c2570b03499e7c553c6d",
     "spec-harness-install/SKILL.md": "39cc29c93730ef89e5700345da7ded70d08b7a9f9f6d26a458c89530cd6046cd",
@@ -125,6 +125,7 @@ assert "implementation work" in trigger and "code" in trigger, "generated Ponyta
 # round3 is the frozen generated-skill map. A deliberate generator change moves it in the same commit.
 # 2026-10-14: the generator's em dashes became ':' or '.', so the entries were re-frozen from the new output.
 # 2026-10-18: spec-harness-plan gained the MICRO carve-out for Grill Me, so its entry was re-frozen.
+# 2026-10-21: spec-harness-build names the implementer status gate and /sdd section 6, so its entry was re-frozen.
 changed = sorted(path for path in round3 if round3[path] != after[path])
 assert changed == [], f"generated skill text differs from frozen round 3: {changed}"
 assert not any("Malik" in (Path(sys.argv[3]).parents[1] / path).read_text() for path in round3), "generated skill names the author"

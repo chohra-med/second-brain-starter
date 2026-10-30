@@ -330,9 +330,23 @@ def check_command(root):
     return ["bash", os.path.join(HARNESS_BIN, "sh-gen-agents.sh"), "--check", root]
 
 
-def index_command(root, sources):
+def index_command(root, inventory_bytes, sources):
+    """The index preview that reproduces the inventory's scope: its recorded --exclude-dir paths, and its recorded
+    --source paths unless --source was given here. Without them a scoped inventory never matches its refresh."""
+    try:
+        scan = json.loads(inventory_bytes).get("scan", {})
+    except (ValueError, AttributeError, RecursionError):
+        raise Refused("the inventory is not a JSON object") from None
+    recorded = {}
+    for key in ("excluded_directories", "explicit_sources"):
+        items = scan.get(key, []) if isinstance(scan, dict) else None
+        if not isinstance(items, list) or not all(isinstance(item, str) for item in items):
+            raise Refused(f"the inventory's scan.{key} is not a list of paths")
+        recorded[key] = items
     command = ["bash", os.path.join(HARNESS_BIN, "sh-index.sh"), root]
-    for path in sources:
+    for path in recorded["excluded_directories"]:
+        command += ["--exclude-dir", path]
+    for path in sources or recorded["explicit_sources"]:
         command += ["--source", path]
     return command + ["--preview"]
 
@@ -399,7 +413,7 @@ def plan(root, sources, journal=None, evidence=None):
     old_inventory = json.loads(before[inventory_path])
     collect(old_inventory.get("rule_files", []))
 
-    after_inventory = run_tool("index --preview", index_command(root, sources), journal, evidence)
+    after_inventory = run_tool("index --preview", index_command(root, before[inventory_path], sources), journal, evidence)
     if not after_inventory.startswith(b"{"):
         raise Refused("index preview is not a JSON inventory")
     new_inventory = json.loads(after_inventory)
@@ -412,9 +426,11 @@ def plan(root, sources, journal=None, evidence=None):
         return value
 
     prior, current = semantic(old_inventory), semantic(new_inventory)
-    # Visited counts grow when synthesis adds its outputs; every other scan field must hold.
+    # Visited counts grow when synthesis adds its outputs, and source_head moves with every commit: it is the commit
+    # doctor compares with HEAD to call the inventory stale, not an input the synthesis read. Every other scan field must hold.
     for value in (prior, current):
-        value["scan"] = {key: item for key, item in value.get("scan", {}).items() if not key.startswith("visited_")}
+        value["scan"] = {key: item for key, item in value.get("scan", {}).items()
+                         if not key.startswith("visited_") and key != "source_head"}
     for key in ("packages", "rule_files", "workspace_files", "lockfiles", "workspace_declarations", "exclusions", "scan", "limitations"):
         if prior.get(key) != current.get(key):
             raise Refused(f"semantic inventory inputs changed ({key}); model-led synthesis is required, not a binding refresh")
@@ -648,7 +664,7 @@ def apply(root, evidence, sources):
             replace(root, path, row["before_sha256"], data)
         verify_inputs(root, inputs)
         run_tool("generate-agents --check", check_command(root), journal, evidence)
-        second = run_tool("index --preview", index_command(root, sources), journal, evidence)
+        second = run_tool("index --preview", index_command(root, before[receipt["inventory_path"]], sources), journal, evidence)
         if second != rewritten[receipt["inventory_path"]]:
             raise Refused("a second index did not reach the same inventory (no fixed point)")
         for path, data in rewritten.items():
@@ -804,7 +820,7 @@ def main(argv=None):
     mode.add_argument("--apply", action="store_true", help="write through a journal in --evidence-dir")
     mode.add_argument("--recover", action="store_true", help="restore prior bytes from the journal in --evidence-dir")
     parser.add_argument("--evidence-dir", help="a directory outside the target for the journal")
-    parser.add_argument("--source", action="append", default=[], help="repeat the index --source options used for the inventory")
+    parser.add_argument("--source", action="append", default=[], help="repeat the index --source options used for the inventory (default: the ones it recorded)")
     args = parser.parse_args(argv)
     selected = os.path.abspath(os.path.expanduser(args.target))
     if not os.path.isdir(selected) or os.path.islink(selected):

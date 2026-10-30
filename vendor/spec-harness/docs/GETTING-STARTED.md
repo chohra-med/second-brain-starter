@@ -14,7 +14,7 @@ what the initialiser wrote; allow longer on a large app.
 | **Tier** | The class of model a role asks for: `strong`, `fast` or `review`. Never a model name. |
 | **Fresh context** | A new agent that has not seen the implementation conversation. |
 | **PENDING** | Files are staged, but a model or a reviewer has not done its part yet. Not an error. |
-| **READY** | The structural check passes and a separate reviewer accepted the generated rules. |
+| **READY** | The structural check passes, `doctor` reports `structural: READY` and a separate reviewer accepted the generated rules. |
 | **Receipt** | `.claude/agents/.init-synthesis.json`: what initialisation produced and from which source lines. |
 
 ## What you need
@@ -31,7 +31,7 @@ install or initialisation.
 
 ## Get the CLI: two routes
 
-The CLI only copies files and runs checks. Pick one route and use it for every `spec-harness`
+The CLI copies files (and merges one hook entry into `.claude/settings.local.json`) and runs checks. Pick one route and use it for every `spec-harness`
 command in the steps below.
 
 ### Route A: `npx`, nothing to install
@@ -132,7 +132,7 @@ spec-harness init . integrate                                # route B, from you
 ```
 
 Run one of the two, from the root of your project (not from the harness checkout). `integrate` is for an existing project, `new` for an empty one, and leaving the mode out picks for
-you. The command only copies files. It prints a status and four lists:
+you. The command copies files and merges one hook entry into `.claude/settings.local.json` (a `hook registration` line says what happened). It prints a status and four lists:
 
 | List | Meaning |
 |---|---|
@@ -142,7 +142,7 @@ you. The command only copies files. It prints a status and four lists:
 | `PENDING` | What still needs a model: rules, roles and skills. |
 | `status : PENDING` | Expected. Nothing has read your code yet. |
 
-Running it a second time is safe: it adds nothing and changes nothing.
+Running it a second time is safe: it adds nothing and changes nothing, and the hook entry is not added twice.
 
 **Read `learning_human.html` now.** It was just copied to your project root. Open it in a browser:
 it is a ten-minute interactive tour of how the harness works, and it makes the next steps obvious.
@@ -157,11 +157,36 @@ What lands in the repository:
 | `.claude/commands/sdd.md`, `.claude/commands/spec-harness/` | the procedures |
 | `.claude/agents/sdd-*.md` | the thirteen roles, next to any agents you already have |
 | `.claude/skills/spec-harness*`, `.agents/skills/` | skill entry points for Claude Code and Codex |
-| `.memory/` | the project memory bank |
-| `ai_rules/`, `RULES.md`, `AGENTS.md`, `CLAUDE.md`, `constitution.md` | rules, only where you had none |
+| `.memory/` | the project memory bank (see [docs/MEMORY.md](./MEMORY.md)) |
+| `.claude/spec-harness/` | method files, rule packs and optional memory kinds (`memory-kinds/`) that init copies from, and the edit guard hook (`hooks/sdd-gate.sh`) |
+| `.claude/settings.local.json` | merged, not copied: one `PreToolUse` entry that registers the edit guard hook, written only when the staged hook is byte-identical to the shipped one and executable. Untracked (`.git/info/exclude`); `.claude/settings.json` is never written |
+| `ai_rules/`, `RULES.md`, `AGENTS.md`, `CLAUDE.md`, `constitution.md` | rules, only where you had none; `ai_rules/review-lens.md` is an optional PENDING template of standing review checks |
 | `specs/`, `workflows/`, `learning/`, `SPEC-HARNESS.md`, `goal.md` | ticket packets, critical journeys, lessons, status |
 | `learning_human.html` | the interactive explainer for people; delete it once read |
 | `loop.sh` | a legacy placeholder; you can delete it |
+
+**The edit guard hook.** In Claude Code, `.claude/spec-harness/hooks/sdd-gate.sh` runs before every
+`Edit`, `Write`, `MultiEdit` and `NotebookEdit`. It is registered only when the staged file is byte-identical to the
+hook this harness ships and executable. The installer keeps a file that is already there, so a changed or foreign
+`sdd-gate.sh` is not registered: the `hook registration:` line says why and what to do, and an earlier registration
+of that file is removed, because it would keep running the file on every edit. It guards the repo that registered it (`CLAUDE_PROJECT_DIR`, else
+the repo around the script), never the session's current working folder, and compares folders by identity, so a differently
+cased path is the same folder. It blocks a write that lands inside another git working tree (a `.git` folder or file
+between the root and the file, also under `.claude/`, `specs/` and the other allowed folders, or above a file outside
+the root) or reaches outside through a link; memory, plan, scratch and temp files outside the root and outside any git
+tree are allowed. Side effect: when a folder above the root (for example your home folder) is itself a git repository,
+files outside the root below it, such as Claude Code memory files, are blocked too. It also blocks a source edit until a ticket run has reached its `checkpoint`
+(`.spec-harness/runs/*/run-state.json`, `completed` lists `checkpoint` and not `summary`). A run-state or ticket not
+modified for 7 days is expired and no longer opens the gate; the block message names it. A small MICRO ticket
+has no checkpoint, so an open `specs/<feature>/ticket.md` (no `RESULT: PASS` line yet) also allows source edits;
+that rule is weaker than a checkpoint. A block means run `/sdd`. `specs/`, `.spec-harness/`, `.memory/`, `.claude/`, `ai_rules/`, `learning/`, `.agents/`, `SPEC-HARNESS.md`, `AGENTS.md`, `CLAUDE.md` and every `RULES.md` (the files `/sdd init` and learn write) are always allowed.
+`SDD_BYPASS=1` lets a call through and appends a line to `.spec-harness/bypass.log` only when the call would
+otherwise have been blocked; use it only for your own decision. A hook error allows the call and prints a warning.
+This is a gate against mistakes, not a sandbox: `.claude/`, `.spec-harness/` and `specs/` stay writable, so an agent
+can change the hook, its settings or a run state. `Bash` writes (a redirect, `sed -i`) are not checked, and a session
+started in another folder does not load this repository's hook. `spec-harness update <target> --apply <digest>` registers the hook the same way as install (a `hook registration:` line says what happened). To check it,
+run `spec-harness doctor <target>` and read `guards.hook_registered`, `guards.hook_python` and `guards.runs_current`. To remove it, see the uninstall note
+below and [Undo](#undo).
 
 ### 3. Existing instruction files
 
@@ -190,7 +215,7 @@ npx -y github:chohra-med/spec-harness-oss index .
 ```
 
 This writes the inventory: package boundaries, manifests and a small sample of representative source
-files per package. It reads `package.json` and `pyproject.toml`. Native iOS and Android folders are not
+files per package. It reads `package.json`, `pyproject.toml` and `composer.json`. Native iOS and Android folders are not
 packages of their own; `Pods`, `DerivedData` and `build` are skipped.
 
 The file it writes depends on what is already in `ai_rules/`:
@@ -234,7 +259,7 @@ the procedure opens, and project-local installed skills, then writes:
 "Client" here means the coding agent you run it in (Claude Code, or Codex). The client sends what it reads to the model
 provider it uses. Read your client's data terms before you run these steps on private code.
 
-The source sample is capped. A package with no `--source` path gets up to five files by default. A `--source` path applies to the package it names; other packages still get the default. The `--source` list is capped at five paths in total. Every sampled file is capped at 128 KiB, the whole sample at 2 MiB, and each instruction file at 256 KiB. A source or instruction file over its cap is left out and recorded as excluded, except a generated output the receipt registers, where `index` stops with a PENDING message and exit 1; a `--source` file over 128 KiB also stops `index` with exit 1. A manifest over 256 KiB is recorded as unreadable and listed under excluded paths. A manifest in any format other than `package.json` and `pyproject.toml` (such as `go.mod`, `Cargo.toml` or `pom.xml`) is marked unsupported at any size, because `index` does not parse that format, so the project cannot pass this check as a real fix until a later release of index reads that format, then re-run index. This is a known limit. After initialisation, `generate-agents --check` fails with a message containing "unsupported or unreadable manifest" until the manifest clears it. The check clears in four ways once index has run again: the manifest is made smaller (for size only), it is moved outside the project folder, it is moved into a directory that is skipped by name (such as `node_modules`, `build`, `dist`, `vendor`, `target` or `coverage`), or it is repaired so that it parses. The skipped-directory move clears the check without the file being read, so it is not a fix. A malformed package.json or pyproject.toml is marked unsupported, or unreadable when it is over 256 KiB. `--check` does not run `index`, so after any change run `index` again, then refresh the synthesis outputs (the generated rule, skill and role files the receipt lists). For the default Markdown context map, which `finalize-init` refuses to refresh, re-run init for a Markdown context map. The init procedure may open more first-party source than the sample (`commands/init.md:18`). The code cannot enforce a bound on that reading, so check the source each rule cites in step 9.
+The source sample is capped. A package with no `--source` path gets up to five files by default. A `--source` path applies to the package it names; other packages still get the default. The `--source` list is capped at five paths in total. Every sampled file is capped at 128 KiB, the whole sample at 2 MiB, and each instruction file at 256 KiB. A source or instruction file over its cap is left out and recorded as excluded, except a generated output the receipt registers, where `index` stops with a PENDING message and exit 1; a `--source` file over 128 KiB also stops `index` with exit 1. A manifest over 256 KiB is recorded as unreadable and listed under excluded paths. A manifest in any format other than `package.json`, `pyproject.toml` and `composer.json` (such as `go.mod`, `Cargo.toml` or `pom.xml`) is marked unsupported at any size, because `index` does not parse that format, so the project cannot pass this check as a real fix until a later release of index reads that format, then re-run index. This is a known limit. After initialisation, `generate-agents --check` fails with a message containing "unsupported or unreadable manifest" until the manifest clears it. The check clears in four ways once index has run again: the manifest is made smaller (for size only), it is moved outside the project folder, it is moved into a directory that is skipped by name (such as `node_modules`, `build`, `dist`, `vendor`, `target` or `coverage`), or it is repaired so that it parses. The skipped-directory move clears the check without the file being read, so it is not a fix. A malformed package.json, pyproject.toml or composer.json is marked unsupported, or unreadable when it is over 256 KiB. `--check` does not run `index`, so after any change run `index` again, then refresh the synthesis outputs (the generated rule, skill and role files the receipt lists). For the default Markdown context map, which `finalize-init` refuses to refresh, re-run init for a Markdown context map. The init procedure may open more first-party source than the sample (`commands/init.md:18`). The code cannot enforce a bound on that reading, so check the source each rule cites in step 9.
 
 It then runs the structural check:
 
@@ -369,6 +394,9 @@ git clean -f AGENTS.md CLAUDE.md RULES.md SPEC-HARNESS.md constitution.md goal.m
 ```
 
 `git clean` removes only untracked files, so anything of yours that was already committed stays.
+The hook registration in `.claude/settings.local.json` is ignored by git, so `git clean` leaves it. Remove just
+the harness entry with `python3 -I -B /path/to/spec-harness-oss/bin/sh-hook-register.py remove .`; it keeps every
+other key and hook.
 Run it with `-n` first to see the list. Two cautions: `git restore .` also discards any other
 uncommitted edit in the working tree, and `git clean -fd .claude` also removes your own untracked
 files there. In a monorepo, remove each generated `<package>/RULES.md` as well. After the commit, revert the commit or delete the branch.
@@ -390,8 +418,13 @@ Two terms recur below. The run's **commit point** is the point after which the r
 |---|---|---|
 | `PENDING: missing or unsafe synthesis receipt` | `/sdd init` has not run yet | run step 5 |
 | The client ignores the harness | your own `CLAUDE.md` was preserved | step 3 |
-| `Indexed 0 package boundary/boundaries` | no `package.json` or `pyproject.toml` at the root you indexed | index the directory that has one |
+| `Indexed 0 package boundary/boundaries` | no recognised manifest (for example `package.json`, `pyproject.toml`, `composer.json`, `go.mod`) at the root you indexed | index the directory that has one |
 | The check fails after you edited a generated file | the receipt hash is stale | if your inventory is `ai_rules/project_inventory.json`, ask the client to run the guarded refresh in `/sdd init`. A Markdown context map (the default `index` output) cannot be refreshed that way: the refresh refuses it with "re-run init for a Markdown context map", and the policy-drift check does nothing for it |
+| `INCOMPLETE: scan stopped at a read limit (directory limit 5000; ...)` or `(file limit 25000; ...)`, or `INCOMPLETE: some paths could not be read` | The first two mean `index` stopped at the named limit and the inventory is partial. The third means some paths were unreadable, with no limit hit | for a limit, re-run `index` with `--exclude-dir <dir>` for each large generated or data folder. For unreadable paths, fix the permissions or leave them out on purpose; the inventory lists them under its excluded paths |
+| `SCOPE: this run drops the --exclude-dir paths ...` or `... the --source paths ...` | the refresh did not repeat options the existing inventory recorded | re-run with `index <target> --same-scope`, or repeat the options on purpose |
+| `--same-scope cannot reuse the recorded options: ...` | the existing map has a line outside the format index writes (for example a map from an older index that wrote a file name unescaped), or the JSON inventory records options of the wrong type | run index once with the options written out; the new inventory can be reused. Until then a plain refresh prints no `SCOPE:` line for that map |
+| `SCOPE: the existing inventory records an --exclude-dir run but may not name all its folders ...` (and `--same-scope` refuses with the same words) | the map comes from an older index, which did not write the name of an excluded folder the scan never reached (for example `ios` before prebuild) | run index once with the original `--exclude-dir` options; from then on `--same-scope` reuses them |
+| `SCOPE: representative sources differ ... does not record explicit --source paths` | the existing inventory records no `--source` options (it was written without them, or before `index` recorded them) and this run sampled other sources, often after ordinary edits | nothing, unless an index that predates source recording built it with `--source`: then run once more with those options; from then on `--same-scope` reuses them |
 | `/sdd` is not recognised in Codex | the project skill was not discovered | open `.agents/skills/sdd/SKILL.md` and follow it |
 | `concurrent edits kept, manual recovery needed` (from `--apply`) or `concurrent edits kept; manual recovery needed` (from `--recover`) | a file changed while `finalize-init --apply` was writing it | follow [Recovery conflict](#recovery-conflict) below |
 | `step '<name>' timed out after 600 s: its direct child was stopped, but a child process it started may keep running; command: <command>; every write was rolled back` (no conflict and no failed restore: the message ends here) | a `finalize-init` tool step ran past its limit, so the run was refused and rolled back | The lock was released, unless removing it failed. If a lock file is still there, use [Stale lock after a rollback](#stale-lock-after-a-rollback) before running again. Before you run again, check with `ps` that no process the stalled step started is still running; if one is, stop and report it, and do not run again. Then find why the step stalled and run `finalize-init` again with a new `--evidence-dir` |
@@ -487,17 +520,20 @@ kept`, or `PID <PID> is still running, or its state is unclear (ps exit <RC>, pr
 Only after the block prints `lock removed`, start a new run with a new evidence directory outside the target. Route A (`npx`, nothing installed):
 
 ```sh
-npx -y github:chohra-med/spec-harness-oss finalize-init . --apply --source <each path you passed to index in step 4> --evidence-dir <new directory outside the target>
+npx -y github:chohra-med/spec-harness-oss finalize-init . --apply --evidence-dir <new directory outside the target>
 ```
 
 Route B (`spec-harness` on your PATH):
 
 ```sh
-spec-harness finalize-init . --apply --source <each path you passed to index in step 4> --evidence-dir <new directory outside the target>
+spec-harness finalize-init . --apply --evidence-dir <new directory outside the target>
 ```
 
-Repeat the same `--source` flags you gave the index step, and give none if you gave none. A run without the original
-sources plans from a different index. The run plans again from the files as they are now.
+The run re-indexes with the `--exclude-dir` and `--source` options the inventory recorded, and plans again from the
+files as they are now. A commit made since the index does not stop it: the recorded `Source HEAD` is not compared. An
+inventory written by an index older than 0.7.0 does not record `--source` paths or an `--exclude-dir` folder the scan
+never reached, so the first refresh of one built with those options can stop with "semantic inventory inputs changed"
+(`packages` or `limitations`): run `/sdd init` once for a model-led refresh; later refreshes reuse the recorded options.
 
 Do not use this step when the status is `STRUCTURAL_READY`, `RECOVERY_CONFLICT` or `RECOVERY_FAILED`: a completed run
 keeps its result, a conflict needs the steps in [Recovery conflict](#recovery-conflict), and a failed restore

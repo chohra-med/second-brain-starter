@@ -70,6 +70,14 @@ if [[ -f "$HARNESS_DIR/commands/sdd.md" ]]; then
   done
 fi
 
+# Claude Code names a subfolder command by its file name, so the tester is /tester, never prefixed with the folder name.
+if grep -rn --exclude-dir=.git 'spec-harness'':tester' "$HARNESS_DIR" >/dev/null 2>&1; then
+  fail "no file names the tester command with a folder prefix"
+else
+  pass "no file names the tester command with a folder prefix"
+fi
+has_text "$(cat "$HARNESS_DIR/commands/tester.md")" '`/tester`' "tester command is invoked as /tester"
+
 # Dirty-tree rule (commands/sdd.md section 3), its init sentences (commands/init.md, Output) and the verifier
 # clause (agents/sdd-verifier.md). Each sentence is matched on whitespace-flattened text. A planted run replaces
 # one sentence in memory and must report it missing: a check that cannot fail is not evidence.
@@ -436,6 +444,11 @@ def docs(base):
         "researcher": (roles / "sdd-researcher.md").read_text(),
         "learner": (roles / "sdd-learner.md").read_text(),
         "sdd": sdd_command.read_text(),
+        "build": (commands / "build.md").read_text(),
+        "tester_role": (roles / "sdd-tester.md").read_text(),
+        "generate": (commands / "generate-agents.md").read_text(),
+        "init": (commands / "init.md").read_text(),
+        "memory": (base / "docs/MEMORY.md").read_text() if source_tree else None,
         "plan": (commands / "plan.md").read_text(),
         "learn": (commands / "learn.md").read_text(),
         "learn_skill": (skills / "spec-harness-learn/SKILL.md").read_text(),
@@ -468,6 +481,63 @@ def role_contracts(d):
     forbidden = ("Use AFTER spec.md and design.md exist", "design.md is mandatory", "research.md — your source of truth", "after researcher produced research.md")
     for name, text in (("planner", planner), ("implementer", implementer), ("reviewer", reviewer), ("researcher", researcher)):
         required[f"{name} has no mandatory design/research startup"] = not any(x in text for x in forbidden)
+    return all(required.values()), required
+
+BATCH2_PROMISES = (
+    ("reviewer has a Two passes section", "reviewer", "## Two passes"),
+    ("reviewer Pass 1 is blind to gate records", "reviewer", "Pass 1 is blind"),
+    ("reviewer Pass 1 reads no gate records", "reviewer", "no gate records"),
+    ("reviewer Pass 1 excludes the gate briefs", "reviewer", "plan.md` without `## Gate briefs`"),
+    ("reviewer Pass 2 writes What the brief missed", "reviewer", "## What the brief missed"),
+    ("reviewer states no brief when absent", "reviewer", "no brief"),
+    ("reviewer gives every lens item a verdict", "reviewer", "`MET`, `VIOLATED` or `NOT-APPLICABLE`"),
+    ("reviewer treats a missing lens verdict as incomplete", "reviewer", "A missing lens verdict makes the review incomplete"),
+    ("reviewer treats VIOLATED lens as NEEDED", "reviewer", "A `VIOLATED` lens item is a `NEEDED` finding"),
+    ("reviewer standing bullet searches for every place that states the advice", "reviewer", "search the repo for every other place that states the same advice or reads the same flag"),
+    ("reviewer output lists both passes and the lens verdicts", "reviewer", "Pass 1 and Pass 2"),
+    ("implementer ends its hand-back with a status line", "implementer", "STATUS: DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT"),
+    ("implementer says when to use NEEDS_CONTEXT", "implementer", "`NEEDS_CONTEXT`:"),
+    ("plan documents Gate briefs", "plan", "## Gate briefs"),
+    ("plan documents the tester brief", "plan", "### Tester brief"),
+    ("plan documents the reviewer brief", "plan", "### Reviewer brief"),
+    ("plan says a brief never drops a lens item", "plan", "never drops a lens item"),
+    ("sdd gives the tester the tester brief", "sdd", "The tester gets the `### Tester brief`"),
+    ("sdd gives the reviewer the brief for Pass 2 only", "sdd", "The reviewer gets the `### Reviewer brief` for Pass 2 only"),
+    ("sdd names the lens file", "sdd", "ai_rules/review-lens.md"),
+    ("sdd acts on DONE_WITH_CONCERNS", "sdd", "copy the concerns into the tester dispatch and the reviewer's Pass 2 dispatch"),
+    ("sdd keeps concerns out of Pass 1", "sdd", "never into Pass 1"),
+    ("sdd runs the gates only after DONE or DONE_WITH_CONCERNS", "sdd", "The gates run only after `DONE` or `DONE_WITH_CONCERNS`"),
+    ("build.md points to sdd section 6 for statuses and briefs", "build", "`.claude/commands/sdd.md` section 6"),
+    ("build.md runs the tester only after DONE or DONE_WITH_CONCERNS", "build", "only after `DONE` or `DONE_WITH_CONCERNS`"),
+    ("build.md counts BLOCKED as a correction round", "build", "`BLOCKED` counts as a correction round"),
+    ("build.md does not count NEEDS_CONTEXT", "build", "`NEEDS_CONTEXT` does not"),
+    ("build.md gives the tester the tester brief", "build", "### Tester brief"),
+    ("implementer role counts BLOCKED as a round and not NEEDS_CONTEXT", "implementer", "`BLOCKED` counts as a round and `NEEDS_CONTEXT` does not"),
+    ("tester role reads the task type", "tester_role", "## Task type"),
+    ("tester role runs the project command only when code changed", "tester_role", "the project test command only when code changed"),
+    ("reviewer output says where the lens verdicts go", "reviewer", "Pass 1 holds its findings, the lens verdicts"),
+    ("generate-agents names the lens in the reviewer block, never its text", "generate", "names the lens path `ai_rules/review-lens.md` and its item IDs"),
+    ("generate-agents documents policy citations", "generate", "may also point at a project policy file"),
+    ("init asks for memory kinds", "init", "**Memory kinds:**"),
+    ("MEMORY.md names the product home", "memory", "`.memory/10-product.md`"),
+    ("MEMORY.md names the decisions home", "memory", "`.memory/60-decisions.md`"),
+    ("MEMORY.md names the active home", "memory", "`.memory/40-active.md`"),
+    ("MEMORY.md names the progress home", "memory", "`.memory/50-progress.md`"),
+    ("MEMORY.md names the lessons home", "memory", "`.memory/80-feedback.md`"),
+    ("sdd NEEDS_CONTEXT is not a correction round", "sdd", "`NEEDS_CONTEXT` does not count as a correction round"),
+    ("sdd BLOCKED is a correction round", "sdd", "`BLOCKED` counts as a correction round"),
+    ("sdd reads a missing status as DONE_WITH_CONCERNS", "sdd", "no status given"),
+    ("sdd keeps MICRO unchanged", "sdd", "MICRO takes none of this"),
+)
+
+MICRO_FORBIDDEN = ("STATUS", "DONE_WITH_CONCERNS", "BLOCKED", "NEEDS_CONTEXT", "code changed", "Gate briefs", "lens")
+def micro_section(sdd_text):
+    return sdd_text.split("### MICRO light route", 1)[-1].split("## 4. Ground and resolve the work", 1)[0]
+
+def batch2_contracts(d):
+    required = {label: token in d[key] for label, key, token in BATCH2_PROMISES if d.get(key) is not None}
+    micro = micro_section(d["sdd"])
+    required["sdd MICRO light route has no status, briefs, lens or test-condition wording"] = bool(micro.strip()) and not any(word in micro for word in MICRO_FORBIDDEN)
     return all(required.values()), required
 
 def learning_contracts(d):
@@ -683,6 +753,19 @@ if consumer_ready and consumer_root.is_dir():
 # Positive controls: each former contradiction must make its specific contract check fail.
 bad_planner = dict(d); bad_planner["planner"] += "\nUse AFTER spec.md and design.md exist and AFTER the researcher's report.\n"
 require(not role_contracts(bad_planner)[0], "RED control: planted mandatory design/research startup")
+b2_ok, b2_checks = batch2_contracts(d)
+b2_missing = [label for label, held in b2_checks.items() if not held]
+for label in b2_missing:
+    print(f"FAIL: batch 2 promise: {label}", file=sys.stderr)
+require(not b2_missing, f"batch 2 promises all hold ({len(b2_checks)})")
+for word in MICRO_FORBIDDEN:
+    planted = dict(d); planted["sdd"] = d["sdd"].replace("- **Still required.**", f"- **Planted.** {word}\n- **Still required.**", 1)
+    require(not batch2_contracts(planted)[0], f"RED control: MICRO light route with {word!r} added")
+for label, key, token in BATCH2_PROMISES:
+    if d.get(key) is None:
+        continue
+    planted = dict(d); planted[key] = d[key].replace(token, "[planted omission]")
+    require(not batch2_contracts(planted)[0], f"RED control: batch 2 without {label}")
 bad_verifier = dict(d); bad_verifier["verifier"] += "\nThe cause above should be appended to AGENTS.md as a new hard constraint.\n"
 require(not learning_contracts(bad_verifier), "RED control: planted automatic verifier rule append")
 bad_learn = dict(d); bad_learn["learn"] = bad_learn["learn"].replace("5. **Apply only after approval.**", "4. **Inject safely.** Append the proposed dated rule immediately.\n5. **Apply only after approval.**")
@@ -802,6 +885,81 @@ else:
 PY
 contract_status=$?
 if [[ "$contract_status" -ne 0 ]]; then fail "task06 semantic contract probes exit $contract_status"; fi
+
+# The edit guard hook is part of the procedure: named, never a reason to bypass, and each miss becomes a check.
+if [[ -f "$HARNESS_DIR/commands/sdd.md" ]]; then
+  guard_text="$(tr '\n' ' ' <"$HARNESS_DIR/commands/sdd.md")"
+  has_text "$guard_text" '.claude/spec-harness/hooks/sdd-gate.sh' 'sdd.md names the edit guard hook'
+  has_text "$guard_text" 'A block means run `/sdd`' 'sdd.md says a block means run /sdd'
+  has_text "$guard_text" 'never bypass' 'sdd.md says a block is never a reason to bypass'
+  has_text "$guard_text" 'becomes a rule plus a hook or a `doctor` check' 'sdd.md turns each confirmed miss into a rule plus a check'
+  has_text "$guard_text" 'the orchestrator writes the existing `summary` stage' 'sdd.md Output says the orchestrator writes the summary stage when the ticket ends'
+  has_text "$guard_text" 'accepted or abandoned' 'sdd.md says a run ends accepted or abandoned'
+fi
+if [[ -f "$HARNESS_DIR/docs/RUN-STATE.md" ]]; then
+  run_state_text="$(tr '\n' ' ' <"$HARNESS_DIR/docs/RUN-STATE.md")"
+  has_text "$run_state_text" 'the orchestrator writes the existing `summary` stage' 'RUN-STATE.md says the orchestrator writes the summary stage when the ticket ends'
+  has_text "$run_state_text" 'accepted or abandoned' 'RUN-STATE.md says a run ends accepted or abandoned'
+fi
+
+# Docs sweep (Batch 3b): stale wording is gone everywhere, and each new hook rule is stated where hooks are described.
+lacks_text() {
+  local haystack=$1 needle=$2 label=$3
+  if [[ "$haystack" != *"$needle"* ]]; then pass "$label"; else fail "$label (still present: $needle)"; fi
+}
+flat() { tr '\n' ' ' <"$HARNESS_DIR/$1"; }
+lacks_text "$(flat learning_human.html)" 'until the ticket has an approved plan' 'learning_human.html no longer says the hook waits for an approved plan'
+lacks_text "$(flat learning_human.html)" 'It copies files and reports' 'learning_human.html step 3 does not stop at "copies files"'
+lacks_text "$(flat learning_human.html)" 'Installing copies files.' 'learning_human.html layers kicker does not stop at "copies files"'
+lacks_text "$(flat README.md)" 'This copies files and reports' 'README step 2 does not stop at "copies files"'
+lacks_text "$(flat ARCHITECTURE.md)" 'CLAUDE.md RULES.md (any depth)' 'ARCHITECTURE.md does not give every allowed root file "any depth"'
+lacks_text "$(flat commands/build.md)" 'By that section' 'build.md names the section it points at'
+lacks_text "$(flat CHANGELOG.md)" 'drops a duplicate byte-identical check' 'CHANGELOG.md has no untrue duplicate-check entry'
+incomplete_entries="$(grep -c 'INCOMPLETE:' "$HARNESS_DIR/CHANGELOG.md" | tr -d ' ')"
+if [[ "$incomplete_entries" -le 1 ]]; then pass 'CHANGELOG.md lists the index INCOMPLETE line once'; else fail "CHANGELOG.md lists the index INCOMPLETE line $incomplete_entries times"; fi
+lacks_text "$(flat commands/sdd.md)" '**Task type.** Copy' 'sdd.md Task type bullet is no longer unscoped'
+has_text "$(flat commands/sdd.md)" '**Task type (LITE and FULL).**' 'sdd.md Task type bullet is scoped to LITE and FULL'
+lacks_text "$(flat commands/document.md)" 'anytime' 'document.md does not promise "anytime" past the edit guard'
+has_text "$(flat commands/document.md)" 'open `/sdd` run' 'document.md says it runs inside an open /sdd run'
+for file in agents/sdd-reviewer.md commands/sdd.md commands/generate-agents.md templates/install/ai_rules/review-lens.md; do
+  has_text "$(flat "$file")" 'lines inside HTML comments are not items' "$file states the lens-line rule (comments are not items)"
+  has_text "$(flat "$file")" 'a lens with no items means no lens' "$file states the lens-line rule (no items, no lens)"
+done
+for file in README.md docs/GETTING-STARTED.md ARCHITECTURE.md commands/sdd.md; do
+  has_text "$(flat "$file")" 'CLAUDE_PROJECT_DIR' "$file says the hook guards the repo that registered it"
+  has_text "$(flat "$file")" '7 days' "$file states the 7-day expiry"
+  has_text "$(flat "$file")" 'home folder' "$file documents the home-folder-is-a-git-repo side effect"
+  has_text "$(flat "$file")" 'between the root and' "$file says any .git between the root and the file means another working tree"
+done
+for file in README.md docs/GETTING-STARTED.md ARCHITECTURE.md commands/sdd.md learning_human.html CHANGELOG.md; do
+  lacks_text "$(flat "$file")" 'the repo the session happens to start in' "$file does not say the hook ignores the repo the session starts in (wrong: the anchor is the project folder)"
+  lacks_text "$(flat "$file")" 'the repo the session starts in' "$file does not say the hook ignores the repo the session starts in (wrong, second spelling)"
+done
+for file in README.md docs/GETTING-STARTED.md ARCHITECTURE.md commands/sdd.md; do
+  has_text "$(flat "$file")" "never the session's current working folder" "$file says the hook ignores the session's current working folder"
+done
+for file in commands/sdd.md docs/RUN-STATE.md; do
+  has_text "$(flat "$file")" 'is closed and is not validated by' "$file says a run listing summary is closed and not validated by run-state --check"
+  lacks_text "$(flat "$file")" 'need not pass for it' "$file does not carve out only abandoned runs from --check"
+done
+has_text "$(flat learning_human.html)" '7 days' 'learning_human.html states the 7-day expiry'
+has_text "$(flat commands/doctor.md)" '`hook_python`' 'doctor.md documents hook_python'
+has_text "$(flat commands/doctor.md)" '`runs_current`' 'doctor.md documents runs_current'
+has_text "$(flat commands/doctor.md)" 'matcher' 'doctor.md documents the matcher check'
+has_text "$(flat README.md)" 'hook registration:' 'README says update prints a hook registration line'
+has_text "$(flat docs/GETTING-STARTED.md)" 'update <target> --apply' 'GETTING-STARTED.md says update --apply registers the hook'
+
+# tests/run-all.sh runs every tests/*.sh: a suite added tomorrow is picked up without editing the runner.
+glob_root="$TMP_DIR/run-all-glob"
+mkdir -p "$glob_root/tests" "$glob_root/bin"
+cp "$HARNESS_DIR/tests/run-all.sh" "$glob_root/tests/run-all.sh"
+printf '#!/usr/bin/env bash\nexit 0\n' >"$glob_root/tests/zz-added-later.sh"
+printf '#!/usr/bin/env bash\nexit 3\n' >"$glob_root/tests/zz-failing.sh"
+glob_status=0
+glob_output="$(TMPDIR="$TMP_DIR" bash "$glob_root/tests/run-all.sh" 2>&1)" || glob_status=$?
+has_text "$glob_output" 'exit 0 tests/zz-added-later.sh' 'run-all runs a test file added after the runner was written'
+has_text "$glob_output" 'exit 3 tests/zz-failing.sh' 'run-all runs every tests/*.sh and reports its exit code'
+if [[ "$glob_status" -eq 1 ]]; then pass 'run-all exits 1 when an added suite fails'; else fail "run-all exit $glob_status, expected 1 for a failing added suite"; fi
 
 if [[ "$failures" -gt 0 ]]; then
   printf 'RED: %s of %s checks failed\n' "$failures" "$checks"

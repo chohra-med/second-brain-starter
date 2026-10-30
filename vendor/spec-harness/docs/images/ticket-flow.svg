@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="340" viewBox="0 0 1200 340" role="img" aria-labelledby="t d">
+  <title id="t">How one ticket moves through Spec Harness</title>
+  <desc id="d">Ticket, router sizes it, planner and implementer build it, fresh tester verifier and reviewer check it, the learner turns a confirmed miss into a rule, and the rules feed the next ticket.</desc>
+  <rect x="1" y="1" width="1198" height="338" rx="16" fill="#0E0E10" stroke="#26262A" stroke-width="2"/>
+  <g font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <rect x="40" y="48" width="180" height="150" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+    <text x="60" y="82" font-size="14" letter-spacing="1.5" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">1  TICKET</text>
+    <text x="60" y="124" font-size="20" font-weight="600" fill="#FAFAF8">You write it</text>
+    <text x="60" y="152" font-size="15" fill="#71717A">full text, not a title</text>
+    <path d="M220 123 H270" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+
+    <rect x="270" y="48" width="180" height="150" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+    <text x="290" y="82" font-size="14" letter-spacing="1.5" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">2  ROUTER</text>
+    <text x="290" y="124" font-size="20" font-weight="600" fill="#FAFAF8">Sizes it</text>
+    <text x="290" y="152" font-size="15" fill="#71717A">MICRO, LITE or FULL</text>
+    <path d="M450 123 H500" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+
+    <rect x="500" y="48" width="180" height="150" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+    <text x="520" y="82" font-size="14" letter-spacing="1.5" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">3  BUILD</text>
+    <text x="520" y="124" font-size="20" font-weight="600" fill="#FAFAF8">Plan, then code</text>
+    <text x="520" y="152" font-size="15" fill="#71717A">strong model plans,</text>
+    <text x="520" y="174" font-size="15" fill="#71717A">cheap model builds</text>
+    <path d="M680 123 H730" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+
+    <rect x="730" y="48" width="180" height="150" rx="12" fill="#0E0E10" stroke="#3BA9AE" stroke-width="2"/>
+    <text x="750" y="82" font-size="14" letter-spacing="1.5" fill="#3BA9AE" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">4  CHECK</text>
+    <text x="750" y="124" font-size="20" font-weight="600" fill="#FAFAF8">Fresh agents</text>
+    <text x="750" y="152" font-size="15" fill="#71717A">tester, verifier,</text>
+    <text x="750" y="174" font-size="15" fill="#71717A">reviewer: PASS / FAIL</text>
+    <path d="M910 123 H960" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+
+    <rect x="960" y="48" width="180" height="150" rx="12" fill="#161618" stroke="#26262A" stroke-width="2"/>
+    <text x="980" y="82" font-size="14" letter-spacing="1.5" fill="#71717A" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">5  LEARN</text>
+    <text x="980" y="124" font-size="20" font-weight="600" fill="#FAFAF8">A miss becomes</text>
+    <text x="980" y="152" font-size="20" font-weight="600" fill="#FAFAF8">a rule</text>
+    <text x="980" y="180" font-size="15" fill="#71717A">after review</text>
+
+    <path d="M1050 198 V268 H130 V206" stroke="#3BA9AE" stroke-width="2" fill="none" stroke-dasharray="6 6"/>
+    <path d="M124 214 L130 204 L136 214" stroke="#3BA9AE" stroke-width="2" fill="none"/>
+    <text x="600" y="302" font-size="17" text-anchor="middle" fill="#71717A">The rules tighten. The next ticket starts with them.</text>
+  </g>
+</svg>

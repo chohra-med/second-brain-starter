@@ -181,7 +181,7 @@ This package also bundles Spec Harness under `vendor/spec-harness/` with its own
 
 Read [PRIVACY.md](PRIVACY.md), [ATTRIBUTION.md](ATTRIBUTION.md), and [CONTRIBUTING.md](CONTRIBUTING.md) before sharing a copy.
 
-**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.10.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
+**Source version and releases:** [VERSION](VERSION) identifies these source bytes as `v1.11.0`. Use the repository's [Releases](https://github.com/chohra-med/second-brain-starter/releases) page to identify published tags and archives.
 
 ## Remove the starter
 

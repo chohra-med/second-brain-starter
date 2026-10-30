@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.11.0 (2026-10-30)
+
+- Adds the person-owned seed `00-Meta/Working-Agreement.md` (headed sections, commented examples), installed once and never overwritten; the route reads it after Profile and Decisions.
+- One rotation rule, owned by step 5 of `close.md`: a record file keeps at most 10 entries or about 15 KB, newest at the bottom. It covers `progress.md`, `Decisions.md` and `Verified` roadmap rows; the pointer line sits above or below a table, never inside it.
+- `end-session` runs a memory index check in every mode: it measures the assistant's memory index (for Claude Code, `MEMORY.md`) against the Working Agreement's budget or 3,200 bytes, proposes merges when it is over, changes nothing without a yes, and says plainly when the check did not run.
+- Scoped context lists the target's record paths and reports their byte total before reading, and names each record file over the rotation limit with an offer to rotate it.
+- The `graphify` skill gains a Step 0 (search the folders first) and a freshness stamp, `BUILT-FROM.txt`; a graph is STALE or UNKNOWN when the stamp does not match.
+- The Archive guide says links inside an archived snapshot are not rewritten; the Procedures map lists `end-session`, `context-modes` and `handover`; first use, Home and the route explain the seeded first project. `template-bases.json` is regenerated with `tools/build-release-bases.mjs` (six legacy bases added).
+- `connect` stages Spec Harness 0.7.0, 122 files and 52 folders instead of 114 and 46, with the file modes its manifest names, so the edit guard hook is executable. It registers the guard the way the harness registrar does: one `PreToolUse` entry merged into `.claude/settings.local.json` and the line `/.claude/settings.local.json` in `.git/info/exclude`. It registers only the shipped, executable hook; for any other file at that path it says NOT registered, why, and what to do, and it never removes an entry it did not write. A failed or interrupted `connect` gives an existing `settings.local.json` back byte for byte from a copy that is deleted when `connect` finishes; a later rollback takes out only the entry.
+- Security: the third-party skill `api-anything` is no longer installed. Its files ship unmodified under `template/optional-skills/api-anything/` for anyone who adds it by hand. Its text has your client run `npx -y github:<project>`, which fetches that project's default branch and runs it without asking, and its `login` step can import cookies from your everyday browser. `ATTRIBUTION.md` and `PRIVACY.md` said the package never runs it and that it works only if you install the command yourself; both are corrected. An upgrade from v1.8.0, v1.9.0 or v1.10.0 lists its four installed files as `DEPRECATED` and leaves them in place: delete `.claude/skills/api-anything/` and `.agents/skills/api-anything/` to remove it.
+- `upgrade` no longer stops with a CONFLICT when you already deleted a file the release retires; an edited retired file still stops. The upgrade output explains what a `DEPRECATED` line means.
+- The installed skill set goes from twenty-three to twenty-two, plus the optional one. The README and the two docs that count the skills say so.
+- Spec Harness pin: `vendor/spec-harness/` moves from 0.6.0 (`1a7680b`) to 0.7.0 (`38e266b`).
+- Version: the source moves from `v1.10.0` to `v1.11.0` in `VERSION`, `package.json`, the manifest's `templateVersion`, the CLI help line and the README.
+
 ## v1.10.0 (2026-10-28)
 
 - Adds the shared skills `next-session`, `verify-end-session` and `harness-session`, installed to `.agents/skills/` and `.claude/skills/`, with the procedures `03-Resources/Procedures/verify-end-session.md` and `03-Resources/Procedures/harness-session.md`. `/next-session` writes the continuation note for a fresh chat. `/verify-end-session` lists every ask in a chat, checks each once against the real files, and ends with `SAFE TO CLOSE` or `DO NOT CLOSE: <reason>`; `dry` writes nothing. `/harness-session` finds each correction in a chat, traces it to the rule that should have prevented it, and fixes that owner after approval, in files you own only.
