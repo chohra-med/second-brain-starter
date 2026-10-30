@@ -103,7 +103,7 @@ emit spec-harness-tasks "tasks" "planner" \
 
 emit spec-harness-build "build" "implementer, tester, verifier, reviewer" \
 "Execute a feature packet one task at a time with independent acceptance. Use when the user says 'build it', 'run the pipeline', or 'implement the tasks'." \
-"Use the bound implementer, then separate fresh tester, verifier and reviewer contexts. Record each result against the same source/rule revisions and \`specs/<feature>/goal.md\`. Failing or unavailable gates stay open; no merger authority is implied." yes
+"Use the bound implementer, then (after its DONE or DONE_WITH_CONCERNS status; \`.claude/commands/sdd.md\` section 6 owns the statuses and briefs) separate fresh tester, verifier and reviewer contexts. Record each result against the same source/rule revisions and \`specs/<feature>/goal.md\`. Failing or unavailable gates stay open; no merger authority is implied." yes
 
 emit spec-harness-verify "verify" "verifier" \
 "Run a fresh verifier against the current feature-specific goal. Use when the user says 'verify it', 'is it actually done', or 'check against the goal'. Tests passing ≠ goal met." \

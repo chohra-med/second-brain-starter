@@ -60,7 +60,8 @@ These steps sit alongside the Grill Me and Ponytail receipts above; they replace
 - the conventions relied on, with their labels and sources;
 - no approval status: the Grill Me approval (approver, time and plan hash) is recorded only in the run
   state `checkpoint`, so the approved bytes of this file never change after approval;
-- source, rule and goal hashes this plan assumes.
+- source, rule and goal hashes this plan assumes;
+- for LITE and FULL, `## Gate briefs` with `### Tester brief` and `### Reviewer brief`: the orchestrator's extra cases and questions for each gate. A brief may add checks and never drops a lens item (`ai_rules/review-lens.md`). The briefs sit inside the approved bytes, so a later edit needs a new approval. A MICRO ticket has no plan and no briefs.
 
 An unanswered material decision or changed input hash returns the packet to PENDING for resolution
 or re-planning.

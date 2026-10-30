@@ -46,7 +46,7 @@ Personalize editable seed records such as project facts, decisions, roadmap and 
 After the connection lines, one summary line says how many connections need attention, or that all are as recorded. Two more labels can appear:
 
 - `PENDING` names an interrupted connect, or a finished connect whose marker was not cleared, with the command that recovers it. A pending record makes `verify` exit non-zero.
-- `RESIDUE` names a leftover temporary file or empty folder from a connect. It is information only, and it does not change the exit code.
+- `RESIDUE` names a leftover temporary file or empty folder from a connect, or the copy of a repository's `.claude/settings.local.json` that a finished connect did not get to delete. It is information only, and it does not change the exit code.
 
 The exit code says whether the workspace's own managed files are intact, and whether a pending record exists. A connection in any state other than `PENDING` does not change it.
 
@@ -70,7 +70,7 @@ Most status lines that `verify` can print start with one of these prefixes. The 
 | `SOURCE_MANIFEST_MISMATCH` | The installed state was made from a different source manifest. A newer source reports this until you upgrade. | Yes |
 | `CONNECTION` | One connection: its name, repository path, state and receipt ID. | No |
 | `PENDING` | An interrupted connect, or a finished one whose marker was not cleared. | Yes |
-| `RESIDUE` | A leftover temporary file or folder from a connect. | No |
+| `RESIDUE` | A leftover temporary file or folder from a connect, or a copy of a repository's settings file that a finished connect did not get to delete. | No |
 | `Connections` | The summary line: how many connections need attention, or that all are as recorded. | No |
 | `Verification` | `OK` or `FAILED`. | Follows the lines above |
 
@@ -150,13 +150,13 @@ Rollback of a loader block, measured on this branch:
 
 Rolling back an upgrade removes that receipt's folder under `.second-brain/backups/`, and it leaves the empty `.second-brain/backups/` folder in place. A rollback may also leave other empty folders behind: it removes the files the receipt wrote, and it does not remove the folders that held them.
 
-A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. Keep a dated copy of your target before any migration.
+A connect receipt covers both folders: rolling it back removes exactly the files it created in the workspace and in the repository, and refuses if one of them changed. It also undoes the edit guard registration. From a `.claude/settings.local.json` that existed before the connect, it takes out only the guard entry: the other keys and values stay, written with two-space indentation, and the file keeps its mode. The line connect added to `.git/info/exclude` comes out, and every other line stays. A settings file it can no longer read as JSON is refused by name. [Connect a repository](connect-a-repository.md#the-edit-guard-registration) has the details. Keep a dated copy of your target before any migration.
 
 Rolling back the workspace's own `init` or upgrade is refused while connections exist. The refusal prints the rollback command for each connection. Roll those back first.
 
 ## Recover a connect
 
-If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. When no file was edited, it restores both folders. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
+If a connect is interrupted, `verify` lists a `PENDING` line with its receipt ID. Run the rollback command that line prints. When no file was edited, it restores both folders byte for byte. That includes a `.claude/settings.local.json` that existed before the connect: it comes back with its mode, from the copy connect keeps in the workspace while it runs. A connect that fails without being killed undoes itself the same way. Once a connect has finished, it deletes that copy, so a later rollback of its receipt takes out only the guard entry. A connect stopped after it finished but before it deleted the copy leaves the copy behind: `verify` lists it as `RESIDUE`, and the next approved connect, rollback or recovery deletes it. Recovery never deletes a file whose bytes differ from what the connect wrote. It lists that file, and you decide what to do with it.
 
 If you edited a file that the connect wrote, the rollback stops with `ROLLBACK_FAILED` and exits 1. The edit is kept, and the connect stays `PENDING`, so connect refuses that repository until the file is dealt with. Move the edited file out of the repository, or delete it yourself, then run the same rollback command again. This applies to an interrupted connect. For a completed connect (`STAGED` or `CHANGED`), the same edit is refused with `POSTIMAGE_MISMATCH` instead, which exits 1 and says `Nothing was removed in either root.`
 

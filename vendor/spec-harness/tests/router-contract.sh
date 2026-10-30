@@ -51,7 +51,7 @@ else:
     elif meta.get("model") != m.group(1):
         bad.append(f"router model {meta.get('model')!r} is not the fast row's router model {m.group(1)!r}")
 block = re.search(r"```text\n## Route\n(.*?)```", router, re.S)
-fields = ["class", "reason", "plan", "build", "test", "verify", "review", "grill-me", "load", "confidence"]
+fields = ["class", "type", "reason", "plan", "build", "test", "verify", "review", "grill-me", "load", "confidence"]
 if not block:
     bad.append("router answer block '## Route' is missing")
 else:
@@ -63,6 +63,8 @@ for phrase, why in [
     ("Risk beats size", "risk must beat size"),
     ("pick the bigger class", "uncertainty must pick the bigger class"),
     ("MICRO is always `skip`", "MICRO must always skip Grill Me"),
+    ("type:       code | doc | research | decision | review", "the answer block must give the task type"),
+    ("`type`: pick", "the router file must say how to choose the type"),
 ]:
     if phrase.lower() not in router.lower():
         bad.append(f"router file: {why} ({phrase!r} missing)")
@@ -72,6 +74,9 @@ for phrase, why in [
     ("Raise, never lower", "/sdd must only raise the router's class"),
     ("A missing router never stops the run", "/sdd must fall back when the router is unavailable"),
     ("confidence: low", "/sdd must fall back on low confidence"),
+    ("Copy `type` with the class", "/sdd must copy the task type with the class"),
+    ("A missing `type` reads as `code`", "/sdd must read a missing type as code"),
+    ("project test command only when code changes", "/sdd must say what tests mean for non-code types"),
 ]:
     if phrase not in sec3:
         bad.append(f"sdd.md: {why} ({phrase!r} missing)")
@@ -97,6 +102,8 @@ mutate "router model drifts from the table" router 't.replace("model: haiku","mo
 mutate "route block loses a field" router 't.replace("confidence: high | low\n","")'
 mutate "sdd stops dispatching the router" sdd 't.replace("Dispatch `sdd-router`","Consider `sdd-router`")'
 mutate "sdd allows lowering" sdd 't.replace("Raise, never lower","Raise or lower")'
+mutate "router drops the type line" router 't.replace("type:       code | doc | research | decision | review\n","")'
+mutate "sdd stops copying the type" sdd 't.replace("Copy `type` with the class","Copy the class")'
 mutate "router lets MICRO ask Grill Me" router 't.replace("MICRO is always `skip`.","MICRO may be `ask`.")'
 
 # 3. An install stages the router into the target.

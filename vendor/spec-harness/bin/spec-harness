@@ -6,7 +6,7 @@
 #   index <target>            inventory an existing codebase into the bank's index layer
 #   finalize-init <target> [--apply|--recover] --evidence-dir <dir>
 #                             guarded binding-only refresh; dry run by default
-#   doctor <target>           read-only setup report: structural, semantic and client fields
+#   doctor <target>           read-only setup report: structural, semantic, client and guards fields
 #   stack <target> [--check] write ai_rules/stack.md from manifests and lockfiles; --check compares
 #   run-state --check <ticket> [target]  validate .spec-harness/runs/<ticket>/run-state.json
 #   status <target>           installed and source version/commit; whether an update is available

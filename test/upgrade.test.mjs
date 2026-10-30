@@ -185,6 +185,32 @@ test('deprecated paths are reported without deletion and an identical follow-up 
   assert.equal(applied.applied, true);
 });
 
+test('a deprecated path the user already deleted does not block the upgrade, and an edited one still does', async (t) => {
+  const subject = await fixture();
+  t.after(() => rm(subject.root, { recursive: true, force: true }));
+  const legacy = '03-Resources/legacy.md';
+  await mkdir(path.join(subject.sourceRoot, 'template', '03-Resources'), { recursive: true });
+  await writeFile(path.join(subject.sourceRoot, 'template', '03-Resources', 'legacy.md'), 'legacy\n');
+  await install(subject, { destinations: [...managedPaths, legacy] });
+  const sourceB = await manifestFor(subject.sourceRoot);
+
+  await writeFile(path.join(subject.target, ...legacy.split('/')), 'my notes\n');
+  const edited = await planInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade' });
+  assert.equal(edited.entries.find((entry) => entry.destination === legacy).status, 'CONFLICT');
+
+  await unlink(path.join(subject.target, ...legacy.split('/')));
+  const plan = await planInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade' });
+  const deprecated = plan.entries.find((entry) => entry.destination === legacy);
+  assert.equal(deprecated.status, 'DEPRECATED');
+  assert.equal(deprecated.currentSha256, null);
+  assert.equal(deprecated.undo.action, 'none');
+  const applied = await applyInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade', approvedDigest: plan.digest });
+  assert.equal(applied.applied, true);
+  await assert.rejects(lstat(path.join(subject.target, ...legacy.split('/'))), { code: 'ENOENT' });
+  const repeat = await planInstall({ ...sourceB, sourceRoot: subject.sourceRoot, targetPath: subject.target, operation: 'upgrade' });
+  assert.equal(repeat.entries.some((entry) => entry.destination === legacy), false);
+});
+
 test('verify reports every missing or corrupt managed path and rejects a dangling installed-state symlink', async (t) => {
   const subject = await fixture();
   t.after(() => rm(subject.root, { recursive: true, force: true }));

@@ -25,6 +25,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -269,6 +270,25 @@ def write_stale_marker(root, version, receipt, paths):
     write_or_refuse(root, STALE, (json.dumps(stale, indent=2, sort_keys=True) + "\n").encode())
 
 
+HOOK_SCRIPT = ".claude/spec-harness/hooks/sdd-gate.sh"
+
+
+def register_hook(root):
+    """Register the edit guard in .claude/settings.local.json the way the installer does; one line, never a failure.
+
+    The installer registers after its own copy step. update renders the file set with --render-plan,
+    which exits before that step, so update has to run the registrar itself."""
+    if read_optional(root, HOOK_SCRIPT) is None:
+        return f"skipped: {HOOK_SCRIPT} is not staged in this target"
+    try:
+        result = subprocess.run([sys.executable, "-I", "-B", os.path.join(HARNESS, "bin", "sh-hook-register.py"), "add", root],
+                                capture_output=True, text=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as error:
+        return f"NOT registered: the registration step could not run ({error.__class__.__name__})"
+    lines = [line for line in (result.stdout + result.stderr).splitlines() if line.strip()]
+    return "; ".join(lines) if lines else "NOT registered: the registration step printed nothing"
+
+
 def apply_plan(root, record, name, rows, digest):
     receipt = read_optional(root, RECEIPT, MAX_RECEIPT_BYTES)
     files = dict((record or {}).get("files", {}))
@@ -310,6 +330,7 @@ def apply_plan(root, record, name, rows, digest):
     if marked:
         write_stale_marker(root, version, receipt, written)
     print(f"UPDATED: {len(written)} file(s) written, {len(proposed)} proposal(s) written; plan {digest[:12]}")
+    print(f"  hook registration: {register_hook(root)}")
     for path in proposed:
         print(f"  CONFLICT: resolve {path} by hand; the file it proposes for was left as it was")
     if marked:
@@ -370,6 +391,8 @@ def uninstall(root):
         print(f"  {label}: {len(items)}")
         for rel in items:
             print(f"    - {rel}")
+    print("  then remove the edit guard registration (only the harness entry) from .claude/settings.local.json:")
+    print("    python3 -I -B %s remove %s" % (shlex.quote(os.path.join(HARNESS, "bin", "sh-hook-register.py")), shlex.quote(root)))
     print(f"  then delete the harness state directory: {STATE}/")
     print("Generated synthesis outputs (rules, skills, role bindings, receipt) are listed by the receipt, not by this record.")
     return 0

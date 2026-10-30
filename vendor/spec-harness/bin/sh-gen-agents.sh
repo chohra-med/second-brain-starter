@@ -24,6 +24,7 @@ import os
 import re
 import stat
 import sys
+import unicodedata
 from pathlib import Path
 
 # Isolated mode leaves bin/ off sys.path; the shared bounded reader is imported by explicit path.
@@ -31,6 +32,9 @@ bin_dir = sys.argv.pop(1)
 sys.path.insert(0, bin_dir)
 import sh_rule_layers
 from sh_safe_io import MAX_FILE_BYTES, MAX_RECEIPT_BYTES, SafeReadError, read_bounded, read_bounded_result, safe_relative
+# Keep in step with bin/sh-index.sh: the in-package read limit and the marker of the staged harness loop.
+MAX_SOURCE_BYTES = 128 * 1024
+HARNESS_LOOP_MARKER = b"# Spec Harness minimal loop"
 
 root = Path(sys.argv[1]).expanduser().resolve()
 errors = []
@@ -115,9 +119,12 @@ else:
                         if data is not None:
                             sources_by_package[current][source] = digest(data)
         complete_match = re.search(r"Scan complete:\s*`?(true|false)`?", text)
-        if "(unsupported)" in text or "(unreadable)" in text:
+        # Only a manifest status counts; a dependency or script that happens to be named "(unsupported)" does not.
+        if re.search(r"^- Manifests: .*` \((?:unsupported|unreadable)\)", text, re.M):
             fail("context map contains unsupported or unreadable manifest formats")
-        inventory = {"packages": [{"path": p, "representative_sources": [{"path": path, "read_status": "read", "sha256": source_hash} for path, source_hash in sources_by_package[p].items()], "manifests": []} for p in packages], "scan": {"complete": bool(complete_match and complete_match.group(1) == "true")}}
+        excluded_section = re.search(r"^## Excluded paths and limitations\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+        excluded_rows = [{"path": path} for path in re.findall(r"^- `([^`]+)`", excluded_section.group(1), re.M)] if excluded_section else []
+        inventory = {"packages": [{"path": p, "representative_sources": [{"path": path, "read_status": "read", "sha256": source_hash} for path, source_hash in sources_by_package[p].items()], "manifests": []} for p in packages], "exclusions": excluded_rows, "scan": {"complete": bool(complete_match and complete_match.group(1) == "true")}}
         if not packages:
             fail("generated context map has no package boundaries")
     else:
@@ -144,6 +151,7 @@ for package in packages:
 if not source_hashes:
     fail("inventory has no readable representative source files")
 
+
 def has_unresolved_scaffold(data):
     # Policy tokens map to templates/RULES.md (DIR) and templates/AGENTS.md
     # (PROJECT_NAME, PROTECTED_PATHS, STOP_CONDITIONS, MAX_RETRIES, STACK_RULES);
@@ -157,11 +165,154 @@ frequent = safe_file("ai_rules/rules/frequent_rules.md")
 if frequent is not None and has_unresolved_scaffold(frequent):
     fail("ai_rules/rules/frequent_rules.md still contains a stub or placeholder")
 
-def validate_citations(owner, citations, allowed_packages):
+# Policy files a citation may point at: inventory rule_files rows that were read, carry a hash, and apply to
+# the cited package. Harness files, generated rule outputs and unfinished scaffolds are not project policy
+# (the same exclusions as check_policy_ledger). They add provenance only; each package still needs a
+# source citation (a representative source, or an in-package source file for rule modules, skills and roles).
+policy_hashes = {}
+HARNESS_POLICY_PATHS = {"ai_rules/rules/frequent_rules.md", "ai_rules/globalRules.md", "ai_rules/updated_rules.md", "ai_rules/review-lens.md", "ai_rules/stack.md"}
+HARNESS_POLICY_PREFIXES = (".claude/commands/", ".claude/spec-harness/", ".claude/agents/", ".claude/skills/", ".agents/", "ai_rules/rules/core.md", "ai_rules/rules/context_management.md")
+# In-package source citations use the same file classes as the indexer. Keep these sets in step with bin/sh-index.sh.
+SOURCE_SUFFIXES = {
+    ".c", ".cc", ".cpp", ".cs", ".dart", ".ex", ".exs", ".go", ".h", ".hpp",
+    ".java", ".js", ".jsx", ".kt", ".kts", ".m", ".mm", ".php", ".py", ".rb",
+    ".rs", ".scala", ".sh", ".sql", ".swift", ".ts", ".tsx", ".vue", ".svelte",
+}
+SOURCE_NAMES = {
+    "app.py", "application.py", "index.js", "index.jsx", "index.ts", "index.tsx",
+    "main.c", "main.cpp", "main.go", "main.java", "main.js", "main.py", "main.rs",
+    "main.ts", "main.tsx", "lib.rs", "mod.rs",
+}
+IGNORED_DIRS = {
+    ".cache", ".expo", ".gradle", ".hg", ".idea", ".mypy_cache", ".next", ".nuxt",
+    ".pytest_cache", ".ruff_cache", ".svn", ".tox", ".turbo", ".venv", "__pycache__",
+    "build", "Carthage", "coverage", "dist", "DerivedData", "node_modules", "Pods",
+    "target", "vendor", "venv",
+}
+PRIVATE_DIRS = {".aws", ".gnupg", ".kube", ".ssh", "cert", "certs", "credentials", "private", "secrets", "signing"}
+DATA_DIRS = {"data", "datasets"}
+DATA_SUFFIXES = {".avro", ".csv", ".db", ".duckdb", ".feather", ".parquet", ".sqlite", ".sqlite3", ".tsv"}
+def fold(text):
+    # NFC first, then casefold: a name in either Unicode form and any case compares equal on every disk.
+    return unicodedata.normalize("NFC", text).casefold()
+# Folded copies: a name that differs from a listed one only in case or Unicode form is still refused.
+IGNORED_FOLDED = {fold(name) for name in IGNORED_DIRS}
+PRIVATE_FOLDED = {fold(name) for name in PRIVATE_DIRS}
+DATA_FOLDED = {fold(name) for name in DATA_DIRS}
+# Citation-only rule: the indexer does not apply it, so the generator refuses these basenames on its own.
+SECRET_WORDS = ("secret", "credential", "password", "passwd", "apikey", "privatekey", "token")
+GENERATED_PATTERNS = (
+    re.compile(r"(?:^|[._-])generated(?:[._-]|$)", re.I),
+    re.compile(r"\.min\.(?:js|css)$", re.I),
+)
+def hidden_or_private_file(name):
+    low = name.lower()
+    if low.startswith(".env"):
+        return "environment file"
+    if low in {".netrc", ".npmrc", ".pypirc", "credentials", "credentials.json", "id_dsa", "id_ecdsa", "id_ed25519", "id_rsa", "private_key", "secrets.json", "service-account.json", "token", "token.txt"}:
+        return "credential or signing asset"
+    if low.endswith((".jks", ".key", ".keystore", ".mobileprovision", ".p12", ".p8", ".pem", ".pfx")):
+        return "credential or signing asset"
+    if low in {".ds_store"} or low.endswith(".pyc"):
+        return "generated or operating-system file"
+    if Path(low).suffix in DATA_SUFFIXES:
+        return "dataset or database file"
+    if any(pattern.search(name) for pattern in GENERATED_PATTERNS):
+        return "generated source file"
+    return None
+# Paths the inventory left out: its exclusion rows and any explicit --exclude-dir directories.
+excluded_paths = [row["path"] for row in inventory.get("exclusions", []) if isinstance(row, dict) and isinstance(row.get("path"), str)]
+excluded_paths += [path for path in inventory.get("scan", {}).get("excluded_directories", []) if isinstance(path, str)]
+for row in inventory.get("rule_files", []) if isinstance(inventory.get("rule_files"), list) else []:
+    if not isinstance(row, dict) or row.get("read_status") != "read" or not row.get("sha256") or row.get("ownership") == "receipt-generated":
+        continue
+    for package in packages:
+        if isinstance(package, dict) and row.get("path") in (package.get("applicable_instructions") or []):
+            policy_hashes[(package.get("path"), row["path"])] = row["sha256"]
+def is_project_policy(path, data):
+    if path in HARNESS_POLICY_PATHS or path.startswith(HARNESS_POLICY_PREFIXES) or path in registered_rule_paths:
+        return False
+    return data is not None and not has_unresolved_scaffold(data)
+
+def secret_like_name(name):
+    # The basename, folded with -, _ and . removed, contains a secret word.
+    squashed = fold(name).replace("-", "").replace("_", "").replace(".", "")
+    return any(word in squashed for word in SECRET_WORDS)
+
+def nested_repository(path):
+    # A directory strictly between root and the file (not root itself) holds a .git entry: a vendored or
+    # cloned tree added after the last index.
+    parts = path.split("/")[:-1]
+    return any(os.path.lexists(root.joinpath(*parts[:depth], ".git")) for depth in range(1, len(parts) + 1))
+
+def disk_spelling(path):
+    # Walk the path from root one component at a time. Each component must appear byte-for-byte in its
+    # parent's listing. Returns None when it does, else the refusal reason.
+    current = root
+    for part in path.split("/"):
+        try:
+            entries = os.listdir(current)
+        except OSError:
+            return "missing"
+        if part in entries:
+            current = current / part
+        elif any(fold(entry) == fold(part) for entry in entries):
+            return "not the exact on-disk spelling"
+        else:
+            return "missing"
+    return None
+
+def in_package_source(package_path, path):
+    # An in-package source citation: a first-party source file that the cited package owns. It returns
+    # (bytes, None) when the path is citable, else (None, reason). Names are compared folded (fold), so a
+    # case-insensitive or NFD disk cannot accept a spelling the rules refuse.
+    low, folded = fold(path), fold(package_path)
+    if folded != "." and not low.startswith(folded + "/"):
+        return None, "outside package"
+    lowered = low.split("/")
+    if any(part.startswith(".") for part in lowered):
+        return None, "hidden"
+    if any(part in IGNORED_FOLDED for part in lowered):
+        return None, "ignored"
+    if any(part in PRIVATE_FOLDED for part in lowered):
+        return None, "private"
+    if any(part in DATA_FOLDED for part in lowered):
+        return None, "data"
+    if any(low == item or low.startswith(item + "/") for item in (fold(excluded.rstrip("/")) for excluded in excluded_paths)):
+        return None, "excluded"
+    name = path.split("/")[-1]
+    reason = hidden_or_private_file(name)
+    if reason:
+        return None, reason
+    if secret_like_name(name):
+        return None, "secret-like name"
+    if not (Path(name).suffix.lower() in SOURCE_SUFFIXES or name in SOURCE_NAMES or name in {"package.json", "pyproject.toml", "composer.json"}):
+        return None, "not a source type"
+    # The staged root loop.sh is the harness's placeholder; keep in step with bin/sh-index.sh (harness_loop).
+    harness_loop = path == "loop.sh" and HARNESS_LOOP_MARKER in (read_bounded_result(path, 65536, root=str(root))[0] or b"")
+    if harness_loop or path in HARNESS_POLICY_PATHS or path.startswith(HARNESS_POLICY_PREFIXES) or path in registered_rule_paths:
+        return None, "harness file"
+    if any(fold(other) != folded and (folded == "." or fold(other).startswith(folded + "/")) and (low == fold(other) or low.startswith(fold(other) + "/")) for other in package_paths):
+        return None, "nested package"
+    if nested_repository(path):
+        return None, "nested repository"
+    if not safe_relative(path):
+        return None, "unsafe path"
+    reason = disk_spelling(path)
+    if reason:
+        return None, reason
+    data, reason = read_bounded_result(path, MAX_SOURCE_BYTES, root=str(root))
+    if data is None and reason and reason.startswith("exceeds "):
+        # The bounded reader reports the limit by its byte count; the citation refusal names the rule.
+        reason = "too large"
+    return (data, None) if data is not None else (None, reason)
+
+def validate_citations(owner, citations, allowed_packages, representative_only=False, per_package=False):
     if not isinstance(citations, list) or not citations:
-        fail(f"{owner}: missing representative-source citations")
+        fail(f"{owner}: missing {'representative-source' if representative_only else 'source'} citations")
         return
     seen_packages = set()
+    seen_representative = set()
     for citation in citations:
         if not isinstance(citation, dict):
             fail(f"{owner}: malformed citation row")
@@ -173,20 +324,43 @@ def validate_citations(owner, citations, allowed_packages):
             fail(f"{owner}: citation has unknown package or unsafe path: {package_path} / {path}")
             continue
         expected = source_hashes.get((package_path, path))
+        is_representative = expected is not None
+        is_source = is_representative
+        if not is_source:
+            expected = policy_hashes.get((package_path, path))
+            if expected is not None and not is_project_policy(path, safe_file(path)):
+                expected = None
+        data = None
         if expected is None:
-            fail(f"{owner}: citation is not a representative source for package {package_path}: {path}")
+            # An in-package file is read once: these bytes give both the hash and the line span.
+            in_package, reason = in_package_source(package_path, path)
+            if in_package is not None:
+                data, expected, is_source = in_package, digest(in_package), True
+        if expected is None:
+            fail(f"{owner}: citation is not a representative source or an applicable policy file, and not an in-package source file for package {package_path} ({reason}): {path}")
             continue
-        data = safe_file(path)
+        if data is None:
+            data = safe_file(path)
         if data is None or digest(data) != citation.get("sha256") or citation.get("sha256") != expected:
-            fail(f"{owner}: source citation hash is fake or stale: {path}")
+            fail(f"{owner}: {'source' if is_source else 'policy file'} citation hash is fake or stale: {path}")
             continue
         lines = data.decode("utf-8", errors="replace").splitlines()
         if not isinstance(start, int) or not isinstance(end, int) or start < 1 or end < start or end > len(lines):
             fail(f"{owner}: invalid citation line span {path}:{start}-{end}")
             continue
-        seen_packages.add(package_path)
-    if set(allowed_packages) - seen_packages:
-        fail(f"{owner}: missing representative-source citations for package(s): {', '.join(sorted(set(allowed_packages) - seen_packages))}")
+        if is_source:
+            seen_packages.add(package_path)
+        if is_representative:
+            seen_representative.add(package_path)
+    if representative_only and set(allowed_packages) - seen_representative:
+        fail(f"{owner}: missing representative-source citations for package(s): {', '.join(sorted(set(allowed_packages) - seen_representative))}")
+    elif not representative_only and per_package and set(allowed_packages) - seen_packages:
+        # A technology skill picks its own packages, so it still shows evidence from each one.
+        fail(f"{owner}: missing source citations for package(s): {', '.join(sorted(set(allowed_packages) - seen_packages))}")
+    elif not representative_only and not seen_packages:
+        # A core skill or role cites what it claims (RFC 0009); it needs no file from every package it applies to,
+        # because each package row already carries its representative source. A policy file is never source.
+        fail(f"{owner}: missing source citations (a policy file never counts as source evidence)")
 
 registered_rule_paths = set()
 # Schema 4 reads every rule module's text once more for the rule-layer checks.
@@ -238,6 +412,16 @@ def check_rule_modules(row, package_path, rules_text):
         fail(f"package {package_path}: duplicate rule module names or paths")
 
 
+def is_memory_source(path):
+    # Exact prefix, no case folding: `.Memory/` or `.memoryx/` is not the memory bank.
+    return path.startswith(".memory/")
+
+def span_digest(lines, start, end):
+    return digest("\n".join(lines[start - 1:end]).encode())
+
+# Memory policy sources whose bytes changed since synthesis, each with its rows found by text.
+changed_memory = {}
+
 def check_policy_ledger():
     sources = receipt.get("policy_sources")
     coverage = receipt.get("policy_coverage")
@@ -251,12 +435,17 @@ def check_policy_ledger():
     if not isinstance(coverage, list) or not coverage:
         fail("schema 3 receipt is missing its policy_coverage ledger")
         coverage = []
-    source_bytes, expected_ids = {}, {}
+    source_bytes, expected_ids, source_paths = {}, {}, set()
     for source in sources:
         if not isinstance(source, dict) or not safe_rel(source.get("path")):
             fail(f"policy_sources has a missing or unsafe path: {source.get('path') if isinstance(source, dict) else source!r}")
             continue
         path = source["path"]
+        # A second entry would replace the first one's requirement_ids and hide them from the ledger.
+        if path in source_paths:
+            fail(f"policy_sources lists a path more than once: {path}")
+            continue
+        source_paths.add(path)
         # Schema 4: a generated rule output or an installed harness file is not project policy; listing
         # it would make the ledger cover its own output.
         if schema_version == 4 and (path in registered_rule_paths or path == "ai_rules/rules/frequent_rules.md"
@@ -264,7 +453,11 @@ def check_policy_ledger():
             fail(f"policy source is a generated output or harness file, not project policy: {path}")
             continue
         data = safe_file(path)
-        if data is None or digest(data) != source.get("sha256"):
+        if (data is not None and digest(data) != source.get("sha256") and is_memory_source(path)
+                and isinstance(source.get("sha256"), str) and re.fullmatch(r"[0-9a-f]{64}", source["sha256"])):
+            # Memory is edited every session: its rows are then checked by their own text below.
+            changed_memory[(path, source["sha256"])] = {"rows": 0, "moved": 0}
+        elif data is None or digest(data) != source.get("sha256"):
             fail(f"policy source is missing, unsafe or stale: {path}")
             continue
         identity = (path, source["sha256"])
@@ -294,8 +487,56 @@ def check_policy_ledger():
             fail(f"policy_coverage has an unregistered requirement id: {requirement}")
         covered.setdefault(identity, set()).add(requirement)
         start, end = item.get("line_start"), item.get("line_end")
-        if not isinstance(start, int) or not isinstance(end, int) or start < 1 or end < start or end > len(data.decode("utf-8", errors="replace").splitlines()):
+        lines = data.decode("utf-8", errors="replace").splitlines()
+        text_hash = item.get("text_sha256")
+        # A present field must be a hash; JSON null is malformed, never "absent".
+        if "text_sha256" in item and (not isinstance(text_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", text_hash)):
+            fail(f"policy requirement {requirement}: malformed text_sha256")
+            text_hash = None
+        # Exact type: True would pass isinstance(..., int) as line 1.
+        valid_span = type(start) is int and type(end) is int and 1 <= start <= end
+        located = None
+        if not valid_span:
             fail(f"policy_coverage {requirement} has an invalid source span: {item.get('path')}:{start}-{end}")
+        elif identity in changed_memory:
+            if "text_sha256" not in item:
+                fail(f"policy source is missing, unsafe or stale: {item.get('path')} (memory source: give each of its ledger rows a text_sha256 so ordinary edits keep READY; row {requirement} has none)")
+            elif text_hash is not None:
+                # At its recorded span first; otherwise moved, when exactly one span of the same length matches.
+                span = end - start + 1
+                if end <= len(lines) and span_digest(lines, start, end) == text_hash:
+                    located = start
+                    changed_memory[identity]["rows"] += 1
+                else:
+                    found = [first for first in range(1, len(lines) - span + 2) if span_digest(lines, first, first + span - 1) == text_hash]
+                    if len(found) == 1:
+                        located = found[0]
+                        changed_memory[identity]["rows"] += 1
+                        changed_memory[identity]["moved"] += 1
+                    elif found:
+                        fail(f"policy requirement {requirement}: its text appears more than once in {item.get('path')}; re-ground this ledger row")
+                    else:
+                        fail(f"policy requirement {requirement}: its text in {item.get('path')} changed or is gone; re-ground this ledger row")
+        elif end > len(lines):
+            fail(f"policy_coverage {requirement} has an invalid source span: {item.get('path')}:{start}-{end}")
+        elif text_hash is not None:
+            if span_digest(lines, start, end) != text_hash:
+                fail(f"policy requirement {requirement}: text_sha256 does not match its span {item.get('path')}:{start}-{end}")
+            else:
+                located = start
+        if located is not None:
+            # A text anchor is the requirement itself: not only blank or heading lines, and not the
+            # first lines of an item whose deeper-indented continuation lies below the span (a loose
+            # item continues after blank lines). A plain line at the same indent may be a new labelled
+            # field ("Evidence: ..."), so it is not judged.
+            span_lines = lines[located - 1:located - 1 + end - start + 1]
+            after = next((line for line in lines[located - 1 + end - start + 1:] if line.strip()), "")
+            first = next((line for line in span_lines if line.strip()), "")
+            indent = lambda line: len(line) - len(line.lstrip())
+            if not any(line.strip() and not line.lstrip().startswith("#") for line in span_lines):
+                fail(f"policy requirement {requirement}: its span holds only blank or heading lines; anchor the requirement text itself")
+            elif after.strip() and indent(after) > indent(first):
+                fail(f"policy requirement {requirement}: its span stops inside an item (the next line continues it); cover the whole requirement")
         disposition = item.get("disposition")
         if disposition not in {"captured", "not-applicable", "conflict", "owner-decision"}:
             fail(f"policy_coverage {requirement} has an unknown disposition: {disposition!r}")
@@ -313,6 +554,10 @@ def check_policy_ledger():
             fail(f"policy requirement {requirement} needs a reason for {disposition}")
         if disposition in {"conflict", "owner-decision"}:
             fail(f"policy requirement {requirement} remains {disposition}")
+    # Every row of a changed memory source must have been found by its text; none may be skipped.
+    for identity, found in changed_memory.items():
+        if found["rows"] != len(covered.get(identity, set())):
+            fail(f"policy source changed and not every ledger row was found by its text: {identity[0]} ({found['rows']} of {len(covered.get(identity, set()))})")
     for identity, ids in expected_ids.items():
         missing = ids - covered.get(identity, set())
         if missing:
@@ -357,7 +602,7 @@ else:
             fail(f"package {package_path}: rules file is a stub or has placeholders: {rules_path}")
         if not re.search(rb"(?im)^##\s+Coding\b", raw_rules) or not re.search(rb"(?im)^##\s+Architecture\b", raw_rules) or not re.search(rb"(?im)^##\s+Packages\b", raw_rules) or not re.search(rb"(?im)^##\s+Testing\b", raw_rules) or not re.search(rb"(?im)^##\s+Reviewing\b", raw_rules):
             fail(f"package {package_path}: RULES.md must contain Coding, Architecture, Packages, Testing and Reviewing sections")
-        validate_citations(f"package {package_path}", row.get("citations"), [package_path])
+        validate_citations(f"package {package_path}", row.get("citations"), [package_path], representative_only=True)
         for citation in row.get("citations", []):
             if isinstance(citation, dict) and f"{citation.get('path')}:{citation.get('line_start')}" not in raw_rules.decode("utf-8", errors="replace"):
                 fail(f"package {package_path}: citation line is absent from rules output: {citation.get('path')}:{citation.get('line_start')}")
@@ -415,7 +660,7 @@ else:
         for package_path in packages_for_skill:
             if package_path not in text:
                 fail(f"skill {name}: missing package applicability {package_path}")
-        validate_citations(f"skill {name}", row.get("citations"), packages_for_skill)
+        validate_citations(f"skill {name}", row.get("citations"), packages_for_skill, per_package=name.startswith("spec-harness-tech-"))
         for citation in row.get("citations", []):
             if isinstance(citation, dict) and f"{citation.get('path')}:{citation.get('line_start')}" not in text:
                 fail(f"skill {name}: citation line is absent from skill output: {citation.get('path')}:{citation.get('line_start')}")
@@ -496,6 +741,8 @@ if errors:
     raise SystemExit(1)
 package_label = "package" if len(package_paths) == 1 else "packages"
 print(f"READY: {len(package_paths)} {package_label}, {len(skill_rows)} skills, {len(roles)} selected roles; inventory and cited hashes match")
+for (path, _), found in changed_memory.items():
+    print(f"NOTE: memory policy source changed since synthesis; {found['rows']} ledger rows found by text ({found['moved']} moved): {path}. New requirements in it are not in the ledger until the next guarded refresh.")
 PY
   exit $?
 fi
@@ -540,10 +787,10 @@ cat > "$TEMP_PROMPT" <<'EOF_PROMPT'
 
 0. For an already initialized target, before reindexing snapshot the exact old receipt, inventory, every selected package rule, all project skills and each selected role file. Confirm prior synthesis and separate semantic-review evidence, source-bound markers, receipt paths/citations/output hashes, and the authorized generated region for each output. A matching receipt hash alone never authorizes replacement. If preimage, ownership or no-intervening-edit evidence is missing, preserve that output byte-for-byte and record `CONFLICT/PENDING`. Keep populated human `RULES.md` without a clearly authorized generated region untouched.
 1. Read the target's `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, `ai_rules/globalRules.md`, `ai_rules/rules/frequent_rules.md`, `ai_rules/context_map.md` or `ai_rules/project_inventory.json`, `.memory/`, `.cursor/rules/`, `.agents/`, `README.md` and every startup path those instructions name. Follow startup instructions. Read the selected inventory and inspect project structure; enumerate package boundaries, manifests, lockfiles, installed skills, exclusions and unsupported formats before deriving any project guidance.
-2. Open the actual representative source files, imports/resolution evidence and relevant tests/config for every package. Cite exact line spans and SHA-256. Confirm declared dependency ranges separately from resolved/installed versions. Do not make package-use, architecture, SOLID or performance claims from inventory labels or names alone. Surface policy/source conflicts; do not silently replace existing policy.
+2. Open the actual representative source files, imports/resolution evidence and relevant tests/config for every package. Cite exact line spans and SHA-256 for the file that shows each claim; never repeat a span only to cover another package. Confirm declared dependency ranges separately from resolved/installed versions. Do not make package-use, architecture, SOLID or performance claims from inventory labels or names alone. Surface policy/source conflicts; do not silently replace existing policy.
 3. After steps 1-2, apply relevant reusable methods from the installed `ponytail.md`, `grill-me.md`, `package-finder.md`, `skill-finder.md`, `conventions.md`, `technology-profiles.md` and `standards.md` owners (source checkout fallback: `commands/`). Open only relevant skill candidates, check exposed capabilities, and record selected/excluded evidence in the existing owned outputs. Match package documentation identity/version to target runtime/native/peer constraints; unavailable coverage, provenance or tooling stays PENDING. Do not install packages or third-party skills.
-4. Sort every fact into its one home first (`rules.md`, Rule layers): run `spec-harness stack <target>` for `ai_rules/stack.md`, put business rules in `.memory/10-product.md` and decisions in `.memory/60-decisions.md`, copy the baseline packs and matching tool packs from `.claude/spec-harness/rule-packs/` byte for byte, research a tool without a pack from its official documentation, and propose repeated code patterns to the owner before writing them as rules. Write every rule as `- **ID** sentence. (source: ...)`, once. Fill only empty rule sections or explicit PENDING scaffolds. Produce one package-scoped `RULES.md` output record for every inventory package, with all five standard sections and citations. Do not copy rules across package boundaries.
-5. Maintain the core skills `.claude/skills/spec-harness-architecture/SKILL.md`, `.claude/skills/spec-harness-performance/SKILL.md` and `.claude/skills/spec-harness-packages/SKILL.md` (schema 2 also `.claude/skills/spec-harness-quality/SKILL.md` and `.claude/skills/spec-harness-conduct/SKILL.md`), plus one `.claude/skills/spec-harness-tech-<technology>/SKILL.md` per major technology the source actually uses (at most five, per the `tech` method). On first initialization, create each only when absent. On guarded refresh, reuse or refresh an existing skill only when its captured preimage and prior receipt, source-bound marker, documented generated ownership and no-custom-edit evidence all agree. If ownership is unproven or the file is custom/mismatched, preserve its bytes and record `CONFLICT/PENDING`. Use the corresponding installed method file. Each generated skill includes `<!-- source-bound: inventory-sha256=<raw inventory file hash> -->`.
+4. Sort every fact into its one home first (`rules.md`, Rule layers): run `spec-harness stack <target>` for `ai_rules/stack.md`, put business rules in `.memory/10-product.md` and decisions in `.memory/60-decisions.md`, copy the baseline packs and matching tool packs from `.claude/spec-harness/rule-packs/` byte for byte, research a tool without a pack from its official documentation, and propose repeated code patterns to the owner before writing them as rules. Write every rule as `- **ID** sentence. (source: ...)`, once. Fill only empty rule sections or explicit PENDING scaffolds. Produce one package-scoped `RULES.md` output record for every inventory package, with all five standard sections and citations. Do not copy rules across package boundaries. Ask which optional memory kinds fit (`content`, `automation`, `research`; code needs none) and copy only the chosen files from `.claude/spec-harness/memory-kinds/<kind>/` into `.memory/`, never over an existing file.
+5. Maintain the core skills `.claude/skills/spec-harness-architecture/SKILL.md`, `.claude/skills/spec-harness-performance/SKILL.md` and `.claude/skills/spec-harness-packages/SKILL.md` (schema 2 or later also `.claude/skills/spec-harness-quality/SKILL.md` and `.claude/skills/spec-harness-conduct/SKILL.md`), plus one `.claude/skills/spec-harness-tech-<technology>/SKILL.md` per major technology the source actually uses (at most five, per the `tech` method). First initialization and guarded refresh follow `commands/init.md` step 5, which owns those rules. Use the corresponding installed method file. Each generated skill includes `<!-- source-bound: inventory-sha256=<raw inventory file hash> -->`.
 6. Bind the required roles `sdd-planner`, `sdd-implementer`, `sdd-tester`, `sdd-verifier` and `sdd-reviewer` inside their existing `GEN:rules` regions. After reindex, enumerate every selected role GEN block and each skill marker whose raw inventory hash changed, even when only one package's source changed. Refresh all such verified generated marker consumers and their receipt hashes. The project-aware planner binding is required for ticket planning. Require separate fresh contexts for tester, verifier and reviewer. Preserve each canonical role file outside its GEN block byte-for-byte, including its duties, safeguards, procedures and output format. Add package-specific rules inside the block; do not replace role behavior with generic evidence notes. Bind merger only with an explicit cited authority and current need. Select research, design or workflow roles only from observed project/task evidence. Cite package-specific source lines, record exclusions and preserve bytes outside owned markers.
 7. Write `.claude/agents/.init-synthesis.json` using schema 4 on a first initialization (`stack` and `rule_conflicts`; the policy ledger is optional in v1) (schema 1 on a guarded refresh of an existing schema-1 receipt), as described in `.claude/commands/spec-harness/generate-agents.md` (source checkout fallback: `commands/generate-agents.md`). It must use the exact package paths from the inventory, include output hashes and citation path/line/hash records, and remain `PENDING` for missing, conflicting, unsupported or stale evidence.
 8. Follow guarded refresh owned by `.claude/commands/sdd.md`. Before any reindex, use step 0's snapshots; a receipt hash is not write authority. Preserve populated human rules without an authorized generated region, custom/mismatched skills and unproven outputs byte-for-byte as `CONFLICT/PENDING`. After re-grounding affected claims, enumerate and refresh every stale raw-inventory marker consumer across all project skills and selected role GEN blocks, then, as the last write of the refresh, delete `.spec-harness/synthesis-stale.json` if it exists (a harness update leaves that marker, and the check refuses READY while it is present), then run `spec-harness generate-agents --check <target>` (with no install: `npx -y github:chohra-med/spec-harness-oss generate-agents --check <target>`). A failed check names the missing, stale, conflicting or unsupported evidence. A passing result confirms recorded structure and current cited bytes; it does not establish that the claim follows from its citation. In a separate fresh reviewer context, inspect each generated rule, skill and role claim against its cited source span; check package scope, policy conflicts, and whether any recommendation is mislabeled as observed behavior. Record that review and its outcome. If a source cannot be read or does not independently support the claim, or no independent review context is available, leave overall initialization PENDING.

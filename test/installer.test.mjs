@@ -10,6 +10,7 @@ const expectedSeedDestinations = [
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
+  '00-Meta/Working-Agreement.md',
   '01-Projects/Index.md',
   '01-Projects/README.md',
   '01-Projects/Selected-Project/Decisions.md',
@@ -521,8 +522,8 @@ const bundledMethodFiles = new Map([
   ['references/reference-integrity.md', '1317824d70edb0db5561914940f3dff83ec706179e6d5d42c8794e9c52e89403'],
   ['references/system-map.md', 'd8f8f9d3e5be29ebc3d0ba072b6d5b95132723082ce3c0dc6bc3dc1153e27739'],
 ]);
+// api-anything is not here: it ships under template/optional-skills/ and is added by hand (test/optional-skill.test.mjs).
 const installedSkills = [
-  'api-anything',
   'context',
   'context-modes',
   'end-session',
@@ -569,8 +570,8 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /twenty-three local skills/);
-  assert.match(readme, /twenty-three shared skills/);
+  assert.match(readme, /twenty-two local skills/);
+  assert.match(readme, /twenty-two shared skills/);
   assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
   assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
 

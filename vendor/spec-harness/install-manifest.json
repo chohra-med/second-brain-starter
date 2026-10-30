@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "harnessVersion": "0.6.0",
+  "harnessVersion": "0.7.0",
   "description": "Record of the file set bin/sh-install.sh stages into a target. The installer does not read this file; tests/install-manifest-contract.sh proves a real install produces exactly this set, byte for byte.",
   "substitutions": {
     "placeholder": "{name}",
@@ -29,6 +29,9 @@
     ".claude/skills",
     ".claude/spec-harness/methods",
     ".claude/spec-harness/rule-packs",
+    ".claude/spec-harness/memory-kinds",
+    ".claude/spec-harness/docs",
+    ".claude/spec-harness/hooks",
     ".agents/skills",
     ".agents/skills/sdd",
     ".memory",
@@ -43,6 +46,13 @@
     "baseDir": ".spec-harness/base",
     "note": "The installer also writes this record of what it staged (format spec-harness-install-record) and one base copy of every file it added, under baseDir at the same relative path. status, update and uninstall read them. A file that already existed and differs from the harness file is recorded as not managed and has no base copy. A file that already existed and is byte-identical to the harness file is recorded as managed and gets a base copy."
   },
+  "registrations": [
+    {
+      "destination": ".claude/settings.local.json",
+      "by": "bin/sh-hook-register.py",
+      "note": "Not a staged copy: the installer merges one PreToolUse entry for the edit guard into this untracked file, keeps every other key and hook, and adds the file to .git/info/exclude in a git target. It is never written to .claude/settings.json. The conformance check leaves this path out of the staged set."
+    }
+  ],
   "loaderBlock": "## Spec Harness\n\n- Setup status: `SPEC-HARNESS.md`. Keep PENDING items PENDING until they are checked.\n- Before code edits read `ai_rules/rules/frequent_rules.md`, `.memory/40-active.md` and the nearest `RULES.md`.\n- Feature work goes through `/sdd <ticket text>`. The procedure is `.claude/commands/sdd.md`.\n- A code ticket is any change to a tracked file outside `specs/` and `.memory/`. It goes through `/sdd` before the first source edit, even when it looks small: the light route is still `/sdd`. Keep the ticket's code inside this repository: no worktree, clone or copy elsewhere unless the user asks for one.\n- A task is done when a fresh verifier returns PASS against the ticket's own goal, not when tests pass.\n- Rules change only through `.claude/commands/spec-harness/learn.md`, after review.\n",
   "entries": [
     {
@@ -130,7 +140,7 @@
       "source": "agents/sdd-implementer.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "568e1b1d2455af5ec4a89f355d5fa363a1ddf2f50d559d63290743ff1122d8c1",
+      "sha256": "18c035e0c3a5641a9630f02eead768f377bfa3f5b4bd766e88d4aeac2eee5be9",
       "mode": "0644"
     },
     {
@@ -170,7 +180,7 @@
       "source": "agents/sdd-reviewer.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "5ca154315967f5e544e6a57f6e75a875a05591db037a6edfa622ca4111c76858",
+      "sha256": "1acfbb36ae9a547b7583cc7e3072e9562085622af4e0e669265fe01913bbf9a9",
       "mode": "0644"
     },
     {
@@ -178,7 +188,7 @@
       "source": "agents/sdd-router.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "8940479539104bbe70690886496d700eae4414539e518678a7605deca85b381b",
+      "sha256": "c7df4a9d5c13682862f37840a381ecbb56e5b1b1a78ed7353ab4b0d9bcdb7c36",
       "mode": "0644"
     },
     {
@@ -186,7 +196,7 @@
       "source": "agents/sdd-tester.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "78c160bd8d1c52cff1ca7055b4de39263d8eb7162898f50ca1454303d9baea57",
+      "sha256": "926e1dc7b5984eb8b85c23e015e781345d6e1df491dbba63fb2ffc006c3d3930",
       "mode": "0644"
     },
     {
@@ -210,7 +220,7 @@
       "source": "commands/sdd.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "4ade709b176429836a530a9267a68e31f66fa6bca266ad93fd22418416efe2a6",
+      "sha256": "d1e7be842eb40148686487def5381c287ae89f852f811b532732778297f822dd",
       "mode": "0644"
     },
     {
@@ -226,7 +236,7 @@
       "source": "commands/build.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "539cb8480c99ccda3a69e148eca2972b8368b29a57b3fc207ac54dd5d10067f9",
+      "sha256": "b18f8cb7a005d95a6544aab52387c1a6a20abe253e0d72188b7232d99e96742c",
       "mode": "0644"
     },
     {
@@ -234,7 +244,7 @@
       "source": "commands/document.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "5cb43d0632e0edd344010a66fac4fe961523e33594d074d333ef1628ce56f97d",
+      "sha256": "74e9540581677f5562144448e46db16409e70f43788e4a227a405faee1bf52e3",
       "mode": "0644"
     },
     {
@@ -242,7 +252,7 @@
       "source": "commands/generate-agents.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "a41f1a37d74a3d6d300e94eba758ea135b1ad19c57ca1b1296971a2bdf945f47",
+      "sha256": "764638faca492f01568b9cbd30bed82b966ae4eae2b561ce25a5badbc125b847",
       "mode": "0644"
     },
     {
@@ -250,7 +260,7 @@
       "source": "commands/grill-me.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "cadf2554953a1fe0103664e719a45512f33402cfb6c7efa5ebe56b2e3de602f3",
+      "sha256": "eb68e363fadf15e04a234615a061c89ef88295534ff4e95ea681a61a863636ef",
       "mode": "0644"
     },
     {
@@ -258,7 +268,7 @@
       "source": "commands/init.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "41afacbebaf1fac2f36d737c4de5204a61308f4857740a898c2ad7196e308258",
+      "sha256": "92dd2aa9d26efa758a9fcc5e9e3082a81c35510390dc93d9e5b16222b9efbfa7",
       "mode": "0644"
     },
     {
@@ -290,7 +300,7 @@
       "source": "commands/plan.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "111205e41027c28d7894ed75f98b356b2e9742c18f8be7143b377ca7745e3d83",
+      "sha256": "50543a7efc6af7665a3e53667ed89c1a43c78ab9919a507f47f68babd17dd965",
       "mode": "0644"
     },
     {
@@ -306,7 +316,7 @@
       "source": "commands/rules.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "95674f6770cd39ad92e85387dd671a02327feef06e8ba855fed352a562fba96f",
+      "sha256": "78103f6529641f765df9d222da16c0491fd9306b8857cbe3adeab2011f178d6a",
       "mode": "0644"
     },
     {
@@ -342,6 +352,14 @@
       "mode": "0644"
     },
     {
+      "destination": ".claude/commands/spec-harness/doctor.md",
+      "source": "commands/doctor.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "5453a9b4ffe15822e41b675d6171203062d6fa57db5eb301f14fd00bfc2f4d73",
+      "mode": "0644"
+    },
+    {
       "destination": ".claude/commands/spec-harness/spec.md",
       "source": "commands/spec.md",
       "render": "copy",
@@ -370,7 +388,7 @@
       "source": "commands/tester.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "616140d142edffe6c144176f763552acbe63ad7c731f77d12ee84d92d25c095d",
+      "sha256": "60beabd64a2ce699324ef013cf37c24ae4389b916d3c1dc1d146176c36f2c2be",
       "mode": "0644"
     },
     {
@@ -402,7 +420,7 @@
       "source": "skills/spec-harness-build/SKILL.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "9cb6640b565b9a0009720135a79636788e81ecf23c352d8434bc6b83533ae6e1",
+      "sha256": "80740b16e7c3f13bef38c487f4cb2c1d8f50e7d87884bafe3746e9f8d1c5b898",
       "mode": "0644"
     },
     {
@@ -570,7 +588,7 @@
       "source": "templates/project-skills/spec-harness-packages.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "27f107b07a7c79f95a9a616c9cbbbbc86753c249c93593516ef7881d2621b110",
+      "sha256": "9e4c28ef4d6288326fd498d35683916e2fc28ca34434cd8d0bf3284465d89c15",
       "mode": "0644"
     },
     {
@@ -634,7 +652,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "86653710c01462e6d0b96fe0b6955b7acc72782a1b22ff0f8da43af9f835e9cf",
+      "sha256": "e6198161eae8be983dba3197442649c9d3061bbe6dc80df1f0dc7beeb199c6e0",
       "mode": "0644"
     },
     {
@@ -644,7 +662,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "0d42135761ae78a1fd47b856aedf1bc565b13a91795ca572cfd0e9e495a0182f",
+      "sha256": "97c88d5cad50638b0d871346e3095d8be234046bce945efeccfc833e887a9278",
       "mode": "0644"
     },
     {
@@ -654,7 +672,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "e191d1f09c7732c9cb91a3de29e3ec677bd63f90be110c75d9dc01a428bcf2e1",
+      "sha256": "0851e00ed00811f697e508974be7d9a8a2aa8c73ac2412ff6f86baf0e7f7481a",
       "mode": "0644"
     },
     {
@@ -664,7 +682,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "3027838ac2702aa4945f6fd63d8ab892e3349f1a3007a84d22cfacb913f82a20",
+      "sha256": "27c663c623d84f8087c22bbe24cc40f97db54053bba0f7d3ff88ef2c0746b499",
       "mode": "0644"
     },
     {
@@ -674,7 +692,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "4ce1b99c6c9b6f6c9f04e272b054bdfbdf9b9b0f14eec7e4da35dd126f482e69",
+      "sha256": "783ac35d0e086575695d15d89256d7096cf8cce73ae5056267913f356e1583b2",
       "mode": "0644"
     },
     {
@@ -684,7 +702,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "bdb7108628e71a187de0885b33c42ed4a243140716f89707e505888addfa30bc",
+      "sha256": "220021dec9763514e353fdfd7b5685c13c4f03b5f9ad76604bc05fc0aade1595",
       "mode": "0644"
     },
     {
@@ -694,7 +712,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "511c9973dd025d1e387981ca63b68c0639ed2cc75340d31a793bd5cde50a6f98",
+      "sha256": "b28cc7131159f6b84905713bdd7540fdc443839ae9c537ba34ea8f81a8152b07",
       "mode": "0644"
     },
     {
@@ -704,7 +722,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "c393222f4b2d8f02aa34c82a1d442e44fb3264a62bd9fc26701b1a0878f94706",
+      "sha256": "b12afdd522f45afd74c67d1471640ef10deaf39ba68298e0861365b5dbe35612",
       "mode": "0644"
     },
     {
@@ -714,7 +732,7 @@
       "tokens": [
         "{{PROJECT_NAME}}"
       ],
-      "sha256": "6780ce611082d2bcdf1c9d103658691307efff1110416eab8f2f93942798f456",
+      "sha256": "899e25b85647213c59ffa9c170ced8badff64c938c76ee4067122b2ebf83060c",
       "mode": "0644"
     },
     {
@@ -798,6 +816,16 @@
       "mode": "0644"
     },
     {
+      "destination": "ai_rules/review-lens.md",
+      "source": "templates/install/ai_rules/review-lens.md",
+      "render": "template",
+      "tokens": [
+        "{{PROJECT_NAME}}"
+      ],
+      "sha256": "eca3cb68acdfdd5ba2d323ffb5420986aa8d81113a8981212c754de189b33fc9",
+      "mode": "0644"
+    },
+    {
       "destination": "constitution.md",
       "source": "templates/constitution.md",
       "render": "template",
@@ -830,7 +858,7 @@
       "source": "learning_human.html",
       "render": "copy",
       "tokens": [],
-      "sha256": "94d5427bfd2f8e053b622310b33fbcce8fed6161bed7a3400934b82af2900b6c",
+      "sha256": "f990d1de5e17f1b63c6cc35b876a5bfaeab49787a5ebae873994e997e6523f39",
       "mode": "0644"
     },
     {
@@ -862,7 +890,7 @@
       "source": "commands/pr-prepare.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "7f6b5cd36791d3d9ee9dd927094d1bc6117086621da1b30c75ba6ebfd1519e94",
+      "sha256": "0abfacca8096847dc88d946fe53227c801723aad92bdc6ca03dc5a8bcfaaff9b",
       "mode": "0644"
     },
     {
@@ -966,7 +994,7 @@
       "source": "commands/standards.md",
       "render": "copy",
       "tokens": [],
-      "sha256": "fa911b9937f81de6f15bfee113ec1ca1e85d058c9e54ae87ab3af4645b4b628a",
+      "sha256": "86224ea19c27add633950c6c96f43e88282491279036f2e30a3d820a46c28b02",
       "mode": "0644"
     },
     {
@@ -1000,11 +1028,59 @@
       "tokens": [],
       "sha256": "acfd90d66dc4ec1e51ea58f20300574c48c86829762a220c304c91ce7e62c4f8",
       "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/hooks/sdd-gate.sh",
+      "source": "hooks/sdd-gate.sh",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "00a03a4319497e2ad5c3c8c06e6e883f1168b159cd69aeeaff77f23d51078aa0",
+      "mode": "0755"
+    },
+    {
+      "destination": ".claude/spec-harness/memory-kinds/automation/pipeline.md",
+      "source": "templates/memory-kinds/automation/pipeline.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "8b98fbbda539d2a15a0cd1314d70022987f195832b76ff97413948f8be05c5ae",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/memory-kinds/content/audience.md",
+      "source": "templates/memory-kinds/content/audience.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f4661aa7cda8fb3d657f3eba7002fef47aba989faafbc1549ec21ac0f03d3f6b",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/memory-kinds/content/voice-dna.md",
+      "source": "templates/memory-kinds/content/voice-dna.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "f1e713391ee6820a46ca3a00803b73bf30599d20d1f5c98b085dc2fe5d70af57",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/memory-kinds/research/sources.md",
+      "source": "templates/memory-kinds/research/sources.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "a51d63fc90ae10cac01484977c2f99060352f7d9ad86ae686f387ecb87a75663",
+      "mode": "0644"
+    },
+    {
+      "destination": ".claude/spec-harness/docs/MEMORY.md",
+      "source": "docs/MEMORY.md",
+      "render": "copy",
+      "tokens": [],
+      "sha256": "5aafb7b998ca1e090534c5b21acadd9eb4c60f4ff4de2231b28ff78bc3f52d34",
+      "mode": "0644"
     }
   ],
   "renders": {
     "copy": "destination bytes equal the source bytes; tokens is empty",
     "template": "line by line: replace the entry's tokens, then end every line with LF. A LF is appended only if the last line of the source lacks one; a source already ending in LF gains none, and an empty source renders empty."
   },
-  "modeNote": "mode is informational. Conformance is bytes-only; the only staged executable is loop.sh (0755), everything else is 0644. Actual file modes depend on the installing tool and umask."
+  "modeNote": "mode is informational. Conformance is bytes-only; the staged executables are loop.sh and .claude/spec-harness/hooks/sdd-gate.sh (0755), everything else is 0644. Actual file modes depend on the installing tool and umask."
 }

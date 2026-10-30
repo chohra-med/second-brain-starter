@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile as execFileCallback } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { cp, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -138,7 +138,9 @@ async function killedAfterCommit(w) {
   const plan = await planConnect(args);
   const total = plan.directories.filter((entry) => entry.status === 'CREATE').length
     + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4
-    + (plan.indexRow ? 1 : 0); // The project index row is one more durable write
+    + (plan.indexRow ? 1 : 0) // The project index row is one more durable write
+    // and so is each registration write: the settings entry and the exclude line (Spec Harness 0.7.0 and later).
+    + plan.entries.filter((entry) => (entry.kind === 'registration' && ['CREATE', 'MERGE'].includes(entry.status)) || (entry.kind === 'exclude' && ['CREATE', 'APPEND'].includes(entry.status))).length;
   const config = { module: pathToFileURL(path.join(sourceRoot, 'lib', 'connect.mjs')).href, manifest: path.join(sourceRoot, 'template-manifest.json'), sourceRoot, hub: w.hub, repo: w.repo, digest: plan.digest, kill: total };
   let child = null;
   try {
@@ -265,7 +267,8 @@ test('connect --apply stages the full harness set, says STAGED with the next ste
     assert.deepEqual(outside.filter((line) => /initiali[sz]ed/i.test(line)), [], 'no line outside the receipt path says initialised');
   }
   const manifest = await vendoredManifest();
-  assert.deepEqual(regularFiles(await inventory(w.repo)), manifest.entries.map((entry) => entry.destination).sort(), 'the staged set is exactly the vendored manifest destinations');
+  const registered = (manifest.registrations ?? []).map((item) => item.destination);
+  assert.deepEqual(regularFiles(await inventory(w.repo)), [...manifest.entries.map((entry) => entry.destination), ...registered].sort(), 'the staged set is exactly the vendored manifest destinations, plus the settings file a registration writes');
   for (const destination of ['01-Projects/app/README.md', '01-Projects/app/Connection.md']) {
     assert.ok((await lstat(rel(w.hub, destination))).isFile(), destination);
   }
@@ -1277,7 +1280,7 @@ test('R06-5 drift: every error code the libraries can throw is translated in the
   for (const code of codesIn(bin)) codes.add(code);
   const translated = new Set([...bin.matchAll(/case '([A-Z_]+)'/g)].map((match) => match[1]));
   // Codes without their own wording: the generic branch prints the code, the message, what is not changed, and verify.
-  const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE', 'ADOPT_REFUSED', 'MISSING_STATE']);
+  const generic = new Set(['AMBIGUOUS_OWNER', 'CONCURRENT_MODIFICATION', 'DUPLICATE_DESTINATION', 'HARNESS_MANIFEST_MISSING', 'HARNESS_SOURCE_HASH_MISMATCH', 'HARNESS_SOURCE_MISSING', 'INJECTED_WRITE_FAILURE', 'INVALID_APPROVED_CHANGE', 'INVALID_DEPENDENCY', 'INVALID_EDITION', 'INVALID_HARNESS_MANIFEST', 'INVALID_HARNESS_PIN', 'INVALID_MANIFEST', 'INVALID_NAMESPACE', 'INVALID_OPERATION', 'INVALID_OWNER', 'INVALID_PATH', 'INVALID_PLAN', 'INVALID_STATE', 'LOADER_CONFLICT', 'MISSING_PROJECT_TEMPLATE', 'MISSING_SOURCE', 'NON_DIRECTORY', 'NON_REGULAR_FILE', 'POSTIMAGE_HASH_MISMATCH', 'SECRET_BEARING_CONTENT', 'SOURCE_ESCAPE', 'SOURCE_HASH_MISMATCH', 'STALE_PREIMAGE', 'TARGET_ESCAPE', 'TARGET_NOT_ABSOLUTE', 'TARGET_NOT_DIRECTORY', 'UNDECLARED_OWNER', 'UNKNOWN_RENDER', 'UNKNOWN_REGISTRATION', 'UNSUPPORTED_MULTI_TOKEN', 'INVALID_CONNECTIONS_STATE', 'INVALID_CONNECTION_NAME_STATE', 'ADOPT_REFUSED', 'MISSING_STATE']);
   for (const code of codes) {
     assert.ok(translated.has(code) || generic.has(code), `${code} has no translation and is not listed as generic`);
   }
@@ -1293,6 +1296,212 @@ test('the generic branch of connect prints the code, what is not changed, and ve
   assert.ok(!refused.stdout.includes('Not changed: if the message above'), 'the hedge is gone');
   assert.ok(!refused.stdout.includes('does not say a file was written'), refused.stdout);
   assert.ok(hasLine(refused.stdout, `Next: node ${cliScript} verify --target ${file}`), refused.stdout);
+});
+
+// ---------------------------------------------------------------------------
+// The edit guard registration (Spec Harness 0.7.0 and later), through the real CLI
+// ---------------------------------------------------------------------------
+
+// A copy of this checkout whose vendored harness is a small synthetic one that declares the edit guard registration,
+// so these lines are tested whatever harness this checkout vendors. Its registrar holds only the lines connect checks.
+const GUARD = '.claude/spec-harness/hooks/sdd-gate.sh';
+const GUARD_SETTINGS = '.claude/settings.local.json';
+const GUARD_TEXT = '#!/usr/bin/env bash\n# synthetic edit guard\nexit 0\n';
+const FOREIGN_GUARD = '#!/bin/sh\n# a hook that came with the repository\nexit 0\n';
+const GUARD_ENTRY = JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Edit|Write|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: `"$CLAUDE_PROJECT_DIR"/${GUARD}` }] }] } });
+const GUARD_MERGED_LINE = 'Hook registration: the edit guard entry is merged into .claude/settings.local.json (never .claude/settings.json), and in a git repository that file is added to .git/info/exclude unless the line is already there. The registration and exclude lines below say what happens and why.';
+
+async function guardWorkspace(t) {
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-cli-guard-')));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const checkout = path.join(root, 'starter');
+  const skipped = new Set(['.git', 'test', 'vendor', 'node_modules']);
+  await cp(sourceRoot, checkout, { recursive: true, filter: (entry) => !skipped.has(path.relative(sourceRoot, entry).split(path.sep)[0]) });
+  const harness = path.join(checkout, 'vendor', 'spec-harness');
+  const put = async (relative, text) => {
+    await mkdir(path.dirname(path.join(harness, relative)), { recursive: true });
+    await writeFile(path.join(harness, relative), text);
+  };
+  await put('hooks/sdd-gate.sh', GUARD_TEXT);
+  await put('bin/sh-hook-register.py', ['SETTINGS = ".claude/settings.local.json"', 'MATCHER = "Edit|Write|MultiEdit|NotebookEdit"', 'SCRIPT = ".claude/spec-harness/hooks/sdd-gate.sh"', 'COMMAND = \'"$CLAUDE_PROJECT_DIR"/\' + SCRIPT', ''].join('\n'));
+  await put('install-manifest.json', JSON.stringify({
+    schemaVersion: 1,
+    harnessVersion: '9.9.9',
+    substitutions: { placeholder: '{name}', projectName: { mustBeNonEmpty: true, forbiddenCharacters: ['LF', 'CR', 'TAB', '/', '\\'] }, tokens: { '{{PROJECT_NAME}}': '{name}' } },
+    directories: ['.claude/spec-harness/hooks'],
+    registrations: [{ destination: GUARD_SETTINGS, by: 'bin/sh-hook-register.py', note: 'synthetic' }],
+    loaderBlock: '## Synthetic loader\n',
+    entries: [{ destination: GUARD, source: 'hooks/sdd-gate.sh', render: 'copy', tokens: [], sha256: digestOf(GUARD_TEXT), mode: '0755' }],
+  }));
+  await writeFile(path.join(checkout, 'vendor', 'SPEC-HARNESS-PIN.json'), JSON.stringify({ schemaVersion: 1, commit: 'a'.repeat(40), tree: 'b'.repeat(40), harnessVersion: '9.9.9' }));
+  // The workspace, initialised in-process from the copy (setup only).
+  const hub = path.join(root, 'hub');
+  const manifestBytes = await readFile(path.join(checkout, 'template-manifest.json'));
+  const manifest = JSON.parse(manifestBytes.toString('utf8'));
+  const plan = await planInstall({ manifest, manifestBytes, sourceRoot: checkout, targetPath: hub, operation: 'init' });
+  await applyInstall({ manifest, manifestBytes, sourceRoot: checkout, targetPath: hub, operation: 'init', approvedDigest: plan.digest });
+  const registrar = path.join(checkout, 'vendor', 'spec-harness', 'bin', 'sh-hook-register.py');
+  // One repository per case, each a folder with a hand-made .git folder (HEAD, objects, refs, info/exclude).
+  const repository = async (name, setup = async () => {}) => {
+    const repo = path.join(root, name);
+    await mkdir(path.join(repo, '.git', 'objects'), { recursive: true });
+    await mkdir(path.join(repo, '.git', 'refs', 'heads'), { recursive: true });
+    await mkdir(path.join(repo, '.git', 'info'), { recursive: true });
+    await writeFile(path.join(repo, '.git', 'HEAD'), 'ref: refs/heads/main\n');
+    await writeFile(path.join(repo, '.git', 'info', 'exclude'), '# git ls-files --others --exclude-from=.git/info/exclude\n');
+    await setup(repo);
+    return { root, hub, repo, checkout };
+  };
+  const cli = (args) => runCli(args, { checkout });
+  return { root, hub, checkout, registrar, repository, cli };
+}
+
+const putIn = async (repo, relative, text) => {
+  await mkdir(path.dirname(rel(repo, relative)), { recursive: true });
+  await writeFile(rel(repo, relative), text);
+};
+
+test('connect prints the edit guard registration: the hook mode, the settings and exclude lines with their reasons, and one Hook registration line that fits', async (t) => {
+  const g = await guardWorkspace(t);
+  const fresh = await g.repository('fresh');
+  const planned = await g.cli(connectArgs(fresh));
+  assert.equal(planned.code, undefined, planned.stdout + planned.stderr);
+  const out = planned.stdout;
+  assert.ok(hasLine(out, `CREATE\trepo:${GUARD}\tundo=remove-created-file (mode 0755)`), out);
+  assert.ok(hasLine(out, `CREATE\trepo:${GUARD_SETTINGS}\tundo=remove-hook-entry (creates ${GUARD_SETTINGS}; never .claude/settings.json)`), out);
+  assert.ok(hasLine(out, 'APPEND\trepo:.git/info/exclude\tundo=remove-line (adds /.claude/settings.local.json to .git/info/exclude)'), out);
+  assert.ok(hasLine(out, GUARD_MERGED_LINE), out);
+  const applied = await g.cli(connectArgs(fresh, ['--apply', planDigest(out)]));
+  assert.equal(applied.code, undefined, applied.stdout);
+  assert.ok(!applied.stdout.includes('Not done:') && !/sh-hook-register\.py/.test(applied.stdout), 'a registered guard leaves nothing undone');
+
+  // An existing settings file is merged; a rollback takes out only the entry.
+  const merged = await g.repository('merged', (repo) => putIn(repo, GUARD_SETTINGS, '{"permissions":{"allow":["Read"]}}'));
+  const mergedPlan = (await g.cli(connectArgs(merged))).stdout;
+  assert.ok(hasLine(mergedPlan, `MERGE\trepo:${GUARD_SETTINGS}\tundo=remove-hook-entry (merges one PreToolUse entry into ${GUARD_SETTINGS}; never .claude/settings.json)`), mergedPlan);
+  assert.ok(hasLine(mergedPlan, GUARD_MERGED_LINE), mergedPlan);
+
+  // An entry that is already there: nothing is merged, so the merge line is not printed; the exclude step still runs.
+  const listed = await g.repository('listed', (repo) => putIn(repo, GUARD_SETTINGS, GUARD_ENTRY));
+  const listedPlan = (await g.cli(connectArgs(listed))).stdout;
+  assert.ok(hasLine(listedPlan, `REGISTERED\trepo:${GUARD_SETTINGS}\tundo=none (already registered in ${GUARD_SETTINGS})`), listedPlan);
+  assert.ok(!hasLine(listedPlan, GUARD_MERGED_LINE), listedPlan);
+  assert.ok(hasLine(listedPlan, 'Hook registration: .claude/settings.local.json already has an entry that runs the edit guard, so connect adds none. In a git repository that file is added to .git/info/exclude unless the line is already there. The exclude line below says what happens.'), listedPlan);
+  assert.ok(hasLine(listedPlan, 'APPEND\trepo:.git/info/exclude\tundo=remove-line (adds /.claude/settings.local.json to .git/info/exclude)'), listedPlan);
+});
+
+test('a refused edit guard: the plan says why and merges nothing, and the hand-off prints Not done and a Next line that fits the case', async (t) => {
+  const g = await guardWorkspace(t);
+  const add = (repo) => `python3 -I -B ${word(g.registrar)} add ${word(repo)}`;
+  const run = async (w) => {
+    const planned = await g.cli(connectArgs(w));
+    assert.equal(planned.code, undefined, planned.stdout + planned.stderr);
+    const applied = await g.cli(connectArgs(w, ['--apply', planDigest(planned.stdout)]));
+    assert.equal(applied.code, undefined, applied.stdout);
+    return { plan: planned.stdout, out: applied.stdout, next: linesOf(applied.stdout).filter((line) => line.startsWith('Next: ') && !line.startsWith('Next: open ')) };
+  };
+  const refusal = `NOT registered: ${GUARD} differs from the shipped edit guard (it was changed, or it came with the repository); it was kept and not registered. Review it, or replace it with the shipped one, then register it by hand`;
+  const noMerge = 'Hook registration: none. connect writes no edit guard entry and leaves .git/info/exclude alone. The registration line below says why.';
+
+  // A hook that came with the repository and nothing that runs it.
+  const foreign = await g.repository('foreign', (repo) => putIn(repo, GUARD, FOREIGN_GUARD));
+  const alone = await run(foreign);
+  assert.ok(hasLine(alone.plan, `PRESERVED\trepo:${GUARD}\tundo=none (differs)`), alone.plan);
+  assert.ok(hasLine(alone.plan, `NOT-REGISTERED\trepo:${GUARD_SETTINGS}\tundo=none (${refusal})`), alone.plan);
+  assert.ok(hasLine(alone.plan, 'SKIPPED\trepo:.git/info/exclude\tundo=none (the edit guard was not registered, so .git/info/exclude is left alone)'), alone.plan);
+  assert.ok(hasLine(alone.plan, noMerge) && !hasLine(alone.plan, GUARD_MERGED_LINE), alone.plan);
+  assert.ok(hasLine(alone.out, `Not done: ${refusal}`), alone.out);
+  assert.deepEqual(alone.next, [`Next: the edit guard is not registered. Once the reason above is dealt with, register it with: ${add(foreign.repo)}`]);
+
+  // The same hook, run by an entry in the committed .claude/settings.json.
+  const committed = await g.repository('committed', async (repo) => {
+    await putIn(repo, GUARD, FOREIGN_GUARD);
+    await putIn(repo, '.claude/settings.json', GUARD_ENTRY);
+  });
+  const viaCommitted = await run(committed);
+  assert.ok(hasLine(viaCommitted.out, `Not done: ${refusal}. An entry already in .claude/settings.json still runs it on every edit; connect did not write that entry and leaves it`), viaCommitted.out);
+  assert.deepEqual(viaCommitted.next, ['Next: the entry in .claude/settings.json runs that file on every edit. connect never writes .claude/settings.json; if you did not put the entry there, take it out of that file by hand.']);
+
+  // The same hook, run by an entry in settings.local.json: the registrar's remove takes it out.
+  const local = await g.repository('local', async (repo) => {
+    await putIn(repo, GUARD, FOREIGN_GUARD);
+    await putIn(repo, GUARD_SETTINGS, GUARD_ENTRY);
+  });
+  const viaLocal = await run(local);
+  assert.deepEqual(viaLocal.next, [`Next: the entry in ${GUARD_SETTINGS} runs that file on every edit. If you did not put it there, remove it with: python3 -I -B ${word(g.registrar)} remove ${word(local.repo)}`]);
+
+  // The same hook next to a settings file connect cannot read: it says it cannot tell.
+  const unreadable = await g.repository('unreadable', async (repo) => {
+    await putIn(repo, GUARD, FOREIGN_GUARD);
+    await putIn(repo, '.claude/settings.json', '{ not json');
+  });
+  const unknown = await run(unreadable);
+  assert.deepEqual(unknown.next, [
+    'Next: connect could not read .claude/settings.json, so it cannot tell whether an entry there runs that file. Check .claude/settings.json yourself.',
+    `Next: the edit guard is not registered. Once the reason above is dealt with, register it with: ${add(unreadable.repo)}`,
+  ]);
+
+  for (const result of [alone, viaCommitted, viaLocal, unknown]) {
+    assert.ok(!result.out.includes('staged but not active'), `the staged file is the refused one, so the guard is never called staged: ${result.out}`);
+  }
+
+  // The shipped hook, but a settings file the merge cannot trust: the guard is staged, and not active.
+  const broken = await g.repository('broken', (repo) => putIn(repo, GUARD_SETTINGS, '{ not json'));
+  const staged = await run(broken);
+  assert.ok(hasLine(staged.out, `Not done: NOT registered: ${GUARD_SETTINGS} is not valid JSON; it was left as it is`), staged.out);
+  assert.deepEqual(staged.next, [`Next: the edit guard is staged but not active. Once the reason above is dealt with, register it with: ${add(broken.repo)}`]);
+
+  // A .git file (a linked worktree): the exclude line is left to the person, with no registrar command.
+  const worktree = path.join(g.root, 'worktree');
+  await mkdir(worktree);
+  await writeFile(path.join(worktree, '.git'), 'gitdir: ../elsewhere/.git/worktrees/app\n');
+  const manual = await run({ hub: g.hub, repo: worktree });
+  assert.ok(hasLine(manual.plan, GUARD_MERGED_LINE), manual.plan);
+  assert.ok(linesOf(manual.out).some((line) => line.startsWith('Not done: .git is a file here') && line.includes('/.claude/settings.local.json')), manual.out);
+  assert.deepEqual(manual.next, [], 'a MANUAL exclude line needs no registrar command');
+});
+
+// A child that runs the engine's apply and SIGKILLs itself at the first write hook of one kind.
+const KILL_AT_KIND = `
+import { readFileSync, writeSync } from 'node:fs';
+const cfg = JSON.parse(process.env.SB_CFG);
+const { applyConnect } = await import(cfg.module);
+const manifestBytes = readFileSync(cfg.manifest);
+await applyConnect({
+  manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: cfg.sourceRoot,
+  targetPath: cfg.hub, repoPath: cfg.repo, approvedDigest: cfg.digest,
+  injectBeforeWrite: async (info) => {
+    if (info.kind !== cfg.kind) return;
+    writeSync(1, 'KILLED ' + info.kind + '\\n');
+    try { process.kill(process.pid, 'SIGKILL'); } catch { process.exit(137); }
+    await new Promise(() => {});
+  },
+});
+`;
+
+test('a connect stopped after it finished, before it deleted its copy of the settings file: verify lists the copy as RESIDUE, and the next approved connect deletes it', { skip: !isPosix && 'the kill helper uses SIGKILL' }, async (t) => {
+  const g = await guardWorkspace(t);
+  const kept = await g.repository('kept', (repo) => putIn(repo, GUARD_SETTINGS, '{"permissions":{"allow":["Read"]}}'));
+  const manifestPath = path.join(g.checkout, 'template-manifest.json');
+  const manifestBytes = await readFile(manifestPath);
+  const plan = await planConnect({ manifest: JSON.parse(manifestBytes.toString('utf8')), manifestBytes, sourceRoot: g.checkout, targetPath: g.hub, repoPath: kept.repo });
+  const config = { module: pathToFileURL(path.join(sourceRoot, 'lib', 'connect.mjs')).href, manifest: manifestPath, sourceRoot: g.checkout, hub: g.hub, repo: kept.repo, digest: plan.digest, kind: 'backup-clear' };
+  const child = await run(process.execPath, ['--input-type=module', '-e', KILL_AT_KIND], { env: { ...process.env, SB_CFG: JSON.stringify(config) }, windowsHide: true }).then(() => null, (error) => error);
+  assert.ok(child && String(child.stdout).includes('KILLED backup-clear'), `the child must be killed before it deletes the copy: ${child?.stderr ?? 'it finished'}`);
+  const [id] = Object.keys(JSON.parse(await readFile(rel(g.hub, '.second-brain/connections.json'), 'utf8')).connections);
+  const copy = `.second-brain/backups/${id}/repo/.claude/settings.local.json`;
+  assert.ok((await lstat(rel(g.hub, copy))).isFile(), 'the copy is left (positive control)');
+
+  const verified = await g.cli(['verify', '--target', g.hub]);
+  assert.equal(verified.code, undefined, 'a leftover copy does not change the exit code');
+  assert.ok(hasLine(verified.stdout, `RESIDUE\t${copy}\ta copy of a repository's settings file that a finished connect did not get to delete; the next approved connect, a rollback or a recovery deletes it.`), verified.stdout);
+
+  const other = await g.repository('other');
+  const planned = await g.cli(connectArgs(other));
+  const applied = await g.cli(connectArgs(other, ['--apply', planDigest(planned.stdout)]));
+  assert.equal(applied.code, undefined, applied.stdout);
+  await assert.rejects(lstat(rel(g.hub, `.second-brain/backups/${id}/repo`)), { code: 'ENOENT' }, 'the next approved connect deleted the copy and its folders');
+  assert.ok(!(await g.cli(['verify', '--target', g.hub])).stdout.includes('RESIDUE'), 'verify lists nothing left');
 });
 
 test('no printed output in this file contains null or undefined', () => {

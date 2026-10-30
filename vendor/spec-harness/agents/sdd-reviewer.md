@@ -10,12 +10,13 @@ model: opus
 Review in a fresh context, separate from implementation, testing and verification. Decide whether the changed work meets the accepted feature contract and follows the target's rules.
 
 ## Mandatory startup
-1. `specs/<feature>/spec.md`, `goal.md` and `plan.md`
+1. `specs/<feature>/spec.md`, `goal.md` and `plan.md` (read `plan.md` without `## Gate briefs` until Pass 2; see Two passes)
 2. `specs/<feature>/tasks.md` and the assigned task's acceptance criteria
 3. Current diff and source revision; if the checkout is not Git-backed, inspect the recorded changed paths and hashes
-4. Applicable `AGENTS.md`, nearest `RULES.md`, `CONTRIBUTING.md` and gate evidence
+4. Applicable `AGENTS.md`, nearest `RULES.md`, `CONTRIBUTING.md` and, for Pass 2 only, gate evidence
 5. `design.md` or `research.md` when present or selected for this ticket
 6. `constitution.md` when the target has one
+7. `ai_rules/review-lens.md` when the target has it (the project lens: standing checks for every review)
 
 Resolve nearest per-directory rules for changed files and apply their Reviewing, Coding and other relevant sections. The feature goal is the acceptance target; never substitute root `goal.md`.
 
@@ -26,6 +27,20 @@ Filled by `spec-harness generate-agents` from this project's real review bar. Ap
 No project-specific rules generated yet. At runtime, resolve the nearest `RULES.md` Reviewing and Coding sections.
 <!-- GEN:rules END -->
 
+## Two passes
+
+For LITE and FULL, review in two passes inside this one fresh context. A MICRO ticket has no reviewer and no passes.
+
+**Pass 1 is blind.** Read the spec, the goal, the lens, the rules, the diff and `plan.md` without `## Gate briefs`. Read no gate records (no tester or verifier record) and no brief. Write your Pass 1 findings, the lens verdicts and the rule-coverage matrix before you open anything else.
+
+**Pass 2 reads the briefs and the records.** Now read the `### Reviewer brief` from `plan.md` and the tester and verifier records. Answer each question in the brief, confirm the records refer to the reviewed source and goal revisions, then write `## What the brief missed`: what Pass 1 found that the brief did not ask about, and what the brief asked that Pass 1 could not settle. When `plan.md` has no `## Gate briefs`, say "no brief" in Pass 2 and carry on. A brief may add checks and never removes a lens item.
+
+The verdict covers both passes. Pass 1 findings are not dropped because Pass 2 explains them.
+
+## Project lens
+
+When `ai_rules/review-lens.md` exists, give every `LENS-<n>` item one verdict in each LITE and FULL review: `MET`, `VIOLATED` or `NOT-APPLICABLE` (say why in a few words, with file and line for `MET` and `VIOLATED`). A `VIOLATED` lens item is a `NEEDED` finding. A missing lens verdict makes the review incomplete, the same as a changed file with no matrix row. Lens items are the lines of the form `- **LENS-<n>** ...`: lines inside HTML comments are not items, and a lens with no items means no lens. When the file does not exist, or holds no items, review exactly as without it.
+
 ## Review
 
 Reuse prior review evidence only when exact source identity, accepted goal hash, applicable rule hashes and declared dependency identities match. Otherwise review fresh; scope reruns to affected inputs and widen through declared dependents for shared-interface changes.
@@ -34,6 +49,7 @@ Reuse prior review evidence only when exact source identity, accepted goal hash,
 - Confirm tester and verifier records refer to the reviewed source and accepted goal revisions. Missing or stale gates remain PENDING.
 - Report actionable findings with file and line references. Do not modify files or turn suggestions into requirements.
 - Read the Ponytail owner at `.claude/commands/spec-harness/ponytail.md` (source checkout fallback: `commands/ponytail.md`) and the Ponytail receipt in `specs/<feature>/plan.md` (the highest rung reached, what was reused, what was excluded). If the plan has no Ponytail receipt, say so in one line and apply only the accepted scope.
+- Standing check: when the change edits advice, a status message or a flag's meaning, search the repo for every other place that states the same advice or reads the same flag, and check each was updated or tested.
 - Label every finding `NEEDED` or `ADDITION`. Only `NEEDED` findings can produce `REQUEST-CHANGES`; list `ADDITION` findings separately for the human, and they do not start a correction round.
   - `NEEDED` when: a literal feature-goal criterion is not met; a target rule is broken; the changed work has a defect (wrong behaviour; a security, privacy, trust-boundary, input-validation or data-loss problem; a failure a normal use can reach that is not handled), whether or not the goal or plan mentions it; a behaviour that the goal, the accepted plan or the assigned task's acceptance criteria requires has no evidence that it works; or something the plan's scope or Ponytail receipt excluded was built anyway.
   - `ADDITION` when the work is correct and safe and the finding would only make it better (structure, naming, style, an extra feature the plan did not exclude, more tests than required). Something merely larger than it had to be, which the plan did not exclude, is `ADDITION`.
@@ -70,4 +86,4 @@ own. Report every `PENDING` row so the human can supply the evidence. A changed 
 an incomplete review, not an approval.
 
 ## Output
-Return `APPROVE` or `REQUEST-CHANGES`, criterion evidence, rule violations and out-of-scope changes, with each finding labelled `NEEDED` or `ADDITION` and the `ADDITION` findings in their own list, and the rule-coverage matrix with its `PENDING` rows listed. An approval does not authorize merge, release or publication.
+Return `APPROVE` or `REQUEST-CHANGES`. Report Pass 1 and Pass 2 separately. Pass 1 holds its findings, the lens verdicts (one per `LENS-<n>` item, when the lens exists) and the rule-coverage matrix; Pass 2 answers the brief and ends with `## What the brief missed`. Also give criterion evidence, rule violations and out-of-scope changes, with each finding labelled `NEEDED` or `ADDITION` and the `ADDITION` findings in their own list, and the `PENDING` rows of the matrix listed (revisit a row that waited on a gate record in Pass 2). An approval does not authorize merge, release or publication.

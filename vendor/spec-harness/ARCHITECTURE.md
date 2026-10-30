@@ -132,6 +132,41 @@ for the project's existing human or reviewer authority before changing its canon
 This can carry an approved correction into later work, but cannot guarantee the same failure will
 never recur.
 
+### 3b. The edit guard: a check that runs by itself
+
+Text rules alone did not stop work that skipped `/sdd` or was placed in a worktree outside the
+repository. So an installed target also carries one `PreToolUse` hook, `hooks/sdd-gate.sh` in this
+repository, staged to `.claude/spec-harness/hooks/sdd-gate.sh` and registered in the untracked
+`.claude/settings.local.json` only when the staged file is byte-identical to the shipped one and executable
+(`bin/sh-hook-register.py`). A refusal says why, and it removes an earlier registration, which would keep
+running the refused file. For `Edit`, `Write`, `MultiEdit` and `NotebookEdit` it decides from
+the real path and the run state. It guards the repo that registered it (`CLAUDE_PROJECT_DIR`, else the
+repo around the script), never the session's current working folder, and compares folders by identity (a
+differently cased path is the same folder):
+
+```
+  path outside the root, in another git tree or via a link  ──▶ block
+  path outside the root, in no git tree (memory, plan, temp) ──▶ allow
+  a .git entry between the root and the file, any folder    ──▶ block (another working tree)
+  specs/ .spec-harness/ .memory/ .claude/ ai_rules/ learning/ .agents/
+  SPEC-HARNESS.md AGENTS.md CLAUDE.md (root only)           ──▶ allow
+  RULES.md (any depth)                                      ──▶ allow
+  any other file, a run-state with `checkpoint` and no `summary`   ──▶ allow
+  any other file, an open MICRO specs/<feature>/ticket.md (weaker)  ──▶ allow
+  (a run-state or ticket older than 7 days no longer opens the gate)
+  any other file, none of the above                                 ──▶ block: run /sdd
+  SDD_BYPASS=1 ──▶ allow; one line in .spec-harness/bypass.log when it would have blocked
+```
+
+The hook reads the run state (`docs/RUN-STATE.md`) and writes nothing but that log. It fails open: a
+broken hook prints a warning and allows the call, because a guard that locks the person out gets
+switched off. `spec-harness doctor` reports in its `guards` field whether the hook is registered with the expected matcher and is a script the registrar accepts, whether python3 is there for it, and which runs are open or expired. `spec-harness update --apply` registers it the same way install does. Side effect: when a folder above the root (for example a home folder) is itself a git repository, files outside the root below it, such as Claude Code memory files, count as another working tree and are blocked.
+It is a gate against mistakes, not a sandbox: `.claude/`, `.spec-harness/` and `specs/` stay writable, so an agent
+can change the hook, its settings or a run state. Known limits: `Bash` writes (a redirect, `sed -i`) are not
+checked, and a session started in another folder loads that folder's settings, not this repository's hook.
+Uninstall is plan-only: `spec-harness uninstall <target>` lists what the install wrote and prints the command
+that removes only the harness entry from `.claude/settings.local.json` (`bin/sh-hook-register.py remove`).
+
 ---
 
 ## 4. The learning loop: feedback may lead to a reviewed rule
@@ -218,7 +253,12 @@ write this code, you have no stake in it passing,"* and runs each end-state chec
 - **tester** reports which selected tests ran and what they returned.
 - **verifier** checks the named end-state in `specs/<feature>/goal.md`; a green suite alone does not establish that the feature goal was met.
 - **reviewer** answers *"is it RIGHT?"* (style, scope, acceptance criteria, the human-readable
-  quality gate).
+  quality gate). It reviews in two passes: Pass 1 is blind to the gate briefs and gate records, Pass 2
+  reads them and writes what the brief missed. When the project has `ai_rules/review-lens.md`, it gives
+  every standing lens item a verdict.
+
+The implementer ends its hand-back with a status (`DONE`, `DONE_WITH_CONCERNS`, `BLOCKED` or
+`NEEDS_CONTEXT`); the tester, verifier and reviewer run only after `DONE` or `DONE_WITH_CONCERNS`. The router's `## Route` block names the task `type`; `/sdd` reads both.
 
 Three different questions. The split is the point.
 

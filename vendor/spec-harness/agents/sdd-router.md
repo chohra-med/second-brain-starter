@@ -48,6 +48,7 @@ Return exactly this block, nothing before or after it:
 ```text
 ## Route
 class:      MICRO | LITE | FULL
+type:       code | doc | research | decision | review
 reason:     <one line: files and packages touched, and any risk word that decided it>
 plan:       none | inline | strong
 build:      fast
@@ -59,6 +60,11 @@ load:       <comma-separated paths the implementer should read first; at most 8>
 confidence: high | low
 ```
 
+- `type`: pick the kind of work the ticket asks for. `code` changes source, tests or build files.
+  `doc` writes or edits a document. `research` finds out and reports. `decision` chooses between
+  options and records the choice. `review` checks existing work and reports. When a ticket mixes
+  kinds, pick `code` if any source file changes. When unsure, pick `code`. The type never lowers the
+  class: `class` still decides which gates run.
 - `plan`: `none` for MICRO, `inline` for LITE, `strong` for FULL.
 - `test` and `review`: `none` for MICRO (its single verifier runs the tests), otherwise `fast` and
   `review`.

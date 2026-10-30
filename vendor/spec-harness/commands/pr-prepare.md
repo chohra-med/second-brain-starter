@@ -31,7 +31,7 @@ wins; record the difference in the report.
    when a required check is missing, failed or ran on another commit. A check the project leaves to CI
    follows `commands/ship.md`.
 5. **Evidence.** Capture the Before from a real run on the base branch; a reading of source code is
-   source evidence and must be labelled as such. Capture the After on the exact head. Combine the two
+   source evidence and must be labelled as such. Capture the After on the exact head. For a bundler-served app, restart the bundler with its cache cleared before each capture and after any branch switch, stash or patch apply, so the served bundle matches the checked-out source. Combine the two
    into one captioned Before/After image. Do not attach separate screenshots or a video. After a fix,
    retake the captures on the new head and delete the superseded images; do not keep both.
 6. **Text.** Write Summary (one outcome sentence and the smallest accurate visual), Evidence (the

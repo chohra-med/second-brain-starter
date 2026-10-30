@@ -26,7 +26,7 @@ After the implementer's diff is green and the **verifier** returns PASS, before/
 spec → plan → tasks → build (implement → test → verify → review)
                                             └── document ──┘   # docs to standard, behavior-locked
 ```
-Run it through a capable model/client anytime to bring a subtree up to the doc bar. Verification
+Run it through a capable model/client, inside an open `/sdd` run, to bring a subtree up to the doc bar (the edit guard blocks source edits, including doc comments, outside one). Verification
 uses the explicitly selected goal: ticket work uses `specs/<feature>/goal.md`, while standalone
 work requires a caller-supplied goal path. The shell `spec-harness verify --goal <selected-goal>`
 prints a PENDING handoff and exits 2; it does not execute verification checks.

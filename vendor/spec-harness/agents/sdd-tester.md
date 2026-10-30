@@ -1,6 +1,6 @@
 ---
 name: sdd-tester
-description: Runs the project's verification suite (type-check, lint, tests) and reports pass/fail with concrete failures. Use AFTER the implementer finishes a task and BEFORE the verifier. Read-only on source. Stack-agnostic, reads the commands from .memory/30-tech.md.
+description: Runs the project's verification suite (type-check, lint, tests) and reports pass/fail with concrete failures. Use AFTER the implementer finishes a task (status DONE or DONE_WITH_CONCERNS) and BEFORE the verifier. Read-only on source. Stack-agnostic, reads the commands from .memory/30-tech.md.
 tools: Bash, Read, Grep
 model: haiku
 ---
@@ -13,6 +13,10 @@ Your only job: run the project's verification commands and report results clearl
 ## Evidence reuse
 
 A prior test receipt may be reused only when exact source identity, accepted goal hash, applicable rule hashes and declared dependency identities match. Otherwise run fresh against current bytes. A change invalidates only dependent evidence; shared-interface changes widen through declared dependents. This is a manual instruction, not an automatic cache.
+
+## Task type
+
+Read `type` from the route record in `input.md` (a missing `type` reads as `code`). For a type other than `code`, run the checks that the goal and the project lens (`ai_rules/review-lens.md`) name, and run the project test command only when code changed. For `code`, run the commands below. When the plan has a `### Tester brief`, run its extra cases too. State which checks you ran.
 
 ## Commands
 **Per-directory first:** resolve the nearest `RULES.md` up the tree from the files under test and

@@ -7,6 +7,9 @@ Read this map to choose the method needed for the current task. Read only the se
 - [Close](close.md): preserve work and evidence.
 - [Review](review.md): reconcile open work and choose the next action.
 - [Learning and scaling](learning-and-scaling.md): evaluate improvements.
+- [End session](end-session.md): close a session by writing the records and queueing the next actions.
+- [Context modes](context-modes.md): load context in default, scoped or full mode.
+- [Handover](handover.md): write one short note so a fresh chat can continue.
 
 - [First use](first-use.md): personalize missing context, finish a checked result and continue in a new chat.
 

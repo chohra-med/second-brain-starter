@@ -24,13 +24,13 @@ def write(path, text):
     return path
 
 
-def build(root, harness):
+def build(root, harness, index_args=()):
     root, harness = Path(root), Path(harness)
     write(root / "package.json", '{"name":"ready-fixture","scripts":{"test":"jest"},"dependencies":{"react":"18.3.1"}}\n')
     write(root / "src/App.tsx", "export function App() {\n  return null;\n}\n")
     write(root / "ai_rules/context_map.md", "# Team map\nKept as written.\n")
     write(root / "ai_rules/rules/frequent_rules.md", "# Frequent rules\n- Read the package rules before a change.\n")
-    result = subprocess.run(["bash", str(harness / "bin/sh-index.sh"), str(root)], capture_output=True, text=True)
+    result = subprocess.run(["bash", str(harness / "bin/sh-index.sh"), str(root), *index_args], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     inventory_path = root / "ai_rules/project_inventory.json"
     inventory = json.loads(inventory_path.read_text())

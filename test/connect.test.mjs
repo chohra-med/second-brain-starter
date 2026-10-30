@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
+import { appendFile, chmod, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, symlink, writeFile } from 'node:fs/promises';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -100,9 +100,30 @@ async function put(root, relative, bytes) {
   await writeFile(rel(root, relative), bytes);
 }
 
-async function writeSyntheticHarness(w) {
+// The edit guard as Spec Harness 0.7.0 ships it: an executable hook script, and a `registrations` entry that the
+// harness installer carries out with bin/sh-hook-register.py add. The registrar here holds only its constant lines.
+const HOOK_SCRIPT = '.claude/spec-harness/hooks/sdd-gate.sh';
+const SETTINGS = '.claude/settings.local.json';
+const EXCLUDE = '.git/info/exclude';
+const HOOK_COMMAND = `"$CLAUDE_PROJECT_DIR"/${HOOK_SCRIPT}`;
+const HOOK_GROUP = { matcher: 'Edit|Write|MultiEdit|NotebookEdit', hooks: [{ type: 'command', command: HOOK_COMMAND }] };
+const REGISTRAR_TEXT = [
+  '"""synthetic registrar: only the constants connect checks"""',
+  'SETTINGS = ".claude/settings.local.json"',
+  'MATCHER = "Edit|Write|MultiEdit|NotebookEdit"',
+  'SCRIPT = ".claude/spec-harness/hooks/sdd-gate.sh"',
+  'COMMAND = \'"$CLAUDE_PROJECT_DIR"/\' + SCRIPT',
+  '',
+].join('\n');
+const HOOK_REGISTRATION = { destination: SETTINGS, by: 'bin/sh-hook-register.py', note: 'synthetic: merge one PreToolUse entry' };
+// What `git init` writes into .git/info/exclude.
+const GIT_DEFAULT_EXCLUDE = "# git ls-files --others --exclude-from=.git/info/exclude\n# Lines that start with '#' are comments.\n# For a project mostly in C, the following would be a good set of\n# exclude patterns (uncomment them if you want to use them):\n# *.[oa]\n# *~\n";
+
+async function writeSyntheticHarness(w, { hook = false } = {}) {
   const files = SYNTHETIC_HARNESS_FILES(randomUUID());
+  if (hook) files.push({ source: 'hooks/sdd-gate.sh', destination: HOOK_SCRIPT, render: 'copy', tokens: [], mode: '0755', text: `#!/usr/bin/env bash\n# guard ${randomUUID()}\nexit 0\n` });
   for (const file of files) await put(w.sourceRoot, `vendor/spec-harness/${file.source}`, file.text);
+  if (hook) await put(w.sourceRoot, 'vendor/spec-harness/bin/sh-hook-register.py', REGISTRAR_TEXT);
   w.harnessFiles = files;
   w.harnessManifest = {
     schemaVersion: 1,
@@ -116,7 +137,8 @@ async function writeSyntheticHarness(w) {
     },
     renders: { copy: 'copy', template: 'template' },
     modeNote: 'synthetic',
-    directories: [...SYNTHETIC_DIRECTORIES],
+    directories: [...SYNTHETIC_DIRECTORIES, ...(hook ? ['.claude/spec-harness/hooks'] : [])],
+    ...(hook ? { registrations: [{ ...HOOK_REGISTRATION }] } : {}),
     loaderBlock: '## Synthetic loader\n',
     entries: files.map((file) => ({ destination: file.destination, source: file.source, render: file.render, tokens: file.tokens, sha256: digestOf(file.text), mode: file.mode })),
   };
@@ -130,7 +152,7 @@ async function writeHarnessManifest(w) {
 
 // A synthetic workspace: an installed hub (real applyInstall), a plain repo directory and a
 // source root with a template manifest plus a synthetic harness. Everything is a mkdtemp path.
-async function world(t, { harness = true, index = false } = {}) {
+async function world(t, { harness = true, index = false, hook = false } = {}) {
   const root = await realpath(await mkdtemp(path.join(tmpdir(), 'sb-connect-')));
   t.after(() => rm(root, { recursive: true, force: true }));
   const w = { root, sourceRoot: path.join(root, 'source'), hub: path.join(root, 'hub'), repo: path.join(root, 'my-repo') };
@@ -151,7 +173,7 @@ async function world(t, { harness = true, index = false } = {}) {
   }
   w.manifest = { schemaVersion: 1, metadata: { templateVersion: '1.2.0' }, entries };
   w.manifestBytes = Buffer.from(JSON.stringify(w.manifest));
-  if (harness) await writeSyntheticHarness(w);
+  if (harness) await writeSyntheticHarness(w, { hook });
   const plan = await planInstall({ manifest: w.manifest, manifestBytes: w.manifestBytes, sourceRoot: w.sourceRoot, targetPath: w.hub });
   await applyInstall({ manifest: w.manifest, manifestBytes: w.manifestBytes, sourceRoot: w.sourceRoot, targetPath: w.hub, approvedDigest: plan.digest });
   return w;
@@ -320,11 +342,20 @@ async function retryRollback(w, id) {
 }
 
 const treeFiles = (inventory) => Object.keys(inventory).filter((key) => inventory[key] !== 'directory');
+// The staged harness files, without the settings file a registration writes (it is not a staged copy).
+const harnessTreeFiles = (inventory) => treeFiles(inventory).filter((key) => key !== SETTINGS);
 
 // Kill the apply at hook position `kill`, then prove: the next plan is INTERRUPTED_CONNECT
 // (never LEGACY, never a silent resume), recovery restores BOTH roots byte for byte,
 // recovery is safe to repeat, and a fresh connect then succeeds and rolls back cleanly.
-async function killProbe(w, kill, before, plan, note) {
+// A receipt rollback of a finished connect takes out only the edit guard entry, so a settings file that was not in the
+// registrar's layout comes back in that layout: `rolled` is what both roots hold then, and `reset` puts the original back.
+async function killProbe(w, kill, before, plan, note, { rolled = before, reset = null } = {}) {
+  const rolledBack = async (label) => {
+    assert.deepEqual(await snap(w), rolled, label);
+    if (reset) await reset();
+    assert.deepEqual(await snap(w), before, `${label}: reset`);
+  };
   const marker = await killConnect(w, kill, plan);
   const after = await snap(w);
   const ids = pendingIdsIn(after.hub);
@@ -335,18 +366,30 @@ async function killProbe(w, kill, before, plan, note) {
     assert.equal((await planConnect(args(w))).detection.status, 'NONE');
     return;
   }
+  if (marker.kind === 'backup-clear') {
+    // The connect finished (receipt, record, no pending record) and was stopped before it deleted its copy of the
+    // settings file. The copy is left; the next approved operation, here the rollback, deletes it.
+    assert.equal(ids.length, 0, `kill ${kill}: the pending record was already cleared`);
+    const [id] = Object.keys((await readConnections({ targetPath: w.hub })).connections);
+    assert.ok(after.hub[`.second-brain/backups/${id}/repo/${SETTINGS}`]?.startsWith('file:'), `kill ${kill}: the copy is left (positive control)`);
+    await rejects('ALREADY_CONNECTED', () => planConnect(args(w)), `kill ${kill}:`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: id });
+    await rolledBack(`kill ${kill}: the rollback deletes the copy and takes out only the entry`);
+    return;
+  }
   assert.equal(ids.length, 1, `kill ${kill}: exactly one pending record survives`);
   const error = await rejects('INTERRUPTED_CONNECT', () => planConnect(args(w)), `kill ${kill}:`);
   assert.ok(error.message.includes(ids[0]) && error.message.includes('rollbackReceipt'), 'names the pending id and the recovery call');
   await rejects('INTERRUPTED_CONNECT', () => applyConnect({ ...args(w), approvedDigest: plan.digest }), `kill ${kill} apply:`);
   if (marker.kind === 'pending-clear') {
-    // The receipt is durable: this connect COMMITTED. Recovery only clears the pending record.
+    // The receipt is durable: this connect COMMITTED. Recovery only clears the pending record (and deletes a copy).
     const result = await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
     assert.equal(result.completed, true, 'recovery reports a completed connect');
     assert.equal(Object.keys((await snap(w)).repo).filter((key) => before.repo[key] === undefined && !key.endsWith('/')).length > 0, true, 'the staged files are kept');
+    assert.deepEqual(Object.keys((await snap(w)).hub).filter((key) => key.includes(`/backups/${ids[0]}/repo`)), [], 'recovery deleted the copy of the settings file');
     await rejects('ALREADY_CONNECTED', () => planConnect(args(w)));
     await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
-    assert.deepEqual(await snap(w), before, `kill ${kill}: rolling back the committed connect restores both roots`);
+    await rolledBack(`kill ${kill}: rolling back the committed connect restores both roots`);
     return;
   }
   await rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] });
@@ -354,7 +397,7 @@ async function killProbe(w, kill, before, plan, note) {
   await rejects('MISSING_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: ids[0] }));
   const fresh = await connectNow(w);
   await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
-  assert.deepEqual(await snap(w), before, `kill ${kill}: a fresh connect succeeds and rolls back`);
+  await rolledBack(`kill ${kill}: a fresh connect succeeds and rolls back`);
 }
 
 async function extraRepo(w, name) {
@@ -902,8 +945,9 @@ test('apply: creates exactly the planned set in both roots, never touches instal
   assert.equal(connections.connections[result.connectionId].stage, 'STAGED');
 
   const receipt = JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8'));
-  assert.deepEqual(Object.keys(receipt).sort(), ['connectionsPreimage', 'createdDirectories', 'detection', 'harness', 'hub', 'indexRow', 'name', 'operation', 'planDigest', 'receiptId', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
+  assert.deepEqual(Object.keys(receipt).sort(), ['connectionsPreimage', 'createdDirectories', 'detection', 'harness', 'hub', 'indexRow', 'name', 'operation', 'planDigest', 'receiptId', 'registration', 'repo', 'schemaVersion', 'templateManifestSha256', 'writes']);
   assert.equal(receipt.indexRow, null, 'a workspace that does not manage the project index gets no row');
+  assert.equal(receipt.registration, null, 'a harness without registrations gets none');
   assert.equal(receipt.operation, 'connect');
   assert.equal(receipt.receiptId, result.receiptId);
   assert.equal(receipt.repo, w.repo);
@@ -1019,14 +1063,21 @@ test('two repositories connect one after another and roll back in either order (
 // Interruptions: inject a failure after EVERY durable write
 // ---------------------------------------------------------------------------
 
-async function interruptionLoop(w, extra = {}) {
+// The durable writes a registration adds: the settings file (created or merged) and the exclude line (file created or line appended).
+const REGISTRATION_WRITES = { registration: ['CREATE', 'MERGE'], exclude: ['CREATE', 'APPEND'] };
+const registrationWrites = (plan) => plan.entries.filter((entry) => REGISTRATION_WRITES[entry.kind]?.includes(entry.status)).length;
+// A merge into an existing settings file adds one more step after the connect finished: deleting the copy of that file.
+const copyClear = (plan) => (plan.registration?.settings && !plan.registration.settings.created ? 1 : 0);
+
+async function interruptionLoop(w, extra = {}, afterEach = null) {
   const before = await snap(w);
   const plan = await planConnect(args(w, extra));
-  const expected = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + 4;
+  const expected = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file' && entry.status === 'CREATE').length + registrationWrites(plan) + 4;
   assert.ok(expected >= 3);
   for (let position = 1; position <= expected; position += 1) {
     await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(w, extra), approvedDigest: plan.digest, injectFailureAfterWrite: position }), `position ${position} of ${expected}:`);
     assert.deepEqual(await snap(w), before, `position ${position}: both roots must be restored byte for byte`);
+    if (afterEach) await afterEach(position);
     assert.equal((await planConnect(args(w, extra))).digest, plan.digest, `position ${position}: the plan is reproducible afterwards`);
   }
   const done = await applyConnect({ ...args(w, extra), approvedDigest: plan.digest });
@@ -1822,7 +1873,9 @@ test('a SIGKILL against the REAL vendored harness at the spread of positions (re
   const note = [];
   for (const kill of positions) await killProbe(w, kill, before, plan, note);
   t.diagnostic(note.join('\n'));
-  assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', 'file', 'file', 'index', 'state', 'receipt', 'pending-clear']);
+  // With a registration (Spec Harness 0.7.0 and later), the last repository write is the settings file, after the staged files.
+  const lastRepoWrite = plan.entries.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').at(-1).kind === 'registration' ? 'registration' : 'file';
+  assert.deepEqual(note.map((line) => line.match(/before (\S+)/)[1]), ['directory', 'file', 'file', lastRepoWrite, 'file', 'index', 'state', 'receipt', 'pending-clear']);
 });
 
 test('a recovery that is itself killed at ANY step can be run again until it finishes, with no residue (T05-2)', async (t) => {
@@ -2146,7 +2199,7 @@ test('a parent-side SIGKILL at randomised moments across the whole real apply: r
     assert.ok(identical, `kill after ${Math.round(delay)} ms (${staged} repo files staged, ${result}): both roots must equal the pre-connect inventory, with no leftover file or folder: ${JSON.stringify({ hub: changedPaths(before.hub, await treeInventory(w.hub)), repo: changedPaths(before.repo, await treeInventory(w.repo)) })}`);
     if (mid <= 3 || kills % 10 === 0) {
       const fresh = await connectNow(w);
-      assert.equal(treeFiles((await snap(w)).repo).length, 114, 'a fresh connect stages exactly the 114 harness files of Spec Harness (0.6.0, which includes sdd-router and the rule packs)');
+      assert.equal(harnessTreeFiles((await snap(w)).repo).length, 122, 'a fresh connect stages exactly the 122 harness files of Spec Harness (0.7.0)');
       await rollbackReceipt({ targetPath: w.hub, receiptId: fresh.receiptId });
       assert.deepEqual(await snap(w), before);
     }
@@ -2226,7 +2279,7 @@ async function settleAfterKill(w, before, initId) {
   assert.equal(connected.length, 1, `one connection at most, saw ${connected.join(', ')}`);
   const [id] = connected;
   assert.ok(after.hub[`.second-brain/receipts/${id}.json`], 'the connection is fully present with its receipt');
-  assert.equal(treeFiles(after.repo).length, 114, 'the connection is fully present with all 114 staged files');
+  assert.equal(harnessTreeFiles(after.repo).length, 122, 'the connection is fully present with all 122 staged files');
   await assertReceiptFilesPresent(w, id);
   assert.equal(code, 'ALREADY_CONNECTED', 'the plan answers ALREADY_CONNECTED for a fully present connection');
   await rollbackReceipt({ targetPath: w.hub, receiptId: id });
@@ -2488,7 +2541,8 @@ test('real manifest: connect into an empty repo creates exactly the manifest des
   assert.deepEqual(await readFile(rel(w.hub, STATE)), stateBefore);
   const repoAfter = await treeInventory(w.repo);
   const files = Object.keys(repoAfter).filter((key) => repoAfter[key] !== 'directory').sort();
-  assert.deepEqual(files, harness.manifest.entries.map((entry) => entry.destination).sort(), 'enumerated set equality');
+  const registered = (harness.manifest.registrations ?? []).map((item) => item.destination);
+  assert.deepEqual(files, [...harness.manifest.entries.map((entry) => entry.destination), ...registered].sort(), 'enumerated set equality: the staged files plus the registered settings file');
   const dirs = Object.keys(repoAfter).filter((key) => repoAfter[key] === 'directory').sort();
   assert.deepEqual(dirs, expectedRepoDirectories(harness.manifest.entries, harness.manifest.directories));
   for (const required of ['specs', 'learning/lessons']) assert.ok(dirs.includes(required), required);
@@ -2524,30 +2578,73 @@ test('real manifest: a hostile name that is also a legal folder applies and roll
   assert.deepEqual(await snap(w), before);
 });
 
-test('cross-check: the vendored bash installer and applyConnect produce the same tree (loop.sh mode is the documented difference)', { skip: !isPosix && 'bash installer is not native Windows' }, async (t) => {
+test('cross-check: the vendored bash installer and applyConnect produce the same tree, the same file modes and the same registration', { skip: !isPosix && 'bash installer is not native Windows' }, async (t) => {
   const w = await realWorld(t);
   const reference = path.join(w.root, 'bash-target');
   await mkdir(reference);
   const name = 'cross check $(x)';
+  // Both targets are git repositories when git is available, so the installer's .git/info/exclude decision is compared too.
+  // git runs without global or system configuration, so a global ignore file on this machine cannot change that decision.
+  const env = await isolatedGitEnv(w.root);
+  const withGit = await hasGit();
+  if (withGit) {
+    await git(env, w.root, 'init', '-q', reference);
+    await git(env, w.root, 'init', '-q', w.repo);
+  }
   try {
-    await run('bash', [path.join(realSourceRoot, 'vendor', 'spec-harness', 'bin', 'sh-install.sh'), reference, 'integrate', name], { cwd: w.root });
+    await run('bash', [path.join(realSourceRoot, 'vendor', 'spec-harness', 'bin', 'sh-install.sh'), reference, 'integrate', name], { cwd: w.root, env });
   } catch (error) {
     if (error.code === 'ENOENT') return t.skip('bash is not available');
     throw error;
   }
   await connectNow(w, { name });
-  const bash = await treeInventory(reference);
-  const ours = await treeInventory(w.repo);
-  // Spec Harness 0.6.0's installer also writes its own install record under .spec-harness/ (install.json and base copies for
+  const outsideGit = (inventory) => Object.fromEntries(Object.entries(inventory).filter(([key]) => key !== '.git' && !key.startsWith('.git/')));
+  const bash = outsideGit(await treeInventory(reference));
+  const ours = outsideGit(await treeInventory(w.repo));
+  // Spec Harness's installer also writes its own install record under .spec-harness/ (install.json and base copies for
   // later three-way updates). connect writes no such record: its plan is the approved, digest-bound set and it writes nothing
-  // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly.
+  // outside it. So the record is compared as a separate fact, and the rest of the tree must match exactly, including the
+  // .claude/settings.local.json that a manifest with registrations makes both of them write.
   const isRecord = (key) => key === '.spec-harness' || key.startsWith('.spec-harness/');
   assert.ok(Object.keys(bash).some(isRecord), 'control: the bash installer writes its .spec-harness/ install record');
   assert.equal(Object.keys(ours).some(isRecord), false, 'connect writes no .spec-harness/ install record');
   const bashWithoutRecord = Object.fromEntries(Object.entries(bash).filter(([key]) => !isRecord(key)));
-  assert.deepEqual(ours, bashWithoutRecord, 'diff -r equivalent outside .spec-harness/: same files, same bytes, same directories');
-  assert.ok(((await lstat(path.join(reference, 'loop.sh'))).mode & 0o111) !== 0, 'bash installer stages loop.sh executable');
-  assert.equal((await lstat(rel(w.repo, 'loop.sh'))).mode & 0o111, 0, 'connect stages loop.sh without the executable bit (documented, D3-c)');
+  assert.deepEqual(ours, bashWithoutRecord, 'diff -r equivalent outside .spec-harness/ and .git/: same files, same bytes, same directories');
+  // The installer copies with cp -p, which keeps the source mode; connect creates each file with its manifest mode,
+  // less the umask. Under the usual umask (022) the two are identical.
+  const umask = currentUmask();
+  for (const key of treeFiles(ours)) {
+    assert.equal(await modeOf(rel(w.repo, key)), (await modeOf(path.join(reference, ...key.split('/')))) & ~umask, `${key}: same mode as the bash installer`);
+  }
+  assert.notEqual((await modeOf(rel(w.repo, 'loop.sh'))) & 0o100, 0, 'loop.sh is executable through connect too');
+  if (withGit) {
+    assert.deepEqual(await readFile(rel(w.repo, EXCLUDE)), await readFile(path.join(reference, '.git', 'info', 'exclude')), 'the same .git/info/exclude');
+  }
+  // One difference is intended. When git already ignores or tracks the settings file, the registrar the installer runs
+  // leaves .git/info/exclude alone. connect does not ask git, so it still adds its line, which is harmless then.
+  const { harness } = await readRealHarness();
+  if (!withGit || (harness.manifest.registrations ?? []).length === 0) return;
+  const cases = [
+    ['git already ignores it', async (target) => writeFile(path.join(target, '.git', 'info', 'exclude'), `${await readFile(path.join(target, '.git', 'info', 'exclude'), 'utf8')}*.local.json\n`)],
+    ['git tracks it', async (target) => {
+      await put(target, SETTINGS, '{}\n');
+      await git(env, target, 'add', SETTINGS);
+    }],
+  ];
+  for (const [index, [label, prepare]] of cases.entries()) {
+    const installed = path.join(w.root, `bash-differs-${index}`);
+    const connected = path.join(w.root, `connect-differs-${index}`);
+    for (const target of [installed, connected]) {
+      await git(env, w.root, 'init', '-q', target);
+      await prepare(target);
+    }
+    const excludeBefore = await readFile(rel(connected, EXCLUDE), 'utf8');
+    await run('bash', [path.join(realSourceRoot, 'vendor', 'spec-harness', 'bin', 'sh-install.sh'), installed, 'integrate', name], { cwd: w.root, env });
+    await connectNow(w, { repoPath: connected, name: `differs ${index}` });
+    assert.deepEqual(await readFile(rel(connected, SETTINGS)), await readFile(rel(installed, SETTINGS)), `${label}: the same settings entry`);
+    assert.equal(await readFile(rel(installed, EXCLUDE), 'utf8'), excludeBefore, `${label}: the registrar leaves .git/info/exclude alone`);
+    assert.equal(await readFile(rel(connected, EXCLUDE), 'utf8'), `${excludeBefore}${EXCLUDE_LINE}\n`, `${label}: connect still adds its line`);
+  }
 });
 
 test('compat: a real v1.2.0 install (fixture) is connectable and its installed state, verify result and bytes are untouched', async (t) => {
@@ -2678,7 +2775,9 @@ test('index: a v1.3.0 connect receipt without indexRow still rolls back', async 
   const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
   const receiptPath = rel(w.hub, result.receiptPath);
   const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+  // A v1.3.0 receipt has neither indexRow nor the later registration key.
   delete receipt.indexRow;
+  delete receipt.registration;
   await writeFile(receiptPath, JSON.stringify(receipt));
   await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
   // Without the record, the row this connect added is not known to the undo, so it stays: that is the v1.3.0 contract.
@@ -2700,4 +2799,866 @@ test('index: the row links Connection.md and never stores the repository path', 
   assert.ok(!index.includes(recordedReal), 'Index.md does not contain the repository realpath');
   assert.ok(!/\/(Users|home)\//.test(row), 'the new row holds no home-folder path');
   assert.equal(row, '| my-repo | [my-repo/README.md](<my-repo/README.md>) | [Connection.md](<my-repo/Connection.md>) | Connected: STAGED |');
+});
+
+// ---------------------------------------------------------------------------
+// File modes and the edit guard registration (the harness manifest's `mode` and `registrations`)
+// ---------------------------------------------------------------------------
+
+// The bytes Spec Harness 0.7.0's bin/sh-hook-register.py add writes, recorded from a real run of it.
+const GOLDEN_FRESH_SETTINGS = "{\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"matcher\": \"Edit|Write|MultiEdit|NotebookEdit\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"$CLAUDE_PROJECT_DIR\\\"/.claude/spec-harness/hooks/sdd-gate.sh\"\n          }\n        ]\n      }\n    ]\n  }\n}\n";
+// Python's json reads and writes this input in its own way: key order kept (integer-like keys too), a repeated key keeps
+// its first place and last value, integers keep their digits, floats print as repr, NaN and Infinity survive.
+const FIDELITY_INPUT = String.raw`{"b": 1, "10": [1.0, 1e16, 1e15, 1e-05, 0.0001, 0.5, -0.0, -0, 12345678901234567890123, 2.5E+3, "\u00e9\u2028\u0001\"\\/\t\u007f\ud83d\ude00", NaN, Infinity, -Infinity, 1E400, [], {}], "a": {"x": null, "x": true}, "hooks": null, "2": "two"}`;
+const FIDELITY_OUTPUT = "{\n  \"b\": 1,\n  \"10\": [\n    1.0,\n    1e+16,\n    1000000000000000.0,\n    1e-05,\n    0.0001,\n    0.5,\n    -0.0,\n    0,\n    12345678901234567890123,\n    2500.0,\n    \"\u00e9\u2028\\u0001\\\"\\\\/\\t\u007f\ud83d\ude00\",\n    NaN,\n    Infinity,\n    -Infinity,\n    Infinity,\n    [],\n    {}\n  ],\n  \"a\": {\n    \"x\": true\n  },\n  \"hooks\": {\n    \"PreToolUse\": [\n      {\n        \"matcher\": \"Edit|Write|MultiEdit|NotebookEdit\",\n        \"hooks\": [\n          {\n            \"type\": \"command\",\n            \"command\": \"\\\"$CLAUDE_PROJECT_DIR\\\"/.claude/spec-harness/hooks/sdd-gate.sh\"\n          }\n        ]\n      }\n    ]\n  },\n  \"2\": \"two\"\n}\n";
+// The harness's own merge fixture (tests/installer-fixtures.sh): unrelated keys and hooks that must survive in order.
+const MERGE_FIXTURE = {
+  permissions: { allow: ['Bash(ls:*)'], deny: [] },
+  env: { EXAMPLE: '1' },
+  hooks: {
+    PreToolUse: [
+      { matcher: 'Bash', hooks: [{ type: 'command', command: 'echo before-bash' }] },
+      { matcher: 'Edit', hooks: [{ type: 'command', command: 'echo own-edit-hook' }] },
+    ],
+    PostToolUse: [{ matcher: 'Write', hooks: [{ type: 'command', command: 'echo after-write' }] }],
+  },
+};
+// A settings file in a layout the registrar never writes: compact, an exponent the registrar re-spells, no final line break.
+const COMPACT_SETTINGS = '{"permissions":{"allow":["Bash(ls:*)"]},"n":1E2}';
+// The same values without the edit guard entry, in the registrar's layout: what a receipt rollback leaves.
+const COMPACT_ROLLED = '{\n  "permissions": {\n    "allow": [\n      "Bash(ls:*)"\n    ]\n  },\n  "n": 100.0\n}\n';
+const compactRolled = (before) => ({ hub: before.hub, repo: { ...before.repo, [SETTINGS]: `file:${digestOf(COMPACT_ROLLED)}` } });
+const EXCLUDE_LINE = '/.claude/settings.local.json';
+
+function currentUmask() {
+  const mask = process.umask(0o022);
+  process.umask(mask);
+  return mask;
+}
+const modeOf = async (filePath) => (await lstat(filePath)).mode & 0o777;
+const entryFor = (plan, destination) => plan.entries.find((entry) => entry.root === 'repo' && entry.destination === destination);
+const excludeLines = async (repo) => (await readFile(rel(repo, EXCLUDE), 'utf8')).split(/\r\n|\r|\n/).filter((line) => line === EXCLUDE_LINE).length;
+
+// A git folder made by hand (HEAD, objects, refs, config, info/exclude), so these tests need no git program.
+async function fakeGit(repo, { exclude = GIT_DEFAULT_EXCLUDE, config = '[core]\n\trepositoryformatversion = 0\n\tignorecase = false\n' } = {}) {
+  await put(repo, '.git/HEAD', 'ref: refs/heads/main\n');
+  await mkdir(rel(repo, '.git/objects'), { recursive: true });
+  await mkdir(rel(repo, '.git/refs/heads'), { recursive: true });
+  await put(repo, '.git/config', config);
+  if (exclude !== null) await put(repo, EXCLUDE, exclude);
+}
+
+// Real git, without global or system configuration, so a global ignore file on this machine changes nothing.
+let gitProbe = null;
+const hasGit = () => (gitProbe ??= run('git', ['--version']).then(() => true, () => false));
+async function isolatedGitEnv(root) {
+  const config = path.join(root, 'empty-gitconfig');
+  const xdg = path.join(root, 'empty-xdg');
+  await writeFile(config, '');
+  await mkdir(xdg, { recursive: true });
+  return { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_NOSYSTEM: '1', XDG_CONFIG_HOME: xdg };
+}
+const git = (env, cwd, ...gitArgs) => run('git', gitArgs, { cwd, env });
+
+test('modes: every staged file is created with its manifest mode, so loop.sh and the hook script are executable (D3-c)', { skip: !isPosix && 'file modes are POSIX' }, async (t) => {
+  const w = await world(t, { hook: true });
+  await connectNow(w);
+  const umask = currentUmask();
+  for (const file of w.harnessFiles) {
+    assert.equal(await modeOf(rel(w.repo, file.destination)), Number.parseInt(file.mode, 8) & ~umask, `${file.destination} has mode ${file.mode} less the umask`);
+  }
+  assert.notEqual((await modeOf(rel(w.repo, 'loop.sh'))) & 0o100, 0, 'loop.sh is executable');
+  assert.notEqual((await modeOf(rel(w.repo, HOOK_SCRIPT))) & 0o100, 0, 'the hook script is executable');
+  assert.equal((await modeOf(rel(w.repo, 'AGENTS.md'))) & 0o111, 0, 'a 0644 file is not executable');
+});
+
+test('registrations: an unknown or malformed registration, a missing or non-executable hook, or a registrar that declares another entry is refused before anything is planned', async (t) => {
+  const w = await world(t, { hook: true });
+  const before = await snap(w);
+  const original = structuredClone(w.harnessManifest);
+  const attempt = async (code, change, label) => {
+    w.harnessManifest = structuredClone(original);
+    change(w.harnessManifest);
+    await writeHarnessManifest(w);
+    await rejects(code, () => planConnect(args(w)), `${label}:`);
+  };
+  await attempt('UNKNOWN_REGISTRATION', (m) => { m.registrations[0].destination = '.claude/settings.json'; }, 'another settings file');
+  await attempt('UNKNOWN_REGISTRATION', (m) => { m.registrations[0].by = 'bin/other-register.py'; }, 'another registrar');
+  await attempt('UNKNOWN_REGISTRATION', (m) => { m.registrations.push({ destination: '.mcp.json', by: 'bin/sh-mcp-register.py', note: 'x' }); }, 'a second, unknown registration');
+  await attempt('INVALID_HARNESS_MANIFEST', (m) => { m.registrations = { ...HOOK_REGISTRATION }; }, 'registrations is not an array');
+  await attempt('INVALID_HARNESS_MANIFEST', (m) => { m.registrations[0].mode = '0644'; }, 'an extra key');
+  await attempt('INVALID_HARNESS_MANIFEST', (m) => { m.registrations.push({ ...HOOK_REGISTRATION }); }, 'the same registration twice');
+  await attempt('INVALID_HARNESS_MANIFEST', (m) => { m.entries.find((entry) => entry.destination === HOOK_SCRIPT).mode = '0644'; }, 'a hook script that is not executable');
+  await attempt('INVALID_HARNESS_MANIFEST', (m) => { m.entries = m.entries.filter((entry) => entry.destination !== HOOK_SCRIPT); }, 'a hook script that is not staged');
+  w.harnessManifest = structuredClone(original);
+  await writeHarnessManifest(w);
+  assert.ok(await planConnect(args(w)), 'control: the unchanged manifest plans');
+  await put(w.sourceRoot, 'vendor/spec-harness/bin/sh-hook-register.py', REGISTRAR_TEXT.replace('MultiEdit|NotebookEdit', 'MultiEdit'));
+  await rejects('UNKNOWN_REGISTRATION', () => planConnect(args(w)), 'a registrar whose matcher changed:');
+  await rm(rel(w.sourceRoot, 'vendor/spec-harness/bin/sh-hook-register.py'));
+  await rejects('UNKNOWN_REGISTRATION', () => planConnect(args(w)), 'a missing registrar:');
+  assert.deepEqual(await snap(w), before, 'nothing was written in either root');
+});
+
+test('registration: a repository without settings gets exactly the entry sh-hook-register.py add writes, in settings.local.json only; rollback removes it', async (t) => {
+  const w = await world(t, { hook: true });
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const entry = entryFor(plan, SETTINGS);
+  assert.equal(entry.kind, 'registration');
+  assert.equal(entry.status, 'CREATE');
+  assert.equal(entry.undo.action, 'remove-hook-entry');
+  assert.equal(entry.intendedSha256, digestOf(GOLDEN_FRESH_SETTINGS));
+  assert.ok(['NOT-GIT', 'MANUAL'].includes(entryFor(plan, EXCLUDE).status), 'a folder that is not a git repository gets no exclude write');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), GOLDEN_FRESH_SETTINGS);
+  await assert.rejects(lstat(rel(w.repo, '.claude/settings.json')), { code: 'ENOENT' }, 'the committed settings.json is never written');
+  if (isPosix) assert.equal(await modeOf(rel(w.repo, SETTINGS)), 0o644 & ~currentUmask());
+  const receipt = JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8'));
+  assert.deepEqual(receipt.registration, { settings: { destination: SETTINGS, created: true, preimageSha256: null, intendedSha256: digestOf(GOLDEN_FRESH_SETTINGS) }, exclude: null });
+  assert.equal(receipt.writes.some((write) => write.destination === SETTINGS), false, 'the settings file is a registration, not a staged write');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), before);
+});
+
+test('registration: an existing settings file keeps every key and hook in order and its mode, gains one entry, and rollback gives it back', async (t) => {
+  const w = await world(t, { hook: true });
+  const original = `${JSON.stringify(MERGE_FIXTURE, null, 2)}\n`;
+  await put(w.repo, SETTINGS, original);
+  if (isPosix) await chmod(rel(w.repo, SETTINGS), 0o600);
+  await put(w.repo, '.claude/settings.json', '{"permissions": {"allow": ["Read"]}}\n');
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const entry = entryFor(plan, SETTINGS);
+  assert.equal(entry.status, 'MERGE');
+  assert.equal(entry.currentSha256, digestOf(original));
+  const expected = structuredClone(MERGE_FIXTURE);
+  expected.hooks.PreToolUse.push(HOOK_GROUP);
+  const merged = `${JSON.stringify(expected, null, 2)}\n`;
+  assert.equal(entry.intendedSha256, digestOf(merged));
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), merged);
+  if (isPosix) assert.equal(await modeOf(rel(w.repo, SETTINGS)), 0o600, 'the file keeps its mode');
+  assert.equal(await readFile(rel(w.repo, '.claude/settings.json'), 'utf8'), '{"permissions": {"allow": ["Read"]}}\n', 'settings.json is never written');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), before, 'rollback takes the entry out and gives the file back byte for byte');
+  if (isPosix) assert.equal(await modeOf(rel(w.repo, SETTINGS)), 0o600, 'and keeps its mode');
+
+  // Another layout comes back with the same content, key order included, in the registrar's layout: once connect has
+  // finished it keeps no copy of the file, so a rollback takes out only the entry. The receipt still names the bytes
+  // the file held; the rollback does not need them.
+  const w2 = await world(t, { hook: true });
+  await put(w2.repo, SETTINGS, JSON.stringify(MERGE_FIXTURE));
+  const second = await connectNow(w2);
+  const receipt = JSON.parse(await readFile(rel(w2.hub, second.receiptPath), 'utf8'));
+  assert.deepEqual(receipt.registration.settings, { destination: SETTINGS, created: false, preimageSha256: digestOf(JSON.stringify(MERGE_FIXTURE)), intendedSha256: digestOf(merged) });
+  await rollbackReceipt({ targetPath: w2.hub, receiptId: second.receiptId });
+  assert.equal(await readFile(rel(w2.repo, SETTINGS), 'utf8'), original);
+
+  // Once the person has edited the file, that copy no longer applies: only the entry is taken out, the edit stays, and
+  // the rest is written in the registrar's layout (two-space indentation), key order included.
+  const w3 = await world(t, { hook: true });
+  await put(w3.repo, SETTINGS, JSON.stringify(MERGE_FIXTURE));
+  const third = await connectNow(w3);
+  const edited = JSON.parse(await readFile(rel(w3.repo, SETTINGS), 'utf8'));
+  edited.env.ADDED = '1';
+  await writeFile(rel(w3.repo, SETTINGS), JSON.stringify(edited));
+  await rollbackReceipt({ targetPath: w3.hub, receiptId: third.receiptId });
+  const kept = structuredClone(MERGE_FIXTURE);
+  kept.env.ADDED = '1';
+  assert.equal(await readFile(rel(w3.repo, SETTINGS), 'utf8'), `${JSON.stringify(kept, null, 2)}\n`);
+});
+
+test('registration: the copy of an existing settings file lives only while connect runs; a successful apply leaves nothing of it in the workspace', async (t) => {
+  for (const withConnections of [false, true]) {
+    const label = withConnections ? 'with an earlier connection' : 'first connection';
+    const w = await world(t, { hook: true });
+    // With an earlier connection, connections.json exists, and its own backup under the same receipt folder stays.
+    if (withConnections) await connectNow(w, { repoPath: await extraRepo(w, 'first-repo') });
+    await put(w.repo, SETTINGS, COMPACT_SETTINGS);
+    const before = await snap(w);
+    const result = await connectNow(w);
+    const after = await snap(w);
+    const added = Object.keys(after.hub).filter((key) => key.startsWith('.second-brain/backups') && !(key in before.hub));
+    assert.deepEqual(added.filter((key) => key.includes('/repo')), [], `${label}: no copy of the settings file and no folder for it`);
+    assert.deepEqual(added, withConnections
+      ? ['.second-brain/backups', `.second-brain/backups/${result.receiptId}`, `.second-brain/backups/${result.receiptId}/.second-brain`, `.second-brain/backups/${result.receiptId}/${CONNECTIONS}`]
+      : [], `${label}: only the connections.json backup is kept`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await snap(w), compactRolled(before), `${label}: the rollback takes out only the entry`);
+  }
+
+  // An unfinished connect whose copy was deleted by hand still recovers: the undo takes out only the entry instead.
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  await put(w.repo, SETTINGS, COMPACT_SETTINGS);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const position = 1 + plan.directories.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length
+    + plan.entries.filter((entry) => entry.root === 'repo' && entry.kind === 'file' && entry.status === 'CREATE').length + 2;
+  assert.equal((await killConnect(w, position, plan)).kind, 'exclude', 'killed after the merge');
+  const [id] = pendingIdsIn((await snap(w)).hub);
+  await rm(rel(w.hub, `.second-brain/backups/${id}/repo/${SETTINGS}`));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: id });
+  assert.deepEqual(await snap(w), compactRolled(before), 'recovery without the copy takes out only the entry, and never fails for want of it');
+});
+
+test('registration: JSON is read and written the way Python json does it (order, integers, floats, NaN, escapes, repeated keys)', async (t) => {
+  const w = await world(t, { hook: true });
+  await put(w.repo, SETTINGS, FIDELITY_INPUT);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, SETTINGS).status, 'MERGE');
+  assert.equal(entryFor(plan, SETTINGS).intendedSha256, digestOf(FIDELITY_OUTPUT));
+  await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), FIDELITY_OUTPUT);
+});
+
+test('registration: an entry that is already there is not added twice, and connecting again after a rollback writes the same bytes', async (t) => {
+  const w = await world(t, { hook: true });
+  const existing = `${JSON.stringify({ hooks: { PreToolUse: [{ matcher: 'Write', hooks: [{ type: 'command', command: HOOK_COMMAND }] }] } })}\n`;
+  await put(w.repo, SETTINGS, existing);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, SETTINGS).status, 'REGISTERED');
+  assert.equal(entryFor(plan, SETTINGS).undo.action, 'none');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), existing, 'left byte for byte');
+  assert.equal(JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8')).registration, null, 'nothing to undo');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), existing, 'rollback leaves an entry it did not write');
+
+  const w2 = await world(t, { hook: true });
+  await fakeGit(w2.repo);
+  const first = await connectNow(w2);
+  const once = await snap(w2);
+  await rejects('ALREADY_CONNECTED', () => planConnect(args(w2)), 'a second connect of the same repository:');
+  assert.deepEqual(await snap(w2), once, 'the refused second connect wrote nothing');
+  await rollbackReceipt({ targetPath: w2.hub, receiptId: first.receiptId });
+  await connectNow(w2);
+  assert.deepEqual((await snap(w2)).repo, once.repo, 'connecting again gives the same repository bytes');
+  assert.equal(await excludeLines(w2.repo), 1, 'the exclude line is there once');
+});
+
+test('registration: a settings file the merge cannot trust is left byte for byte, named in the plan, and the rest is still staged', async (t) => {
+  const cases = [
+    ['{ not json\n', 'is not valid JSON'],
+    [Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from('{}')]), 'is not valid JSON'],
+    [Buffer.from([0x7b, 0x22, 0xff, 0x22, 0x3a, 0x31, 0x7d]), 'is not valid JSON'],
+    ['{"a": 1,}\n', 'is not valid JSON'],
+    ['[1, 2]\n', 'is not a JSON object'],
+    ['{"hooks": []}\n', '"hooks" in .claude/settings.local.json is not an object'],
+    ['{"hooks": {"PreToolUse": {}}}\n', '"hooks.PreToolUse" in .claude/settings.local.json is not a list'],
+    ['{"a": "\\ud800"}\n', 'cannot be written back as UTF-8'],
+    [`{"a": "${'x'.repeat(1024 * 1024)}"}`, 'exceeds 1048576-byte read limit'],
+  ];
+  for (const [content, reason] of cases) {
+    const w = await world(t, { hook: true });
+    await put(w.repo, SETTINGS, content);
+    const plan = await planConnect(args(w));
+    const entry = entryFor(plan, SETTINGS);
+    assert.equal(entry.status, 'NOT-REGISTERED', reason);
+    assert.ok(entry.note.includes(reason), `${reason}: ${entry.note}`);
+    assert.equal(entry.undo.action, 'none');
+    const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+    assert.deepEqual(await readFile(rel(w.repo, SETTINGS)), Buffer.from(content), `${reason}: left byte for byte`);
+    assert.ok((await lstat(rel(w.repo, HOOK_SCRIPT))).isFile(), `${reason}: the rest is staged`);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await readFile(rel(w.repo, SETTINGS)), Buffer.from(content), `${reason}: rollback leaves it alone`);
+  }
+  const folder = await world(t, { hook: true });
+  await mkdir(rel(folder.repo, SETTINGS), { recursive: true });
+  assert.equal(entryFor(await planConnect(args(folder)), SETTINGS).status, 'NOT-REGISTERED', 'a folder at the settings path');
+  if (isPosix) {
+    const linked = await world(t, { hook: true });
+    const victim = path.join(linked.root, 'victim.json');
+    await writeFile(victim, '{"keep": true}\n');
+    await mkdir(rel(linked.repo, '.claude'), { recursive: true });
+    await symlink(victim, rel(linked.repo, SETTINGS));
+    const plan = await planConnect(args(linked));
+    assert.equal(entryFor(plan, SETTINGS).status, 'NOT-REGISTERED', 'a link at the settings path');
+    await applyConnect({ ...args(linked), approvedDigest: plan.digest });
+    assert.equal(await readFile(victim, 'utf8'), '{"keep": true}\n', 'a linked settings file is never written through');
+    assert.ok((await lstat(rel(linked.repo, SETTINGS))).isSymbolicLink(), 'the link itself is left in place');
+  }
+});
+
+test('registration: rollback after the settings file was edited takes out only the harness entry; an unreadable edit is refused by name', async (t) => {
+  const w = await world(t, { hook: true });
+  const result = await connectNow(w);
+  const settings = JSON.parse(await readFile(rel(w.repo, SETTINGS), 'utf8'));
+  settings.permissions = { allow: ['Bash(npm test:*)'] };
+  await writeFile(rel(w.repo, SETTINGS), JSON.stringify(settings));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), `${JSON.stringify({ permissions: { allow: ['Bash(npm test:*)'] } }, null, 2)}\n`, 'the person\'s addition stays; the entry and its empty containers go');
+  await assert.rejects(lstat(rel(w.repo, HOOK_SCRIPT)), { code: 'ENOENT' }, 'the staged files are removed');
+
+  const w2 = await world(t, { hook: true });
+  const second = await connectNow(w2);
+  await writeFile(rel(w2.repo, SETTINGS), '{ broken');
+  const error = await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w2.hub, receiptId: second.receiptId }));
+  assert.ok(error.message.includes(`repo: ${SETTINGS}`), error.message);
+  assert.equal(await readFile(rel(w2.repo, SETTINGS), 'utf8'), '{ broken', 'the edit is kept');
+  assert.ok((await lstat(rel(w2.repo, HOOK_SCRIPT))).isFile(), 'nothing was removed');
+});
+
+test('exclude: in a git repository the settings file is added to .git/info/exclude once, and rollback removes exactly that line', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const entry = entryFor(plan, EXCLUDE);
+  assert.equal(entry.kind, 'exclude');
+  assert.equal(entry.status, 'APPEND');
+  assert.equal(entry.undo.action, 'remove-line');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), `${GIT_DEFAULT_EXCLUDE}${EXCLUDE_LINE}\n`);
+  const receipt = JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8'));
+  assert.deepEqual(receipt.registration.exclude, { destination: EXCLUDE, line: EXCLUDE_LINE, created: false, separator: false, intendedSha256: digestOf(`${GIT_DEFAULT_EXCLUDE}${EXCLUDE_LINE}\n`) });
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.deepEqual(await snap(w), before);
+
+  // A file without a final line break gets the line on a new line, and rollback restores the bytes exactly.
+  const w2 = await world(t, { hook: true });
+  await fakeGit(w2.repo, { exclude: '# mine' });
+  const before2 = await snap(w2);
+  const second = await connectNow(w2);
+  assert.equal(await readFile(rel(w2.repo, EXCLUDE), 'utf8'), `# mine\n${EXCLUDE_LINE}\n`);
+  await rollbackReceipt({ targetPath: w2.hub, receiptId: second.receiptId });
+  assert.deepEqual(await snap(w2), before2);
+
+  // A line that is already there is not added again, even when a higher .gitignore rule re-includes the file.
+  const w3 = await world(t, { hook: true });
+  await fakeGit(w3.repo, { exclude: `${GIT_DEFAULT_EXCLUDE}${EXCLUDE_LINE}\r\n` });
+  await put(w3.repo, '.gitignore', `!${EXCLUDE_LINE}\n`);
+  assert.equal(entryFor(await planConnect(args(w3)), EXCLUDE).status, 'LISTED');
+
+  // No exclude file and no info folder: both are created, and rollback removes both.
+  const w4 = await world(t, { hook: true });
+  await fakeGit(w4.repo, { exclude: null });
+  const before4 = await snap(w4);
+  const plan4 = await planConnect(args(w4));
+  assert.equal(entryFor(plan4, EXCLUDE).status, 'CREATE');
+  assert.ok(plan4.directories.some((item) => item.root === 'repo' && item.destination === '.git/info' && item.status === 'CREATE'), 'the info folder is planned');
+  const fourth = await applyConnect({ ...args(w4), approvedDigest: plan4.digest });
+  assert.equal(await readFile(rel(w4.repo, EXCLUDE), 'utf8'), `${EXCLUDE_LINE}\n`);
+  if (isPosix) assert.equal(await modeOf(rel(w4.repo, EXCLUDE)), 0o644 & ~currentUmask());
+  await rollbackReceipt({ targetPath: w4.hub, receiptId: fourth.receiptId });
+  assert.deepEqual(await snap(w4), before4);
+
+  // A line the person added a second time is refused by name; nothing is removed.
+  const w5 = await world(t, { hook: true });
+  await fakeGit(w5.repo);
+  const fifth = await connectNow(w5);
+  await writeFile(rel(w5.repo, EXCLUDE), `${await readFile(rel(w5.repo, EXCLUDE), 'utf8')}${EXCLUDE_LINE}\n`);
+  const error = await rejects('POSTIMAGE_MISMATCH', () => rollbackReceipt({ targetPath: w5.hub, receiptId: fifth.receiptId }));
+  assert.ok(error.message.includes(`repo: ${EXCLUDE}`), error.message);
+  assert.equal(await excludeLines(w5.repo), 2, 'nothing was removed');
+});
+
+test('exclude: the line is added even when git already ignores the file; a .git file and an enclosing work tree are reported with the line to add, not written', async (t) => {
+  // connect does not ask whether another rule already ignores the file. Its line is then a second rule, which changes nothing.
+  for (const [label, file, text] of [
+    ['the root .gitignore ignores .claude/', '.gitignore', '.claude/\n'],
+    ['.claude/.gitignore ignores the file', '.claude/.gitignore', 'settings.local.json\n'],
+    ['.git/info/exclude has a wider pattern, not the exact line', EXCLUDE, `${GIT_DEFAULT_EXCLUDE}*.local.json\n`],
+  ]) {
+    const w = await world(t, { hook: true });
+    await fakeGit(w.repo);
+    await put(w.repo, file, text);
+    const before = await snap(w);
+    const plan = await planConnect(args(w));
+    assert.equal(entryFor(plan, EXCLUDE).status, 'APPEND', label);
+    const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+    assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), `${file === EXCLUDE ? text : GIT_DEFAULT_EXCLUDE}${EXCLUDE_LINE}\n`, label);
+    await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+    assert.deepEqual(await snap(w), before, `${label}: rollback removes only the line connect added`);
+  }
+
+  const linked = await world(t, { hook: true });
+  await put(linked.repo, '.git', 'gitdir: ../elsewhere/.git/worktrees/app\n');
+  const linkedEntry = entryFor(await planConnect(args(linked)), EXCLUDE);
+  assert.equal(linkedEntry.status, 'MANUAL');
+  assert.ok(linkedEntry.note.includes(EXCLUDE_LINE), linkedEntry.note);
+
+  const outer = await world(t, { hook: true });
+  const tree = path.join(outer.root, 'outer');
+  await fakeGit(tree);
+  const inner = path.join(tree, 'packages', 'app');
+  await mkdir(inner, { recursive: true });
+  const innerPlan = await planConnect(args(outer, { repoPath: inner }));
+  const innerEntry = entryFor(innerPlan, EXCLUDE);
+  assert.equal(innerEntry.status, 'MANUAL');
+  assert.ok(innerEntry.note.includes('/packages/app/.claude/settings.local.json'), innerEntry.note);
+  await applyConnect({ ...args(outer, { repoPath: inner }), approvedDigest: innerPlan.digest });
+  assert.equal(await readFile(rel(tree, EXCLUDE), 'utf8'), GIT_DEFAULT_EXCLUDE, 'nothing is written outside the repository folder');
+});
+
+test('exclude: the line is added even when git tracks the settings file; git still tracks it and shows the merged entry as a change', { skip: !isPosix && 'real git runs here on POSIX only' }, async (t) => {
+  if (!(await hasGit())) return t.skip('git is not available');
+  const w = await world(t, { hook: true });
+  const env = await isolatedGitEnv(w.root);
+  await git(env, w.repo, 'init', '-q');
+  const excludeBefore = await readFile(rel(w.repo, EXCLUDE), 'utf8');
+  await put(w.repo, SETTINGS, '{}\n');
+  await git(env, w.repo, 'add', SETTINGS);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, SETTINGS).status, 'MERGE');
+  assert.equal(entryFor(plan, EXCLUDE).status, 'APPEND');
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), `${excludeBefore}${EXCLUDE_LINE}\n`);
+  // Harmless: an exclude line does not apply to a tracked file. GIT_OPTIONAL_LOCKS=0 keeps git status from rewriting the index.
+  await git(env, w.repo, 'ls-files', '--error-unmatch', '--', SETTINGS);
+  const status = await git({ ...env, GIT_OPTIONAL_LOCKS: '0' }, w.repo, 'status', '--porcelain', '--', SETTINGS);
+  assert.equal(status.stdout, `AM ${SETTINGS}\n`, 'git still tracks the file (A, no commit yet) and reports the merged entry as a change (M)');
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), excludeBefore, 'rollback removes the line');
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), '{}\n', 'and the entry');
+});
+
+test('exclude: connect reads neither .git/index nor a .gitignore file, so unreadable ones do not stop it', { skip: (!isPosix || isRoot) && 'needs POSIX permissions as a non-root user' }, async (t) => {
+  // Each file holds what would have kept the line out before: an index, or a rule that ignores the settings file.
+  const files = [['.git/index', 'DIRC'], ['.gitignore', '.claude/\n'], ['.claude/.gitignore', 'settings.local.json\n']];
+  for (const unreadable of [...files.map((file) => [file]), files]) {
+    const label = unreadable.map(([file]) => file).join(', ');
+    const w = await world(t, { hook: true });
+    await fakeGit(w.repo);
+    for (const [file, text] of unreadable) {
+      await put(w.repo, file, text);
+      await chmod(rel(w.repo, file), 0o000);
+    }
+    await assert.rejects(readFile(rel(w.repo, unreadable[0][0])), { code: 'EACCES' }, `control: ${label} cannot be read`);
+    const plan = await planConnect(args(w));
+    assert.equal(entryFor(plan, EXCLUDE).status, 'APPEND', label);
+    await applyConnect({ ...args(w), approvedDigest: plan.digest });
+    assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), `${GIT_DEFAULT_EXCLUDE}${EXCLUDE_LINE}\n`, label);
+  }
+});
+
+test('registration: a failure after every durable write, the settings merge and the exclude line included, restores both roots', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  await put(w.repo, SETTINGS, `${JSON.stringify(MERGE_FIXTURE, null, 2)}\n`);
+  const plan = await planConnect(args(w));
+  assert.equal(registrationWrites(plan), 2, 'the merge and the exclude line are durable writes');
+  await interruptionLoop(w);
+
+  const fresh = await world(t, { hook: true });
+  await fakeGit(fresh.repo, { exclude: null });
+  await interruptionLoop(fresh);
+
+  // A settings file in another layout than the registrar writes (compact, 1E2, no final line break) comes back byte for
+  // byte with its mode too after a failed apply: the undo writes back the copy connect keeps while it runs.
+  const compact = await world(t, { hook: true });
+  await fakeGit(compact.repo);
+  await put(compact.repo, SETTINGS, COMPACT_SETTINGS);
+  if (isPosix) await chmod(rel(compact.repo, SETTINGS), 0o640);
+  const compactPlan = await planConnect(args(compact));
+  assert.equal(entryFor(compactPlan, SETTINGS).status, 'MERGE');
+  const keepsMode = async (position) => {
+    if (isPosix) assert.equal(await modeOf(rel(compact.repo, SETTINGS)), 0o640, `position ${position}: the settings file keeps its mode`);
+  };
+  const { before, done } = await interruptionLoop(compact, {}, keepsMode);
+  // Once the connect has finished, the copy is gone, so a receipt rollback takes out only the entry: the same values,
+  // in the registrar's layout, with the mode kept. The receipt still names the bytes the copy held; nothing needs it.
+  assert.deepEqual(Object.keys((await snap(compact)).hub).filter((key) => key.startsWith(`.second-brain/backups/${done.receiptId}`)), [], 'no copy and no folder for it is left');
+  const receipt = JSON.parse(await readFile(rel(compact.hub, done.receiptPath), 'utf8'));
+  assert.equal(receipt.registration.settings.preimageSha256, digestOf(COMPACT_SETTINGS));
+  await rollbackReceipt({ targetPath: compact.hub, receiptId: done.receiptId });
+  assert.equal(await readFile(rel(compact.repo, SETTINGS), 'utf8'), COMPACT_ROLLED, 'the receipt rollback takes out only the entry');
+  assert.deepEqual(JSON.parse(await readFile(rel(compact.repo, SETTINGS), 'utf8')), JSON.parse(COMPACT_SETTINGS), 'the same values');
+  assert.deepEqual(await snap(compact), compactRolled(before), 'everything else is as it was');
+  await keepsMode('rollback');
+  await writeFile(rel(compact.repo, SETTINGS), COMPACT_SETTINGS);
+  assert.deepEqual(await snap(compact), before);
+
+  // A failure inside the merge itself (its temporary file written, not yet renamed) leaves the file and removes the copy.
+  for (const kind of ['backup', 'registration']) {
+    let caught = null;
+    try {
+      await applyConnect({ ...args(compact), approvedDigest: compactPlan.digest, injectBetweenTempAndLink: async (info) => {
+        if (info.kind === kind && (kind === 'registration' || info.destination.endsWith(SETTINGS))) throw new InstallPlanError('INJECTED_WRITE_FAILURE', `stop inside the ${kind} write`);
+      } });
+    } catch (error) {
+      caught = error;
+    }
+    assert.equal(caught?.code, 'INJECTED_WRITE_FAILURE', `${kind}: ${caught}`);
+    assert.deepEqual(await snap(compact), before, `${kind}: both roots are restored, no temporary file and no copy left`);
+    await keepsMode(kind);
+  }
+});
+
+test('registration: a SIGKILL at every durable write, the registration included, leaves INTERRUPTED_CONNECT and recovery restores both roots', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  await put(w.repo, SETTINGS, `${JSON.stringify(MERGE_FIXTURE, null, 2)}\n`);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  const total = plan.directories.filter((entry) => entry.status === 'CREATE').length + plan.entries.filter((entry) => entry.kind === 'file').length + registrationWrites(plan) + 4 + copyClear(plan);
+  const note = [];
+  for (let kill = 1; kill <= total; kill += 1) await killProbe(w, kill, before, plan, note);
+  t.diagnostic(note.join('\n'));
+  assert.ok(note.some((line) => line.includes('before registration')) && note.some((line) => line.includes('before exclude')), 'kills landed before both registration writes');
+
+  // The same with a settings file in another layout (compact, 1E2, no final line break): recovery of an unfinished
+  // connect writes back the copy connect keeps while it runs, so the file comes back byte for byte. Once the connect
+  // has finished, the copy is gone, and a receipt rollback gives the same values in the registrar's layout. The last
+  // kill lands after the connect finished, before it deleted the copy: the next approved operation deletes it.
+  const compact = await world(t, { hook: true });
+  await fakeGit(compact.repo);
+  await put(compact.repo, SETTINGS, COMPACT_SETTINGS);
+  const compactBefore = await snap(compact);
+  const compactPlan = await planConnect(args(compact));
+  const compactTotal = compactPlan.directories.filter((entry) => entry.status === 'CREATE').length + compactPlan.entries.filter((entry) => entry.kind === 'file').length + registrationWrites(compactPlan) + 4 + copyClear(compactPlan);
+  const compactNote = [];
+  const reset = () => writeFile(rel(compact.repo, SETTINGS), COMPACT_SETTINGS);
+  for (let kill = 1; kill <= compactTotal; kill += 1) await killProbe(compact, kill, compactBefore, compactPlan, compactNote, { rolled: compactRolled(compactBefore), reset });
+  t.diagnostic(compactNote.join('\n'));
+  assert.ok(compactNote.some((line) => line.includes('before exclude')), 'a kill landed after the merge, before the exclude line');
+  assert.ok(compactNote.some((line) => line.includes('before backup-clear')), 'a kill landed after the connect finished, before it deleted the copy');
+
+  // Kills INSIDE the three registration writes, between the temporary file and its rename or link: the copy of the
+  // settings file in the workspace, the merged settings file, the exclude file. Recovery removes each temporary file.
+  // The pending record and each staged repository file come first, each with one such step.
+  const firstRegistrationStep = 1 + compactPlan.entries.filter((entry) => entry.root === 'repo' && entry.kind === 'file' && entry.status === 'CREATE').length + 1;
+  const inside = [];
+  for (const [offset, expected] of [[0, 'backup'], [1, 'registration'], [2, 'exclude']]) {
+    const child = await spawnChild(CONNECT_CHILD, { module: connectModule, manifest: await manifestFile(compact), sourceRoot: compact.sourceRoot, hub: compact.hub, repo: compact.repo, digest: compactPlan.digest, betweenKill: firstRegistrationStep + offset });
+    assertKilled(child, `inside ${expected}`);
+    const marker = JSON.parse(child.stdout.match(/KILLED (\{.*\})/)?.[1] ?? 'null');
+    assert.equal(marker.kind, expected, `killed inside the ${expected} write`);
+    const after = await snap(compact);
+    const temps = [...Object.keys(after.hub), ...Object.keys(after.repo)].filter((key) => key.endsWith('.tmp'));
+    assert.equal(temps.length, 1, `inside ${expected}: exactly one temporary file is on disk (positive control), saw ${temps.join(', ')}`);
+    inside.push(`${expected}: ${temps[0]}`);
+    const [id] = pendingIdsIn(after.hub);
+    await rollbackReceipt({ targetPath: compact.hub, receiptId: id });
+    assert.deepEqual(await snap(compact), compactBefore, `inside ${expected}: recovery restores both roots and removes the temporary file`);
+  }
+  t.diagnostic(inside.join('\n'));
+});
+
+test('registration: a tampered receipt or pending record cannot widen what the undo removes', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  const result = await connectNow(w);
+  const receiptPath = rel(w.hub, result.receiptPath);
+  const receipt = JSON.parse(await readFile(receiptPath, 'utf8'));
+  for (const tamper of [
+    (copy) => { copy.registration.exclude.line = '/src'; },
+    (copy) => { copy.registration.settings.destination = '.claude/settings.json'; },
+    (copy) => { copy.registration.extra = true; },
+    (copy) => { copy.registration = { settings: null, exclude: null }; },
+  ]) {
+    const copy = structuredClone(receipt);
+    tamper(copy);
+    await writeFile(receiptPath, JSON.stringify(copy));
+    await rejects('INVALID_RECEIPT', () => rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId }));
+  }
+  await writeFile(receiptPath, JSON.stringify(receipt));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: result.receiptId });
+
+  const plan = await planConnect(args(w));
+  // Hook calls: the pending record, the repository folders, the staged files, the settings file, then the exclude line.
+  const repoDirectories = plan.directories.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length;
+  const repoFiles = plan.entries.filter((entry) => entry.root === 'repo' && entry.kind === 'file' && entry.status === 'CREATE').length;
+  const position = 1 + repoDirectories + repoFiles + 2;
+  const marker = await killConnect(w, position, plan);
+  assert.equal(marker.kind, 'exclude', 'killed after the settings merge, before the exclude line');
+  const [id] = pendingIdsIn((await snap(w)).hub);
+  const pendingPath = rel(w.hub, `.second-brain/connect-pending/${id}.json`);
+  const pending = JSON.parse(await readFile(pendingPath, 'utf8'));
+  await writeFile(pendingPath, JSON.stringify({ ...pending, registration: { ...pending.registration, exclude: { ...pending.registration.exclude, line: '/src' } } }));
+  await rejects('INVALID_PENDING_CONNECT', () => rollbackReceipt({ targetPath: w.hub, receiptId: id }));
+  await writeFile(pendingPath, JSON.stringify(pending));
+  await rollbackReceipt({ targetPath: w.hub, receiptId: id });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8').catch(() => 'absent'), 'absent', 'the recovered connect removed the settings file it created');
+});
+
+test('registration: the engine writes the same bytes as the vendored sh-hook-register.py add (runs once the vendored harness has it)', { skip: !isPosix && 'python3 runs here on POSIX only' }, async (t) => {
+  const registrar = path.join(realSourceRoot, 'vendor', 'spec-harness', 'bin', 'sh-hook-register.py');
+  if (!(await lstat(registrar).catch(() => null))) return t.skip('the vendored Spec Harness has no edit guard registrar yet');
+  if (!(await run('python3', ['--version']).then(() => true, () => false))) return t.skip('python3 is not available');
+  const inputs = [null, '{}', JSON.stringify(MERGE_FIXTURE), FIDELITY_INPUT, '{"hooks": {"PreToolUse": null, "Stop": []}}', '  {"z": 1, "a": [ ] , "m": {}}  \n',
+    '{"hooks": {"PreToolUse": [{"matcher": "x", "hooks": [{"command": "' + HOOK_COMMAND.replace(/"/g, '\\"') + '"}]}]}}', '{ not json', '[1]', '{"hooks": 1}', '{"a": "\\udc00"}'];
+  const w = await realWorld(t);
+  const env = await isolatedGitEnv(w.root);
+  for (const [index, input] of inputs.entries()) {
+    const target = path.join(w.root, `python-${index}`);
+    await mkdir(rel(target, '.claude'), { recursive: true });
+    // The registrar registers only a staged hook that is the shipped one and has the owner execute bit, so each target
+    // gets it with the mode an install gives it (0755), and both sides compare the path where the entry is written.
+    await put(target, HOOK_SCRIPT, await readFile(path.join(realSourceRoot, 'vendor', 'spec-harness', 'hooks', 'sdd-gate.sh')));
+    await chmod(rel(target, HOOK_SCRIPT), 0o755);
+    if (input !== null) {
+      await writeFile(rel(target, SETTINGS), input);
+      await writeFile(rel(w.repo, SETTINGS), input).catch(async () => { await mkdir(rel(w.repo, '.claude'), { recursive: true }); await writeFile(rel(w.repo, SETTINGS), input); });
+    } else {
+      await rm(rel(w.repo, SETTINGS), { force: true });
+    }
+    const python = await run('python3', ['-I', '-B', registrar, 'add', target], { env }).then((out) => out.stdout, (error) => `exit ${error.code}: ${error.stdout}${error.stderr}`);
+    const after = await readFile(rel(target, SETTINGS)).catch(() => null);
+    const entry = entryFor(await planConnect(args(w)), SETTINGS);
+    const unchanged = input === null ? after === null : after !== null && after.equals(Buffer.from(input));
+    if (entry.status === 'NOT-REGISTERED' || entry.status === 'REGISTERED') {
+      assert.ok(unchanged, `input ${index}: the registrar left the file as it was too (${python.trim()})`);
+    } else {
+      assert.ok(after !== null && !unchanged, `input ${index}: the registrar wrote the file too (${python.trim()})`);
+      assert.equal(entry.intendedSha256, digestOf(after), `input ${index}: the same bytes as the registrar (${python.trim()})`);
+    }
+  }
+  // A staged hook that is not the shipped one: both refuse, and neither writes a settings file.
+  const foreign = '#!/bin/sh\nexit 0\n';
+  const target = path.join(w.root, 'python-foreign');
+  await put(target, HOOK_SCRIPT, foreign);
+  await chmod(rel(target, HOOK_SCRIPT), 0o755);
+  const add = () => run('python3', ['-I', '-B', registrar, 'add', target], { env }).then((out) => ({ code: 0, stdout: out.stdout }), (error) => ({ code: error.code, stdout: `${error.stdout}` }));
+  assert.equal((await add()).code, 1, 'the registrar refuses a hook that differs from the shipped one');
+  await assert.rejects(lstat(rel(target, SETTINGS)), { code: 'ENOENT' });
+  await rm(rel(w.repo, SETTINGS), { force: true });
+  await put(w.repo, HOOK_SCRIPT, foreign);
+  assert.equal(entryFor(await planConnect(args(w)), SETTINGS).status, 'NOT-REGISTERED', 'connect refuses it too');
+
+  // An earlier harness entry next to the refused hook: the registrar's add takes it out, as its remove does, because it
+  // would keep running the refused file. connect differs on purpose. It did not write that entry, so it leaves it, says
+  // so in the plan, and prints the registrar's remove command for the person to run.
+  const listed = `${JSON.stringify({ permissions: { allow: ['Read'] }, hooks: { PreToolUse: [HOOK_GROUP] } }, null, 2)}\n`;
+  await writeFile(rel(target, SETTINGS), listed);
+  const unregistered = await add();
+  assert.equal(unregistered.code, 1, unregistered.stdout);
+  assert.ok(unregistered.stdout.includes('The earlier registration was removed'), unregistered.stdout);
+  assert.equal(await readFile(rel(target, SETTINGS), 'utf8'), `${JSON.stringify({ permissions: { allow: ['Read'] } }, null, 2)}\n`, 'the registrar took its entry out');
+  await writeFile(rel(w.repo, SETTINGS), listed);
+  const plan = await planConnect(args(w));
+  const entry = entryFor(plan, SETTINGS);
+  assert.equal(entry.status, 'NOT-REGISTERED');
+  assert.equal(entry.activeEntry, true);
+  assert.ok(entry.note.includes('connect did not write that entry and leaves it'), entry.note);
+  await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, SETTINGS), 'utf8'), listed, 'connect leaves the entry it did not write');
+});
+
+test('registration: a hook script that differs from the shipped edit guard (one that came with the repository) is kept and never registered; the plan says why', async (t) => {
+  const foreign = '#!/usr/bin/env bash\n# a hook that came with the repository, not the shipped edit guard\nexit 0\n';
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  await put(w.repo, HOOK_SCRIPT, foreign);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, HOOK_SCRIPT).status, 'PRESERVED');
+  assert.equal(entryFor(plan, HOOK_SCRIPT).differs, true);
+  const settings = entryFor(plan, SETTINGS);
+  assert.equal(settings.status, 'NOT-REGISTERED');
+  assert.ok(settings.note.includes('differs from the shipped edit guard'), settings.note);
+  assert.equal(settings.undo.action, 'none');
+  assert.equal(entryFor(plan, EXCLUDE).status, 'SKIPPED', 'like the registrar, nothing reaches the exclude step after a refusal');
+  assert.equal(plan.registration, null);
+  const result = await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, HOOK_SCRIPT), 'utf8'), foreign, 'the existing file is kept as it is');
+  await assert.rejects(lstat(rel(w.repo, SETTINGS)), { code: 'ENOENT' }, 'no settings entry runs the foreign file');
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), GIT_DEFAULT_EXCLUDE);
+  assert.equal(JSON.parse(await readFile(rel(w.hub, result.receiptPath), 'utf8')).registration, null);
+
+  // The hook check comes first, as in the registrar: an entry that is already there is left alone, and the plan still says why.
+  const listed = await world(t, { hook: true });
+  await put(listed.repo, HOOK_SCRIPT, foreign);
+  await put(listed.repo, SETTINGS, `${JSON.stringify({ hooks: { PreToolUse: [HOOK_GROUP] } }, null, 2)}\n`);
+  const listedEntry = entryFor(await planConnect(args(listed)), SETTINGS);
+  assert.equal(listedEntry.status, 'NOT-REGISTERED');
+  assert.ok(listedEntry.note.includes('differs from the shipped edit guard'), listedEntry.note);
+  // connect did not write that entry, so it does not take it out, but it never lets the plan read as "not active".
+  assert.equal(listedEntry.activeEntry, true);
+  assert.ok(listedEntry.note.includes('still runs it on every edit'), listedEntry.note);
+  assert.equal(entryFor(plan, SETTINGS).activeEntry, false, 'no settings file, so no entry runs the foreign file');
+
+  // Control: an existing hook that is byte-identical to the shipped one, and executable, is registered.
+  const same = await world(t, { hook: true });
+  await put(same.repo, HOOK_SCRIPT, same.harnessFiles.find((file) => file.destination === HOOK_SCRIPT).text);
+  if (isPosix) await chmod(rel(same.repo, HOOK_SCRIPT), 0o755);
+  const samePlan = await planConnect(args(same));
+  assert.equal(entryFor(samePlan, HOOK_SCRIPT).differs, false);
+  assert.equal(entryFor(samePlan, SETTINGS).status, 'CREATE');
+
+  // The same bytes without the execute bit could not run, so every edit would go unguarded: not registered either.
+  if (isPosix) {
+    const plain = await world(t, { hook: true });
+    await put(plain.repo, HOOK_SCRIPT, plain.harnessFiles.find((file) => file.destination === HOOK_SCRIPT).text);
+    await chmod(rel(plain.repo, HOOK_SCRIPT), 0o644);
+    const plainEntry = entryFor(await planConnect(args(plain)), SETTINGS);
+    assert.equal(plainEntry.status, 'NOT-REGISTERED');
+    assert.ok(plainEntry.note.includes('is not executable'), plainEntry.note);
+    assert.ok(plainEntry.note.includes('chmod +x'), plainEntry.note);
+  }
+
+  // A hook script swapped after the plan was approved is caught before the settings entry is written.
+  const swapped = await world(t, { hook: true });
+  const swapPlan = await planConnect(args(swapped));
+  let caught = null;
+  try {
+    await applyConnect({
+      ...args(swapped),
+      approvedDigest: swapPlan.digest,
+      injectBeforeWrite: async ({ kind }) => {
+        if (kind === 'registration') await writeFile(rel(swapped.repo, HOOK_SCRIPT), foreign);
+      },
+    });
+  } catch (error) {
+    caught = error;
+  }
+  assert.ok(caught instanceof InstallPlanError && ['CONCURRENT_MODIFICATION', 'ROLLBACK_FAILED'].includes(caught.code), String(caught));
+  assert.ok(caught.message.includes(HOOK_SCRIPT), caught.message);
+  await assert.rejects(lstat(rel(swapped.repo, SETTINGS)), { code: 'ENOENT' }, 'the entry was never written');
+});
+
+test('registration: a refused hook is looked up in both settings files; a link or a file connect cannot read is named, never called inactive', async (t) => {
+  const foreign = '#!/usr/bin/env bash\n# a hook that came with the repository, not the shipped edit guard\nexit 0\n';
+  const entryText = JSON.stringify({ hooks: { PreToolUse: [HOOK_GROUP] } });
+  const refusedEntry = async (setup) => {
+    const w = await world(t, { hook: true });
+    await put(w.repo, HOOK_SCRIPT, foreign);
+    await setup(w);
+    const plan = await planConnect(args(w));
+    const entry = entryFor(plan, SETTINGS);
+    assert.equal(entry.status, 'NOT-REGISTERED');
+    assert.ok(entry.note.includes('differs from the shipped edit guard'), entry.note);
+    return { w, plan, entry };
+  };
+
+  // The committed .claude/settings.json is read too (never written): an entry there runs the refused file on every edit.
+  const committed = await refusedEntry((w) => put(w.repo, '.claude/settings.json', entryText));
+  assert.equal(committed.entry.activeEntry, true);
+  assert.ok(committed.entry.note.includes('An entry already in .claude/settings.json still runs it on every edit'), committed.entry.note);
+  await applyConnect({ ...args(committed.w), approvedDigest: committed.plan.digest });
+  assert.equal(await readFile(rel(committed.w.repo, '.claude/settings.json'), 'utf8'), entryText, 'settings.json is never written');
+  await assert.rejects(lstat(rel(committed.w.repo, SETTINGS)), { code: 'ENOENT' });
+
+  // A file connect cannot read as settings: it says it cannot tell, and does not say "not active".
+  const unknown = [
+    ['settings.json is not JSON', (w) => put(w.repo, '.claude/settings.json', '{ not json'), '.claude/settings.json'],
+    ['settings.local.json is not JSON', (w) => put(w.repo, SETTINGS, '{ not json'), SETTINGS],
+  ];
+  if (isPosix) {
+    unknown.push(['settings.local.json is a link', async (w) => {
+      await put(w.repo, '.claude/shared.json', entryText);
+      await symlink('shared.json', rel(w.repo, SETTINGS));
+    }, SETTINGS]);
+    unknown.push(['settings.json is a link', async (w) => {
+      await put(w.repo, '.claude/shared.json', entryText);
+      await symlink('shared.json', rel(w.repo, '.claude/settings.json'));
+    }, '.claude/settings.json']);
+  }
+  if (isPosix && !isRoot) {
+    unknown.push(['settings.json cannot be read', async (w) => {
+      await put(w.repo, '.claude/settings.json', entryText);
+      await chmod(rel(w.repo, '.claude/settings.json'), 0o000);
+    }, '.claude/settings.json']);
+  }
+  for (const [label, setup, file] of unknown) {
+    const { entry } = await refusedEntry(setup);
+    assert.equal(entry.activeEntry, false, label);
+    assert.ok(entry.note.includes(`connect cannot tell whether an entry in ${file} already runs this file`), `${label}: ${entry.note}`);
+    assert.ok(!entry.note.includes('still runs it'), `${label}: ${entry.note}`);
+  }
+
+  // Neither file: nothing runs the refused file, and the note says neither more nor less.
+  const neither = await refusedEntry(async () => {});
+  assert.equal(neither.entry.activeEntry, false);
+  assert.ok(!neither.entry.note.includes('still runs it') && !neither.entry.note.includes('cannot tell'), neither.entry.note);
+});
+
+test('registration: under a strict umask an existing settings file and the exclude file keep their modes through the merge and every undo', { skip: !isPosix && 'file modes are POSIX' }, async (t) => {
+  const worlds = [];
+  for (let index = 0; index < 3; index += 1) {
+    const w = await world(t, { hook: true });
+    await fakeGit(w.repo);
+    await put(w.repo, SETTINGS, `${JSON.stringify(MERGE_FIXTURE, null, 2)}\n`);
+    await chmod(rel(w.repo, SETTINGS), 0o644);
+    await chmod(rel(w.repo, EXCLUDE), 0o644);
+    worlds.push(w);
+  }
+  const [rolled, edited, failed] = worlds;
+  const modes = async (w) => [await modeOf(rel(w.repo, SETTINGS)), await modeOf(rel(w.repo, EXCLUDE))];
+  const previous = process.umask(0o077);
+  try {
+    // The merge and a receipt rollback.
+    const result = await connectNow(rolled);
+    assert.deepEqual(await modes(rolled), [0o644, 0o644], 'the merge keeps both modes under umask 077');
+    await rollbackReceipt({ targetPath: rolled.hub, receiptId: result.receiptId });
+    assert.deepEqual(await modes(rolled), [0o644, 0o644], 'the rollback keeps them too');
+
+    // A rollback after the person edited the file: only the entry goes, and the mode stays.
+    const second = await connectNow(edited);
+    const settings = JSON.parse(await readFile(rel(edited.repo, SETTINGS), 'utf8'));
+    settings.env = { ADDED: '1' };
+    await writeFile(rel(edited.repo, SETTINGS), JSON.stringify(settings));
+    await rollbackReceipt({ targetPath: edited.hub, receiptId: second.receiptId });
+    assert.deepEqual(await modes(edited), [0o644, 0o644], 'the undo of an edited file keeps the mode');
+
+    // A failed apply, undone in the same process, after both registration writes.
+    const plan = await planConnect(args(failed));
+    const position = 1 + plan.directories.filter((entry) => entry.root === 'repo' && entry.status === 'CREATE').length
+      + plan.entries.filter((entry) => entry.root === 'repo' && entry.kind === 'file' && entry.status === 'CREATE').length + 2;
+    await rejects('INJECTED_WRITE_FAILURE', () => applyConnect({ ...args(failed), approvedDigest: plan.digest, injectFailureAfterWrite: position }));
+    assert.deepEqual(await modes(failed), [0o644, 0o644], 'the undo of a failed apply keeps both modes');
+  } finally {
+    process.umask(previous);
+  }
+});
+
+test('registration: a shipped hook that was already there and is swapped for another file before the settings write is caught; no entry is written', async (t) => {
+  const w = await world(t, { hook: true });
+  await put(w.repo, HOOK_SCRIPT, w.harnessFiles.find((file) => file.destination === HOOK_SCRIPT).text);
+  if (isPosix) await chmod(rel(w.repo, HOOK_SCRIPT), 0o755);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, HOOK_SCRIPT).status, 'PRESERVED');
+  assert.equal(entryFor(plan, HOOK_SCRIPT).differs, false);
+  assert.equal(entryFor(plan, SETTINGS).status, 'CREATE');
+  // A kept file is not a write of this connect, so the check after the writes does not cover it; the check right
+  // before the settings write is the only one that does.
+  const foreign = '#!/bin/sh\n# swapped in after the plan\nexit 0\n';
+  const error = await rejects('CONCURRENT_MODIFICATION', () => applyConnect({
+    ...args(w),
+    approvedDigest: plan.digest,
+    injectBeforeWrite: async ({ kind }) => {
+      if (kind === 'registration') await writeFile(rel(w.repo, HOOK_SCRIPT), foreign);
+    },
+  }));
+  assert.ok(error.message.includes(HOOK_SCRIPT), error.message);
+  await assert.rejects(lstat(rel(w.repo, SETTINGS)), { code: 'ENOENT' }, 'no entry runs the swapped file');
+  const after = await snap(w);
+  assert.equal(after.repo[HOOK_SCRIPT], `file:${digestOf(foreign)}`, 'the swapped file is left as the other writer left it');
+  delete after.repo[HOOK_SCRIPT];
+  delete before.repo[HOOK_SCRIPT];
+  assert.deepEqual(after, before, 'everything else is rolled back');
+});
+
+test('exclude: lines another writer adds to .git/info/exclude after the plan survive a failed apply, its copy of the line included', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  const before = await snap(w);
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, EXCLUDE).status, 'APPEND');
+  const theirs = `${EXCLUDE_LINE}\n*.tmp\n`;
+  await rejects('CONCURRENT_MODIFICATION', () => applyConnect({
+    ...args(w),
+    approvedDigest: plan.digest,
+    injectBeforeWrite: async ({ kind }) => {
+      if (kind === 'exclude') await appendFile(rel(w.repo, EXCLUDE), theirs);
+    },
+  }));
+  // connect never wrote the exclude file, so its undo leaves it, even though the file now holds connect's line once.
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), `${GIT_DEFAULT_EXCLUDE}${theirs}`);
+  const after = await snap(w);
+  delete after.repo[EXCLUDE];
+  delete before.repo[EXCLUDE];
+  assert.deepEqual(after, before, 'the settings entry and everything else are rolled back');
+});
+
+test('registration: a refused settings file stops the registration before the exclude step, as in the registrar', async (t) => {
+  const w = await world(t, { hook: true });
+  await fakeGit(w.repo);
+  await put(w.repo, SETTINGS, '{ not json\n');
+  const plan = await planConnect(args(w));
+  assert.equal(entryFor(plan, SETTINGS).status, 'NOT-REGISTERED');
+  assert.equal(entryFor(plan, EXCLUDE).status, 'SKIPPED');
+  await applyConnect({ ...args(w), approvedDigest: plan.digest });
+  assert.equal(await readFile(rel(w.repo, EXCLUDE), 'utf8'), GIT_DEFAULT_EXCLUDE, 'the exclude file is untouched');
 });

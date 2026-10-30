@@ -5,7 +5,7 @@ description: Execute a feature packet one task at a time with independent accept
 
 # spec-harness-build
 
-Use the bound implementer, then separate fresh tester, verifier and reviewer contexts. Record each result against the same source/rule revisions and `specs/<feature>/goal.md`. Failing or unavailable gates stay open; no merger authority is implied.
+Use the bound implementer, then (after its DONE or DONE_WITH_CONCERNS status; `.claude/commands/sdd.md` section 6 owns the statuses and briefs) separate fresh tester, verifier and reviewer contexts. Record each result against the same source/rule revisions and `specs/<feature>/goal.md`. Failing or unavailable gates stay open; no merger authority is implied.
 
 ## Run it
 1. **Load the shared SDD procedure first**: `.claude/commands/sdd.md` (installed project) or source `commands/sdd.md`.

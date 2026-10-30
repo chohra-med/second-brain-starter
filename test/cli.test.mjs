@@ -390,3 +390,53 @@ test('a CUSTOMIZED-KEEP line says the apply records your current bytes as accept
   assert.equal(await readFile(path.join(target, ...kept.split('/')), 'utf8'), local);
   assert.equal((await cli(['verify', '--target', target])).code, undefined, 'verify accepts the kept bytes after the apply');
 });
+
+test('an upgrade that retires installed files prints DEPRECATED for each and one line that says what that means; it deletes nothing', async (t) => {
+  // A workspace installed while the template still listed api-anything (v1.8.0 to v1.10.0), upgraded by this template.
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-cli-deprecated-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const checkout = path.join(root, 'starter');
+  const target = path.join(root, 'target');
+  await mkdir(target);
+  const skipped = new Set(['.git', 'test', 'vendor', 'node_modules']);
+  await cp(sourceRoot, checkout, { recursive: true, filter: (entry) => !skipped.has(path.relative(sourceRoot, entry).split(path.sep)[0]) });
+  const run = async (args) => {
+    try {
+      return await execFile(process.execPath, [path.join(checkout, 'bin', 'second-brain.mjs'), ...args], { cwd: checkout });
+    } catch (error) {
+      return { stdout: error.stdout ?? '', code: error.code };
+    }
+  };
+  const manifestPath = path.join(checkout, 'template-manifest.json');
+  const current = await readFile(manifestPath, 'utf8');
+  const older = JSON.parse(current);
+  const retired = [];
+  for (const file of ['LICENSE', 'SKILL.md']) {
+    const source = `template/optional-skills/api-anything/${file}`;
+    const sha256 = createHash('sha256').update(await readFile(path.join(checkout, ...source.split('/')))).digest('hex');
+    for (const folder of ['.agents', '.claude']) {
+      const destination = `${folder}/skills/api-anything/${file}`;
+      older.entries.push({ source, destination, sha256, mergeKind: 'managed-file' });
+      retired.push(destination);
+    }
+  }
+  await writeFile(manifestPath, `${JSON.stringify(older, null, 2)}\n`);
+  const installed = await run(['init', '--target', target]);
+  assert.equal((await run(['init', '--target', target, '--apply', digest(installed.stdout)])).code, undefined);
+  await writeFile(manifestPath, current);
+
+  const planned = await run(['upgrade', '--target', target]);
+  assert.equal(planned.code, undefined, planned.stdout);
+  const lines = planned.stdout.split('\n');
+  for (const destination of retired) assert.ok(lines.includes(`DEPRECATED\t${destination}\tundo=none`), `${destination}: ${planned.stdout}`);
+  const meaning = 'Deprecated: each DEPRECATED file above is no longer part of the template. The upgrade leaves it as it is, and verify and upgrade no longer manage or check it. Delete it if you do not want it.';
+  assert.equal(lines.filter((line) => line === meaning).length, 1, planned.stdout);
+  const applied = await run(['upgrade', '--target', target, '--apply', digest(planned.stdout)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  for (const destination of retired) await stat(path.join(target, ...destination.split('/')));
+  assert.equal((await run(['verify', '--target', target])).code, undefined, 'verify passes and no longer checks the retired files');
+
+  // An upgrade with nothing retired prints no such line.
+  const again = await run(['upgrade', '--target', target]);
+  assert.ok(!again.stdout.includes('DEPRECATED'), again.stdout);
+});

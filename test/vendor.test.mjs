@@ -154,7 +154,7 @@ async function measuredTree(pin) {
 test('the pinned git tree hash equals the tree recomputed from the vendored bytes, paths and recorded executable bits', async () => {
   const pin = await readPin();
   assert.ok(pin.sourceInventory.every((file) => file.executable === undefined || file.executable === true), 'executable is absent or true');
-  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 15, 'the 15 executable paths are recorded (Spec Harness 0.4.0; 0.3.0 had 13, the two added are tests/examples-smoke.sh and tests/run-state-fixtures.sh)');
+  assert.equal(pin.sourceInventory.filter((file) => file.executable === true).length, 16, 'the 16 executable paths are recorded (Spec Harness 0.7.0 adds hooks/sdd-gate.sh)');
   assert.equal(await measuredTree(pin), pin.tree, 'recomputed git tree differs from pin.tree');
 });
 

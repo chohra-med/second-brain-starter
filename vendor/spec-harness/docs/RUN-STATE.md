@@ -54,6 +54,16 @@ The stages run in this order and cannot be skipped:
 - `test` is required before the test stage completes. `result` must be `PASS`, and `command` records the
   command that ran.
 
+## Who reads it
+
+`spec-harness run-state --check` validates it. The edit guard hook (`hooks/sdd-gate.sh`) reads only
+`completed`: a source edit is allowed while some run lists `checkpoint` and does not list `summary`. The
+hook never writes the file, so `/sdd` must write `checkpoint` when the owner approves the plan. When the
+ticket ends, accepted or abandoned, the orchestrator writes the existing `summary` stage in `completed`
+(no new stage name and no new field); no role file writes it. A run that lists `summary` in `completed` is closed and is not validated by `spec-harness run-state --check` (the checker rejects it), accepted or abandoned alike. A run-state not modified for 7 days is
+expired and no longer opens the gate, so a forgotten run does not leave edits open for ever. A MICRO ticket has no run state; the hook then accepts an open
+`specs/<feature>/ticket.md` (no `RESULT: PASS` line), a weaker signal than a checkpoint.
+
 ## Paths
 
 `spec_path` and `plan_path` are relative to the target. A value that is absolute, contains a backslash, or

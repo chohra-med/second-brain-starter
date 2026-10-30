@@ -6,7 +6,7 @@ Open the roadmap item and its progress entries together, in the folder of the pr
 2. Add the exact task-specific check and its result under Verified; compare the artifact content against the saved facts and intended outcome. Installer integrity verification alone does not establish usefulness. A completed action without evidence stays Open or In progress.
 3. Update the roadmap status to `Verified` only when the evidence listed there was checked. A roadmap uses five status words only: `Open`, `In progress`, `Blocked`, `Done`, `Verified`.
 4. Write any remaining work as Open and name the Next action.
-5. If `progress.md` now has more than 10 entries, or is larger than about 15 KB, move the older entries to `04-Archives/Projects/<project>/progress-YYYY.md` (the year of those entries) and leave one line in their place that links to that file.
+5. Apply the rotation rule, which this step owns: a record file keeps at most 10 entries or about 15 KB, newest at the bottom. When `progress.md` passes either limit, move the older entries to `04-Archives/Projects/<project>/progress-YYYY.md` (the year of those entries) and leave one line in their place that links to that file. Do the same for `Decisions.md` (older rows to `decisions-YYYY.md`) and for roadmap rows that read `Verified` (to `roadmap-YYYY.md`). In a table file (`roadmap.md`, `Decisions.md`) put that pointer line immediately above or below the table, never inside it, so the table stays one table.
 6. If `00-Meta/Daily-Task-Plan.md` carries a date other than today, it is stale. Offer to clear it, and clear it only when the person agrees.
 
 Use these words plainly: Done, Verified, Open, Next. They make handoffs readable and expose wishful completion.
@@ -22,7 +22,7 @@ Request a separate new chat: “Read Home and [Context](context.md), recover the
 
 - One dated entry at the bottom of `01-Projects/<project>/progress.md` with Done, Verified, Open and Next.
 - The item's status in `01-Projects/<project>/roadmap.md`.
-- When the log grew past its limit: the older entries in `04-Archives/Projects/<project>/progress-YYYY.md`, and one pointer line in their place.
+- When a record file grew past the rotation rule (10 entries or about 15 KB, newest at the bottom): the older entries or rows in the matching file under `04-Archives/Projects/<project>/`, and one pointer line (in a table file, immediately above or below the table, never inside it).
 
 ## Human check
 

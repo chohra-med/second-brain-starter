@@ -19,7 +19,7 @@ rules --check <file-path>
 1. Run `spec-harness index <target>` (from a checkout, `bash <spec-harness>/bin/sh-index.sh <target>`; with no install, `npx -y github:chohra-med/spec-harness-oss index <target>`) and read `ai_rules/project_inventory.json` when present, otherwise the generated `ai_rules/context_map.md`.
 2. Read applicable project instructions first, including startup sequences. Preserve their precedence and existing text.
 3. For each package, open its actual representative source and relevant tests/configuration. Cite `path:line` and the source SHA-256. Inventory paths are discovery evidence, not architecture evidence.
-4. Read the package manifest. The inventory parser supports `package.json` and `pyproject.toml`; any other format stays visibly `unsupported` and must not be interpreted from its filename.
+4. Read the package manifest. The inventory parser supports `package.json`, `pyproject.toml` and `composer.json`; any other format stays visibly `unsupported` and must not be interpreted from its filename.
 5. Use official primary documentation only when a recommendation depends on current or disputed framework/package behavior. Cite its URL and access date. Keep documentation advice labeled `RECOMMENDATION`; code/policy observations are `OBSERVED`.
 
 ## Boundaries and output
@@ -41,7 +41,7 @@ Every rule is one line: an ID, one plain sentence a reviewer can check, and a so
 ```
 
 - The ID is upper case, a topic prefix and a number (`NAV-01`, `SEC-03`, `BIZ-02`, `DEC-004`). It is defined once in the whole project; everything else names the ID.
-- The sentence is the rule itself, 4 to 60 words, ending with a full stop. A line that only points elsewhere ("Apply the canonical requirements from ...", a list of coverage IDs) is not a rule and fails the check.
+- The sentence is the rule itself, 4 to 60 words, ending with a full stop. A line that only points elsewhere ("Apply the canonical requirements from ...", a list of coverage IDs) is not a rule and fails the check. Rule lines are read with HTML comments removed, so an example inside a comment is not a rule and a trailing comment is not part of the rule text.
 - The source tag names where the rule comes from: a policy file and section, the cited `path:start-end`, a pack document, or `decision DEC-004`. The exact span and hash stay in the receipt, not in the sentence.
 - Label inferred or advised rules in the source tag (`observed in ...`, `recommendation, <URL>`). State uncertainty or a conflict instead of smoothing it into a rule. A project-specific recommendation never silently forces an architecture migration.
 
@@ -52,7 +52,7 @@ A first initialisation writes receipt schema 4, which checks these homes. Each f
 | Layer | What it holds | Home | Where the rules come from |
 |---|---|---|---|
 | business | what the product is, its goals, users and domain rules | `.memory/10-product.md` (`BIZ-` rules under `## Domain rules`) | the memory bank, the README and the owner |
-| standard | named standards and laws the owner committed to (in place, required or planned), such as the European Accessibility Act with EN 301 549 | commitment as a `STD-` line in `.memory/10-product.md`; rules in `ai_rules/rules/standard-<name>.md` with `<!-- rule-layer: standard -->` and `<!-- commitment: STD-<n> -->` | `standards.md`: a curated standard pack, or the official text with URL and check date |
+| standard | named standards and laws the owner committed to (in place, required or planned), such as the European Accessibility Act with EN 301 549 | commitment as a `STD-` line in `.memory/10-product.md`; rules in `ai_rules/rules/standard-<name>.md` with `<!-- rule-layer: standard -->` and `<!-- commitment: STD-<n> -->` | `standards.md`: a curated standard pack; or the official text by URL with `checked YYYY-MM-DD`; or, when the text cannot be opened, the text named as `official text: <instrument and article>` (no date, because nothing was checked) |
 | decision | choices the owner made, including accepted conventions and overrides | `.memory/60-decisions.md` (`DEC-` rules) | the owner, with the date and reason |
 | project | how this codebase does things | package `RULES.md` and `ai_rules/rules/<topic>.md` with `<!-- rule-layer: project -->` | the project's own policy files and repeated code patterns |
 | tool | rules for one package at the version in use | `ai_rules/rules/tool-<package>.md` with `<!-- rule-layer: tool -->` and `<!-- applies: <package> <range> -->` | a curated pack from `.claude/spec-harness/rule-packs/`, or official documentation with its URL and `checked YYYY-MM-DD` |

@@ -783,5 +783,57 @@ assert "DRY-RUN" in out and "planned writes" in out, out
 out = finalize(target, "--apply", "--evidence-dir", str(tmp / "planted-ev"), label="apply with planted modules", cwd=cwd)
 assert "STRUCTURAL_READY" in out, out
 print("PASS: planted hashlib.py and json.py do not hijack finalize-init")
+
+# 11. An inventory built with --exclude-dir and --source keeps that scope: the refresh re-indexes with the options
+# the inventory recorded, so the excluded folder stays out and the recorded sources stay the sample.
+target = tmp / "scoped"
+(target / "ios").mkdir(parents=True)
+(target / "ios/AppDelegate.ts").write_text("export const delegate = 1;\n")
+fx.write(target / "src/Other.tsx", "export const other = 1;\n")
+fx.build(target, harness, ["--exclude-dir", "ios", "--source", "src/App.tsx"])
+scoped = fx.snapshot(target)
+out = finalize(target, label="dry run of a scoped inventory")
+assert "DRY-RUN" in out and "planned writes" in out, out
+assert fx.snapshot(target) == scoped
+out = finalize(target, "--apply", "--evidence-dir", str(tmp / "scoped-ev"), label="apply to a scoped inventory")
+assert "STRUCTURAL_READY" in out, out
+journal = json.loads((tmp / "scoped-ev/journal.json").read_text())
+index_args = [entry["args"] for entry in journal["commands"] if "--preview" in entry["args"]]
+assert index_args and all("--exclude-dir" in args and "ios" in args and "--source" in args for args in index_args), index_args
+assert "ios/AppDelegate.ts" not in (target / "ai_rules/project_inventory.json").read_text()
+# A --source on the command line wins over the recorded one; the recorded --exclude-dir is still applied.
+out = finalize(target, "--source", "src/App.tsx", label="dry run with the same --source on the command line")
+assert "DRY-RUN" in out, out
+out = finalize(target, "--source", "src/Other.tsx", expected=1, label="dry run with a different --source on the command line")
+assert "semantic inventory inputs changed" in out, out
+print("PASS: a refresh keeps the --exclude-dir and --source scope the inventory recorded; a --source given wins")
+
+# 12. A commit between index and the refresh does not stop it. scan.source_head is the commit the index ran at, which
+# doctor compares with HEAD to call the inventory STALE; it is not an input the synthesis read.
+target = tmp / "committed"
+target.mkdir()
+
+
+def target_git(*args):
+    return subprocess.run(["git", "-C", str(target), "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid",
+                           "-c", "commit.gpgsign=false", *args], capture_output=True, text=True, check=True).stdout.strip()
+
+
+target_git("init", "-q")
+(target / "README.md").write_text("# committed\n")
+target_git("add", "-A")
+target_git("commit", "-q", "--no-verify", "-m", "start")
+fx.build(target, harness)
+recorded = json.loads((target / "ai_rules/project_inventory.json").read_text())["scan"]["source_head"]
+assert recorded == target_git("rev-parse", "HEAD"), recorded
+target_git("add", "-A")
+target_git("commit", "-q", "--no-verify", "-m", "record the synthesis")
+assert target_git("rev-parse", "HEAD") != recorded, "positive control: HEAD moved past the recorded source_head"
+out = finalize(target, label="dry run after a commit")
+assert "DRY-RUN" in out and "(scan)" not in out, out
+out = finalize(target, "--apply", "--evidence-dir", str(tmp / "committed-ev"), label="apply after a commit")
+assert "STRUCTURAL_READY" in out, out
+assert json.loads((target / "ai_rules/project_inventory.json").read_text())["scan"]["source_head"] == target_git("rev-parse", "HEAD")
+print("PASS: a commit between index and the refresh does not stop it; the refreshed inventory records the new HEAD")
 print("All finalize-init fixtures passed.")
 PY

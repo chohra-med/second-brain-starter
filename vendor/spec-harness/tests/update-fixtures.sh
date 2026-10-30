@@ -25,10 +25,12 @@ import ready_fixture as fx
 
 harness = tmp / "harness"
 harness.mkdir()
-for name in ("bin", "agents", "commands", "skills", "templates"):
+for name in ("bin", "hooks", "agents", "commands", "skills", "templates"):
     shutil.copytree(root / name, harness / name)
 for name in ("install-manifest.json", "install-migrations.tsv", "package.json", "learning_human.html"):
     shutil.copy2(root / name, harness / name)
+(harness / "docs").mkdir()
+shutil.copy2(root / "docs/MEMORY.md", harness / "docs/MEMORY.md")
 git = ["git", "-C", str(harness), "-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false"]
 subprocess.run(["git", "init", "-q", str(harness)], check=True)
 subprocess.run(git + ["add", "-A"], check=True)
@@ -322,5 +324,65 @@ assert states.get(".claude/commands/spec-harness/init.md") == "CUSTOMIZED-KEEP",
 assert "your copy of a harness procedure; the shipped version differs" in out, out
 assert "goal.md  (your file from before the install; not managed by the harness)" in out, out
 print("PASS: a project's own harness procedure is kept and the plan says the shipped version differs")
+# 13. update --apply registers the edit guard the way install does (the --render-plan path never ran the
+#     registration step). Idempotent, merges beside other hooks, never writes settings.json, and doctor
+#     says hook_registered: OK afterwards.
+hooked = tmp / "hook-register"
+install(hooked, "hooked")
+settings = hooked / ".claude/settings.local.json"
+assert settings.is_file(), "positive control: the installer registers the hook"
+settings.write_text(json.dumps({"permissions": {"allow": ["Read"]}, "hooks": {"PreToolUse": [
+    {"matcher": "Bash", "hooks": [{"type": "command", "command": "echo mine"}]}]}}, indent=2) + "\n")
+doctor = lambda target: json.loads(subprocess.run(CLI + ["doctor", str(target)], capture_output=True, text=True).stdout)
+assert doctor(hooked)["guards"]["hook_registered"] == "MISSING", "positive control: not registered before the update"
+_, digest, _ = plan(hooked)
+out = run(CLI + ["update", str(hooked), "--apply", digest], 0, "apply registers the hook")
+assert "hook registration: registered in .claude/settings.local.json" in out, out
+merged = json.loads(settings.read_text())
+commands = [hook["command"] for group in merged["hooks"]["PreToolUse"] for hook in group["hooks"]]
+assert commands.count("echo mine") == 1 and sum("sdd-gate.sh" in c for c in commands) == 1, commands
+assert merged["permissions"] == {"allow": ["Read"]}, merged
+assert not (hooked / ".claude/settings.json").exists(), "update wrote the committed settings.json"
+assert doctor(hooked)["guards"]["hook_registered"] == "OK", doctor(hooked)["guards_notes"]
+_, digest, _ = plan(hooked)
+out = run(CLI + ["update", str(hooked), "--apply", digest], 0, "second apply")
+assert "hook registration: already registered in .claude/settings.local.json" in out, out
+assert sum("sdd-gate.sh" in hook["command"] for group in json.loads(settings.read_text())["hooks"]["PreToolUse"] for hook in group["hooks"]) == 1
+# An install from before the hook existed: no script, no registration, no record entry. Update stages and registers it.
+old = tmp / "pre-hook"
+install(old, "old")
+(old / ".claude/spec-harness/hooks/sdd-gate.sh").unlink()
+(old / ".spec-harness/base/.claude/spec-harness/hooks/sdd-gate.sh").unlink()
+(old / ".claude/settings.local.json").unlink()
+record = json.loads((old / ".spec-harness/install.json").read_text())
+del record["files"][".claude/spec-harness/hooks/sdd-gate.sh"]
+(old / ".spec-harness/install.json").write_text(json.dumps(record, indent=2, sort_keys=True) + "\n")
+states, digest, out = plan(old)
+assert states.get(".claude/spec-harness/hooks/sdd-gate.sh") == "NEW", (states, out)
+out = run(CLI + ["update", str(old), "--apply", digest], 0, "apply on an install from before the hook")
+assert "hook registration: registered in .claude/settings.local.json" in out, out
+assert doctor(old)["guards"]["hook_registered"] == "OK"
+# A settings file the registrar cannot trust is left alone and named; the update itself still succeeds.
+bad = tmp / "bad-settings"
+install(bad, "bad")
+(bad / ".claude/settings.local.json").write_text("{not json")
+_, digest, _ = plan(bad)
+out = run(CLI + ["update", str(bad), "--apply", digest], 0, "apply with an untrusted settings file")
+assert "hook registration: NOT registered" in out and (bad / ".claude/settings.local.json").read_text() == "{not json", out
+print("PASS: update --apply registers the hook (merge, idempotent, doctor OK, settings.json untouched) and names a settings file it cannot trust")
+# A hook edited since install is kept (CUSTOMIZED-KEEP), so the registrar refuses it and removes the earlier entry,
+# which would otherwise keep running the edited file on every edit. The hook registration line says so.
+edited = tmp / "hook-edited"
+install(edited, "edited")
+assert doctor(edited)["guards"]["hook_registered"] == "OK", "positive control: registered after install"
+with open(edited / ".claude/spec-harness/hooks/sdd-gate.sh", "a") as handle:
+    handle.write("# local edit\n")
+states, digest, _ = plan(edited)
+assert states.get(".claude/spec-harness/hooks/sdd-gate.sh") == "CUSTOMIZED-KEEP", states
+out = run(CLI + ["update", str(edited), "--apply", digest], 0, "apply over a locally edited hook")
+assert "hook registration: NOT registered" in out and "earlier registration was removed" in out, out
+assert not (edited / ".claude/settings.local.json").exists(), "the earlier registration still runs the edited hook"
+assert doctor(edited)["guards"]["hook_registered"] == "MISSING", doctor(edited)["guards_notes"]
+print("PASS: update --apply over an edited hook removes the earlier registration and says so")
 print("All update fixtures passed.")
 PY

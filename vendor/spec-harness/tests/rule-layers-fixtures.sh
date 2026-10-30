@@ -337,5 +337,37 @@ assert any("outside this module's range >=50" in item for item in monorepo_fails
 assert not monorepo_fails("apps/a"), "apps/a locks expo 57, its >=50 module passes"
 print("PASS: a tool module is checked against the version its own package locks")
 
+# A standard rule without a pack may name its legal source instead of linking it; a tool rule may not.
+std_tree = edge_tree("standard-named", {
+    ".memory/10-product.md": "- **STD-01** The shop meets the GDPR. (source: owner, 2026-10-21, status: in place)\n"})
+def standard_fails(source, layer="standard"):
+    fails = []
+    marker = "<!-- commitment: STD-01 -->\n" if layer == "standard" else "<!-- applies: expo >=50 -->\n"
+    text = f"<!-- rule-layer: {layer} -->\n{marker}- **GDPRX-01** Log customer IDs, never customer names. (source: {source})\n"
+    sh_rule_layers.check(std_tree, {}, lambda rel: (std_tree / rel).read_bytes() if (std_tree / rel).is_file() else None,
+                         fails.append, [(".", {"path": f"ai_rules/rules/{layer}-x.md"}, text)], [".memory/10-product.md"], [], root / "templates" / "rule-packs")
+    return [item for item in fails if "GDPRX-01" in item]
+assert not standard_fails("official text: Regulation (EU) 2016/679, Art. 5(1)(c)"), "a standard rule may name its legal source"
+assert not standard_fails("https://eur-lex.europa.eu/eli/reg/2016/679/oj checked 2026-10-21"), "a URL with a checked date still passes"
+assert standard_fails("owner said so"), "a standard rule with neither a URL nor an official text citation must fail"
+assert standard_fails("official text:"), "an empty official text citation must fail"
+for placeholder in ("official text: TBD 1", "official text: GDPR", "no official text: art 5", "official text: none 2"):
+    assert standard_fails(placeholder), f"a placeholder or vague citation must fail: {placeholder}"
+assert not standard_fails("owner, 2026-10-21; official text: EN 301 549, clause 9.1.1.1"), "a citation after another source item passes"
+assert standard_fails("official text: React docs", layer="tool"), "a tool rule still needs a URL and a checked date"
+print("PASS: a standard rule cites a URL with a checked date or names its official text; a tool rule needs the URL")
+
+# A multi-line template comment must not hide or move a real rule: line numbers stay real.
+decisions_text = (root / "templates/install/memory/60-decisions.md").read_text()
+rule_line = "- **DEC-001** Keep every release note short and plain. (source: owner, 2026-10-21)"
+appended = decisions_text.rstrip("\n") + "\n" + rule_line + "\n"
+found, _ = sh_rule_layers.parse(appended, strict=False)
+assert [(item["id"], item["number"]) for item in found] == [("DEC-001", len(appended.splitlines()))], f"the shipped decisions template must parse to one rule at its real line, got {[(i['id'], i['number']) for i in found]}"
+inline, _ = sh_rule_layers.parse("# t\n- **DEC-002** Keep every release note short and plain. (source: owner, 2026-10-21) <!-- note -->\n", strict=False)
+assert [(item["id"], item["number"]) for item in inline] == [("DEC-002", 2)], "a one-line comment after a rule must still parse as one rule"
+unclosed, _ = sh_rule_layers.parse("# t\n<!-- never closed\n- **DEC-003** Keep every release note short and plain. (source: owner, 2026-10-21)\n", strict=False)
+assert [(item["id"], item["number"]) for item in unclosed] == [("DEC-003", 3)], "an unclosed comment is not removed, so the real rule after it is still found at its line"
+print("PASS: comments in the decisions template do not hide or move a real rule")
+
 print("All rule-layer fixtures passed.")
 PY

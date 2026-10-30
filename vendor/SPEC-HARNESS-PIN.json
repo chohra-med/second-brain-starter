@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "repository": "https://github.com/chohra-med/spec-harness-oss",
-  "commit": "1a7680bd48b4e8be9fa652fa697a86e4898292a2",
-  "tree": "dbbda0abc9d2e2b4ae0c395b9fe6336c387fd755",
-  "harnessVersion": "0.6.0",
+  "commit": "38e266b81e7b2e7247dfa2eea79821f754b04901",
+  "tree": "ea5f91702a78dbeeb1f419d5c48c0b86b5b9445b",
+  "harnessVersion": "0.7.0",
   "license": {
     "spdx": "MIT",
     "path": "LICENSE",
@@ -32,18 +32,18 @@
     },
     {
       "path": "AGENTS.md",
-      "bytes": 16421,
-      "sha256": "b217fdd0247eac17637cad50da861500204c303ba4d11fbc7bacfa0693ee89b2"
+      "bytes": 17292,
+      "sha256": "bcbdb39e20efff286b27fbec6f2ebda4df8d8c3bb3b981b735bb35539c2c3396"
     },
     {
       "path": "ARCHITECTURE.md",
-      "bytes": 21198,
-      "sha256": "26414bac5cb3f960f84eaaf5157f3bf47eb35069ad7b4425c4ad98121d834478"
+      "bytes": 24764,
+      "sha256": "7616b1023dff05ce68d6044c9d6c5a3f60576577560759b0d7db1cc6bd655cbf"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 17469,
-      "sha256": "676281640819bec0ce1be59c1c2e8aad84b13195a6ecd608ee4053e56016a61e"
+      "bytes": 35026,
+      "sha256": "4795a64a1941f566f2cd0f408f1aa4d2a75a5f7a70f2096e41056bc931c4734a"
     },
     {
       "path": "CLAUDE.md",
@@ -62,8 +62,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 26174,
-      "sha256": "db2a77f5e1b4891ec3102344c35489325ffaa3ad64ae2b81de1d0cb994c892d7"
+      "bytes": 32267,
+      "sha256": "0310c6d747a996f2d6daba82e941362a2e9d90faab7eba74ebd49f1fd6eb371a"
     },
     {
       "path": "agents/sdd-architect.md",
@@ -82,8 +82,8 @@
     },
     {
       "path": "agents/sdd-implementer.md",
-      "bytes": 3388,
-      "sha256": "568e1b1d2455af5ec4a89f355d5fa363a1ddf2f50d559d63290743ff1122d8c1"
+      "bytes": 4061,
+      "sha256": "18c035e0c3a5641a9630f02eead768f377bfa3f5b4bd766e88d4aeac2eee5be9"
     },
     {
       "path": "agents/sdd-learner.md",
@@ -107,18 +107,18 @@
     },
     {
       "path": "agents/sdd-reviewer.md",
-      "bytes": 6351,
-      "sha256": "5ca154315967f5e544e6a57f6e75a875a05591db037a6edfa622ca4111c76858"
+      "bytes": 8667,
+      "sha256": "1acfbb36ae9a547b7583cc7e3072e9562085622af4e0e669265fe01913bbf9a9"
     },
     {
       "path": "agents/sdd-router.md",
-      "bytes": 3252,
-      "sha256": "8940479539104bbe70690886496d700eae4414539e518678a7605deca85b381b"
+      "bytes": 3747,
+      "sha256": "c7df4a9d5c13682862f37840a381ecbb56e5b1b1a78ed7353ab4b0d9bcdb7c36"
     },
     {
       "path": "agents/sdd-tester.md",
-      "bytes": 3181,
-      "sha256": "78c160bd8d1c52cff1ca7055b4de39263d8eb7162898f50ca1454303d9baea57"
+      "bytes": 3616,
+      "sha256": "926e1dc7b5984eb8b85c23e015e781345d6e1df491dbba63fb2ffc006c3d3930"
     },
     {
       "path": "agents/sdd-verifier.md",
@@ -138,24 +138,29 @@
     },
     {
       "path": "bin/sh-doctor.py",
-      "bytes": 7572,
-      "sha256": "5d5e289dee62acfe17b359a6f1b5fe1857b057a69e3b41679922441671de1190"
+      "bytes": 28369,
+      "sha256": "53bcee2b8adeb2bda5c0bf1eeecbfeceb3e62f5f2d209842bb7ff5fe8829f9dd"
     },
     {
       "path": "bin/sh-finalize-init.py",
-      "bytes": 38061,
-      "sha256": "6939572ae384978732411f6d8500f82422c75182355b9e70d12ce22c5c405004"
+      "bytes": 39270,
+      "sha256": "6540128c6b93e648d5b1a98f53c1d08c612351dfd54200cfe23c7fc83ff33b03"
     },
     {
       "path": "bin/sh-gen-agents.sh",
-      "bytes": 40519,
-      "sha256": "b7c849dfc9f2ebf2d6ae8a0fdfdc45f745b725fed0f4559e8ab535f0a767fba2",
+      "bytes": 56458,
+      "sha256": "10fe4fdc261ce0bfe9424327af3a6d483eabe9ed412c89db36487ef9c96432c2",
       "executable": true
     },
     {
+      "path": "bin/sh-hook-register.py",
+      "bytes": 11933,
+      "sha256": "d210c1785ee3f7a8812ae61319799bd1fb6e6422d9851614798d4b3b01c4e1a7"
+    },
+    {
       "path": "bin/sh-index.sh",
-      "bytes": 41845,
-      "sha256": "c7a49504c59be8f5d95ff531808764b4ad09c29f449ae446f83114c5156f54f0",
+      "bytes": 59955,
+      "sha256": "2ddf1e1c9f1a054c6951df762b2d1ce29482a56ce1bac31665334046352fc342",
       "executable": true
     },
     {
@@ -166,14 +171,14 @@
     },
     {
       "path": "bin/sh-install.sh",
-      "bytes": 18219,
-      "sha256": "9d31b3f1ce670785568a06591206ab72a82fb108edb517beca84deec5fbad999",
+      "bytes": 20049,
+      "sha256": "ea4a6f8962a3cbff8fb0cf74fa6e7f58cc64ed9bcd71097d47e00f24c801ca08",
       "executable": true
     },
     {
       "path": "bin/sh-make-skills.sh",
-      "bytes": 16877,
-      "sha256": "96a790511ea9857faf9c17d30d741344907fb890d36460c55ada098049de0f7a"
+      "bytes": 16991,
+      "sha256": "ac93065174932e63a205d32f26a311009cdb6cf8392a375ce84f4196d166dc33"
     },
     {
       "path": "bin/sh-pr-packet.py",
@@ -187,13 +192,13 @@
     },
     {
       "path": "bin/sh-update.py",
-      "bytes": 20797,
-      "sha256": "7d084d20a948298077d9bceb799ab0f91ecaa8ff146880d1797ceb15dec8750c"
+      "bytes": 22176,
+      "sha256": "847df6a4342cc2fc33d2dccd0f142d26a44f11e94bc3862138805252c1672c40"
     },
     {
       "path": "bin/sh_rule_layers.py",
-      "bytes": 12954,
-      "sha256": "29397ec2e5facfe0537fc7d89268a4356f46cbdcffa121012a7f507120abe204"
+      "bytes": 13856,
+      "sha256": "c5f9721a1bb023f84ae37b658d2a467bfce4f36707382ccd547b90917e4ba392"
     },
     {
       "path": "bin/sh_safe_io.py",
@@ -207,8 +212,8 @@
     },
     {
       "path": "bin/spec-harness",
-      "bytes": 5536,
-      "sha256": "d6b172c201c6aa4c3cff944bcbe27383e9959fd7b9edfc0d0c397191e448c780",
+      "bytes": 5544,
+      "sha256": "0b48b3f61895c9999024e14b367a20c8a6ffd6446cf1b0e061864853c8453fa6",
       "executable": true
     },
     {
@@ -218,8 +223,8 @@
     },
     {
       "path": "commands/build.md",
-      "bytes": 3829,
-      "sha256": "539cb8480c99ccda3a69e148eca2972b8368b29a57b3fc207ac54dd5d10067f9"
+      "bytes": 4311,
+      "sha256": "b18f8cb7a005d95a6544aab52387c1a6a20abe253e0d72188b7232d99e96742c"
     },
     {
       "path": "commands/conventions.md",
@@ -227,24 +232,29 @@
       "sha256": "37abd0ee4b9b830a8452a22dba20cfd070a6f1cd358d2b974458f458eba89cb8"
     },
     {
+      "path": "commands/doctor.md",
+      "bytes": 3689,
+      "sha256": "5453a9b4ffe15822e41b675d6171203062d6fa57db5eb301f14fd00bfc2f4d73"
+    },
+    {
       "path": "commands/document.md",
-      "bytes": 2216,
-      "sha256": "5cb43d0632e0edd344010a66fac4fe961523e33594d074d333ef1628ce56f97d"
+      "bytes": 2310,
+      "sha256": "74e9540581677f5562144448e46db16409e70f43788e4a227a405faee1bf52e3"
     },
     {
       "path": "commands/generate-agents.md",
-      "bytes": 10762,
-      "sha256": "a41f1a37d74a3d6d300e94eba758ea135b1ad19c57ca1b1296971a2bdf945f47"
+      "bytes": 15241,
+      "sha256": "764638faca492f01568b9cbd30bed82b966ae4eae2b561ce25a5badbc125b847"
     },
     {
       "path": "commands/grill-me.md",
-      "bytes": 994,
-      "sha256": "cadf2554953a1fe0103664e719a45512f33402cfb6c7efa5ebe56b2e3de602f3"
+      "bytes": 1061,
+      "sha256": "eb68e363fadf15e04a234615a061c89ef88295534ff4e95ea681a61a863636ef"
     },
     {
       "path": "commands/init.md",
-      "bytes": 18091,
-      "sha256": "41afacbebaf1fac2f36d737c4de5204a61308f4857740a898c2ad7196e308258"
+      "bytes": 21965,
+      "sha256": "92dd2aa9d26efa758a9fcc5e9e3082a81c35510390dc93d9e5b16222b9efbfa7"
     },
     {
       "path": "commands/learn.md",
@@ -263,8 +273,8 @@
     },
     {
       "path": "commands/plan.md",
-      "bytes": 4136,
-      "sha256": "111205e41027c28d7894ed75f98b356b2e9742c18f8be7143b377ca7745e3d83"
+      "bytes": 4486,
+      "sha256": "50543a7efc6af7665a3e53667ed89c1a43c78ab9919a507f47f68babd17dd965"
     },
     {
       "path": "commands/ponytail.md",
@@ -273,18 +283,18 @@
     },
     {
       "path": "commands/pr-prepare.md",
-      "bytes": 3707,
-      "sha256": "7f6b5cd36791d3d9ee9dd927094d1bc6117086621da1b30c75ba6ebfd1519e94"
+      "bytes": 3900,
+      "sha256": "0abfacca8096847dc88d946fe53227c801723aad92bdc6ca03dc5a8bcfaaff9b"
     },
     {
       "path": "commands/rules.md",
-      "bytes": 8796,
-      "sha256": "95674f6770cd39ad92e85387dd671a02327feef06e8ba855fed352a562fba96f"
+      "bytes": 9104,
+      "sha256": "78103f6529641f765df9d222da16c0491fd9306b8857cbe3adeab2011f178d6a"
     },
     {
       "path": "commands/sdd.md",
-      "bytes": 27691,
-      "sha256": "4ade709b176429836a530a9267a68e31f66fa6bca266ad93fd22418416efe2a6"
+      "bytes": 33754,
+      "sha256": "d1e7be842eb40148686487def5381c287ae89f852f811b532732778297f822dd"
     },
     {
       "path": "commands/ship.md",
@@ -303,8 +313,8 @@
     },
     {
       "path": "commands/standards.md",
-      "bytes": 5287,
-      "sha256": "fa911b9937f81de6f15bfee113ec1ca1e85d058c9e54ae87ab3af4645b4b628a"
+      "bytes": 5802,
+      "sha256": "86224ea19c27add633950c6c96f43e88282491279036f2e30a3d820a46c28b02"
     },
     {
       "path": "commands/tasks.md",
@@ -323,8 +333,8 @@
     },
     {
       "path": "commands/tester.md",
-      "bytes": 6651,
-      "sha256": "616140d142edffe6c144176f763552acbe63ad7c731f77d12ee84d92d25c095d"
+      "bytes": 6638,
+      "sha256": "60beabd64a2ce699324ef013cf37c24ae4389b916d3c1dc1d146176c36f2c2be"
     },
     {
       "path": "commands/tickets.md",
@@ -338,13 +348,13 @@
     },
     {
       "path": "docs/COMPANION-SKILLS.md",
-      "bytes": 4443,
-      "sha256": "56d4c10144fb40ac513f0abc2bd1a81ea703159df533ac2ed65c1d3a7e01e6c7"
+      "bytes": 4547,
+      "sha256": "4e62437085d5346d342357c301c1b893b563cf9a6a840e1f1d298bb27042a38e"
     },
     {
       "path": "docs/GETTING-STARTED.md",
-      "bytes": 40356,
-      "sha256": "027a6ad546eb65604b9574663c4e644963baaf7836ade87340f022128c219586"
+      "bytes": 46601,
+      "sha256": "271f2a7ce4d34d4e607f00f2f4aa1db88f7c072305cfe7d12f0339997910499f"
     },
     {
       "path": "docs/GUARDRAILS.md",
@@ -357,9 +367,29 @@
       "sha256": "620774940b06f16a7e4136501c938d33f7f59a286d7dde70663163f754efaf03"
     },
     {
+      "path": "docs/MEMORY.md",
+      "bytes": 4940,
+      "sha256": "5aafb7b998ca1e090534c5b21acadd9eb4c60f4ff4de2231b28ff78bc3f52d34"
+    },
+    {
       "path": "docs/RUN-STATE.md",
-      "bytes": 2884,
-      "sha256": "2d97ad98e6651154fefc0927a1da370d36f7078eedaa329dcf52651551df091d"
+      "bytes": 3826,
+      "sha256": "3938e849e7494c1a06ab2fb6871345ef5bc8d1dc7808fbeb059a98de7c102a13"
+    },
+    {
+      "path": "docs/images/hero.svg",
+      "bytes": 2677,
+      "sha256": "51cf7427b03ccc0709d012eb7b7326f226c37b5785ea131146fc6d8d19b61fd0"
+    },
+    {
+      "path": "docs/images/pillars.svg",
+      "bytes": 2638,
+      "sha256": "28a03ab4596ef9e3077260e05ec7b5f884a814038591fb0c7476868d6e757f6b"
+    },
+    {
+      "path": "docs/images/ticket-flow.svg",
+      "bytes": 3708,
+      "sha256": "29a75c872b7ecf45a570a87bc801e8a5bd84d72358a5bef7ff2bb986e165ad52"
     },
     {
       "path": "docs/rfcs/0001-neutral-install-route.md",
@@ -392,6 +422,11 @@
       "sha256": "2cde2a5df66e1d366993b94e87ce1d66792f1269527c55afc9ff64846fb2df0e"
     },
     {
+      "path": "docs/rfcs/0007-lens-briefs-statuses.md",
+      "bytes": 5382,
+      "sha256": "293ffea067f870be1106f994a5a1216d4d984e6117a61daa3733dbbe78bf590d"
+    },
+    {
       "path": "examples/react-ts-minimal/CONVENTIONS.md",
       "bytes": 235,
       "sha256": "4a998a56b5579b2db356b41abf78a031e4cd9289fa74a58b03519c34c6cd7cab"
@@ -417,9 +452,15 @@
       "sha256": "3a6d108ffffcfc918cc349bc4d9f084f4dc978d1e4f4684415780db511ebc6ca"
     },
     {
+      "path": "hooks/sdd-gate.sh",
+      "bytes": 17862,
+      "sha256": "00a03a4319497e2ad5c3c8c06e6e883f1168b159cd69aeeaff77f23d51078aa0",
+      "executable": true
+    },
+    {
       "path": "install-manifest.json",
-      "bytes": 35873,
-      "sha256": "09f18d2bb52ee314a861d051147fde91df3a2748d706a412ac0e1e970c497efd"
+      "bytes": 38775,
+      "sha256": "92f8f829b49d7ece1abf6db35ff6908e39199eddd249e42797aab57138d7165b"
     },
     {
       "path": "install-migrations.tsv",
@@ -428,13 +469,13 @@
     },
     {
       "path": "learning_human.html",
-      "bytes": 44542,
-      "sha256": "94d5427bfd2f8e053b622310b33fbcce8fed6161bed7a3400934b82af2900b6c"
+      "bytes": 45429,
+      "sha256": "f990d1de5e17f1b63c6cc35b876a5bfaeab49787a5ebae873994e997e6523f39"
     },
     {
       "path": "package.json",
-      "bytes": 1190,
-      "sha256": "6df952442b767dbc5a5fca0bb25cbc66ce82a9a7fa655db55f82eac2b93c8317"
+      "bytes": 1203,
+      "sha256": "49df0ebe00b6b7a4663d714898c1be025faf78b114dd8df0156613e383bfc4f1"
     },
     {
       "path": "skills/spec-harness-audit/SKILL.md",
@@ -443,8 +484,8 @@
     },
     {
       "path": "skills/spec-harness-build/SKILL.md",
-      "bytes": 1317,
-      "sha256": "9cb6640b565b9a0009720135a79636788e81ecf23c352d8434bc6b83533ae6e1"
+      "bytes": 1429,
+      "sha256": "80740b16e7c3f13bef38c487f4cb2c1d8f50e7d87884bafe3746e9f8d1c5b898"
     },
     {
       "path": "skills/spec-harness-conventions/SKILL.md",
@@ -543,13 +584,13 @@
     },
     {
       "path": "templates/AGENTS.md",
-      "bytes": 2428,
-      "sha256": "c393222f4b2d8f02aa34c82a1d442e44fb3264a62bd9fc26701b1a0878f94706"
+      "bytes": 2855,
+      "sha256": "b12afdd522f45afd74c67d1471640ef10deaf39ba68298e0861365b5dbe35612"
     },
     {
       "path": "templates/CLAUDE.md",
-      "bytes": 2731,
-      "sha256": "6780ce611082d2bcdf1c9d103658691307efff1110416eab8f2f93942798f456"
+      "bytes": 2743,
+      "sha256": "899e25b85647213c59ffa9c170ced8badff64c938c76ee4067122b2ebf83060c"
     },
     {
       "path": "templates/RULES.md",
@@ -585,6 +626,11 @@
       "path": "templates/install/ai_rules/globalRules.md",
       "bytes": 1063,
       "sha256": "a8f470c3252167cbefb862e53c90eb3adf7ce9027902b7bc48b9d7fa86de860c"
+    },
+    {
+      "path": "templates/install/ai_rules/review-lens.md",
+      "bytes": 1470,
+      "sha256": "eca3cb68acdfdd5ba2d323ffb5420986aa8d81113a8981212c754de189b33fc9"
     },
     {
       "path": "templates/install/ai_rules/rules/context_management.md",
@@ -628,38 +674,58 @@
     },
     {
       "path": "templates/install/memory/20-system.md",
-      "bytes": 180,
-      "sha256": "86653710c01462e6d0b96fe0b6955b7acc72782a1b22ff0f8da43af9f835e9cf"
+      "bytes": 465,
+      "sha256": "e6198161eae8be983dba3197442649c9d3061bbe6dc80df1f0dc7beeb199c6e0"
     },
     {
       "path": "templates/install/memory/30-tech.md",
-      "bytes": 188,
-      "sha256": "0d42135761ae78a1fd47b856aedf1bc565b13a91795ca572cfd0e9e495a0182f"
+      "bytes": 473,
+      "sha256": "97c88d5cad50638b0d871346e3095d8be234046bce945efeccfc833e887a9278"
     },
     {
       "path": "templates/install/memory/40-active.md",
-      "bytes": 169,
-      "sha256": "e191d1f09c7732c9cb91a3de29e3ec677bd63f90be110c75d9dc01a428bcf2e1"
+      "bytes": 454,
+      "sha256": "0851e00ed00811f697e508974be7d9a8a2aa8c73ac2412ff6f86baf0e7f7481a"
     },
     {
       "path": "templates/install/memory/50-progress.md",
-      "bytes": 160,
-      "sha256": "3027838ac2702aa4945f6fd63d8ab892e3349f1a3007a84d22cfacb913f82a20"
+      "bytes": 445,
+      "sha256": "27c663c623d84f8087c22bbe24cc40f97db54053bba0f7d3ff88ef2c0746b499"
     },
     {
       "path": "templates/install/memory/60-decisions.md",
-      "bytes": 706,
-      "sha256": "4ce1b99c6c9b6f6c9f04e272b054bdfbdf9b9b0f14eec7e4da35dd126f482e69"
+      "bytes": 991,
+      "sha256": "783ac35d0e086575695d15d89256d7096cf8cce73ae5056267913f356e1583b2"
     },
     {
       "path": "templates/install/memory/70-knowledge.md",
-      "bytes": 172,
-      "sha256": "bdb7108628e71a187de0885b33c42ed4a243140716f89707e505888addfa30bc"
+      "bytes": 457,
+      "sha256": "220021dec9763514e353fdfd7b5685c13c4f03b5f9ad76604bc05fc0aade1595"
     },
     {
       "path": "templates/install/memory/80-feedback.md",
-      "bytes": 161,
-      "sha256": "511c9973dd025d1e387981ca63b68c0639ed2cc75340d31a793bd5cde50a6f98"
+      "bytes": 446,
+      "sha256": "b28cc7131159f6b84905713bdd7540fdc443839ae9c537ba34ea8f81a8152b07"
+    },
+    {
+      "path": "templates/memory-kinds/automation/pipeline.md",
+      "bytes": 869,
+      "sha256": "8b98fbbda539d2a15a0cd1314d70022987f195832b76ff97413948f8be05c5ae"
+    },
+    {
+      "path": "templates/memory-kinds/content/audience.md",
+      "bytes": 752,
+      "sha256": "f4661aa7cda8fb3d657f3eba7002fef47aba989faafbc1549ec21ac0f03d3f6b"
+    },
+    {
+      "path": "templates/memory-kinds/content/voice-dna.md",
+      "bytes": 962,
+      "sha256": "f1e713391ee6820a46ca3a00803b73bf30599d20d1f5c98b085dc2fe5d70af57"
+    },
+    {
+      "path": "templates/memory-kinds/research/sources.md",
+      "bytes": 787,
+      "sha256": "a51d63fc90ae10cac01484977c2f99060352f7d9ad86ae686f387ecb87a75663"
     },
     {
       "path": "templates/project-skills/spec-harness-architecture.md",
@@ -673,8 +739,8 @@
     },
     {
       "path": "templates/project-skills/spec-harness-packages.md",
-      "bytes": 2584,
-      "sha256": "27f107b07a7c79f95a9a616c9cbbbbc86753c249c93593516ef7881d2621b110"
+      "bytes": 2601,
+      "sha256": "9e4c28ef4d6288326fd498d35683916e2fc28ca34434cd8d0bf3284465d89c15"
     },
     {
       "path": "templates/project-skills/spec-harness-performance.md",
@@ -773,8 +839,8 @@
     },
     {
       "path": "tests/doctor-fixtures.sh",
-      "bytes": 6348,
-      "sha256": "bd27902324fbecaf41ed33ad643a5dcf0e6151850f350b21b06f9f5b8f28e87b"
+      "bytes": 41157,
+      "sha256": "000813be422ac12b1694215ba8912d2bf67c4e47c09838da563fd4ddb822fa2b"
     },
     {
       "path": "tests/examples-smoke.sh",
@@ -784,8 +850,8 @@
     },
     {
       "path": "tests/finalize-fixtures.sh",
-      "bytes": 47778,
-      "sha256": "2f59e0fe419e2e597cbc1212a90c1e9d084e00d6f44f35e45e561c5360cd5fcf"
+      "bytes": 51125,
+      "sha256": "7c68de9327a954369151bd10edaee977a5d988e5d2650cdae963fcfbd3d38072"
     },
     {
       "path": "tests/fixtures/python-state/README.md",
@@ -838,20 +904,25 @@
       "sha256": "c7ad48726b1a7ab1e1453a8253b962c4b3906aeaaad3271d312758b7b9b33283"
     },
     {
+      "path": "tests/hook-fixtures.sh",
+      "bytes": 33465,
+      "sha256": "a177c041a3f8cb6b32ca705667deeeba37cd65e15b5b0398f6a23e5d613601e9"
+    },
+    {
       "path": "tests/index-exclusion-fixtures.sh",
       "bytes": 3392,
       "sha256": "65e7a96504ffee694cf76b79721ce5be60065845953fa7400e453828643436c0"
     },
     {
       "path": "tests/index-fixtures.sh",
-      "bytes": 26899,
-      "sha256": "18fd819f067d71037513f57f959be8464a942a0b0668fa6f2c00b463714f9046",
+      "bytes": 65175,
+      "sha256": "1c7ffb11153a21a13ef0e6b0608fa54ec88f317096942ad43f1c63b292273e91",
       "executable": true
     },
     {
       "path": "tests/install-manifest-contract.sh",
-      "bytes": 12920,
-      "sha256": "649d3e74b783ca7b9ab89d4e45303999e9f306586f97b7d47a0f3da7cdf48663",
+      "bytes": 13109,
+      "sha256": "b546b0799f12809598789c6ff645c5f7aa4bfaf02e2064b20694513ed9e54e44",
       "executable": true
     },
     {
@@ -862,8 +933,8 @@
     },
     {
       "path": "tests/installer-fixtures.sh",
-      "bytes": 20908,
-      "sha256": "08a10e6f65cffb02bf4d7812e5245a91ccae277f7e001f2b26a175b123627d30"
+      "bytes": 43727,
+      "sha256": "989a1cdc83c411160b57dc382e9e6556172af8026d79c909677512f2479bf019"
     },
     {
       "path": "tests/lib/portable.sh",
@@ -872,13 +943,13 @@
     },
     {
       "path": "tests/lib/ready_fixture.py",
-      "bytes": 4575,
-      "sha256": "bb045969a332a3a8b5f062c62ad21c6a2134f7b7ae4642092a5ea0bb93d5bba6"
+      "bytes": 4603,
+      "sha256": "145cb47d6fe0541e7a268de8b53caf3daaa1368d3980f1265b95c847b932e8c3"
     },
     {
       "path": "tests/portable-skills-contract.sh",
-      "bytes": 15740,
-      "sha256": "8388b23366ecb58d7689c39942b313f420cd5107f0105c5a6b86cbb204d3fb86",
+      "bytes": 15855,
+      "sha256": "4db6e3b9ec8b52a08acbff8280633457d49b591065ace1749ae676ce7786cde0",
       "executable": true
     },
     {
@@ -903,13 +974,18 @@
     },
     {
       "path": "tests/router-contract.sh",
-      "bytes": 5671,
-      "sha256": "8c1a3bad57361f01ae5bbe79926b1d31eda45fe17df3a78c60e159f53a10cdb8"
+      "bytes": 6346,
+      "sha256": "c8aad597079ffb0e900c649995d128fe667370bf980d6d906439b35c1f6c421d"
     },
     {
       "path": "tests/rule-layers-fixtures.sh",
-      "bytes": 22323,
-      "sha256": "aef32e6ea11eb8d09e48bbf0955d68dc70099898077a7a8bdee0401788904f5a"
+      "bytes": 25603,
+      "sha256": "58a1076e023bfa17689c1829afdb91667904b548f97f473643b68a45e018cab2"
+    },
+    {
+      "path": "tests/rule-ownership-contract.sh",
+      "bytes": 1542,
+      "sha256": "1920cc294b541bbc7283d09de32726cb0d793e8b4e83bfc455e0b1ef8b1c4231"
     },
     {
       "path": "tests/run-all.sh",
@@ -930,8 +1006,8 @@
     },
     {
       "path": "tests/sdd-fixtures.sh",
-      "bytes": 51599,
-      "sha256": "f3ae5ca15b7e699db4c86ec3c963e6c4349c5ec160d3319d23400fb83f84d315"
+      "bytes": 64767,
+      "sha256": "d50d0c837e882cb524007571d8e0f87256108f8a78a7f36b00e51db502a63cc1"
     },
     {
       "path": "tests/sdd-rule-carriers.sh",
@@ -940,8 +1016,8 @@
     },
     {
       "path": "tests/synthesis-contract.sh",
-      "bytes": 37774,
-      "sha256": "b050f5ee0e36ca1d8c3d0a02cdd0d089320998ee2e43df743c94c380177a8ba5",
+      "bytes": 81446,
+      "sha256": "de03ad216058638de2951de1a3badf82d669563f1ee294299f6a60a36106ca22",
       "executable": true
     },
     {
@@ -952,8 +1028,8 @@
     },
     {
       "path": "tests/update-fixtures.sh",
-      "bytes": 21063,
-      "sha256": "6f921620bee9c588b174400d9b2dc0623712e51e4ae9e14ff66acdea164aecfc"
+      "bytes": 25742,
+      "sha256": "7dae76a4d2d290f66cbf151d1717334d2f7b94ed932fa9fb352ae3961fea8e84"
     }
   ]
 }

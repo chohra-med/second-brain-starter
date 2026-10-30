@@ -35,7 +35,7 @@ Each connection gets a folder under `01-Projects/` with its own `README.md` and 
 
 ## Current records
 
-These four link to `Selected-Project`, the seeded project. For another project, use the same four records in its folder under `01-Projects/`. The [project index](01-Projects/Index.md) lists every project; name one, several, or `all` of them before work.
+These four link to `Selected-Project`, the seeded project. The seeded `Selected-Project` holds your first project and keeps its name. If you no longer use it, mark it closed in its own records and work in a project created beside it from the template. For another project, use the same four records in its folder under `01-Projects/`. The [project index](01-Projects/Index.md) lists every project; name one, several, or `all` of them before work.
 
 [Facts](01-Projects/Selected-Project/FACTS.md) · [Roadmap](01-Projects/Selected-Project/roadmap.md) · [Progress](01-Projects/Selected-Project/progress.md) · [Decisions](01-Projects/Selected-Project/Decisions.md)
 

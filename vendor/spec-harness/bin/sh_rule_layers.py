@@ -28,6 +28,7 @@ STD_STATUS = re.compile(r"\bstatus: (in place|required|planned)\b")
 APPLIES = re.compile(r"<!-- applies: (\S+) (.+?) -->")
 OVERRIDES = re.compile(r"\boverrides ([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)")
 CHECKED = re.compile(r"checked \d{4}-\d{2}-\d{2}")
+OFFICIAL_TEXT = re.compile(r"(?:^|[;,(]\s*)official text:(?!\s*(?:tbd|todo|none|n/a|unknown)\b)[^;]*\d", re.I)
 COMMENT = re.compile(r"<!--.*?-->", re.S)
 # Higher wins on a conflict: business > standard > decision > project > tool > baseline. A standard
 # the owner committed to is an obligation a decision cannot override; only the business layer can.
@@ -38,10 +39,15 @@ MEMORY_LAYERS = ((".memory/10-product.md", "business"), (".memory/60-decisions.m
 def parse(text, strict=True):
     """Return (rules, defects) for one file: rules are dicts with id, text, source and line.
 
+    HTML comments are removed first (their newlines are kept, so line numbers stay real): an example
+    rule inside a comment is not a rule, and a trailing comment is not part of the rule line.
+
     strict=False is for the memory bank, which is human-written prose: only well-formed rule lines
     are rules there, and other lines are left alone.
     """
     rules, defects = [], []
+    # Blank each comment but keep its newlines, so example rules inside it are not rules and real line numbers hold.
+    text = COMMENT.sub(lambda found: "\n" * found.group(0).count("\n"), text)
     for number, line in enumerate(text.splitlines(), 1):
         if strict and POINTER.search(line):
             defects.append(f"line {number} is a pointer, not a rule; write the rule sentence itself")
@@ -158,8 +164,12 @@ def check(root, receipt, read, fail, modules, rule_paths, consumers, pack_dir):
                 fail(f"{rel}: rule-layer or applies marker differs from pack {name}")
         elif layer in ("tool", "standard"):
             for rule in rules_by_file[rel]:
-                if "http" not in rule["source"] or not CHECKED.search(rule["source"]):
-                    fail(f"{rel}: {layer} rule {rule['id']} without a pack needs an official documentation URL and 'checked YYYY-MM-DD' in its source")
+                linked = "http" in rule["source"] and CHECKED.search(rule["source"])
+                # A law or standard can be named precisely without a link (and without an outbound request).
+                named = layer == "standard" and OFFICIAL_TEXT.search(rule["source"])
+                if not (linked or named):
+                    hint = " or 'official text: <instrument and article>' (at the start of the source or after ';', ',' or '(')" if layer == "standard" else ""
+                    fail(f"{rel}: {layer} rule {rule['id']} without a pack needs an official documentation URL and 'checked YYYY-MM-DD'{hint} in its source")
 
     # v1: packs are recommended, not required; `init` adopts the ones that apply (commands/rules.md).
 

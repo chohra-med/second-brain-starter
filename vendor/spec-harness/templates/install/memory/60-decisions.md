@@ -14,3 +14,11 @@ wins over project, tool and baseline rules, and loses only to a business rule.
   - Options: what else was considered.
   - Reason: why this one.
 -->
+
+## Current truth
+
+PENDING: what is true now, at most 12 lines. Rewrite this section in place; cite the Log entries it rests on.
+
+## Log
+
+Dated entries, newest first, one `### YYYY-MM-DD` heading each. Append only; move settled entries out as `docs/MEMORY.md` says, never delete them.
