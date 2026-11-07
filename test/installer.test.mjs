@@ -10,6 +10,7 @@ const expectedSeedDestinations = [
   '00-Meta/Daily-Task-Plan.md',
   '00-Meta/Decisions.md',
   '00-Meta/Profile.md',
+  '00-Meta/Word-Map.md',
   '00-Meta/Working-Agreement.md',
   '01-Projects/Index.md',
   '01-Projects/README.md',
@@ -526,7 +527,9 @@ const bundledMethodFiles = new Map([
 const installedSkills = [
   'context',
   'context-modes',
+  'design-check',
   'end-session',
+  'factory',
   'graphify',
   'grill-me',
   'handover',
@@ -542,9 +545,12 @@ const installedSkills = [
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
+  'security-check',
+  'skill-sync',
   'today',
   'usage-dashboard',
   'verify-end-session',
+  'writing-check',
   'writing-skills',
 ];
 
@@ -570,10 +576,10 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /twenty-two local skills/);
-  assert.match(readme, /twenty-two shared skills/);
-  assert.doesNotMatch(readme, /\bseven (?:local |shared )?skills\b/);
-  assert.doesNotMatch(readme, /\bsix (?:local |shared )?skills\b/);
+  assert.match(readme, /twenty-seven local skills/);
+  assert.match(readme, /twenty-seven shared skills/);
+  assert.doesNotMatch(readme, /(?<!-)\bseven (?:local |shared )?skills\b/, 'the old count, not part of twenty-seven');
+  assert.doesNotMatch(readme, /(?<!-)\bsix (?:local |shared )?skills\b/, 'the old count, not part of twenty-six');
 
   const license = await readFile(path.join(sourceRoot, bundledMethodSource, 'LICENSE'), 'utf8');
   assert.match(license, /^MIT License\n\nCopyright \(c\) 2026 Jake Van Clief\n/);

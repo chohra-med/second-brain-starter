@@ -53,7 +53,13 @@ test('the docs say api-anything is optional, how to add it, and what its command
   assert.match(readme, new RegExp(upgraded, 'i'), 'README.md does not say an upgrade keeps api-anything');
   assert.ok(readme.includes(folders), 'README.md does not name the folders to delete');
   assert.doesNotMatch(readme, /is optional and not installed|It is not installed/, 'README.md still says, with no condition, that api-anything is not installed');
+  // The docs count the skills the manifest installs. Counting api-anything as installed would give one more.
+  const words = ['twenty', 'twenty-one', 'twenty-two', 'twenty-three', 'twenty-four', 'twenty-five', 'twenty-six', 'twenty-seven', 'twenty-eight', 'twenty-nine', 'thirty'];
+  const installed = new Set(JSON.parse(await read('template-manifest.json')).entries.map((entry) => entry.destination.match(/^\.claude\/skills\/([^/]+)\//)?.[1]).filter(Boolean)).size;
+  const [count, oneMore] = [words[installed - 20], words[installed - 19]];
   for (const name of ['docs/free-and-builder-ai-os.md', 'docs/first-loop-and-projects.md']) {
-    assert.doesNotMatch(await read(name), /twenty-three/, `${name} still counts twenty-three installed skills`);
+    const text = await read(name);
+    assert.match(text, new RegExp(`\\b${count} (?:shared )?skills\\b`), `${name} does not count the ${count} installed skills`);
+    assert.doesNotMatch(text, new RegExp(`\\b${oneMore}\\b`), `${name} counts ${oneMore} skills, as if api-anything were installed`);
   }
 });

@@ -93,12 +93,12 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships twenty-two shared skills. The initializer installs them as twenty-two local skills in `.claude/skills/` and `.agents/skills/`. One more, `api-anything`, is optional: `init` does not install it, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
+| Skills | The starter ships twenty-seven shared skills. The initializer installs them as twenty-seven local skills in `.claude/skills/` and `.agents/skills/`. One more, `api-anything`, is optional: `init` does not install it, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
 <details>
-<summary><strong>The twenty-two skills, and the optional one</strong></summary>
+<summary><strong>The twenty-seven skills, and the optional one</strong></summary>
 
 <br>
 
@@ -126,6 +126,11 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `usage-dashboard` | Prints how much Claude Code was used, from its transcript files on this machine: tokens, an estimated cost at list prices, and skill and command use. It runs only when you run it. |
 | `scroll-story-component` | Adds a scroll-driven video story to a React site: it copies one runtime file into your project, then builds the chapters, reading pauses, phone framing and film encode on it. |
 | `writing-skills` | Explains how to write your own skill. |
+| `security-check` | Reads a skill, plugin, MCP server config or hook folder before you install it, and reports PASS, FLAG or BLOCK for six risks plus a separate check of skill-writing best practices. It reads files only and runs nothing from the folder. |
+| `skill-sync` | A weekly report on your installed skills: copies compared by hash, your lock file compared, the security check run over every skill, and the newest commit of each outside source you approved. It reports only and changes nothing, and it can print a weekly job for your system that you install yourself. |
+| `factory` | Takes one coding task you paste to a branch ready for review, through Spec Harness `/sdd` when the repository has it, and keeps one board file per project. You approve the plan and run every push yourself. |
+| `writing-check` | Checks a text before it goes to people, in your voice: AI tells, voice match, clarity and length for the channel, every claim against its source, two rewrites, one diagram when the text explains a flow, and a data check for keys, emails and phone numbers. It shows a local page with one Copy button per text; you send the text yourself. It ships the `Brand.md` and voice DNA templates. |
+| `design-check` | Checks one page or screen against your `Brand.md` and accessibility, from screenshots at one width: the message, the visual and the UI floor (contrast to WCAG 2.2 AA, spacing, touch-target size with its WCAG level). It ranks the findings with one fix each on a local page, and you pick what to fix; it changes no code. |
 
 **Optional: `api-anything`.** It turns a website that has no API into calls your client can make directly, by driving an outside command that the starter does not bundle. `init` does not install it: the skill tells your client to fetch that command with `npx` from its project's default branch, and the command's `login` step can import cookies from your everyday browser. v1.8.0, v1.9.0 and v1.10.0 did install it, and an upgrade from one of those versions leaves it in place: the plan lists its four files as `DEPRECATED`, the upgrade deletes nothing, and your client still loads the skill. To remove it, delete `.claude/skills/api-anything/` and `.agents/skills/api-anything/` in your workspace. To add it, read `template/optional-skills/api-anything/SKILL.md` in the starter copy, then copy that folder into `.claude/skills/` and `.agents/skills/` in your workspace. `verify` and `upgrade` do not manage a skill you add by hand, or one an upgrade left in place. See [ATTRIBUTION.md](ATTRIBUTION.md).
 

@@ -1,10 +1,16 @@
 # second-brain:privacy:start
-# Added by Second Brain Starter. Git ignores these paths: installer state, personal daily notes, your profile and
-# task plan, and connection records. To keep one of these paths in version control, leave this block and add an exception line (!path) below it.
+# Added by Second Brain Starter. Git ignores these paths: installer state, personal daily notes, your profile, task
+# plan and voice DNA, connection records, the security-check, writing-check and design-check pages, and the skill-sync reports and weekly job log. To keep one of these paths in version control, leave this block and add an exception line (!path) below it.
 .second-brain/
 05-Daily/*
 !05-Daily/daily-template.md
 00-Meta/Profile.md
 00-Meta/Daily-Task-Plan.md
+00-Meta/Voice-DNA.md
 01-Projects/**/Connection.md
+**/local/security-check/
+**/local/writing-check/
+**/local/design-check/
+.skill-sync/reports/
+.skill-sync/*.log
 # second-brain:privacy:end

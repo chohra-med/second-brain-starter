@@ -44,13 +44,13 @@
     {
       "source": "template/00-Meta/AGENTS.md",
       "destination": "00-Meta/AGENTS.md",
-      "sha256": "5ea1a2b58901c40ca65fd1e54b85326b9e2e4211f2d135d9f185ee23c192e767",
+      "sha256": "551d019e0239524a2a04f42901a0c062e1c564a52f6c454a8bf214e8fd076e35",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/03-Resources/Procedures/handover.md",
       "destination": "03-Resources/Procedures/handover.md",
-      "sha256": "1a0d50159e756e33b1660e74bef1c16b831a393d76d61c120bd30241f15fa783",
+      "sha256": "207848b58c794036563e64e4b2bedeff91964892dd634481a9fae62e11954598",
       "mergeKind": "managed-file"
     },
     {
@@ -68,7 +68,7 @@
     {
       "source": "template/privacy-gitignore.txt",
       "destination": ".gitignore",
-      "sha256": "47649a4d35b8d9b4a8f517d571b62ad06a583174c82782ca2f3f05a5489d125b",
+      "sha256": "f6982b52e31d8895c9c3ff4b4b2ef0c17245738ba7d9ecefb5fb1f016c44da14",
       "mergeKind": "managed-block"
     },
     {
@@ -99,6 +99,12 @@
       "source": "template/00-Meta/Working-Agreement.md",
       "destination": "00-Meta/Working-Agreement.md",
       "sha256": "7344de36f8603ba5c6cb94e8602aca1c50294907a13011ca295f3318e35347aa",
+      "mergeKind": "seed-file"
+    },
+    {
+      "source": "template/00-Meta/Word-Map.md",
+      "destination": "00-Meta/Word-Map.md",
+      "sha256": "8596e998c23ab3f0de2e9e3cfd074e3a6435993153a4febdf039b7781b55420d",
       "mergeKind": "seed-file"
     },
     {
@@ -194,67 +200,67 @@
     {
       "source": "template/shared-skills/second-brain-capture/SKILL.md",
       "destination": ".agents/skills/second-brain-capture/SKILL.md",
-      "sha256": "f79c05cef2d89abb114f9a270ee1115da7b5e7d8d9356a4beb1c7e3a73474833",
+      "sha256": "322c3881a51916c5ed75d74ca29640497c16a49c4e1f9458ca9ef55d8ce957d0",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-close/SKILL.md",
       "destination": ".agents/skills/second-brain-close/SKILL.md",
-      "sha256": "abb314208c12263e684d708d5325da2339f435f29677a8d43c03491d9ce99fd9",
+      "sha256": "2a1992962f140dd51f900a3e5015dd8b04125f6b264b3303714d1cc150d715f8",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-context/SKILL.md",
       "destination": ".agents/skills/second-brain-context/SKILL.md",
-      "sha256": "d6af68b4af6cce89879884109e7b1480ecbd19166b8f63f371e9ec6422185652",
+      "sha256": "999dd9a18f33ef81cc0c7e4afeca76109e022397d17d3e1b120ecf0e92b25127",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-learning/SKILL.md",
       "destination": ".agents/skills/second-brain-learning/SKILL.md",
-      "sha256": "34cd582132f20432f08201d0443b203f2012955a0aa291a1379af5eba3c377e6",
+      "sha256": "0debfd445379b64435051fc009609d610de5925b354120055612f6c15bb7ab6b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-review/SKILL.md",
       "destination": ".agents/skills/second-brain-review/SKILL.md",
-      "sha256": "2ea064003c9b8ffc4f31ccdd5a88d79f7a9365b6eb56b9b6010e105913ccd025",
+      "sha256": "bd44b7b7d7656cc0a02f7bf58eec76aab0433204b52a8b95991382677ccb1786",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-capture/SKILL.md",
       "destination": ".claude/skills/second-brain-capture/SKILL.md",
-      "sha256": "f79c05cef2d89abb114f9a270ee1115da7b5e7d8d9356a4beb1c7e3a73474833",
+      "sha256": "322c3881a51916c5ed75d74ca29640497c16a49c4e1f9458ca9ef55d8ce957d0",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-close/SKILL.md",
       "destination": ".claude/skills/second-brain-close/SKILL.md",
-      "sha256": "abb314208c12263e684d708d5325da2339f435f29677a8d43c03491d9ce99fd9",
+      "sha256": "2a1992962f140dd51f900a3e5015dd8b04125f6b264b3303714d1cc150d715f8",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-context/SKILL.md",
       "destination": ".claude/skills/second-brain-context/SKILL.md",
-      "sha256": "d6af68b4af6cce89879884109e7b1480ecbd19166b8f63f371e9ec6422185652",
+      "sha256": "999dd9a18f33ef81cc0c7e4afeca76109e022397d17d3e1b120ecf0e92b25127",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-learning/SKILL.md",
       "destination": ".claude/skills/second-brain-learning/SKILL.md",
-      "sha256": "34cd582132f20432f08201d0443b203f2012955a0aa291a1379af5eba3c377e6",
+      "sha256": "0debfd445379b64435051fc009609d610de5925b354120055612f6c15bb7ab6b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/second-brain-review/SKILL.md",
       "destination": ".claude/skills/second-brain-review/SKILL.md",
-      "sha256": "2ea064003c9b8ffc4f31ccdd5a88d79f7a9365b6eb56b9b6010e105913ccd025",
+      "sha256": "bd44b7b7d7656cc0a02f7bf58eec76aab0433204b52a8b95991382677ccb1786",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/00-Meta/README.md",
       "destination": "00-Meta/README.md",
-      "sha256": "ddde37dadcf3e86014514c3a8c2c2e0050ac26b1686b0d4b8776711a4d95a3a3",
+      "sha256": "9a5492a80d49b76bb78880013b80a16fced10b6605bd861e86e28185999214c6",
       "mergeKind": "managed-file"
     },
     {
@@ -716,7 +722,7 @@
     {
       "source": "template/shared-skills/scroll-story-component/references/api.md",
       "destination": ".agents/skills/scroll-story-component/references/api.md",
-      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
+      "sha256": "0050fdece8c0e20e69d76d771bc1fb43dea49808e90ef899675f1a58d1b25331",
       "mergeKind": "managed-file"
     },
     {
@@ -758,7 +764,7 @@
     {
       "source": "template/shared-skills/scroll-story-component/references/api.md",
       "destination": ".claude/skills/scroll-story-component/references/api.md",
-      "sha256": "e338220c9366ccf069ca1644371202523597ccf0d46cd3497f4816a3199c2823",
+      "sha256": "0050fdece8c0e20e69d76d771bc1fb43dea49808e90ef899675f1a58d1b25331",
       "mergeKind": "managed-file"
     },
     {
@@ -903,6 +909,174 @@
       "source": "template/03-Resources/Procedures/harness-session.md",
       "destination": "03-Resources/Procedures/harness-session.md",
       "sha256": "ff917ba81581923a95c45de2e8e6948ff1738bb1f09b8655e215a7c256cf5c3e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/security-check/SKILL.md",
+      "destination": ".agents/skills/security-check/SKILL.md",
+      "sha256": "ece56bf92d6d0c879e9ac27b165402ee63abe809a23bfa4ef0c0fa11f9d4c40b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/security-check/SKILL.md",
+      "destination": ".claude/skills/security-check/SKILL.md",
+      "sha256": "ece56bf92d6d0c879e9ac27b165402ee63abe809a23bfa4ef0c0fa11f9d4c40b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/security-check/check.mjs",
+      "destination": ".agents/skills/security-check/check.mjs",
+      "sha256": "3509531fa689d1f83f29aac01fd0321c991ebf8598bfdd5a1af9a0ed640ff3aa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/security-check/check.mjs",
+      "destination": ".claude/skills/security-check/check.mjs",
+      "sha256": "3509531fa689d1f83f29aac01fd0321c991ebf8598bfdd5a1af9a0ed640ff3aa",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/SKILL.md",
+      "destination": ".agents/skills/skill-sync/SKILL.md",
+      "sha256": "c1953e3e3c5344b96bd2bab56156c668273598d42c0baeae73f1b53745847c1c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/SKILL.md",
+      "destination": ".claude/skills/skill-sync/SKILL.md",
+      "sha256": "c1953e3e3c5344b96bd2bab56156c668273598d42c0baeae73f1b53745847c1c",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/assets/schedule.txt",
+      "destination": ".agents/skills/skill-sync/assets/schedule.txt",
+      "sha256": "4628d691c23c9de619cc5bb3c8600b15e63f7abb3ce6ca9da46559ade37c5377",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/assets/schedule.txt",
+      "destination": ".claude/skills/skill-sync/assets/schedule.txt",
+      "sha256": "4628d691c23c9de619cc5bb3c8600b15e63f7abb3ce6ca9da46559ade37c5377",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/sync.mjs",
+      "destination": ".agents/skills/skill-sync/sync.mjs",
+      "sha256": "ff09299c0a08470ac30d51f52e1aa479bbef5edcec1e58ee36d0e0d5e19646db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/skill-sync/sync.mjs",
+      "destination": ".claude/skills/skill-sync/sync.mjs",
+      "sha256": "ff09299c0a08470ac30d51f52e1aa479bbef5edcec1e58ee36d0e0d5e19646db",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/factory/SKILL.md",
+      "destination": ".agents/skills/factory/SKILL.md",
+      "sha256": "f4c677840e11d7942655a5efcb8c71660e38fcc95b1c4e95082c734bfdd2ea7b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/factory/SKILL.md",
+      "destination": ".claude/skills/factory/SKILL.md",
+      "sha256": "f4c677840e11d7942655a5efcb8c71660e38fcc95b1c4e95082c734bfdd2ea7b",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/factory/assets/board.md",
+      "destination": ".agents/skills/factory/assets/board.md",
+      "sha256": "afdd022ba7ad280f17191433c8550442304c711e014f20bd248303ca6071ec0a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/factory/assets/board.md",
+      "destination": ".claude/skills/factory/assets/board.md",
+      "sha256": "afdd022ba7ad280f17191433c8550442304c711e014f20bd248303ca6071ec0a",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/SKILL.md",
+      "destination": ".agents/skills/writing-check/SKILL.md",
+      "sha256": "acf54e5a9e5f56f05ab8395b76c7fb74b873891d63de5448f895997874a616a9",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/SKILL.md",
+      "destination": ".claude/skills/writing-check/SKILL.md",
+      "sha256": "acf54e5a9e5f56f05ab8395b76c7fb74b873891d63de5448f895997874a616a9",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/Brand.md",
+      "destination": ".agents/skills/writing-check/assets/Brand.md",
+      "sha256": "aba1d23da09a491bf34c2cb8b0e1546aab1bbde9eef51562fb4936cc528886bb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/Brand.md",
+      "destination": ".claude/skills/writing-check/assets/Brand.md",
+      "sha256": "aba1d23da09a491bf34c2cb8b0e1546aab1bbde9eef51562fb4936cc528886bb",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/Voice-DNA.md",
+      "destination": ".agents/skills/writing-check/assets/Voice-DNA.md",
+      "sha256": "4d6ab674ade94e44271a55abcb45c5e4e2acb6d97342e7adc926d5d72ad61cd4",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/Voice-DNA.md",
+      "destination": ".claude/skills/writing-check/assets/Voice-DNA.md",
+      "sha256": "4d6ab674ade94e44271a55abcb45c5e4e2acb6d97342e7adc926d5d72ad61cd4",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/review-page.html",
+      "destination": ".agents/skills/writing-check/assets/review-page.html",
+      "sha256": "7d3f127cc70673974651eadbbeed22d01b35bf23537a2181bd1619133248eed1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/writing-check/assets/review-page.html",
+      "destination": ".claude/skills/writing-check/assets/review-page.html",
+      "sha256": "7d3f127cc70673974651eadbbeed22d01b35bf23537a2181bd1619133248eed1",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/SKILL.md",
+      "destination": ".agents/skills/design-check/SKILL.md",
+      "sha256": "767d0e4233ae71ee888edaa16a9e231c2ed2ded23a71a20a385565b3cbed0a2f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/SKILL.md",
+      "destination": ".claude/skills/design-check/SKILL.md",
+      "sha256": "767d0e4233ae71ee888edaa16a9e231c2ed2ded23a71a20a385565b3cbed0a2f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/assets/result-page.html",
+      "destination": ".agents/skills/design-check/assets/result-page.html",
+      "sha256": "33693c9707bc92cff3aacfd45f795037df9e93249fc13e24f35d14cdb1d2f69e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/assets/result-page.html",
+      "destination": ".claude/skills/design-check/assets/result-page.html",
+      "sha256": "33693c9707bc92cff3aacfd45f795037df9e93249fc13e24f35d14cdb1d2f69e",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/contrast.mjs",
+      "destination": ".agents/skills/design-check/contrast.mjs",
+      "sha256": "49f4143fc9e7347dabcaf79780b3dbf7e25504ba4d17888076659be6e94abdda",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/design-check/contrast.mjs",
+      "destination": ".claude/skills/design-check/contrast.mjs",
+      "sha256": "49f4143fc9e7347dabcaf79780b3dbf7e25504ba4d17888076659be6e94abdda",
       "mergeKind": "managed-file"
     }
   ]
