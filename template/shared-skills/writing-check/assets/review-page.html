@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-N0tu1i7JBSi1LO7nemY3cKGPQDHCdHyRz/khzmdS0nA='; base-uri 'none'; form-action 'none'">
+<title>Writing check</title>
+<style>
+:root{--bg:#ffffff;--fg:#1d1f23;--muted:#5d636b;--line:#d9dce1;--card:#f5f6f8;--accent:#1a5fb4;--on-accent:#ffffff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15171a;--fg:#e8eaed;--muted:#a3a8af;--line:#33373d;--card:#1d2024;--accent:#8ab4f8;--on-accent:#15171a}}
+:root[data-theme="dark"]{--bg:#15171a;--fg:#e8eaed;--muted:#a3a8af;--line:#33373d;--card:#1d2024;--accent:#8ab4f8;--on-accent:#15171a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 .25rem}
+h2{font-size:1.1rem;margin:0 0 .5rem}
+.meta,.note,#status{color:var(--muted);font-size:.95rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin:16px 0}
+pre{white-space:pre-wrap;word-wrap:break-word;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px;margin:.75rem 0;font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+button{min-height:44px;min-width:88px;padding:8px 16px;border:0;border-radius:6px;background:var(--accent);color:var(--on-accent);font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Writing check</h1>
+<p class="meta" id="meta"></p>
+<p class="meta" id="count"></p>
+<div id="list"></div>
+<p id="status" role="status" aria-live="polite"></p>
+</main>
+<script type="application/json" id="texts">
+{
+  "title": "Example: ticket comment for the partner team",
+  "channel": "Ticket comment",
+  "audience": "Partner team",
+  "texts": [
+    {
+      "title": "Version A: close to your draft",
+      "note": "AI tells 9/10, voice match 8/10, clarity 8/10, length 9/10 (96 of 120 words). Data check: nothing found.",
+      "text": "The date fix is in the current build.\n\n- Dates now show as day.month.year.\n- The tests for the invoice page pass."
+    },
+    {
+      "title": "Version B: shorter",
+      "note": "AI tells 10/10, voice match 8/10, clarity 9/10, length 10/10 (41 of 120 words). Data check: nothing found.",
+      "text": "Fixed: dates show as day.month.year.\n\n- Tests pass.\n- Shown as \u003cdate\u003e in the export."
+    }
+  ]
+}
+</script>
+<script>
+(function () {
+  var list = document.getElementById('list');
+  var status = document.getElementById('status');
+  var data;
+  // The texts block holds every less-than sign as \u003c. When one slipped through, the block ends early and does
+  // not parse: say so and show nothing. The page's policy runs only this script, so nothing after the cut runs.
+  try {
+    data = JSON.parse(document.getElementById('texts').textContent);
+  } catch (error) {
+    document.getElementById('count').textContent = 'The texts block could not be read, so no text is shown. Write every less-than sign in it as \\u003c and check that it is valid JSON.';
+    return;
+  }
+  document.getElementById('title').textContent = data.title;
+  document.getElementById('meta').textContent = 'Channel: ' + data.channel + '. Audience: ' + data.audience + '.';
+  document.getElementById('count').textContent = data.texts.length + (data.texts.length === 1 ? ' text' : ' texts') + ', one Copy button each. You send the text yourself.';
+
+  function fallback(text) {
+    var area = document.createElement('textarea');
+    area.value = text;
+    area.setAttribute('readonly', '');
+    area.style.position = 'fixed';
+    area.style.top = '0';
+    area.style.left = '0';
+    document.body.appendChild(area);
+    area.select();
+    var copied = false;
+    try {
+      copied = document.execCommand('copy');
+    } catch (error) {
+      copied = false;
+    }
+    document.body.removeChild(area);
+    return copied;
+  }
+
+  function copy(text, title) {
+    function done(copied) {
+      status.textContent = copied ? 'Copied: ' + title : 'Copy did not work here: select the text and copy it by hand.';
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallback(text)); });
+    } else {
+      done(fallback(text));
+    }
+  }
+
+  data.texts.forEach(function (item) {
+    var card = document.createElement('section');
+    card.className = 'card';
+    var head = document.createElement('h2');
+    head.textContent = item.title;
+    card.appendChild(head);
+    if (item.note) {
+      var note = document.createElement('p');
+      note.className = 'note';
+      note.textContent = item.note;
+      card.appendChild(note);
+    }
+    var body = document.createElement('pre');
+    body.textContent = item.text;
+    card.appendChild(body);
+    var button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Copy';
+    button.setAttribute('aria-label', 'Copy ' + item.title);
+    button.addEventListener('click', function () { copy(item.text, item.title); });
+    card.appendChild(button);
+    list.appendChild(card);
+  });
+})();
+</script>
+</body>
+</html>
