@@ -1,6 +1,6 @@
 ---
 name: second-brain-capture
-description: Record one incoming task or idea in the roadmap of the Second Brain project that owns it, with an owner, evidence and next action.
+description: Record one incoming task or idea in the roadmap of the Second Brain project that owns it, with an owner, evidence and next action. Use when a new task, request or idea comes up during work and should not be lost.
 ---
 
 # Second Brain capture

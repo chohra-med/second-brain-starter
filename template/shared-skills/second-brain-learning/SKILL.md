@@ -1,6 +1,6 @@
 ---
 name: second-brain-learning
-description: Turn one confirmed miss into a bounded rule, retest it in a fresh session, and keep ownership of facts, decisions and procedures clear.
+description: Turn one confirmed miss into a bounded rule, retest it in a fresh session, and keep ownership of facts, decisions and procedures clear. Use when the person corrects the same kind of mistake again, or a miss is confirmed and must not repeat.
 ---
 
 # Second Brain learning

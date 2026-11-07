@@ -1,6 +1,6 @@
 ---
 name: second-brain-close
-description: Close work in one or more selected Second Brain projects honestly by matching roadmap status to progress evidence and naming any remaining next action.
+description: Close work in one or more selected Second Brain projects honestly by matching roadmap status to progress evidence and naming any remaining next action. Use when work in a project is finished or paused and its roadmap status needs updating.
 ---
 
 # Second Brain close
