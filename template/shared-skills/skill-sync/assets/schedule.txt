@@ -1,0 +1,47 @@
+[macos]
+Weekly skill sync on macOS: every Monday at 09:00 in this Mac's own time zone. Nothing runs until you do steps 1 to 3.
+In every step, put your own full paths in place of NODE_PATH (the node program), SCRIPT_PATH (this skill's sync.mjs) and WORKSPACE_PATH (the workspace). --print-schedule prints all three above this text.
+1. Make the log folder: mkdir -p "WORKSPACE_PATH/.skill-sync"
+2. Save the text between the two lines of dashes as this file:
+   ~/Library/LaunchAgents/local.second-brain.skill-sync.plist
+-----
+<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>local.second-brain.skill-sync</string>
+  <key>ProgramArguments</key>
+  <array><string>NODE_PATH</string><string>SCRIPT_PATH</string><string>--workspace</string><string>WORKSPACE_PATH</string></array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>WORKSPACE_PATH/.skill-sync/skill-sync.log</string>
+  <key>StandardErrorPath</key><string>WORKSPACE_PATH/.skill-sync/skill-sync.log</string>
+</dict>
+</plist>
+-----
+   In this file, write each & in a path as &amp; and each < as &lt;.
+3. Load it: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.second-brain.skill-sync.plist
+Check: launchctl print gui/$(id -u)/local.second-brain.skill-sync
+To stop it, remove the job you added in step 3, and the file you saved in step 2.
+A Mac that sleeps through Monday 09:00 runs the job once when it wakes.
+Add --offline after the workspace path to keep the weekly run off the network.
+
+[linux]
+Weekly skill sync on Linux: every Monday at 09:00 in the system time zone. Nothing runs until you add the line.
+In every step, put your own full paths in place of NODE_PATH (the node program), SCRIPT_PATH (this skill's sync.mjs) and WORKSPACE_PATH (the workspace). --print-schedule prints all three above this text.
+1. Make the log folder: mkdir -p "WORKSPACE_PATH/.skill-sync"
+2. Open your own job table with: crontab -e
+3. Add this line at the end, then save. In this line, write each % in a path as \%.
+0 9 * * 1 "NODE_PATH" "SCRIPT_PATH" --workspace "WORKSPACE_PATH" >> "WORKSPACE_PATH/.skill-sync/skill-sync.log" 2>&1
+Check: crontab -l
+To stop it, remove the line you added in step 3.
+Add --offline after the workspace path to keep the weekly run off the network.
+
+[windows]
+Weekly skill sync on Windows: every Monday at 09:00 in this computer's time zone. Nothing runs until you run step 1.
+Put your own full paths in place of NODE_PATH (the node program), SCRIPT_PATH (this skill's sync.mjs) and WORKSPACE_PATH (the workspace). --print-schedule prints all three above this text.
+1. In a Command Prompt, run:
+schtasks /Create /SC WEEKLY /D MON /ST 09:00 /TN "second-brain-skill-sync" /TR "\"NODE_PATH\" \"SCRIPT_PATH\" --workspace \"WORKSPACE_PATH\""
+Check: schtasks /Query /TN "second-brain-skill-sync"
+To stop it, remove the job you added in step 1.
+Add --offline after the workspace path to keep the weekly run off the network.
