@@ -64,6 +64,18 @@ test('the three skills name their procedures, and next-session reads the handove
   assert.ok(older.includes('`03-Resources/Procedures/handover.md`'), 'handover still reads the same procedure');
 });
 
+// The request is the yes: a paste line for a note that was never written loses the session.
+test('handover saves the note at once and gives no paste line until the file is on disk', async () => {
+  const text = await read(`${PROCEDURES}/handover.md`);
+  const problems = [];
+  if (text.includes('only after the person says yes')) problems.push('still waits for a yes before writing the note');
+  for (const phrase of ['Write the note at once', 'test -s', 'Never give the hand-off block for a note that is not on disk']) {
+    if (!text.includes(phrase)) problems.push(`is missing: ${phrase}`);
+  }
+  if (text.includes('—')) problems.push('contains an em dash');
+  assert.deepEqual(problems, []);
+});
+
 test('verify-end-session carries its verdict, its dry mode and its stop rules, and links only to shipped files', async () => {
   assert.deepEqual(await verifyProblems(await read(`${PROCEDURES}/verify-end-session.md`)), []);
 });
