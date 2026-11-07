@@ -112,6 +112,7 @@ test/skill-sync-skill.test.mjs
 test/factory-skill.test.mjs
 test/design-check-skill.test.mjs
 test/writing-check-skill.test.mjs
+test/skill-lint.test.mjs
 template/00-Meta/README.md
 template/01-Projects/Index.md
 template/01-Projects/README.md
