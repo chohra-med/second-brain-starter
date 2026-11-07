@@ -1,13 +1,13 @@
 ---
 name: skill-sync
-description: Builds a weekly report on the skills installed in a workspace. It compares the copies in .claude/skills and .agents/skills by hash, compares each skill with the person's lock file, runs the security check with its best-practices pass, and reads the newest commit of each approved outside source. It reports only and changes nothing. Use when the person asks whether their skills are up to date, safe or out of step, or for the weekly skill check.
+description: Builds a weekly report on the skills installed in a workspace. It compares the copies in .claude/skills and .agents/skills by hash, compares each skill with the person's lock file, runs the security check with its best-practices pass, and reads the newest commit of each approved outside source. It reports only and changes nothing. It also finds candidate skills for a new need on request, after two yeses from the person, and installs nothing. Use when the person asks whether their skills are up to date, safe or out of step, for the weekly skill check, or when the person asks whether a skill exists for a new need.
 metadata:
   scope: oss
 ---
 
 # Skill sync
 
-This skill ships one script, `sync.mjs`, that needs Node.js 22 or newer and nothing else. It reads every skill in the workspace, runs the `security-check` skill's `check.mjs` over them, and writes one report page. This edition reports only: it never downloads, installs or updates a skill, and it never writes your lock file or your sources list.
+This skill ships one script, `sync.mjs`, that needs Node.js 22 or newer and nothing else. It reads every skill in the workspace, runs the `security-check` skill's `check.mjs` over them, and writes one report page. This edition reports only: the script never downloads, installs or updates a skill, and it never writes your lock file or your sources list. The find steps below run only when you ask: they fetch a candidate only into a scratch folder, and they install nothing.
 
 ## Do not use this when
 
@@ -58,6 +58,19 @@ Both live in `.skill-sync/` in the workspace. Both are optional, and both are yo
 
    Check: the first Monday report exists in `.skill-sync/reports/`.
 
+## Find a skill for a new need
+
+Only when the person asks, never in the weekly run. The assistant follows these steps; `sync.mjs` takes no part.
+
+1. **Look here first.** Read the skills in both skill folders. Stop when one already meets the need.
+2. **First yes: the query.** Turn the need into one generic query with no company, client, project or person name. Show it, and send it only after the person's yes.
+3. **Search.** Run `DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 npx -y skills@1.4.0 find "<generic query>"`, at this exact version, and name the version in your reply. Telemetry off does not make the query private: the skills service receives it. When the person does not want third-party npm code run, use a client web search limited to skills.sh instead. Keep at most 3 candidates.
+4. **List.** For each candidate: its repository and commit, licence, last commit date, install count, stars, and its skills.sh audit verdicts (Gen, Socket, Snyk). These are weak signals: the audit is one input and never replaces step 5.
+5. **Second yes: the fetch.** Show the addresses. After the person's yes, fetch each candidate on its own, at the listed commit, into a new, empty scratch folder outside the workspace (`git clone --no-checkout <address> <folder>`, then `git -C <folder> checkout --detach <commit>`). Read every file, run nothing from it, and run the `security-check` skill on its skill folder with `--report-dir` in the scratch folder.
+6. **Report.** One table: take, skip or adapt the idea, with each candidate's verdicts and what it overlaps among the installed skills. Never run the CLI's `add` command, and never `-g -y`: nothing is installed. Taking one is a separate step with its own yes: install it as step 5 of Steps says ("Update by hand"), then add its row to your sources list and your lock.
+
+Check: the reply names the query, the CLI version, every address contacted and each candidate's verdicts.
+
 ## What the report holds
 
 | Section | Items |
@@ -82,7 +95,9 @@ The inventory counts the skill files, the names, the names with a copy in both f
 
 ## Network use
 
-The only outside call is `git ls-remote <address> <branch or tag>` for each approved row: it reads the newest commit id, with no download and no stored password or token. The script writes the address list into the report folder before the first call, contacts each address unchanged, and reports a timeout or an error once instead of retrying. A newer commit may not touch the skill itself; this edition does not download it to compare.
+The script's only outside call is `git ls-remote <address> <branch or tag>` for each approved row: it reads the newest commit id, with no download and no stored password or token. The script writes the address list into the report folder before the first call, contacts each address unchanged, and reports a timeout or an error once instead of retrying. A newer commit may not touch the skill itself; this edition does not download it to compare.
+
+The find steps contact more addresses, each only after its own yes. After the first: the npm registry, which serves the pinned skills package, and the skills service, which receives the generic query. After the second: the repository of each listed candidate.
 
 ## Example
 

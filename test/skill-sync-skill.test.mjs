@@ -415,7 +415,7 @@ test('sync.mjs starts processes only with argument lists and opens no connection
   assert.match(source, /GIT_TERMINAL_PROMPT: '0'/);
 });
 
-test('the security check gives skill-sync no BLOCK: best practices PASS, and its only hits are the documented network call, the companion addresses in the sources example and the printed schedule', (t) => {
+test('the security check gives skill-sync no BLOCK: best practices PASS, its only hits are the documented network calls (ls-remote, and the fetch of the find steps), the companion addresses in the sources example and the printed schedule, and no install is unpinned', (t) => {
   const dir = sandbox(t);
   const result = spawnSync(process.execPath, [CHECK, SKILL_DIR, '--report-dir', path.join(dir, 'reports'), '--json'], { encoding: 'utf8' });
   const report = JSON.parse(result.stdout);
@@ -428,10 +428,50 @@ test('the security check gives skill-sync no BLOCK: best practices PASS, and its
   assert.equal(schedule.length, 7, 'the check sees the scheduler lines of the schedule file: three for macOS, two each for Linux and Windows');
   for (const finding of schedule) assert.deepEqual([finding.file, finding.verdict], ['assets/schedule.txt', 'FLAG']);
   const calls = report.findings.filter((finding) => finding.rule !== 'address-in-code' && finding.rule !== 'scheduled-job');
-  assert.deepEqual(calls.map((finding) => [finding.rule, finding.file]), [['network-call', 'SKILL.md'], ['network-call', 'sync.mjs'], ['network-call', 'sync.mjs']]);
-  for (const finding of calls) assert.match(finding.text, /git ls-remote|'ls-remote'/);
+  assert.deepEqual(calls.map((finding) => [finding.rule, finding.file]).sort(), [['network-call', 'SKILL.md'], ['network-call', 'SKILL.md'], ['network-call', 'sync.mjs'], ['network-call', 'sync.mjs']]);
+  const fetch = calls.filter((finding) => /git clone --no-checkout /.test(finding.text));
+  assert.deepEqual(fetch.map((finding) => [finding.file, /^5\. \*\*Second yes: the fetch\.\*\*/.test(finding.text)]), [['SKILL.md', true]], 'the find steps fetch a candidate only at their second yes');
+  for (const finding of calls.filter((item) => !fetch.includes(item))) assert.match(finding.text, /git ls-remote|'ls-remote'/);
   assert.ok(calls.some((finding) => finding.file === 'sync.mjs' && /^const result = spawnSync\('git', \[/.test(finding.text)), 'the check finds the ls-remote call itself, not only the comment that names it');
+  const unpinned = report.findings.filter((finding) => finding.check === 'unpinned-install' || finding.rule === 'start-unpinned');
+  assert.deepEqual(unpinned, [], 'no unpinned install: the find steps run the skills CLI at an exact version');
   assert.equal(report.bestPractices.verdict, 'PASS', JSON.stringify(report.bestPractices.findings));
+});
+
+test('the find steps run on request: a generic query after a first yes, the skills CLI at an exact version with telemetry off, each candidate fetched and checked on its own after a second yes, and nothing installed', (t) => {
+  const text = readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf8');
+  const description = text.match(/^description:\s*(.+)$/m)[1];
+  assert.ok(description.length <= 1024, `${description.length} characters`);
+  assert.ok(description.includes('It also finds candidate skills for a new need on request, after two yeses from the person, and installs nothing.'));
+  const section = text.split('\n## Find a skill for a new need\n')[1]?.split('\n## ')[0];
+  assert.ok(section, 'SKILL.md has the find section');
+  assert.ok(section.trim().split('\n').length <= 12, 'the find section is at most 12 lines');
+  const items = section.split(/\n(?=\d+\. )/).filter((item) => /^\d+\. /.test(item));
+  assert.equal(items.length, 6, 'six steps');
+  const runs = [...section.matchAll(/`([^`]*\bnpx\b[^`]*)`/g)].map((match) => match[1]);
+  assert.equal(runs.length, 1, 'one documented search line');
+  const pinned = runs[0].match(/^DISABLE_TELEMETRY=1 DO_NOT_TRACK=1 npx -y skills@(\d+)\.(\d+)\.(\d+) find "<generic query>"$/);
+  assert.ok(pinned, runs[0]);
+  const [major, minor] = pinned.slice(1).map(Number);
+  assert.ok(major > 1 || (major === 1 && minor >= 4), 'skills 1.4.0 or newer, the first version that shows the audits');
+  const privacy = readFileSync(path.join(sourceRoot, 'PRIVACY.md'), 'utf8').split('\n').find((line) => line.startsWith('**Skill sync.**'));
+  assert.ok(privacy.includes(`download version ${pinned.slice(1).join('.')} of the third-party \`skills\` command-line tool from the npm registry`), 'PRIVACY.md names the same pinned version');
+  assert.ok(privacy.includes('the tool sends that query to the skills.sh service') && privacy.includes('Nothing is installed.'), 'PRIVACY.md says where the query goes');
+  assert.doesNotMatch(text, /\bnpx\s+(?:-\S+\s+)*skills(?:\s|$)/, 'the skills CLI is never named without its version');
+  for (const phrase of ['never in the weekly run', '`sync.mjs` takes no part', 'one generic query with no company, client, project or person name', "send it only after the person's yes", 'the skills service receives it', 'web search limited to skills.sh', 'at most 3 candidates', 'licence, last commit date', 'audit verdicts (Gen, Socket, Snyk)', 'the audit is one input and never replaces step 5', 'each candidate on its own, at the listed commit, into a new, empty scratch folder outside the workspace', 'run nothing from it', 'run the `security-check` skill on its skill folder', "Never run the CLI's `add` command, and never `-g -y`: nothing is installed", 'a separate step with its own yes']) {
+    assert.ok(section.includes(phrase), `the find section is missing: ${phrase}`);
+  }
+  const order = ['First yes: the query', 'npx -y skills@', 'Second yes: the fetch', 'git clone --no-checkout'].map((phrase) => section.indexOf(phrase));
+  assert.deepEqual([...order].sort((a, b) => a - b), order, 'the query yes comes before the search, and the fetch yes before the fetch');
+  assert.match(text, /The find steps contact more addresses, each only after its own yes\. After the first: the npm registry[^.]*the skills service, which receives the generic query\. After the second: the repository of each listed candidate\./, 'Network use names what the find steps contact');
+
+  // RED control: the same SKILL.md with the version taken out gives the unpinned-runner FLAG this skill must not have.
+  const dir = sandbox(t);
+  const planted = path.join(dir, 'skill-sync');
+  put(path.join(planted, 'SKILL.md'), text.replace(/skills@\d+\.\d+\.\d+/, 'skills'));
+  const result = spawnSync(process.execPath, [CHECK, planted, '--report-dir', path.join(dir, 'reports'), '--json'], { encoding: 'utf8' });
+  const report = JSON.parse(result.stdout);
+  assert.deepEqual(report.findings.filter((finding) => finding.check === 'unpinned-install').map((finding) => [finding.rule, finding.file]), [['package-runner', 'SKILL.md']]);
 });
 
 test('SKILL.md passes the testable writing-skills checklist points and documents the exit codes and the schedule', () => {
