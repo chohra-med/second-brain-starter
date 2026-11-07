@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' file:; script-src 'sha256-nvC7eOqc1Qe9Xe4ihWrgx/EIAtc91YUOuhY3P+9kpDE='; base-uri 'none'; form-action 'none'">
+<title>Design check</title>
+<style>
+:root{--bg:#ffffff;--fg:#1d1f23;--muted:#5d636b;--line:#d9dce1;--card:#f5f6f8;--job:#b3261e;--floor:#8a5a00;--brand:#1a5fb4;--polish:#5d636b}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#15171a;--fg:#e8eaed;--muted:#a3a8af;--line:#33373d;--card:#1d2024;--job:#f28b82;--floor:#fdd663;--brand:#8ab4f8;--polish:#a3a8af}}
+:root[data-theme="dark"]{--bg:#15171a;--fg:#e8eaed;--muted:#a3a8af;--line:#33373d;--card:#1d2024;--job:#f28b82;--floor:#fdd663;--brand:#8ab4f8;--polish:#a3a8af}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 .25rem}
+h2{font-size:1.1rem;margin:0}
+.meta,#counts,.closing{color:var(--muted);font-size:.95rem}
+.card{background:var(--card);border:1px solid var(--line);border-left-width:6px;border-radius:8px;padding:16px;margin:16px 0}
+.rank-job{border-left-color:var(--job)}.rank-floor{border-left-color:var(--floor)}.rank-brand{border-left-color:var(--brand)}.rank-polish{border-left-color:var(--polish)}
+.label{font-size:.85rem;font-weight:600;color:var(--muted);margin:0 0 .25rem}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px;margin:.75rem 0 0}
+dt{font-weight:600}dd{margin:0;word-wrap:break-word}
+img{display:block;max-width:100%;height:auto;margin-top:12px;border:1px solid var(--line);border-radius:6px}
+</style>
+</head>
+<body>
+<main>
+<h1 id="title">Design check</h1>
+<p class="meta" id="meta"></p>
+<p id="counts"></p>
+<ol id="list" style="padding:0;list-style:none"></ol>
+<p class="closing">Pick the findings to fix by their numbers, in chat. This check changed nothing in the page.</p>
+</main>
+<script type="application/json" id="findings">
+{
+  "page": "Example: sign-up page",
+  "job": "A visitor creates an account in under a minute.",
+  "width": "390 CSS px",
+  "themes": ["light", "dark"],
+  "findings": [
+    {
+      "rank": "job",
+      "title": "The Continue button sits below the first screen",
+      "where": "Sign-up form, light and dark",
+      "measured": "The button starts 120 CSS px below the fold at 390 CSS px.",
+      "rule": "Message: one main action, easy to find",
+      "fix": "Move the button directly under the last field.",
+      "screenshot": "light-390.png"
+    },
+    {
+      "rank": "floor",
+      "title": "Hint text is too light",
+      "where": "Field hints, light theme",
+      "measured": "#949494 on #ffffff: 3.03:1",
+      "rule": "WCAG 2.2 SC 1.4.3, level AA: text needs 4.5:1",
+      "fix": "Use #6b6b6b (5.32:1).",
+      "screenshot": "light-390.png"
+    }
+  ]
+}
+</script>
+<script>
+(function () {
+  var RANKS = { job: 'Stops the page job', floor: 'Fails the UI floor at level AA', brand: 'Off brand', polish: 'Polish' };
+  var ORDER = ['job', 'floor', 'brand', 'polish'];
+  var list = document.getElementById('list');
+  var data;
+  // The findings block holds every less-than sign as \u003c. When one slipped through, the block ends early and does
+  // not parse: say so and show nothing. The page's policy runs only this script, so nothing after the cut runs.
+  try {
+    data = JSON.parse(document.getElementById('findings').textContent);
+  } catch (error) {
+    document.getElementById('counts').textContent = 'The findings block could not be read, so no finding is shown. Write every less-than sign in it as \\u003c and check that it is valid JSON.';
+    return;
+  }
+  document.getElementById('title').textContent = 'Design check: ' + data.page;
+  document.getElementById('meta').textContent = 'Job: ' + data.job + ' Width: ' + data.width + '. Themes: ' + data.themes.join(' and ') + '.';
+
+  var findings = data.findings
+    .map(function (item, index) { return { item: item, index: index, rank: ORDER.indexOf(item.rank) === -1 ? ORDER.length : ORDER.indexOf(item.rank) }; })
+    .sort(function (left, right) { return left.rank - right.rank || left.index - right.index; })
+    .map(function (entry) { return entry.item; });
+
+  var counts = ORDER.map(function (rank) {
+    var count = findings.filter(function (item) { return item.rank === rank; }).length;
+    return RANKS[rank] + ': ' + count;
+  });
+  document.getElementById('counts').textContent = findings.length + (findings.length === 1 ? ' finding' : ' findings') + ', most important first. ' + counts.join('. ') + '.';
+
+  // Only a plain file name or a relative path inside this folder is shown, so the page never loads anything from elsewhere.
+  function localImage(name) {
+    return typeof name === 'string' && /^[A-Za-z0-9_-][A-Za-z0-9_./-]*$/.test(name) && name.indexOf('..') === -1 && name.indexOf('//') === -1;
+  }
+
+  findings.forEach(function (item, index) {
+    var card = document.createElement('li');
+    card.className = 'card rank-' + (RANKS[item.rank] ? item.rank : 'polish');
+    var label = document.createElement('p');
+    label.className = 'label';
+    label.textContent = (index + 1) + '. ' + (RANKS[item.rank] || 'Unranked');
+    card.appendChild(label);
+    var head = document.createElement('h2');
+    head.textContent = item.title;
+    card.appendChild(head);
+    var details = document.createElement('dl');
+    [['Where', item.where], ['Measured', item.measured], ['Rule', item.rule], ['Fix', item.fix]].forEach(function (pair) {
+      var term = document.createElement('dt');
+      term.textContent = pair[0];
+      var value = document.createElement('dd');
+      value.textContent = pair[1] || '(missing)';
+      details.appendChild(term);
+      details.appendChild(value);
+    });
+    card.appendChild(details);
+    if (item.screenshot) {
+      if (localImage(item.screenshot)) {
+        var image = document.createElement('img');
+        image.alt = 'Screenshot for finding ' + (index + 1) + ': ' + item.where;
+        image.src = item.screenshot;
+        card.appendChild(image);
+      } else {
+        var note = document.createElement('p');
+        note.className = 'meta';
+        note.textContent = 'Screenshot not shown: name a file in this folder.';
+        card.appendChild(note);
+      }
+    }
+    list.appendChild(card);
+  });
+})();
+</script>
+</body>
+</html>
