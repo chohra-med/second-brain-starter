@@ -938,13 +938,13 @@
     {
       "source": "template/shared-skills/skill-sync/SKILL.md",
       "destination": ".agents/skills/skill-sync/SKILL.md",
-      "sha256": "2b0d5e33519128a8c027363b9001477b50dbff4845ff7458d69c26dfd06c9fc7",
+      "sha256": "b3726eda8b6ef24dd76fb1b4fbbcf1fcf13eb8c279c096741c6e193fc665f5d6",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/skill-sync/SKILL.md",
       "destination": ".claude/skills/skill-sync/SKILL.md",
-      "sha256": "2b0d5e33519128a8c027363b9001477b50dbff4845ff7458d69c26dfd06c9fc7",
+      "sha256": "b3726eda8b6ef24dd76fb1b4fbbcf1fcf13eb8c279c096741c6e193fc665f5d6",
       "mergeKind": "managed-file"
     },
     {
