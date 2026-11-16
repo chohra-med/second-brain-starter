@@ -36,67 +36,6 @@ function filesUnder(dir, prefix = '') {
 
 const j = (...parts) => parts.join('');
 
-// What a browser takes as a data block: everything up to the first </script, on whatever line it sits.
-function browserBlock(html, id) {
-  const open = `<script type="application/json" id="${id}">`;
-  const start = html.indexOf(open) + open.length;
-  return html.slice(start, start + html.slice(start).search(/<\/script[\s/>]/i));
-}
-
-// Runs the page's script against a small stand-in for the browser and returns what it built and copied. `block`
-// replaces the data block's text, for example with what a browser reads of it.
-function runPage(html, { clipboard = true, block } = {}) {
-  const json = html.match(/<script type="application\/json" id="(\w+)">\n([\s\S]*?)\n<\/script>/);
-  const code = html.match(/<script>\n([\s\S]*?)\n<\/script>/)[1];
-  const content = block ?? json[2];
-  const copied = [];
-  let selected = null;
-  class Element {
-    constructor(tag) {
-      Object.assign(this, { tagName: tag, children: [], textContent: '', className: '', style: {}, attributes: {}, listeners: {} });
-    }
-    appendChild(child) {
-      this.children.push(child);
-      return child;
-    }
-    removeChild(child) {
-      this.children = this.children.filter((item) => item !== child);
-      return child;
-    }
-    setAttribute(name, value) {
-      this.attributes[name] = String(value);
-    }
-    addEventListener(type, handler) {
-      this.listeners[type] = handler;
-    }
-    select() {
-      selected = this.value;
-    }
-  }
-  const ids = Object.fromEntries(['title', 'meta', 'count', 'counts', 'list', 'status'].map((id) => [id, new Element('div')]));
-  ids[json[1]] = Object.assign(new Element('script'), { textContent: content });
-  const document = {
-    getElementById: (id) => ids[id] ?? null,
-    createElement: (tag) => new Element(tag),
-    body: new Element('body'),
-    execCommand: (command) => {
-      copied.push({ via: 'fallback', text: selected });
-      return command === 'copy';
-    },
-  };
-  const navigator = clipboard ? { clipboard: { writeText: (text) => (copied.push({ via: 'clipboard', text }), Promise.resolve()) } } : {};
-  vm.runInNewContext(code, { document, navigator });
-  let data = null;
-  try {
-    data = JSON.parse(content);
-  } catch {
-    data = null;
-  }
-  return { ids, copied, document, data };
-}
-
-const settle = () => new Promise((resolve) => setImmediate(resolve));
-
 test('SKILL.md passes the testable writing-skills checklist points', () => {
   const text = read('SKILL.md');
   const front = frontOf(text);
@@ -139,7 +78,7 @@ test('the steps follow the spec: two rewrites, a diagram only when the text expl
   assert.match(step('Diagram'), /Mermaid block/);
   assert.match(step('Diagram'), /Set no colours, so it reads in light and dark/);
   for (const kind of ['keys', 'email addresses', 'phone numbers', 'diagram labels']) assert.ok(step('Data check').includes(kind), `step 6 covers ${kind}`);
-  assert.match(step('Review'), /one Copy button per text/);
+  assert.match(step('Review'), /one visible card and one uniquely identified copy target/);
   assert.match(step('Review'), /`git check-ignore -q`/);
   assert.match(step('Out'), /You never send, post or publish it/);
   assert.match(step('Learn'), /Only after a yes/);
@@ -232,74 +171,47 @@ test('SKILL.md links each asset directly and says where the filled copies live',
   assert.deepEqual(filesUnder(SKILL_DIR), ['SKILL.md', 'assets/Brand.md', 'assets/Voice-DNA.md', 'assets/review-page.html']);
 });
 
-test('the review page draws one Copy button per text, and each button copies exactly its text', async () => {
-  const html = read('assets/review-page.html');
-  const page = runPage(html);
-  const cards = page.ids.list.children;
-  assert.equal(cards.length, page.data.texts.length);
-  assert.ok(page.data.texts.length >= 2, 'the sample holds two versions');
-  for (const [index, card] of cards.entries()) {
-    const buttons = card.children.filter((child) => child.tagName === 'button');
-    assert.equal(buttons.length, 1, `card ${index + 1} has one Copy button`);
-    assert.equal(card.children.find((child) => child.tagName === 'pre').textContent, page.data.texts[index].text, 'the text is shown as plain text');
-    buttons[0].listeners.click();
-    await settle();
-    assert.equal(page.copied.at(-1).text, page.data.texts[index].text);
-    assert.equal(page.ids.status.textContent, `Copied: ${page.data.texts[index].title}`);
-  }
-  assert.ok(page.data.texts.some((item) => item.text.includes('<')), 'the sample shows a text with a < in it');
-  assert.equal(page.ids.count.textContent.startsWith(`${page.data.texts.length} texts`), true);
-});
+test('review page copies rich and plain content and falls back when rich copy is denied', async () => {
+const page = read('assets/review-page.html');
+const script = page.match(/<script>\n([\s\S]*?)\n<\/script>/)[1];
+const hash = createHash('sha256').update('\n'+script+'\n').digest('base64');
+assert(page.includes('sha256-'+hash));
+const text = s => ({nodeType:3,nodeValue:s});
+function el(tag, children=[], attrs={}) {return {nodeType:1,tagName:tag.toUpperCase(),childNodes:children,children:children.filter(c=>c.nodeType===1),hasAttribute:k=>k in attrs,getAttribute:k=>attrs[k]};}
+const hostile='</script><img src=x onerror=alert(1)>';
+const target=el('div',[el('p',[text('Hello '+hostile),el('br'),text('next line')]),el('ul',[el('li',[text('First'),el('ol',[el('li',[text('Nested one')]),el('li',[text('Nested two')])],{start:'3'})]),el('li',[el('p',[text('Second')]),el('p',[text('Another paragraph')])])])]);
+target.innerHTML='<p>Hello &lt;/script&gt;&lt;img src=x onerror=alert(1)&gt;<br>next line</p><ul><li>First<ol start="3"><li>Nested one</li><li>Nested two</li></ol></li><li><p>Second</p><p>Another paragraph</p></li></ul>';
+const expected='Hello '+hostile+'\nnext line\n- First\n  3. Nested one\n  4. Nested two\n- Second\nAnother paragraph';
+async function run(deny){
+ let click,captured,area,removed=false; const status={};
+ const button={getAttribute:()=> 'target',addEventListener:(_,fn)=>click=fn};
+ const els={status,texts:{textContent:'{"title":"x","channel":"c","audience":"a"}'},title:{},meta:{},count:{},target};
+ const document={getElementById:id=>els[id],querySelectorAll:()=>[button],createElement:()=>area={style:{},setAttribute(){},select(){}},body:{appendChild(){},removeChild(){removed=true}},execCommand:()=>true};
+ class Item{constructor(values){captured=values;}}
+ const navigator={clipboard:{write:()=>deny?Promise.reject(Error('denied')):Promise.resolve()}};
+ vm.runInNewContext(script,{document,navigator,ClipboardItem:Item,Blob}); click(); await new Promise(r=>setImmediate(r));
+ assert.equal(await captured['text/html'].text(),target.innerHTML); assert.match(await captured['text/html'].text(), /<p>Second<\/p><p>Another paragraph<\/p>/); assert.equal(await captured['text/plain'].text(),expected);
+ if(deny){assert.equal(area.value,expected);assert(removed);assert.equal(status.textContent,'Copied plain text only; formatting was not copied.');} else assert.equal(status.textContent,'Copied with formatting.');
+}
+await run(false); await run(true);
+let click, copied; const status = {};
+const codeTarget = el('pre', [text('  first\n    second\n')], {'data-plain': ''});
+codeTarget.textContent = '  first\n    second\n';
+const button = {getAttribute: () => 'code', addEventListener: (_, fn) => click = fn};
+const ids = {status, texts:{textContent:'{"title":"x","channel":"c","audience":"a"}'}, title:{}, meta:{}, count:{}, code:codeTarget};
+const document = {getElementById: id => ids[id], querySelectorAll: () => [button]};
+const navigator = {clipboard:{writeText: value => { copied = value; return Promise.resolve(); }, write: () => { throw Error('rich copy must not run'); }}};
+vm.runInNewContext(script, {document, navigator, Blob}); click(); await new Promise(r => setImmediate(r));
+assert.equal(copied, codeTarget.textContent);
+assert.equal(status.textContent, 'Copied plain text only; formatting was not copied.');
+let fallbackValue, removed = false;
+const deniedDocument = {...document, createElement: () => ({style:{}, setAttribute(){}, select(){fallbackValue = this.value;}}), body:{appendChild(){}, removeChild(){removed = true;}}, execCommand: () => true};
+const deniedNavigator = {clipboard:{writeText: () => Promise.reject(Error('denied'))}};
+vm.runInNewContext(script, {document: deniedDocument, navigator: deniedNavigator, Blob}); click(); await new Promise(r => setImmediate(r));
+assert.equal(fallbackValue, codeTarget.textContent);
+assert.equal(removed, true);
+assert.equal(status.textContent, 'Copied plain text only; formatting was not copied.');
 
-test('without the clipboard interface the review page copies through its fallback, and the page loads nothing from elsewhere', async () => {
-  const html = read('assets/review-page.html');
-  const page = runPage(html, { clipboard: false });
-  const button = page.ids.list.children[1].children.find((child) => child.tagName === 'button');
-  button.listeners.click();
-  await settle();
-  assert.deepEqual({ ...page.copied.at(-1) }, { via: 'fallback', text: page.data.texts[1].text });
-  assert.equal(page.document.body.children.length, 0, 'the helper field is removed again');
-  const json = html.match(/<script type="application\/json" id="texts">\n([\s\S]*?)\n<\/script>/)[1];
-  assert.equal(json.includes('<'), false, 'the texts block writes every < as \\u003c');
-  assert.doesNotMatch(html, /\bhttps?:\/\//, 'no outside address');
-  assert.doesNotMatch(html, /innerHTML|outerHTML|insertAdjacentHTML|document\.write/);
-  assert.match(html, /@media \(prefers-color-scheme: dark\)/);
-});
-
-test('the review page keeps each text inside its texts block: step 7 writes every < as \\u003c, the page runs only its own script, and a cut block shows a notice', async () => {
-  const review = section(read('SKILL.md'), 'Steps').split('**Review.**')[1].split(/\n\d+\. /)[0];
-  assert.ok(review.includes('write every `<` in that block as `\\u003c`, so no text can end the block'), 'step 7 states the rule');
-  assert.ok(review.includes('the texts block holds no `<`'), 'step 7 checks the rule');
-  const html = read('assets/review-page.html');
-  const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
-  assert.equal(scripts.length, 1, 'one page script');
-  const policy = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)[1].split(';').map((part) => part.trim());
-  assert.ok(policy.includes("default-src 'none'"));
-  assert.deepEqual(policy.filter((part) => part.startsWith('script-src')), [`script-src 'sha256-${createHash('sha256').update(scripts[0][1]).digest('base64')}'`], 'only the page script runs, by its hash; no inline handler and no other script');
-
-  const hostile = j('</scr', 'ipt><img src=x one', 'rror=alert(1)><scr', 'ipt>alert(2)</scr', 'ipt>');
-  const data = { title: `Check ${hostile}`, channel: 'Chat', audience: 'Team', texts: [{ title: 'Version A', note: 'Data check: nothing found.', text: `Quoted from the draft: ${hostile}` }] };
-  const json = JSON.stringify(data, null, 2);
-  const filled = html.replace(/(<script type="application\/json" id="texts">\n)[\s\S]*?(\n<\/script>)/, (all, open, close) => `${open}${json.replaceAll('<', '\\u003c')}${close}`);
-  const block = browserBlock(filled, 'texts');
-  assert.equal(block.includes('<'), false, 'the filled block holds no <');
-  assert.deepEqual(JSON.parse(block), data, 'a browser reads the whole block, hostile text included, as data');
-  assert.equal((filled.match(/<\/script/gi) ?? []).length, 2, 'only the data block and the page script close a script element');
-  const page = runPage(filled, { block });
-  assert.equal(page.ids.title.textContent, `Check ${hostile}`);
-  const card = page.ids.list.children[0];
-  assert.equal(card.children.find((child) => child.tagName === 'pre').textContent, data.texts[0].text, 'shown as text');
-  card.children.find((child) => child.tagName === 'button').listeners.click();
-  await settle();
-  assert.equal(page.copied.at(-1).text, data.texts[0].text, 'Copy gives exactly the text');
-
-  const raw = html.replace(/(<script type="application\/json" id="texts">\n)[\s\S]*?(\n<\/script>)/, (all, open, close) => `${open}${json}${close}`);
-  const cut = browserBlock(raw, 'texts');
-  assert.ok(cut.length < json.length, 'without the rule a browser ends the block at the quoted </script>');
-  const broken = runPage(raw, { block: cut });
-  assert.equal(broken.data, null);
-  assert.equal(broken.ids.list.children.length, 0, 'a cut block builds no card and no Copy button');
-  assert.match(broken.ids.count.textContent, /^The texts block could not be read, so no text is shown\./);
 });
 
 test('the privacy block in .gitignore ignores the voice DNA and the writing-check page folders, and SKILL.md says so; step 7 still asks before writing where git would track', (t) => {

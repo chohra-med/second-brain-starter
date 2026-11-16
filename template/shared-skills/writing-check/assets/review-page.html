@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-N0tu1i7JBSi1LO7nemY3cKGPQDHCdHyRz/khzmdS0nA='; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'sha256-kc80KI7zChhcg2Ck51tiJGVbJD4WK056AmQfCu3z084='; base-uri 'none'; form-action 'none'">
 <title>Writing check</title>
 <style>
 :root{--bg:#ffffff;--fg:#1d1f23;--muted:#5d636b;--line:#d9dce1;--card:#f5f6f8;--accent:#1a5fb4;--on-accent:#ffffff}
@@ -16,7 +16,7 @@ h1{font-size:1.5rem;margin:0 0 .25rem}
 h2{font-size:1.1rem;margin:0 0 .5rem}
 .meta,.note,#status{color:var(--muted);font-size:.95rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin:16px 0}
-pre{white-space:pre-wrap;word-wrap:break-word;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px;margin:.75rem 0;font:15px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace}
+.copy-body{overflow-wrap:anywhere;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px;margin:.75rem 0}.copy-body > :first-child{margin-top:0}.copy-body > :last-child{margin-bottom:0}
 button{min-height:44px;min-width:88px;padding:8px 16px;border:0;border-radius:6px;background:var(--accent);color:var(--on-accent);font:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
 </style>
@@ -26,97 +26,124 @@ button:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
 <h1 id="title">Writing check</h1>
 <p class="meta" id="meta"></p>
 <p class="meta" id="count"></p>
-<div id="list"></div>
+<div id="list">
+<section class="card">
+<h2>Version A: close to your draft</h2>
+<p class="note">AI tells 9/10, voice match 8/10, clarity 8/10, length 9/10. Data check: nothing found.</p>
+<div class="copy-body" id="version-a"><p>The date fix is in the current build.</p><ul><li>Dates now show as day.month.year.</li><li>The tests for the invoice page pass.</li></ul></div>
+<button type="button" data-copy="version-a">Copy version A</button>
+</section>
+<section class="card">
+<h2>Version B: shorter</h2>
+<p class="note">AI tells 10/10, voice match 8/10, clarity 9/10, length 10/10. Data check: nothing found.</p>
+<div class="copy-body" id="version-b"><p>Fixed: dates show as day.month.year.</p><ul><li>Tests pass.</li><li>Shown as &lt;date&gt; in the export.</li></ul></div>
+<button type="button" data-copy="version-b">Copy version B</button>
+</section>
+</div>
 <p id="status" role="status" aria-live="polite"></p>
 </main>
 <script type="application/json" id="texts">
-{
-  "title": "Example: ticket comment for the partner team",
-  "channel": "Ticket comment",
-  "audience": "Partner team",
-  "texts": [
-    {
-      "title": "Version A: close to your draft",
-      "note": "AI tells 9/10, voice match 8/10, clarity 8/10, length 9/10 (96 of 120 words). Data check: nothing found.",
-      "text": "The date fix is in the current build.\n\n- Dates now show as day.month.year.\n- The tests for the invoice page pass."
-    },
-    {
-      "title": "Version B: shorter",
-      "note": "AI tells 10/10, voice match 8/10, clarity 9/10, length 10/10 (41 of 120 words). Data check: nothing found.",
-      "text": "Fixed: dates show as day.month.year.\n\n- Tests pass.\n- Shown as \u003cdate\u003e in the export."
-    }
-  ]
-}
+{"title":"Example: ticket comment for the partner team","channel":"Ticket comment","audience":"Partner team"}
 </script>
 <script>
 (function () {
-  var list = document.getElementById('list');
   var status = document.getElementById('status');
   var data;
-  // The texts block holds every less-than sign as \u003c. When one slipped through, the block ends early and does
-  // not parse: say so and show nothing. The page's policy runs only this script, so nothing after the cut runs.
   try {
     data = JSON.parse(document.getElementById('texts').textContent);
   } catch (error) {
-    document.getElementById('count').textContent = 'The texts block could not be read, so no text is shown. Write every less-than sign in it as \\u003c and check that it is valid JSON.';
+    document.getElementById('count').textContent = 'The metadata could not be read. Check its JSON and escape each less-than sign as \\u003c.';
     return;
   }
   document.getElementById('title').textContent = data.title;
   document.getElementById('meta').textContent = 'Channel: ' + data.channel + '. Audience: ' + data.audience + '.';
-  document.getElementById('count').textContent = data.texts.length + (data.texts.length === 1 ? ' text' : ' texts') + ', one Copy button each. You send the text yourself.';
-
+  var buttons = document.querySelectorAll('button[data-copy]');
+  document.getElementById('count').textContent = buttons.length + (buttons.length === 1 ? ' text' : ' texts') + ', one Copy button each. You send the text yourself.';
   function fallback(text) {
     var area = document.createElement('textarea');
     area.value = text;
     area.setAttribute('readonly', '');
     area.style.position = 'fixed';
-    area.style.top = '0';
-    area.style.left = '0';
+    area.style.left = '-9999px';
     document.body.appendChild(area);
     area.select();
     var copied = false;
-    try {
-      copied = document.execCommand('copy');
-    } catch (error) {
-      copied = false;
-    }
+    try { copied = document.execCommand('copy'); } catch (error) { copied = false; }
     document.body.removeChild(area);
-    return copied;
+    status.textContent = copied ? 'Copied plain text only; formatting was not copied.' : 'Copy did not work here: select the text and copy it by hand.';
   }
-
-  function copy(text, title) {
-    function done(copied) {
-      status.textContent = copied ? 'Copied: ' + title : 'Copy did not work here: select the text and copy it by hand.';
+  // Derive plain text from the same visible target, preserving list nesting.
+  function plainText(root) {
+    function inline(node) {
+      if (node.nodeType === 3) return node.nodeValue;
+      if (node.nodeType !== 1) return '';
+      if (node.tagName.toLowerCase() === 'br') return '\n';
+      return Array.from(node.childNodes).map(inline).join('');
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(fallback(text)); });
-    } else {
-      done(fallback(text));
+    function blocks(parent, depth) {
+      var lines = [];
+      Array.from(parent.childNodes).forEach(function (node) {
+        if (node.nodeType === 3) {
+          if (node.nodeValue.trim()) lines.push(node.nodeValue.trim());
+          return;
+        }
+        if (node.nodeType !== 1) return;
+        var tag = node.tagName.toLowerCase();
+        if (tag === 'ul' || tag === 'ol') {
+          var number = tag === 'ol' && node.hasAttribute('start') ? Number(node.getAttribute('start')) : 1;
+          if (!Number.isFinite(number)) number = 1;
+          Array.from(node.children).forEach(function (li) {
+            if (li.tagName.toLowerCase() !== 'li') return;
+            var parts = [], nested = [];
+            Array.from(li.childNodes).forEach(function (child) {
+              var childTag = child.nodeType === 1 ? child.tagName.toLowerCase() : '';
+              if (childTag === 'ul' || childTag === 'ol') nested.push(child);
+              else if (childTag === 'p' || /^h[1-6]$/.test(childTag)) {
+                if (parts.length && !parts[parts.length - 1].endsWith('\n')) parts.push('\n');
+                parts.push(inline(child), '\n');
+              } else parts.push(inline(child));
+            });
+            var marker = tag === 'ol' ? (number++) + '. ' : '- ';
+            lines.push('  '.repeat(depth) + marker + parts.join('').trim());
+            nested.forEach(function (child) { lines.push(blocks({childNodes: [child]}, depth + 1)); });
+          });
+        } else if (tag === 'p' || /^h[1-6]$/.test(tag)) {
+          lines.push(inline(node).trim());
+        } else if (tag === 'br') {
+          lines.push('');
+        } else {
+          lines.push(blocks(node, depth));
+        }
+      });
+      return lines.filter(function (line) { return line !== ''; }).join('\n');
     }
+    return blocks(root, 0);
   }
-
-  data.texts.forEach(function (item) {
-    var card = document.createElement('section');
-    card.className = 'card';
-    var head = document.createElement('h2');
-    head.textContent = item.title;
-    card.appendChild(head);
-    if (item.note) {
-      var note = document.createElement('p');
-      note.className = 'note';
-      note.textContent = item.note;
-      card.appendChild(note);
-    }
-    var body = document.createElement('pre');
-    body.textContent = item.text;
-    card.appendChild(body);
-    var button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Copy';
-    button.setAttribute('aria-label', 'Copy ' + item.title);
-    button.addEventListener('click', function () { copy(item.text, item.title); });
-    card.appendChild(button);
-    list.appendChild(card);
+  buttons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      var target = document.getElementById(button.getAttribute('data-copy'));
+      if (!target) { status.textContent = 'Copy target is missing.'; return; }
+      var plain = target.hasAttribute('data-plain') ? target.textContent : plainText(target);
+      if (target.hasAttribute('data-plain')) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(plain).then(function () {
+            status.textContent = 'Copied plain text only; formatting was not copied.';
+          }, function () { fallback(plain); });
+        } else { fallback(plain); }
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+        try {
+          var item = new ClipboardItem({
+            'text/html': new Blob([target.innerHTML], {type: 'text/html'}),
+            'text/plain': new Blob([plain], {type: 'text/plain'})
+          });
+          navigator.clipboard.write([item]).then(function () {
+            status.textContent = 'Copied with formatting.';
+          }, function () { fallback(plain); });
+        } catch (error) { fallback(plain); }
+      } else { fallback(plain); }
+    });
   });
 })();
 </script>
