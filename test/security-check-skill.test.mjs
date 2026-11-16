@@ -744,3 +744,16 @@ test('the skill is registered: both manifest entries per file carry the file SHA
   }
   assert.ok(allowlist.includes('test/security-check-skill.test.mjs'));
 });
+
+function assertBranchRedirect(text, procedure) {
+  assert.ok(text.includes('03-Resources/Procedures/branch-security-review.md'));
+  assert.ok(procedure.includes('A folder scanner PASS never substitutes for source review'));
+  assert.ok(procedure.includes('independent reviewer'));
+}
+test('own-code review uses the shared review procedure; missing fallback is rejected', () => {
+  const text = readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf8');
+  const procedure = readFileSync(path.join(sourceRoot, 'template/03-Resources/Procedures/branch-security-review.md'), 'utf8');
+  assertBranchRedirect(text, procedure);
+  assert.throws(() => assertBranchRedirect(text, procedure.replace('independent reviewer', 'reviewer')));
+  assert.throws(() => assertBranchRedirect(text.replace('03-Resources/Procedures/branch-security-review.md', 'missing'), procedure));
+});

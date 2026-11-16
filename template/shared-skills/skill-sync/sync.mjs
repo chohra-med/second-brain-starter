@@ -10,7 +10,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, readdirSync, readFileSync, readlinkSync, realpathSync, statSync, writeFileSync, openSync, closeSync, fstatSync, constants } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -19,6 +19,7 @@ export const ROOTS = ['.claude/skills', '.agents/skills'];
 const STATE = '.skill-sync';
 const SOURCES = 'skills-sources.json';
 const LOCK = 'skills.lock.json';
+const ADAPTERS = 'adapters.json';
 const KINDS = new Set(['external', 'ours', 'local', 'bundled']);
 const ADDRESS = /^(?:https|file):\/\/[^\s'"`<>\\]+$/;
 const REF = /^[A-Za-z0-9][A-Za-z0-9._/-]*$/;
@@ -66,7 +67,7 @@ function folderFiles(dir) {
         const stat = lstatSync(absolute);
         if (stat.isSymbolicLink()) files.push({ path: rel, link: readlinkSync(absolute) });
         else if (stat.isDirectory()) walk(absolute, rel);
-        else if (stat.isFile()) files.push({ path: rel, sha256: sha256(readFileSync(absolute)) });
+        else if (stat.isFile()) files.push({ path: rel, sha256: observedFile(absolute).sha256 });
       } catch (error) {
         unreadable(rel, error);
       }
@@ -83,11 +84,12 @@ function findSkills(root) {
   const found = [];
   const skipped = [];
   const walk = (dir, rel) => {
-    let entries;
+    let entries, before;
     try {
+      before = statSync(dir);
       entries = readdirSync(dir, { withFileTypes: true });
     } catch (error) {
-      skipped.push({ path: rel || '.', reason: error.code ?? 'unreadable' });
+      skipped.push({ path: rel || '.', reason: error.code ?? 'unreadable', unreadable: true });
       return;
     }
     if (rel && entries.some((entry) => entry.name === 'SKILL.md' && entry.isFile())) found.push({ name: rel, dir });
@@ -107,10 +109,16 @@ function findSkills(root) {
         skipped.push({ path: next, reason: 'broken link' });
         continue;
       }
-      if (!statSync(real).isDirectory()) continue;
-      if (existsSync(path.join(real, 'SKILL.md'))) found.push({ name: next, dir: real, link: readlinkSync(absolute) });
-      else skipped.push({ path: next, reason: 'linked folder without SKILL.md, not followed' });
+      try {
+        if (!statSync(real).isDirectory()) continue;
+        if (existsSync(path.join(real, 'SKILL.md'))) found.push({ name: next, dir: real, link: readlinkSync(absolute) });
+        else skipped.push({ path: next, reason: 'linked folder without SKILL.md, not followed' });
+      } catch(e) { skipped.push({path:next,reason:e.code ?? 'unreadable',unreadable:true}); }
     }
+    try {
+      const after = statSync(dir), again = readdirSync(dir).sort(byText);
+      if (!stableStat(before,after) || JSON.stringify(entries.map(e=>e.name).sort(byText))!==JSON.stringify(again)) skipped.push({path:rel || '.',reason:'discovery-changed',unreadable:true});
+    } catch(e) { skipped.push({path:rel || '.',reason:e.code ?? 'unreadable',unreadable:true}); }
   };
   walk(root, '');
   return { found, skipped };
@@ -121,7 +129,11 @@ export function inventory(workspace) {
   const byName = new Map();
   for (const root of ROOTS) {
     const absolute = path.join(workspace, ...root.split('/'));
-    if (!existsSync(absolute)) continue;
+    try { lstatSync(absolute); } catch (error) {
+      if (error.code === 'ENOENT') continue;
+      roots[root] = { path: absolute, skills: 0, skipped: [{ path: '.', reason: error.code ?? 'unreadable', unreadable: true }] };
+      continue;
+    }
     const { found, skipped } = findSkills(absolute);
     roots[root] = { path: absolute, skills: found.length, skipped };
     for (const item of found) {
@@ -144,6 +156,98 @@ export function inventory(workspace) {
     only,
     counts: { skillFiles, names: names.length, namesWithCopies: withCopies.length, copiesThatDiffer: differ.length, onlyClaude: only['.claude/skills'].length, onlyAgents: only['.agents/skills'].length },
   };
+}
+
+// Snapshot observation is a cooperative-writer check, not an atomic or hostile-writer proof.
+const statKey = s => [s.dev, s.ino, s.mode, s.size, s.mtimeMs, s.ctimeMs];
+const stableStat = (a,b) => JSON.stringify(statKey(a)) === JSON.stringify(statKey(b));
+const control = value => /[\x00-\x1f\x7f]/.test(value);
+function observedFile(file) {
+  if (constants.O_NOFOLLOW === undefined) throw new Error('no-follow file reads unsupported');
+  const before = lstatSync(file);
+  if (!before.isFile()) throw new Error('expected regular file');
+  const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const start = fstatSync(fd); if (!stableStat(before,start)) throw new Error('file changed before read');
+    const bytes = readFileSync(fd), end = fstatSync(fd), after = lstatSync(file);
+    if (!stableStat(start,end) || !stableStat(end,after) || bytes.length !== start.size) throw new Error('file changed during read');
+    return { size: bytes.length, sha256: sha256(bytes), mode: start.mode & 0o111 };
+  } finally { closeSync(fd); }
+}
+function observedSkill(workspace, root, name) {
+  const target = path.join(workspace,root,name), initial = lstatSync(target);
+  const rootLink = initial.isSymbolicLink() ? readlinkSync(target) : null;
+  if (rootLink !== null && control(rootLink)) throw new Error('control character in root link');
+  const real = realpathSync(target), actual = statSync(real);
+  if (!actual.isDirectory()) throw new Error('skill root is not a directory');
+  const manifest = [], metadata = [];
+  const walk = (dir,prefix) => {
+    const before = lstatSync(dir); if (!before.isDirectory() || before.isSymbolicLink()) throw new Error('directory replaced');
+    const names = readdirSync(dir).sort(byText);
+    metadata.push([prefix,statKey(before)]);
+    for (const n of names) {
+      const rel = prefix ? `${prefix}/${n}` : n, file = path.join(dir,n);
+      if (control(rel)) throw new Error('control character in path');
+      const st = lstatSync(file);
+      if (st.isSymbolicLink()) {
+        const target = readlinkSync(file); if (control(target)) throw new Error('control character in link');
+        let resolved; try { resolved = realpathSync(file); } catch { resolved = path.resolve(dir,target); }
+        const relative = path.relative(real,resolved), outside = relative !== '' && (relative.startsWith('..') || path.isAbsolute(relative));
+        if (!stableStat(st,lstatSync(file)) || readlinkSync(file)!==target) throw new Error('link changed');
+        manifest.push({path:rel,kind:'symlink',target,outside});metadata.push([rel,statKey(st)]);
+      } else if (st.isDirectory()) {
+        if (n === '.git' || n === 'node_modules') { manifest.push({path:rel,kind:'skipped-folder'});metadata.push([rel,statKey(st)]); }
+        else walk(file,rel);
+      } else if (st.isFile()) {
+        const seen = observedFile(file);manifest.push({path:rel,kind:'file',size:seen.size,sha256:seen.sha256});metadata.push([rel,statKey(st),seen.mode]);
+      } else { manifest.push({path:rel,kind:'other'});metadata.push([rel,statKey(st)]); }
+    }
+    if (JSON.stringify(names)!==JSON.stringify(readdirSync(dir).sort(byText)) || !stableStat(before,lstatSync(dir))) throw new Error('directory changed during read');
+  };
+  walk(real,'');
+  if (!stableStat(initial,lstatSync(target)) || !stableStat(actual,statSync(real)) || realpathSync(target)!==real || (rootLink !== null && readlinkSync(target)!==rootLink)) throw new Error('skill root changed');
+  manifest.sort((a,b)=>byText(a.path,b.path));metadata.sort((a,b)=>byText(a[0],b[0]));
+  const scannerTarget = path.join(realpathSync(path.join(workspace,root)),name);
+  return {target,scannerTarget,real,rootLink,manifest,metadata,rootStat:statKey(initial),realStat:statKey(actual)};
+}
+function observation(workspace,inv) {
+  const roots = [], projections = [], mapPath = path.join(workspace,STATE,'adapters.json');
+  try {
+    for (const root of ROOTS) {
+      const absolute = path.join(workspace,root); let st;
+      try { st=lstatSync(absolute); } catch (e) { if(e.code==='ENOENT') { roots.push([root,'absent']);continue; } throw e; }
+      const link=st.isSymbolicLink()?readlinkSync(absolute):null;
+      if (control(root) || (link!==null && control(link))) throw new Error('control character in root');
+      const resolved=realpathSync(absolute), resolvedStat=statSync(absolute);
+      roots.push([root,statKey(st),link,resolved,inv.roots[root]?.skipped ?? [],statKey(resolvedStat)]);
+      for(const name of inv.names) if(inv.byName.get(name)[root]) {
+        if (control(name)) throw new Error('control character in skill path');
+        const observed=observedSkill(workspace,root,name), old=inv.byName.get(name)[root];
+        const legacy=observed.manifest.filter(e=>(e.kind==='file'||e.kind==='symlink') && !e.path.split('/').some(x=>x==='.git'||x==='node_modules')).map(e=>e.kind==='file'?{path:e.path,sha256:e.sha256}:{path:e.path,link:e.target});
+        if (folderSha256(legacy)!==old.folderSha256) throw new Error('inventory changed before observation');
+        projections.push({root,name,...observed});
+      }
+      if (!stableStat(st,lstatSync(absolute)) || !stableStat(resolvedStat,statSync(absolute)) || realpathSync(absolute)!==resolved) throw new Error('discovery root changed');
+    }
+    let config;try { const before=lstatSync(mapPath), data=observedFile(mapPath), after=lstatSync(mapPath); if(!stableStat(before,after)) throw new Error('adapter mapping changed'); config={...data,identity:statKey(before)}; } catch(e) { if(e.code==='ENOENT') config=null; else throw e; }
+    return {roots,projections,config};
+  } catch(e) { return {error:e.message}; }
+}
+function manifestValid(row, observed) {
+  if (!observed || row.target!==observed.scannerTarget || (row.link ?? null)!==observed.rootLink || (row.linkedTo ?? null)!==(observed.rootLink===null?null:observed.real) || !Array.isArray(row.files)) return false;
+  const rows=[];
+  for (const f of row.files) {
+    if (!f || typeof f.path!=='string' || !f.path || path.posix.isAbsolute(f.path) || f.path.split('/').some(x=>!x || x==='.' || x==='..') || control(f.path)) return false;
+    const keys=Object.keys(f).sort().join(',');
+    if (f.kind==='file' && keys==='kind,path,sha256,size' && Number.isSafeInteger(f.size) && f.size>=0 && /^[0-9a-f]{64}$/.test(f.sha256)) rows.push({path:f.path,kind:f.kind,size:f.size,sha256:f.sha256});
+    else if (f.kind==='symlink' && keys==='kind,outside,path,target' && typeof f.target==='string' && !control(f.target) && typeof f.outside==='boolean') rows.push({path:f.path,kind:f.kind,target:f.target,outside:f.outside});
+    else if (['other','skipped-folder'].includes(f.kind) && keys==='kind,path') rows.push({path:f.path,kind:f.kind});
+    else return false;
+  }
+  if (new Set(rows.map(f=>f.path)).size!==rows.length) return false;
+  const producerHash=sha256(rows.map(f=>`${f.path}\t${f.kind}\t${f.sha256??f.target??''}\n`).sort(byText).join(''));
+  rows.sort((a,b)=>byText(a.path,b.path));
+  return producerHash===row.folderHash && JSON.stringify(rows)===JSON.stringify(observed.manifest);
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -175,15 +279,55 @@ function changedFiles(lockFiles = [], files = []) {
 
 const item = (section, kind, name, text, extra = {}) => ({ section, kind, name, text, ...extra });
 
-function copyItems(inv) {
-  return inv.differ.map((name) => {
+function adapterItems(workspace, inv, adapters) {
+  const items = [];
+  for (const row of adapters) {
+    const copies = inv.byName.get(row.name) ?? {};
+    const owner = copies['.claude/skills'];
+    const adapter = copies['.agents/skills'];
+    if (!owner) items.push(item('review', 'adapter-owner-missing', row.name, `Mapped owner ${row.owner} is missing.`));
+    if (!adapter) { items.push(item('review', 'adapter-missing', row.name, `Mapped adapter ${row.adapter} is missing.`)); continue; }
+    let entries;
+    try { entries = readdirSync(path.join(workspace, path.dirname(row.adapter))); } catch { entries = ['(unreadable)']; }
+    const extra = entries.filter((name) => name !== 'SKILL.md');
+    if (extra.length) items.push(item('review', 'adapter-extra-file', row.name, `Adapter has extra files: ${extra.join(', ')}.`));
+    const relativeOwner = path.relative(path.dirname(path.join(workspace, row.adapter)), path.join(workspace, row.owner)).split(path.sep).join('/');
+    let body = '';
+    try { body = readFileSync(path.join(workspace, row.adapter), 'utf8'); } catch {}
+    const required = `Read and follow the canonical owner at [${relativeOwner}](${relativeOwner}), resolving the link from this installed skill folder. Resolve the owner's relative paths from the owner folder. Preserve its scope, data, authorization and publication boundaries and applicable workspace instructions. If a required capability is unavailable, report it; do not invent an equivalent or infer authorization.`;
+    const lines = body.split(/\r?\n/);
+    const approvedExtra = [''];
+    const trailing = lines.slice(8);
+    const recognized = JSON.stringify(trailing) === JSON.stringify(approvedExtra) && lines[0] === '---' && lines[1] === `name: ${row.name}` && lines[2] === `description: ${row.description}` && lines[3] === '---' && lines[4] === '' && lines[5] === `# ${row.name}` && lines[6] === '' && lines[7] === required;
+    if (!recognized) items.push(item('review', 'adapter-misdirected', row.name, `Adapter does not link to mapped owner ${row.owner}.`));
+  }
+  return items;
+}
+
+function readAdapters(workspace) {
+  const doc = readJson(path.join(workspace, STATE, ADAPTERS), `${STATE}/${ADAPTERS}`, 'adapters');
+  if (doc && (Object.keys(doc).length !== 1 || !Array.isArray(doc.adapters))) throw new UsageError('Invalid adapter mapping structure');
+  const rows = doc?.adapters ?? [];
+  const seen = new Set();
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).sort().join(',') !== 'adapter,description,name,owner') throw new UsageError('Invalid adapter mapping structure');
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(row.name) || typeof row.description !== 'string' || !row.description || /[\r\n]/.test(row.description) || seen.has(row.name) || row.owner !== `.claude/skills/${row.name}/SKILL.md` || row.adapter !== `.agents/skills/${row.name}/SKILL.md`) throw new UsageError('Invalid or duplicate adapter mapping');
+    seen.add(row.name);
+  }
+  return rows;
+}
+
+function copyItems(inv, adapters, workspaceForCopyItems) {
+  const invalid = new Set(adapterItems(workspaceForCopyItems, inv, adapters).filter(x => ['adapter-misdirected','adapter-owner-missing','adapter-missing','adapter-extra-file'].includes(x.kind)).map(x => x.name));
+  const mapped = new Set(adapters.filter(row => !invalid.has(row.name)).map(row => row.name));
+  return inv.differ.filter(name => !mapped.has(name)).map((name) => {
     const copies = Object.values(inv.byName.get(name));
     const [first, second] = copies;
     return item('review', 'copies-differ', name, `The copies in ${copies.map((copy) => copy.root).join(' and ')} differ: ${changedFiles(first.files, second.files).slice(0, 20).join(', ')}.`);
   });
 }
 
-function lockItems(inv, lock) {
+function lockItems(inv, lock, adapters) {
   if (!lock) return [item('left', 'no-lock', null, `No lock file yet (${STATE}/${LOCK}). After reading this report, save the proposed lock as your baseline; the next run then reports every change against it.`)];
   const items = [];
   const locked = new Map(lock.skills.map((entry) => [entry.name, entry]));
@@ -193,10 +337,14 @@ function lockItems(inv, lock) {
       items.push(item('left', 'not-in-lock', name, 'Installed, but not in the lock.'));
       continue;
     }
+    const mapping = adapters.find(row => row.name === name);
     for (const copy of Object.values(inv.byName.get(name))) {
-      if (copy.folderSha256 === entry.folderSha256) continue;
-      const files = changedFiles(entry.files, copy.files);
-      items.push(item('left', 'edited-here', name, `${copy.installed} differs from the lock${files.length > 0 ? `: ${files.slice(0, 20).join(', ')}` : ''}. Reported only; nothing is undone.`, { installed: copy.installed, files }));
+      const baseline = entry.projections?.find(projection => projection.root === copy.root) ?? (!mapping ? entry : null);
+      if (!baseline) { items.push(item('left', 'projection-unbaselined', name, `${copy.installed} has no projection baseline.`)); continue; }
+      if (copy.folderSha256 === baseline.folderSha256) continue;
+      const files = changedFiles(baseline.files, copy.files);
+      const kind = mapping ? (copy.root === '.claude/skills' ? 'owner-changed' : 'adapter-changed') : 'edited-here';
+      items.push(item('left', kind, name, `${copy.installed} differs from the lock${files.length > 0 ? `: ${files.slice(0, 20).join(', ')}` : ''}. Reported only; nothing is undone.`, { installed: copy.installed, files }));
     }
   }
   for (const entry of lock.skills) {
@@ -217,20 +365,45 @@ function checkScript(options, workspace) {
   return candidates.find((file) => existsSync(file)) ?? null;
 }
 
-function runCheck(script, root, reportDir) {
+function runCheck(script, root, reportDir, expected, discovery, observed) {
   const result = spawnSync(process.execPath, [script, '--all', root, '--report-dir', reportDir, '--json'], { encoding: 'utf8', maxBuffer: 1024 * 1024 * 1024 });
   if (result.error) return { error: result.error.message };
-  if (![0, 3, 4].includes(result.status)) return { error: `exit ${result.status ?? result.signal}: ${firstLine(result.stderr)}` };
-  try {
-    return { report: JSON.parse(result.stdout) };
-  } catch {
-    return { error: 'the security check printed no JSON' };
-  }
+  let report;
+  try { report = JSON.parse(result.stdout); } catch { return { error: 'the security check printed invalid JSON', block: result.status === 4, flag: result.status === 3 }; }
+  const statuses = { PASS: 0, FLAG: 3, BLOCK: 4 }, rank = { PASS: 0, FLAG: 1, BLOCK: 2 };
+  const rows = Array.isArray(report?.skills) ? report.skills : [];
+  const known = x => Object.hasOwn(statuses, x);
+  const count = x => Number.isSafeInteger(x) && x >= 0;
+  const exactCounts = (object, expectedCounts) => object && typeof object === 'object' && !Array.isArray(object) && JSON.stringify(Object.keys(object).sort()) === JSON.stringify(Object.keys(expectedCounts).sort()) && Object.entries(expectedCounts).every(([k,v]) => count(object[k]) && object[k] === v);
+  const severity = row => Math.max(known(row?.verdict) ? rank[row.verdict] : 0, ...(Array.isArray(row?.findings) ? row.findings.map(f => known(f?.verdict) ? rank[f.verdict] : 0) : [0]));
+  const safeRows = rows.filter(row => row && typeof row.path === 'string').map(row => ({ ...row, verdict: ['PASS','FLAG','BLOCK'][severity(row)], findings: Array.isArray(row.findings) ? row.findings.filter(f => f && known(f.verdict) && typeof f.rule === 'string') : [], bestPractices: { verdict: row.bestPractices?.verdict === 'FLAG' || (Array.isArray(row.bestPractices?.findings) && row.bestPractices.findings.length) ? 'FLAG' : 'PASS', findings: Array.isArray(row.bestPractices?.findings) ? row.bestPractices.findings.filter(f => f && typeof f.rule === 'string') : [] } }));
+  const rules = new Map(), total = { PASS: 0, FLAG: 0, BLOCK: 0 }, practice = { PASS: 0, FLAG: 0 };
+  const validRows = rows.every(row => {
+    if (!row || row.tool !== 'security-check' || row.schema !== 1 || typeof row.path !== 'string' || !known(row.verdict) || row.exitCode !== statuses[row.verdict] || !Array.isArray(row.findings) || !row.findings.every(f => f && ['FLAG','BLOCK'].includes(f.verdict) && typeof f.rule === 'string' && f.rule)) return false;
+    const c = { BLOCK: 0, FLAG: 0 }; for (const f of row.findings) c[f.verdict]++;
+    if (!exactCounts(row.counts,c) || rank[row.verdict] !== Math.max(0,...row.findings.map(f => rank[f.verdict]))) return false;
+    const bp = row.bestPractices;
+    if (!bp || !['PASS','FLAG'].includes(bp.verdict) || !Array.isArray(bp.findings) || !bp.findings.every(f => f && typeof f.rule === 'string' && f.rule) || bp.verdict !== (bp.findings.length ? 'FLAG' : 'PASS')) return false;
+    total[row.verdict]++; practice[bp.verdict]++;
+    for (const f of bp.findings) rules.set(f.rule, (rules.get(f.rule) ?? 0) + 1);
+    return true;
+  });
+  const names = rows.map(row => row?.path).sort(byText), worst = total.BLOCK ? 'BLOCK' : total.FLAG ? 'FLAG' : 'PASS';
+  const skipped = report?.skipped, validSkip = x => x && typeof x.path === 'string' && ['broken link','linked folder without SKILL.md, not followed'].includes(x.reason) && Object.keys(x).sort().join(',') === 'path,reason';
+  const noteKeys = list => list.map(x => JSON.stringify([x.path,x.reason])).sort(byText);
+  const expectedNotes = discovery.filter(x => !x.unreadable);
+  const validSkips = Array.isArray(skipped) && skipped.every(validSkip) && new Set(noteKeys(skipped)).size === skipped.length && JSON.stringify(noteKeys(skipped)) === JSON.stringify(noteKeys(expectedNotes));
+  const bp = report?.bestPractices, byRule = Object.fromEntries(rules);
+  const practiceOk = bp && typeof bp === 'object' && !Array.isArray(bp) && JSON.stringify(Object.keys(bp).sort()) === JSON.stringify(['FLAG','PASS','byRule'].sort()) && count(bp.PASS) && count(bp.FLAG) && bp.PASS === practice.PASS && bp.FLAG === practice.FLAG && exactCounts(bp.byRule,byRule);
+  const manifestsOk = rows.every(row => manifestValid(row, observed.find(x => x.name === row.path)));
+  const consistent = manifestsOk && report?.tool === 'security-check' && report.schema === 1 && report.mode === 'all' && report.root === root && known(report.verdict) && result.status === statuses[report.verdict] && report.exitCode === result.status && validRows && new Set(names).size === names.length && JSON.stringify(names) === JSON.stringify([...expected].sort(byText)) && report.verdict === worst && exactCounts(report.counts,total) && practiceOk && validSkips && !discovery.some(x => x.unreadable);
+  if (!consistent) return { report: { ...report, skills: safeRows }, error: 'security report or discovery is incomplete or inconsistent', block: result.status === 4 || report?.verdict === 'BLOCK' || rows.some(row => severity(row) === 2), flag: result.status === 3 || report?.verdict === 'FLAG' || rows.some(row => severity(row) === 1) };
+  return { report };
 }
 
 const RANK = { PASS: 0, FLAG: 1, BLOCK: 2 };
 
-function securityStep(options, workspace, inv, reportDir) {
+function securityStep(options, workspace, inv, reportDir, snapshot) {
   const items = [];
   const perName = new Map();
   const runs = [];
@@ -240,16 +413,22 @@ function securityStep(options, workspace, inv, reportDir) {
     return { items, perName, runs, script: null };
   }
   for (const [root, info] of Object.entries(inv.roots)) {
-    if (info.skills === 0) continue;
-    const { report, error } = runCheck(script, info.path, path.join(reportDir, 'security-check'));
+    if (info.skills === 0) {
+      if (info.skipped.some(x => x.unreadable)) { const error = 'unreadable discovery with no skills'; items.push(item('waiting', 'check-failed', null, `${root}: ${error}`)); runs.push({root, error}); }
+      continue;
+    }
+    const expected = inv.names.filter(name => inv.byName.get(name)[root]);
+    const { report, error, block, flag } = runCheck(script, info.path, path.join(reportDir, 'security-check'), expected, info.skipped, snapshot.projections?.filter(x=>x.root===root) ?? []);
     if (error) {
       items.push(item('waiting', 'check-failed', null, `The security check did not finish on ${root}: ${error}`));
       runs.push({ root, error });
-      continue;
+      if (block) items.push(item('waiting', 'security-block', null, `Security check reported BLOCK for ${root} but its report was inconsistent.`));
+      if (flag) items.push(item('review', 'security-flag', null, `Security check reported FLAG for ${root} but its report was inconsistent.`));
+      if (!report) continue;
     }
-    runs.push({ root, verdict: report.verdict, counts: report.counts, report: report.reportFiles?.json ?? null });
+    if (!error) runs.push({ root, verdict: report.verdict, counts: report.counts, report: report.reportFiles?.json ?? null });
     for (const skill of report.skills) {
-      const current = perName.get(skill.path) ?? { security: 'PASS', bestPractices: 'PASS', rules: {}, practiceRules: {}, reports: new Set() };
+      const current = perName.get(skill.path) ?? { security: 'PASS', bestPractices: 'PASS', rules: Object.create(null), practiceRules: Object.create(null), reports: new Set() };
       if (RANK[skill.verdict] > RANK[current.security]) current.security = skill.verdict;
       if (skill.bestPractices.verdict === 'FLAG') current.bestPractices = 'FLAG';
       for (const finding of skill.findings) current.rules[`${finding.verdict} ${finding.rule}`] = (current.rules[`${finding.verdict} ${finding.rule}`] ?? 0) + 1;
@@ -361,6 +540,7 @@ function proposedLock(workspace, inv, lock, sources, security, date) {
       commit: entry?.commit ?? null,
       path: entry?.path ?? row?.path ?? null,
       installed: Object.values(copies).map((copy) => copy.installed),
+      projections: Object.values(copies).map(({root, files, folderSha256}) => ({root, files, folderSha256})),
       files: main.files,
       folderSha256: main.folderSha256,
       check: result ? { security: result.security, bestPractices: result.bestPractices, report: [...result.reports][0] ?? null, date } : null,
@@ -414,7 +594,7 @@ export function renderReport(report) {
   ]);
   const practiceRows = report.bestPractices.filter((entry) => entry.verdict === 'FLAG').map((entry) => [`<code>${escapeHtml(entry.name)}</code>`, escapeHtml(Object.entries(entry.rules).map(([rule, count]) => `${rule} x${count}`).join(', '))]);
   const inv = report.inventory.counts;
-  const lockCommand = `mkdir -p "${path.join(report.workspace, STATE)}" && cp "${report.reportFiles.lock}" "${path.join(report.workspace, STATE, LOCK)}"`;
+  const lockCommand = report.reportFiles.lock ? `mkdir -p "${path.join(report.workspace, STATE)}" && cp "${report.reportFiles.lock}" "${path.join(report.workspace, STATE, LOCK)}"` : null;
   const body = `<h1>Skill sync: ${escapeHtml(path.basename(report.workspace))}</h1>
 <p class="meta">Workspace: <code>${escapeHtml(report.workspace)}</code><br>Date: ${report.date}. Edition: Second Brain Starter, report only: nothing was fetched, installed or changed.</p>
 <div class="badges"><span class="badge">Need your review ${counts.review}</span><span class="badge">Left for you ${counts.left}</span><span class="badge">Waiting ${counts.waiting}</span><span class="badge PASS">Done ${counts.done}</span></div>
@@ -432,10 +612,11 @@ ${table(['Skill', 'What', 'Detail'], itemRows(sections.waiting), 'Nothing.')}
 <h2>Inventory</h2>
 <p class="meta">${inv.skillFiles} skill files, ${inv.names} names, ${inv.namesWithCopies} names with a copy in both folders, ${inv.copiesThatDiffer} whose copies differ, ${inv.onlyClaude} only in .claude/skills, ${inv.onlyAgents} only in .agents/skills.</p>
 ${table(['Skill', 'Installed in', 'Copies', 'Security', 'Best practices'], inventoryRows, 'No skill found.')}
+<p>The proposed lock is tied to observed scanned content in a cooperative workspace. Later changes, transient changes that are restored, and hostile writers are outside this check. A named security checker is trusted code, not an attested sandbox.</p>
 <h2>Best practices (never blocks)</h2>
 ${table(['Skill', 'Rules'], practiceRows, 'Every checked skill follows the best-practice rules.')}
 <h2>Your baseline</h2>
-<p>The proposed lock holds today's state: <code>${escapeHtml(report.reportFiles.lock)}</code>. This script never writes your lock. To make today's state your baseline, after reading this report, copy it yourself: <code>${escapeHtml(lockCommand)}</code> ${copyButton(lockCommand)}</p>`;
+${lockCommand ? `<p>The proposed lock holds today's state: <code>${escapeHtml(report.reportFiles.lock)}</code>. This script never writes your lock. To make today's state your baseline, after reading this report, copy it yourself: <code>${escapeHtml(lockCommand)}</code> ${copyButton(lockCommand)}</p>` : `<p>No proposed lock is available because an observation, mapping or security check did not meet the baseline requirements.</p>`}`;
   const scriptHash = createHash('sha256').update(COPY_SCRIPT).digest('base64');
   return `<!doctype html>
 <html lang="en">
@@ -581,8 +762,12 @@ export function run(options, cwd) {
   mkdirSync(reportDir, { recursive: true });
 
   const inv = inventory(workspace);
-  const items = [...copyItems(inv), ...lockItems(inv, lock)];
-  const security = securityStep(options, workspace, inv, reportDir);
+  const initialSnapshot = observation(workspace,inv);
+  let adapters = [];
+  let mappingError = null;
+  try { adapters = readAdapters(workspace); } catch (error) { mappingError = item('review', 'adapter-mapping-invalid', null, `Adapter mapping rejected: ${error.message}. All differences remain visible.`); }
+  const items = [...(mappingError ? [mappingError, item('waiting','check-failed',null,'Adapter mapping is invalid; baseline withheld.')] : []), ...copyItems(inv, adapters, workspace), ...adapterItems(workspace, inv, adapters), ...lockItems(inv, lock, adapters)];
+  const security = securityStep(options, workspace, inv, reportDir, initialSnapshot);
   items.push(...security.items);
   const plan = planUpstream(sources, lock);
   items.push(...plan.items);
@@ -590,11 +775,15 @@ export function run(options, cwd) {
     addresses: path.join(reportDir, `skill-sync-${date}-addresses.txt`),
     html: path.join(reportDir, `skill-sync-${date}.html`),
     json: path.join(reportDir, `skill-sync-${date}.json`),
-    lock: path.join(reportDir, `skill-sync-${date}.lock.json`),
+    lock: items.some(entry => ['security-block', 'check-failed', 'check-missing', 'adapter-misdirected', 'adapter-owner-missing', 'adapter-missing', 'adapter-extra-file'].includes(entry.kind)) ? null : path.join(reportDir, `skill-sync-${date}.lock.json`),
   };
   const upstream = upstreamStep(plan, options.offline, reportFiles.addresses, date);
   items.push(...upstream.items);
 
+  const finalInventory = inventory(workspace);
+  const finalSnapshot = observation(workspace,finalInventory);
+  if (initialSnapshot.error || finalSnapshot.error || JSON.stringify(initialSnapshot)!==JSON.stringify(finalSnapshot)) items.push(item('waiting','snapshot-changed',null,`Scan observation is incomplete or changed: ${initialSnapshot.error ?? finalSnapshot.error ?? 'workspace changed'}.`));
+  if (items.some(entry => entry.kind === 'snapshot-changed')) reportFiles.lock = null;
   const sections = { review: [], left: [], waiting: [], done: [] };
   for (const entry of items) sections[entry.section].push(entry);
   const named = new Set(items.map((entry) => entry.name).filter(Boolean));
@@ -603,6 +792,7 @@ export function run(options, cwd) {
   const exitCode = items.some((entry) => entry.kind === 'security-block') ? EXIT.BLOCK : counts.review + counts.left + counts.waiting > 0 ? EXIT.NEEDS_YOU : EXIT.NOTHING;
 
   const report = {
+    snapshotBinding: { guarantee: 'Observed cooperative workspace; later, transient and hostile mutations remain outside this check.', projections: initialSnapshot.projections?.map(p => ({root:p.root,name:p.name,manifestSha256:sha256(JSON.stringify(p.manifest)), scanReport:security.runs.find(r=>r.root===p.root)?.report ?? null})) ?? [] },
     tool: 'skill-sync',
     schema: 1,
     edition: 'oss',
@@ -627,7 +817,7 @@ export function run(options, cwd) {
     bestPractices: [...security.perName].map(([name, result]) => ({ name, verdict: result.bestPractices, rules: result.practiceRules })).sort((left, right) => byText(left.name, right.name)),
     reportFiles,
   };
-  writeFileSync(reportFiles.lock, `${JSON.stringify(proposedLock(workspace, inv, lock, sources, security, date), null, 2)}\n`);
+  if (reportFiles.lock) writeFileSync(reportFiles.lock, `${JSON.stringify(proposedLock(workspace, inv, lock, sources, security, date), null, 2)}\n`);
   writeFileSync(reportFiles.json, `${JSON.stringify(report, null, 2)}\n`);
   writeFileSync(reportFiles.html, renderReport(report));
   return report;

@@ -85,7 +85,7 @@ test('SKILL.md states the push rule and keeps every push with the person', () =>
   for (const phrase of [
     "Each push needs the person's own go for that push.",
     'A go covers one push only',
-    'Claude never pushes, never opens a pull request and never merges.',
+    'The assistant never pushes, never opens a pull request and never merges.',
     'exactly as printed. Never build or change a link.',
   ]) assert.ok(text.includes(phrase), `SKILL.md is missing: ${phrase}`);
   const goStep = text.split('6. **Go and push.**')[1].split('\n7. ')[0];
@@ -161,4 +161,21 @@ test('the skill is registered: both manifest entries per file carry the file SHA
     assert.ok(allowlist.includes(source), `${source} is allowlisted`);
   }
   assert.ok(allowlist.includes('test/factory-skill.test.mjs'));
+});
+
+function assertPortableFactory(text) {
+  for (const phrase of ['branch-security-review.md', 'native `/sdd` is unavailable', 'entire procedure manually', 'independent gates']) assert.ok(text.includes(phrase), phrase);
+  assert.doesNotMatch(text, /Claude (?:never|runs|gives|passes)/);
+}
+test('factory routes to equivalent review and complete manual SDD, with a negative control', () => {
+  const text = read('SKILL.md');
+  assertPortableFactory(text);
+  assert.throws(() => assertPortableFactory(text.replace('entire procedure manually', 'partial route')));
+});
+
+test('build step keeps the selected native or manual SDD procedure', () => {
+  const text = readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf8');
+  const build = text.split('4. **Build and test.**')[1].split('\n5. ')[0];
+  function contract(value) { assert.match(value, /selected SDD procedure/); assert.match(value, /native or manual/); assert.match(value, /tester, verifier and reviewer/); }
+  contract(build); assert.throws(() => contract(build.replace('native or manual', 'native')));
 });

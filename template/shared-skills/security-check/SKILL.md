@@ -11,7 +11,7 @@ This skill reads a folder and reports what in it could harm the workspace, befor
 
 ## Do not use this when
 
-- You want a review of your own code changes. Use the built-in `/security-review` on the branch.
+- You want a review of your own code changes. Follow `03-Resources/Procedures/branch-security-review.md`, using native `/security-review` when available.
 - You want the starter package scanned before a release. The starter's own package scan does that (`node --test` in the starter).
 - You want to know what a running server does. The check reads files; it does not watch a process.
 

@@ -15,9 +15,9 @@ This skill ships one script, `sync.mjs`, that needs Node.js 22 or newer and noth
 - You want to know whether the starter's own installed files changed. Run `verify` from the starter copy.
 - You want one downloaded folder checked. Use the `security-check` skill on that folder.
 
-## Your two files
+## Your optional files
 
-Both live in `.skill-sync/` in the workspace. Both are optional, and both are yours: the script reads them and never changes them.
+These files live in `.skill-sync/` in the workspace. They are optional and yours: the script reads them and never changes them.
 
 - `skills-sources.json`: one row for each outside skill you track. Only a row with an `approved` date (`"approved": "YYYY-MM-DD"`, the day of your yes) is looked up, only an `https://` or `file://` address is used, and a skill whose kind is `local` is never looked up outside. A `ref` of `HEAD` reads the source's default branch.
 
@@ -34,7 +34,27 @@ Both live in `.skill-sync/` in the workspace. Both are optional, and both are yo
   }
   ```
 
-- `skills.lock.json`: your baseline. Each run writes a proposed lock beside its report, with today's hashes. You decide whether to save it as your lock.
+- `skills.lock.json`: your baseline. When the observations and scans are complete and consistent, the run writes a proposed lock beside its report. You decide whether to save it as your lock. Each projection has its own hash and baseline; older scalar baselines remain supported for ordinary copies.
+- `adapters.json`: optional explicit mapping of a canonical owner and a minimal wrapper. For example:
+
+  ```json
+  {"adapters":[{"name":"example","owner":".claude/skills/example/SKILL.md","adapter":".agents/skills/example/SKILL.md","description":"Example."}]}
+  ```
+
+  For that example, the wrapper contains exactly:
+
+  ```markdown
+  ---
+  name: example
+  description: Example.
+  ---
+
+  # example
+
+  Read and follow the canonical owner at [../../../.claude/skills/example/SKILL.md](../../../.claude/skills/example/SKILL.md), resolving the link from this installed skill folder. Resolve the owner's relative paths from the owner folder. Preserve its scope, data, authorization and publication boundaries and applicable workspace instructions. If a required capability is unavailable, report it; do not invent an equivalent or infer authorization.
+  ```
+
+  The wrapper has exactly the matching front matter, heading and delegation paragraph, and no other files or text. A mapping suppresses the ordinary copy difference only when this structure and owner are present. Missing, invalid or unexpected configuration is reported; absent or empty configuration keeps ordinary difference reporting. Both projections are scanned independently.
 
 ## Steps
 
@@ -80,7 +100,7 @@ Check: the reply names the query, the CLI version, every address contacted and e
 | Waiting | a security BLOCK; a security check that did not finish; an address that could not be read |
 | Done | every skill with nothing to report |
 
-The inventory counts the skill files, the names, the names with a copy in both folders, the copies that differ, and the skills only one client sees. Each run writes `skill-sync-<date>.html`, the same report as `.json`, the proposed lock `skill-sync-<date>.lock.json`, and the address list `skill-sync-<date>-addresses.txt`. The security check's own reports go to a `security-check/` folder beside them.
+The inventory counts the skill files, the names, the names with a copy in both folders, the copies that differ, and the skills only one client sees. Each run writes `skill-sync-<date>.html`, the same report as `.json`, a proposed lock `skill-sync-<date>.lock.json` only when eligible, and the address list `skill-sync-<date>-addresses.txt`. The security check's own reports go to a `security-check/` folder beside them. An invalid mapping, incomplete or inconsistent scan, BLOCK, or changed observation withholds the lock and copy action. The selected checker is trusted executable code, not an attested sandbox. Initial and final observations detect persistent changes in a cooperative workspace; they are not an atomic snapshot or protection against transient restored changes, hostile writers, changes after the final observation, or stale locks saved later. The mapping is trusted configuration and is not pinned in the lock.
 
 ## Options
 

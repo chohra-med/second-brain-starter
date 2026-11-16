@@ -669,3 +669,31 @@ test('the project template folder ships the five seed project files as a managed
   const projectsMap = await readFile(path.join(sourceRoot, 'template/01-Projects/README.md'), 'utf8');
   assert.match(projectsMap, /\[Project template\]\(\.\.\/03-Resources\/_templates\/project\/README\.md\): a new project is a copy of that folder/);
 });
+
+test('branch security procedure and skill projections install exact bytes and verify', async (t) => {
+  const manifest = JSON.parse(await readFile(path.join(sourceRoot, 'template-manifest.json'), 'utf8'));
+  const { createHash } = await import('node:crypto');
+  const sources = ['template/shared-skills/factory/SKILL.md', 'template/shared-skills/security-check/SKILL.md'];
+  function projection(entries, source, digest) {
+    const expected = ['.agents', '.claude'].map((client) => `${client}/skills/${source.split('/')[2]}/SKILL.md`).sort();
+    const found = entries.filter((entry) => entry.source === source);
+    assert.deepEqual(found.map((entry) => entry.destination).sort(), expected);
+    for (const entry of found) assert.equal(entry.sha256, digest);
+  }
+  for (const source of sources) {
+    const hash = createHash('sha256').update(await readFile(path.join(sourceRoot, source))).digest('hex');
+    projection(manifest.entries, source, hash);
+    const entries = manifest.entries.filter((entry) => entry.source !== source || !entry.destination.startsWith('.agents/'));
+    assert.throws(() => projection(entries, source, hash));
+    const altered = structuredClone(manifest.entries); altered.find((entry) => entry.source === source).sha256 = '0'.repeat(64);
+    assert.throws(() => projection(altered, source, hash));
+  }
+  const proc = '03-Resources/Procedures/branch-security-review.md';
+  assert.equal(manifest.entries.filter((entry) => entry.destination === proc && entry.mergeKind === 'managed-file').length, 1);
+  const root = await consumerRoot('branch-review-'); cleanup(t, root); const target = path.join(root, 'Project'); await mkdir(target);
+  const planned = await runCli(['init', '--target', target]); const applied = await runCli(['init', '--target', target, '--apply', planDigest(planned.stdout)]);
+  assert.equal(applied.code, undefined, applied.stdout);
+  assert.deepEqual(await readFile(path.join(target, proc)), await readFile(path.join(sourceRoot, 'template', proc)));
+  for (const source of sources) for (const client of ['.agents', '.claude']) assert.deepEqual(await readFile(path.join(target, client, 'skills', source.split('/')[2], 'SKILL.md')), await readFile(path.join(sourceRoot, source)));
+  const verified = await runCli(['verify', '--target', target]); assert.equal(verified.code, undefined, verified.stdout); assert.match(verified.stdout, /Verification: OK/);
+});

