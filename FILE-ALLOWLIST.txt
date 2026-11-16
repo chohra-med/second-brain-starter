@@ -61,6 +61,7 @@ template/03-Resources/Procedures/handover.md
 template/03-Resources/Procedures/learning-and-scaling.md
 template/03-Resources/Procedures/review.md
 template/03-Resources/Procedures/harness-session.md
+template/03-Resources/Procedures/branch-security-review.md
 template/03-Resources/Procedures/today.md
 template/03-Resources/Procedures/verify-end-session.md
 template/04-Archives/Projects/Archive-Guide.md

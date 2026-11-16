@@ -914,13 +914,13 @@
     {
       "source": "template/shared-skills/security-check/SKILL.md",
       "destination": ".agents/skills/security-check/SKILL.md",
-      "sha256": "ece56bf92d6d0c879e9ac27b165402ee63abe809a23bfa4ef0c0fa11f9d4c40b",
+      "sha256": "81369adbc05a64d901822c9928afffa17d570359856da1df609a774ac7c9ee59",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/security-check/SKILL.md",
       "destination": ".claude/skills/security-check/SKILL.md",
-      "sha256": "ece56bf92d6d0c879e9ac27b165402ee63abe809a23bfa4ef0c0fa11f9d4c40b",
+      "sha256": "81369adbc05a64d901822c9928afffa17d570359856da1df609a774ac7c9ee59",
       "mergeKind": "managed-file"
     },
     {
@@ -938,13 +938,13 @@
     {
       "source": "template/shared-skills/skill-sync/SKILL.md",
       "destination": ".agents/skills/skill-sync/SKILL.md",
-      "sha256": "b3726eda8b6ef24dd76fb1b4fbbcf1fcf13eb8c279c096741c6e193fc665f5d6",
+      "sha256": "99d2423fd61573d12a04d8c025ccc4bf76c3b890cd495f85b8ab8026b69b2ec5",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/skill-sync/SKILL.md",
       "destination": ".claude/skills/skill-sync/SKILL.md",
-      "sha256": "b3726eda8b6ef24dd76fb1b4fbbcf1fcf13eb8c279c096741c6e193fc665f5d6",
+      "sha256": "99d2423fd61573d12a04d8c025ccc4bf76c3b890cd495f85b8ab8026b69b2ec5",
       "mergeKind": "managed-file"
     },
     {
@@ -962,25 +962,25 @@
     {
       "source": "template/shared-skills/skill-sync/sync.mjs",
       "destination": ".agents/skills/skill-sync/sync.mjs",
-      "sha256": "ff09299c0a08470ac30d51f52e1aa479bbef5edcec1e58ee36d0e0d5e19646db",
+      "sha256": "753755bd8f7ca963ae12039426adf28b04da9a6f0276a21eacf335316f4c778c",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/skill-sync/sync.mjs",
       "destination": ".claude/skills/skill-sync/sync.mjs",
-      "sha256": "ff09299c0a08470ac30d51f52e1aa479bbef5edcec1e58ee36d0e0d5e19646db",
+      "sha256": "753755bd8f7ca963ae12039426adf28b04da9a6f0276a21eacf335316f4c778c",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".agents/skills/factory/SKILL.md",
-      "sha256": "f4c677840e11d7942655a5efcb8c71660e38fcc95b1c4e95082c734bfdd2ea7b",
+      "sha256": "445da2546d7ad4e2a12cb6d1d3e074f792a3f35a0a091bed2d09064fd60753a7",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".claude/skills/factory/SKILL.md",
-      "sha256": "f4c677840e11d7942655a5efcb8c71660e38fcc95b1c4e95082c734bfdd2ea7b",
+      "sha256": "445da2546d7ad4e2a12cb6d1d3e074f792a3f35a0a091bed2d09064fd60753a7",
       "mergeKind": "managed-file"
     },
     {
@@ -998,13 +998,13 @@
     {
       "source": "template/shared-skills/writing-check/SKILL.md",
       "destination": ".agents/skills/writing-check/SKILL.md",
-      "sha256": "acf54e5a9e5f56f05ab8395b76c7fb74b873891d63de5448f895997874a616a9",
+      "sha256": "f43a6a2e0b3ce9b2aacda6ae2c6d45cb253bd637a1714c2111ab866c4ae8b7e3",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/writing-check/SKILL.md",
       "destination": ".claude/skills/writing-check/SKILL.md",
-      "sha256": "acf54e5a9e5f56f05ab8395b76c7fb74b873891d63de5448f895997874a616a9",
+      "sha256": "f43a6a2e0b3ce9b2aacda6ae2c6d45cb253bd637a1714c2111ab866c4ae8b7e3",
       "mergeKind": "managed-file"
     },
     {
@@ -1034,13 +1034,13 @@
     {
       "source": "template/shared-skills/writing-check/assets/review-page.html",
       "destination": ".agents/skills/writing-check/assets/review-page.html",
-      "sha256": "7d3f127cc70673974651eadbbeed22d01b35bf23537a2181bd1619133248eed1",
+      "sha256": "e7c2339764117d66e928e106064d265848b313c130fa626c1c233246db98f628",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/writing-check/assets/review-page.html",
       "destination": ".claude/skills/writing-check/assets/review-page.html",
-      "sha256": "7d3f127cc70673974651eadbbeed22d01b35bf23537a2181bd1619133248eed1",
+      "sha256": "e7c2339764117d66e928e106064d265848b313c130fa626c1c233246db98f628",
       "mergeKind": "managed-file"
     },
     {
@@ -1077,6 +1077,12 @@
       "source": "template/shared-skills/design-check/contrast.mjs",
       "destination": ".claude/skills/design-check/contrast.mjs",
       "sha256": "49f4143fc9e7347dabcaf79780b3dbf7e25504ba4d17888076659be6e94abdda",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/03-Resources/Procedures/branch-security-review.md",
+      "destination": "03-Resources/Procedures/branch-security-review.md",
+      "sha256": "a2875bb995eb36dcb29a17d9b1596999617cc2296821cf90a1afc7115000072f",
       "mergeKind": "managed-file"
     }
   ]
