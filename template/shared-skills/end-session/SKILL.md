@@ -1,6 +1,6 @@
 ---
 name: end-session
-description: End-of-session closeout that writes instead of only reporting: workspace write-back, learning capture, a reconciled gap list, a ranked queue of next actions and one closing recap. Use at the end of a real work session. It is bounded by default, and the full audited mode is opt-in.
+description: "End-of-session closeout that writes instead of only reporting: workspace write-back, learning capture, a reconciled gap list, a ranked queue of next actions and one closing recap. Use at the end of a real work session. It is bounded by default, and the full audited mode is opt-in."
 ---
 
 # End session
