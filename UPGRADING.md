@@ -1,5 +1,15 @@
 # Upgrading the free starter
 
+## Next release (not yet versioned)
+
+This change adds one skill and updates two files and one skill. It deletes nothing.
+
+- New: `second-brain-guide` under `.agents/skills/` and `.claude/skills/` (two `CREATE` lines), the guide an agent reads to check the installed version, update and confirm fixes. `status` run from this source prints its path in an `Agent guide:` line even before you upgrade.
+- Updated: the managed `00-Meta/AGENTS.md` (`MANAGED-UPDATE`) gains a short "Version, update, check" section. If you edited that file, the plan shows `CUSTOMIZED-KEEP` or a merge as for any managed file. The root `AGENTS.md` and `CLAUDE.md` loader blocks are unchanged.
+- Updated: `usage-dashboard` gains `token-check.mjs` (`CREATE`) and a longer `SKILL.md`; `session-sync` `doctor` check D4 now warns when no hook runs `session-sync.mjs hook`.
+
+To check an install against the source, follow the `second-brain-guide` skill from its step 2, or run `node ./bin/second-brain.mjs status --target "$PROJECT"` first and read the `Upgrade would plan:` line.
+
 ## Upgrading to v1.11.0
 
 This version adds one seed file, updates procedures and two skills, and stops installing the optional `api-anything` skill. It deletes nothing.

@@ -2,6 +2,10 @@
 
 Use this only for the selected project folders. Do not scan the broader vault, parent folders, secrets, unselected projects, or private notes.
 
+## Version, update, check
+
+To read this workspace's template version, update it from an older version, or confirm that a fix landed, use the `second-brain-guide` skill (`.agents/skills/second-brain-guide/SKILL.md`). The version is `templateVersion` in `.second-brain/installed-state.json`. The update command is in the starter source copy, not in this workspace: ask the person for that folder, and fetch nothing without their yes.
+
 ## Selecting projects
 
 Selection is explicit and may name one project, several, or `all`. `all` means every row of the [project index](../01-Projects/Index.md) and nothing outside it. Never infer the selection from a previous task.
