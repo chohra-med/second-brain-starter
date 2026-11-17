@@ -10,6 +10,8 @@ Say what will happen: select one project folder, inspect only the needed project
 
 Do not hijack repository maintenance, source edits, tests, release work, or an unrelated request. If intent is unclear, ask whether the user wants setup before using this route.
 
+By default, ask the setup questions on the setup page: follow `.agents/skills/second-brain-setup-page/SKILL.md` (the same file is in `.claude/skills/`). It is for a person who does not use a terminal, in the Codex app, the Claude app or another local client. You run every command; the person picks on a local page, or asks for its recommendations, and pastes the answers back into the chat. The page changes only how the questions are asked: every stage below still applies, and only a yes the person types after the exact plan approves it. When the page cannot be shown, the skill asks the same questions in the chat.
+
 ## 2. Select one exact project root
 
 Ask for one exact existing project folder or a new workspace at a path that does not exist yet, outside the source copy. For a new path, confirm its selected existing parent and intended folder name. Do not guess from the clone location. If the user asks for help choosing, ask them to select one parent folder and list only its immediate child directory names. Do not recursively search parents, siblings, home directories, hidden directories, symlinks, `.env` files, credentials, client data, or unrelated projects.

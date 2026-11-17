@@ -30,7 +30,7 @@ Do not record credentials, tokens, client names or anything confidential. `Never
 
 Show the exact personalized-record plan: file paths, proposed edits, evidence/source and unknowns. Use the existing [Facts](../../01-Projects/Selected-Project/FACTS.md), [Roadmap](../../01-Projects/Selected-Project/roadmap.md), [Decisions](../../01-Projects/Selected-Project/Decisions.md), [Progress](../../01-Projects/Selected-Project/progress.md) and [Daily task plan](../../00-Meta/Daily-Task-Plan.md) as state owners, only when their actual gaps require edits.
 
-Obtain approval for that exact plan before edits. Preserve exact preimages and check current bytes for concurrent edits; stop on conflict. Append history rather than replacing it. Check approved edits against the plan. Existing personalized values stay intact unless the user explicitly approves a change.
+Obtain approval for that exact plan before edits. When setup ran through the setup page of the starter copy, its one numbered list and the one yes the user typed after it are this approval for the records that list named; anything else still needs its own plan and yes. Preserve exact preimages and check current bytes for concurrent edits; stop on conflict. Append history rather than replacing it. Check approved edits against the plan. Existing personalized values stay intact unless the user explicitly approves a change.
 
 The installer receipt rollback covers only its transaction. It does not automatically undo later personalization or artifacts. Keep their separate preimages and agree recovery before editing user-owned work.
 
