@@ -19,13 +19,13 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ## Start
 
-1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), which gives the newest files. A release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases) also works, but it can be older than this page.
+1. Get a source copy: clone the [repository](https://github.com/chohra-med/second-brain-starter), which gives the newest files. A release ZIP from [Releases](https://github.com/chohra-med/second-brain-starter/releases) also works, but it can be older than this page. No terminal? Ask the assistant in the Codex app or the Claude app to clone it for you, or on the repository page choose Code, then Download ZIP, and open the ZIP to unzip it.
 
    ```sh
    git clone https://github.com/chohra-med/second-brain-starter.git
    ```
 
-2. Open the source folder in Claude Code, Codex CLI or the Codex app, with local file access.
+2. Open the source folder in the Codex app or the Claude app, or in Claude Code or Codex CLI, with local file access.
 
 3. Type this sentence to your assistant:
 
@@ -41,7 +41,7 @@ Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_sou
 
 ### What happens next
 
-The assistant asks for one project folder and shows the full setup plan. You approve that exact plan. Then it checks the result and opens your Home page. Keep the source copy separate from your project. The starter needs Node.js 22 or newer and has no production dependencies.
+The assistant opens a setup page on your computer. Pick an answer for each item, or press Do what you recommend, add a comment where you want, then copy your answers and paste them into the chat. The assistant shows the full setup plan with every text it will save, and you approve that exact plan with one yes. Then it checks the result and opens your Home page. You never type a command: the assistant runs them, and the [setup page skill](.agents/skills/second-brain-setup-page/SKILL.md) says how. Keep the source copy separate from your project. The starter needs Node.js 22 or newer and has no production dependencies.
 
 Ordinary web chat cannot do this setup. Your client and your operating system still control file access and permission prompts.
 
@@ -93,12 +93,12 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships twenty-seven shared skills. The initializer installs them as twenty-seven local skills in `.claude/skills/` and `.agents/skills/`. One more, `api-anything`, is optional: `init` does not install it, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
+| Skills | The starter ships thirty-one shared skills. The initializer installs them as thirty-one local skills in `.claude/skills/` and `.agents/skills/`. One more, `api-anything`, is optional: `init` does not install it, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
 <details>
-<summary><strong>The twenty-seven skills, and the optional one</strong></summary>
+<summary><strong>The thirty-one skills, and the optional one</strong></summary>
 
 <br>
 
@@ -131,6 +131,10 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `factory` | Takes one coding task you paste to a branch ready for review, through Spec Harness `/sdd` when the repository has it, and keeps one board file per project. You approve the plan and run every push yourself. |
 | `writing-check` | Checks a text before it goes to people, in your voice: AI tells, voice match, clarity and length for the channel, every claim against its source, two rewrites, one diagram when the text explains a flow, and a data check for keys, emails and phone numbers. It shows a local page with one Copy button per text; you send the text yourself. It ships the `Brand.md` and voice DNA templates. |
 | `design-check` | Checks one page or screen against your `Brand.md` and accessibility, from screenshots at one width: the message, the visual and the UI floor (contrast to WCAG 2.2 AA, spacing, touch-target size with its WCAG level). It ranks the findings with one fix each on a local page, and you pick what to fix; it changes no code. |
+| `session-sync` | Lets several sessions of one piece of work tell each other when they finish, fail or ask, in small files. A hook script writes the event with no model call, the lead session sleeps until there is news, and a doctor shows why a report never arrived. It makes no network call, and you apply the hook settings yourself. |
+| `second-brain-guide` | Explains what the starter is, how to read the installed version, how to update an older install and how to confirm that a fix landed. It only reads until you approve an update. |
+| `lead-session` | The `/lead-session` command: makes the current session the lead of several worker sessions. It proposes the workers, opens them after your one yes, wakes only on news and updates your list or board from a short digest. It builds on `session-sync`. |
+| `watch` | Watches a video from a link or a file: it downloads it with yt-dlp, takes frames with ffmpeg, reads the captions or a transcript, and answers your question about what is in it. The bundled outside skill (MIT). Its local engine keeps everything on your machine; its Gemini engine and its Groq and OpenAI transcription backends send the video or the audio to those services, so choose local for a private video. |
 
 **Optional: `api-anything`.** It turns a website that has no API into calls your client can make directly, by driving an outside command that the starter does not bundle. `init` does not install it: the skill tells your client to fetch that command with `npx` from its project's default branch, and the command's `login` step can import cookies from your everyday browser. v1.8.0, v1.9.0 and v1.10.0 did install it, and an upgrade from one of those versions leaves it in place: the plan lists its four files as `DEPRECATED`, the upgrade deletes nothing, and your client still loads the skill. To remove it, delete `.claude/skills/api-anything/` and `.agents/skills/api-anything/` in your workspace. To add it, read `template/optional-skills/api-anything/SKILL.md` in the starter copy, then copy that folder into `.claude/skills/` and `.agents/skills/` in your workspace. `verify` and `upgrade` do not manage a skill you add by hand, or one an upgrade left in place. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
@@ -178,7 +182,7 @@ Verify checks the files the starter manages. Run it after setup and after any up
 
 ## License and boundaries
 
-The starter's own files are licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies of those files under those terms. Keep the copyright and license notices with substantial copies. Bundled third-party folders keep their own licences, listed in [ATTRIBUTION.md](ATTRIBUTION.md): `icm-architect` and `humanizer` are MIT-licensed by other authors, and the vendored Spec Harness is MIT-licensed too.
+The starter's own files are licensed under the [MIT License](LICENSE). You may use, copy, modify, publish, distribute, sublicense and sell copies of those files under those terms. Keep the copyright and license notices with substantial copies. Bundled third-party folders keep their own licences, listed in [ATTRIBUTION.md](ATTRIBUTION.md): `icm-architect`, `humanizer` and `watch` are MIT-licensed by other authors, and the vendored Spec Harness is MIT-licensed too.
 
 This is the free Second Brain foundation. It contains the folder layout, the per-project workflow, manual procedures, the local initializer and the `connect` command. It does not include any paid layer, a private application, a search of your disk for repositories (`workspace-plan` lists only the folders directly inside one parent folder you name, and `connect` registers one repository you name), a cloud-only assistant without local file access, a support call, installation service or outcome guarantee.
 
@@ -199,4 +203,5 @@ To remove the starter, first keep any Markdown files you want to retain. Then de
 - [Connect a repository](docs/connect-a-repository.md): one repository at a time.
 - [First loop and projects](docs/first-loop-and-projects.md): your first project, the working loop and a second project.
 - [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md): the free starter next to the optional paid layer.
+- [Other agent tools](docs/other-agent-tools.md): what Codex, Gemini CLI, Antigravity, Cursor, OpenCode, Hermes Agent and Copilot CLI find as installed, and the one setting some of them need.
 - [ONBOARDING.md](ONBOARDING.md), [UPGRADING.md](UPGRADING.md), [CHANGELOG.md](CHANGELOG.md), [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [ATTRIBUTION.md](ATTRIBUTION.md).

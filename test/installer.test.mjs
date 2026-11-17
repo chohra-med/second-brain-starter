@@ -536,20 +536,24 @@ const installedSkills = [
   'harness-session',
   'humanizer',
   'icm-architect',
+  'lead-session',
   'next-session',
   'readme-generator',
   'scroll-story-component',
   'second-brain-capture',
   'second-brain-close',
   'second-brain-context',
+  'second-brain-guide',
   'second-brain-icm',
   'second-brain-learning',
   'second-brain-review',
   'security-check',
+  'session-sync',
   'skill-sync',
   'today',
   'usage-dashboard',
   'verify-end-session',
+  'watch',
   'writing-check',
   'writing-skills',
 ];
@@ -576,8 +580,9 @@ test('bundled icm-architect installs its LICENSE and SKILL.md unmodified into bo
   const skillNames = [...new Set(manifest.entries.map((entry) => entry.destination.match(/^\.(?:agents|claude)\/skills\/([^/]+)\//)?.[1]).filter(Boolean))].sort();
   assert.deepEqual(skillNames, installedSkills, 'installed skill set must be exact');
   const readme = await readFile(path.join(sourceRoot, 'README.md'), 'utf8');
-  assert.match(readme, /twenty-seven local skills/);
-  assert.match(readme, /twenty-seven shared skills/);
+  assert.match(readme, /thirty-one local skills/);
+  assert.match(readme, /thirty-one shared skills/);
+  assert.doesNotMatch(readme, /twenty-(?:seven|eight|nine) (?:local |shared )?skills\b/, 'the old count');
   assert.doesNotMatch(readme, /(?<!-)\bseven (?:local |shared )?skills\b/, 'the old count, not part of twenty-seven');
   assert.doesNotMatch(readme, /(?<!-)\bsix (?:local |shared )?skills\b/, 'the old count, not part of twenty-six');
 
