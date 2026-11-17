@@ -18,6 +18,10 @@ This starter's own differences from the method live in the separate `second-brai
 
 The `humanizer` skill in [template/shared-skills/humanizer/](template/shared-skills/humanizer/SKILL.md) was written by Adam Boudjemaa. Its upstream repository is https://github.com/Aboudjem/humanizer-skill, subpath `skills/humanizer`, and the files here were copied unmodified from commit `a58df065367550b6ce40ff3f648335018d8e0589`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/shared-skills/humanizer/LICENSE) was copied next to the skill unchanged. That file is installed with the skill.
 
+## Bundled third-party skill: watch
+
+The `watch` skill in [template/shared-skills/watch/](template/shared-skills/watch/SKILL.md) was written by Bradley Bonanno. Its upstream repository is https://github.com/bradautomates/claude-video, subpath `skills/watch`, and the files here were copied unmodified from commit `03ceb42f7fa2c4439aca01752118044baabffb8f` (version 0.3.2). It is MIT-licensed. The upstream [LICENSE](template/shared-skills/watch/LICENSE) file ships inside the bundled folder and is installed with the skill. The upstream packaging script `scripts/build-skill.sh` and the plugin's session-start hook were left out. [SOURCE.md](template/shared-skills/watch/SOURCE.md) beside the skill records this and says what the Gemini engine and the Groq and OpenAI backends send to those services. Bundling the skill does not imply endorsement of this starter by its author.
+
 ## Optional third-party skill: api-anything
 
 The `api-anything` skill in [template/optional-skills/api-anything/](template/optional-skills/api-anything/SKILL.md) was written by Tianjun Zheng. Its upstream repository is https://github.com/goodnight000/api-anything, subpath `skills/api-anything`, and the files here were copied unmodified from commit `20cb677039fcfe92d3d9c777aa9362e30ff1fdb8`. It is MIT-licensed. The upstream subfolder has no licence file of its own, so the repository's root [LICENSE](template/optional-skills/api-anything/LICENSE) was copied next to the skill unchanged. Keep that file with the skill if you add it.

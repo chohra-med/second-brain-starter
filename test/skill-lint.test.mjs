@@ -20,6 +20,7 @@ const CHECK = path.join(SKILLS, 'security-check', 'check.mjs');
 const UNMODIFIED = {
   humanizer: ['bp-reference-toc README.md', 'bp-time-sensitive SKILL.md', 'bp-time-sensitive references/patterns.md'],
   'icm-architect': ['bp-reference-toc references/forms.md', 'bp-reference-toc references/system-map.md'],
+  watch: ['bp-description-when SKILL.md'],
 };
 
 function sandbox(t) {
