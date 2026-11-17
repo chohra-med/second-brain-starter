@@ -20,7 +20,7 @@ This skill takes one coding task from "to do" to a branch that is ready for revi
 - One file per project: `01-Projects/<project>/factory/board.md`. Copy [the board template](assets/board.md) there the first time.
 - Lanes, in order: To do, Plan, Build, Ready for review, Pushed, Done.
 - One row per task: its id, a short title, its lane, its packet folder, the next action with who acts, and the time of the last change.
-- Approvals: each "approve plan" and each "go" the person says in chat, written with the time and their words.
+- Approvals: each "approve plan" and each "go" the person says in chat, written with the time and their words. A "go" also carries the commit hash it covers.
 
 ## The push rule
 
@@ -33,7 +33,7 @@ Each push needs the person's own go for that push. A go covers one push only: a 
 3. **Plan checkpoint.** Show the plan and wait. No code changes before the person approves it. When they approve, write the time and their words into Approvals, and move the row to Build. Check: Approvals has an "approve plan" line for the task, and nothing in the repository changed before that time.
 4. **Build and test.** With Spec Harness, follow the selected SDD procedure, native or manual, to build the change and run its independent gates: tester, verifier and reviewer. Without it, make the change on a new branch, add or update the test that proves it, and run the project's tests. Check: every gate passed, or every project test passed, on the current commit.
 5. **Ready for review.** Run the checklist below on the exact commit that will be pushed, and write its hash on the board. Move the row to Ready for review, with the next action "Give the go for the push (person)". Check: every checklist line holds for that commit hash.
-6. **Go and push.** Wait for the person's go. Write it into Approvals with the time, then give the exact push command for this branch and remote. The person runs it. Check: the "go" line is on the board, with a time before the push.
+6. **Go and push.** Ask for the go by naming the task and the commit hash written on the board in step 5. A go that names another commit, or none, is not a go. Write it into Approvals with the time, the person's words and that hash. Just before giving the exact push command for this branch and remote, compare the branch's current commit with that hash. If they differ, the go is void: go back to step 5. The person runs it. Check: the "go" line names the hash, has a time before the push, and the hash equals the pushed commit.
 7. **Pull request.** When the person shares the push output, pass on the host's "create pull request" link exactly as printed. Never build or change a link. The person opens the draft pull request with the PR text. Move the row to Pushed and put the link in it. Check: the row holds the link from the push output, unchanged.
 8. **Pipeline and done.** Ask the person to check the first pipeline run for that commit, and write its result on the row. When the pull request is merged, move the row to Done and add one line about the task to today's note in `05-Daily/`. Check: the row is in Done, and today's note names the task.
 

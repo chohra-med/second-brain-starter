@@ -90,6 +90,8 @@ test('SKILL.md states the push rule and keeps every push with the person', () =>
   ]) assert.ok(text.includes(phrase), `SKILL.md is missing: ${phrase}`);
   const goStep = text.split('6. **Go and push.**')[1].split('\n7. ')[0];
   assert.match(goStep, /The person runs it\./);
+  assert.match(goStep, /commit hash/);
+  assert.match(goStep, /void/);
   assert.doesNotMatch(text, /git push/, 'the skill gives the command at run time; it holds no push command itself');
 });
 
