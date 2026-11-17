@@ -38,6 +38,22 @@ const EMBEDDED_CREDENTIAL = /(?:api[-_]?key|secret|access[-_]?token|password)\s*
 const PRIVATE_KEY = /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/;
 const REPLACEMENT_CHARACTER = String.fromCharCode(0xfffd);
 
+// A credential match whose gap after the colon or equals sign crosses a line break counts only when the value on
+// the next line is not code. A value followed, after optional spaces, by an equals sign, an opening bracket or a
+// dot is a statement or a call that starts the next line, not a secret. Same-line matches are unchanged.
+function credentialInText(text) {
+  for (let from = 0; from < text.length;) {
+    const rest = text.slice(from);
+    const match = rest.match(CREDENTIAL);
+    if (!match) return false;
+    const gap = match[0].slice(match[0].search(/[:=]/) + 1).match(/^\s*/)[0];
+    const end = match.index + match[0].length;
+    if (!/[\r\n]/.test(gap) || !/^[ \t]*[=(.]/.test(rest.slice(end))) return true;
+    from += match.index + 1;
+  }
+  return false;
+}
+
 function rulesForContent(text) {
   return [
     ['AUTHORIZATION_MATERIAL', AUTHORIZATION],
@@ -45,7 +61,7 @@ function rulesForContent(text) {
     ['PRIVATE_KEY_MATERIAL', PRIVATE_KEY],
     ['CREDENTIAL_MATERIAL', CREDENTIAL],
     ['PERSONAL_ABSOLUTE_PATH', PERSONAL_PATH],
-  ].filter(([, pattern]) => pattern.test(text)).map(([rule]) => rule);
+  ].filter(([, pattern]) => (pattern === CREDENTIAL ? credentialInText(text) : pattern.test(text))).map(([rule]) => rule);
 }
 
 function decodeUtf16(bytes, littleEndian) {

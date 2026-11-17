@@ -489,6 +489,88 @@ test('the key rules give the same answer as the package scan sensitiveContentRul
   assert.ok(keyRules(inputs[0]).includes('CREDENTIAL_MATERIAL'), 'the parity corpus contains real hits');
 });
 
+// A credential name that ends one line, with its value alone on the next line. Built from pieces so this file passes its own scan.
+const NAME = j('api', '_key');
+const SECRET_VALUE = j('SYNTHETIC', '-ONLY-', 'VALUE', '-1234');
+const hasKey = (bytes) => keyRules(bytes).includes('CREDENTIAL_MATERIAL');
+const hasKeyInScan = (bytes) => sensitiveContentRules(bytes).includes('CREDENTIAL_MATERIAL');
+
+test('check 5: a name that ends a line and a next line that starts a statement or call is code, not a key (the whisper pattern)', (t) => {
+  const dir = sandbox(t);
+  const code = [
+    ['assignment', `    if not backend or not ${NAME}:\n        setup_py = Path(__file__).resolve().parent / "setup.py"\n`],
+    ['assignment, no spaces', `if not ${NAME}:\n    setup_py=Path(__file__)\n`],
+    ['call', `if not ${NAME}:\n    load_settings_file(path)\n`],
+    ['attribute', `if not ${NAME}:\n    os.environ.get("X")\n`],
+    ['dot after spaces', `if not ${NAME}:\n    settings_object   .reload()\n`],
+    ['equals sign, after the name', `${NAME} =\n    value_from_function(1)\n`],
+  ];
+  for (const [label, text] of code) {
+    const bytes = Buffer.from(text);
+    assert.equal(hasKey(bytes), false, `check.mjs: ${label}`);
+    assert.equal(hasKeyInScan(bytes), false, `package scan: ${label}`);
+  }
+  const folder = makeSkill(dir, 'whisper-like', { 'scripts/transcribe.py': code[0][1] });
+  const { report } = check(folder, dir);
+  assert.equal(find(report, 'key-credential'), undefined, JSON.stringify(report.findings));
+});
+
+test('check 5: a key alone on the next line still gives BLOCK, in a YAML mapping and after an equals sign', (t) => {
+  const dir = sandbox(t);
+  const split = [
+    ['yaml mapping', `${NAME}:\n  ${SECRET_VALUE}\n`],
+    ['yaml mapping, quoted', `${NAME}: \n  "${SECRET_VALUE}"\n`],
+    ['equals sign', `password =\n    ${SECRET_VALUE}\n`],
+    ['carriage return', `secret:\r\n    ${SECRET_VALUE}\r\n`],
+    ['value then a sentence', `access_token:\n  ${SECRET_VALUE} is the value to use\n`],
+    ['value then another key', `${NAME}:\n  ${SECRET_VALUE}\nother: 1\n`],
+    ['after a skipped code line', `if not ${NAME}:\n    setup_py = 1\n\n${NAME}:\n  ${SECRET_VALUE}\n`],
+  ];
+  for (const [label, text] of split) {
+    const bytes = Buffer.from(text);
+    assert.equal(hasKey(bytes), true, `check.mjs: ${label}`);
+    assert.equal(hasKeyInScan(bytes), true, `package scan: ${label}`);
+  }
+  const yaml = check(makeSkill(dir, 'yaml-key', { 'config.yml': split[0][1] }), dir);
+  assert.equal(yaml.code, 4);
+  assert.equal(find(yaml.report, 'key-credential').verdict, 'BLOCK');
+  const assign = check(makeSkill(dir, 'assign-key', { 'notes.txt': split[2][1] }), dir);
+  assert.equal(assign.code, 4);
+  for (const output of [yaml.stdout, assign.stdout]) assert.equal(output.includes(SECRET_VALUE), false, 'the value never reaches a report');
+});
+
+test('check 5: a key on the same line is unchanged, and a base64 credential wrapped across lines still gives BLOCK', (t) => {
+  const dir = sandbox(t);
+  assert.equal(hasKey(Buffer.from(`${NAME} = ${SECRET_VALUE}\n`)), true);
+  assert.equal(hasKey(Buffer.from(`${NAME}=${SECRET_VALUE}.value\n`)), true, 'a dot inside the value on one line is still a key');
+  const encoded = Buffer.from(`${NAME}=${SECRET_VALUE}`).toString('base64');
+  for (const [label, width, separator] of [['newline, 8 wide', 8, '\n'], ['newline, 4 wide', 4, '\n'], ['crlf, 12 wide', 12, '\r\n']]) {
+    const wrapped = encoded.match(new RegExp(`.{1,${width}}`, 'g')).join(separator);
+    const bytes = Buffer.from(`prose\n${wrapped}\nprose\n`);
+    assert.equal(hasKey(bytes), true, `check.mjs: ${label}`);
+    assert.equal(hasKeyInScan(bytes), true, `package scan: ${label}`);
+  }
+  const wrapped = encoded.match(/.{1,8}/g).join('\n');
+  const { code, report } = check(makeSkill(dir, 'wrapped-key', { 'notes.txt': `${wrapped}\n` }), dir);
+  assert.equal(code, 4);
+  assert.equal(find(report, 'key-credential').encoded, true);
+});
+
+test('the key rules and the package scan agree on the line-break cases', () => {
+  const cases = [
+    `if not backend or not ${NAME}:\n        setup_py = Path(__file__)\n`,
+    `${NAME}:\n  ${SECRET_VALUE}\n`,
+    `password =\n    ${SECRET_VALUE}\n`,
+    `${NAME}:\n  call_something(\n`,
+    `${NAME}: \n\n  ${SECRET_VALUE}\n`,
+  ];
+  for (const text of cases) {
+    const bytes = Buffer.from(text);
+    const expected = sensitiveContentRules(bytes).filter((rule) => rule !== 'PREMIUM_MARKER').sort();
+    assert.deepEqual(keyRules(bytes).sort(), expected, text.slice(0, 40));
+  }
+});
+
 test('self-scan: the check returns PASS, with best practices PASS, on its own folder', (t) => {
   const dir = sandbox(t);
   const { code, report } = check(SKILL_DIR, dir);
@@ -727,7 +809,7 @@ test('PRIVACY.md says what the security check reads and writes, which scripts th
     assert.equal(privacy.includes(stale), false, `PRIVACY.md still says: ${stale}`);
   }
   for (const script of ['`check.mjs`', '`sync.mjs`', '`contrast.mjs`', 'usage dashboard script']) assert.ok(privacy.includes(script), script);
-  assert.ok(privacy.includes('three shipped scripts can read files outside the workspace'));
+  assert.ok(privacy.includes('five shipped scripts can read files outside the workspace'));
 });
 
 test('the skill is registered: both manifest entries per file carry the file SHA-256, and the allowlist lists each file', () => {
