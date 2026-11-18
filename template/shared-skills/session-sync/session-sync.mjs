@@ -53,7 +53,7 @@ function pickRun(o) {
 const needMe = (o) => needName(o.me ?? process.env.SESSION_SYNC_ME, '--me');
 const metaOf = (run) => { const meta = readJson(path.join(runDir(run), 'run.json')); if (!meta) throw usage(`run ${run} has no run.json`); return meta; };
 const seenFile = (run, name) => path.join(runDir(run), 'seen', `${name}.json`);
-const seenAll = (run) => { try { return fs.readdirSync(path.join(runDir(run), 'seen')).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(path.join(runDir(run), 'seen', f))).filter((s) => s && typeof s.name === 'string'); } catch { return []; } };
+const seenAll = (run) => { try { return fs.readdirSync(path.join(runDir(run), 'seen')).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(path.join(runDir(run), 'seen', f))).filter((s) => s && NAME.test(s.name ?? '')); } catch { return []; } };
 const isClosed = (run) => fs.existsSync(path.join(runDir(run), 'closed.json'));
 const knownNames = (run, meta) => new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name), ...seenAll(run).map((s) => s.name), 'all']);
 
@@ -71,6 +71,7 @@ function loadEvents(run) {
 }
 
 function writeEvent(run, f) {
+  if (!NAME.test(f.from ?? '')) throw usage('a session name is 1 to 40 letters, digits, dots, hyphens or underscores');
   for (let i = 0; i < 5; i += 1) {
     const now = new Date();
     const id = `${stamp(now)}-${f.from}-${randomBytes(2).toString('hex')}`;
@@ -198,7 +199,7 @@ function cmdHook() {
   if (!kinds) return;
   for (const { run } of runs) {
     const meta = readJson(path.join(runDir(run), 'run.json'));
-    const me = meta && memberFor(run, meta, input);
+    const me = meta && NAME.test(meta.lead ?? '') && memberFor(run, meta, input);
     if (!me) continue;
     let state = kinds[1];
     let text = '';

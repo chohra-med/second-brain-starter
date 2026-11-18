@@ -835,6 +835,39 @@ test('wait --stale does nothing for a worker that waits (only the lead gets the 
 // Company and product terms are checked by the packer's own scan, not named here.
 const SHIPPED_BLOCK = [/(?:\/Users|\/home)\/[a-z]/, /[\w.%+-]+@[\w-]+\.(?:com|de|org|net)\b/];
 
+// Names become file names. A name with a slash or a leading dot must never reach a path, from any entry point.
+const filesUnder = (root) => readdirSync(root, { recursive: true, withFileTypes: true }).filter((e) => e.isFile()).map((e) => path.relative(root, path.join(e.parentPath, e.name)));
+
+test('names are checked at every entry point: a slash or a leading dot is refused with exit 2 and writes nothing', (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  const before = filesUnder(sb.dir).sort();
+  for (const bad of ['../x', 'a/b', '.hidden', '..', 'x/../../y', '']) {
+    for (const args of [['join', '--me', bad], ['post', '--me', bad, '--kind', 'note', '--text', 'x'], ['post', '--me', 'writer', '--to', bad, '--kind', 'note', '--text', 'x'], ['inbox', '--me', bad], ['init', '--lead', bad, '--run', 'R2'], ['init', '--lead', 'l2', '--run', bad], ['init', '--lead', 'l3', '--run', 'R3', '--member', `${bad}:x:y`]]) {
+      const result = cli(sb, args);
+      assert.equal(result.code, 2, `${args.join(' ')} -> ${result.out}${result.err}`);
+    }
+  }
+  assert.deepEqual(filesUnder(sb.dir).sort(), before, 'a refused name wrote nothing');
+});
+
+test('a planted member file or run.json with a path in its name makes the hook write nothing outside events/', (t) => {
+  for (const evil of ['../../../escaped', 'x/../../../escaped', '/tmp/escaped', '.escaped']) {
+    const sb = sandbox(t);
+    setup(sb);
+    mkdirSync(path.join(sb.sync, 'R1', 'events', 'x'), { recursive: true });
+    writeFileSync(path.join(sb.sync, 'R1', 'seen', 'zz.json'), JSON.stringify({ v: 1, name: evil, session_id: 's-evil', label: 'x', kind: 'auto', joined: 'x', cursor: null }));
+    const before = filesUnder(sb.dir).sort();
+    hook(sb, { session_id: 's-evil', hook_event_name: 'Stop', last_assistant_message: 'hello' });
+    assert.deepEqual(filesUnder(sb.dir).sort(), before, `a member named ${evil} wrote a file`);
+    // A lead named with a path in run.json: the run is skipped, the hook still writes nothing.
+    const meta = JSON.parse(readFileSync(path.join(sb.sync, 'R1', 'run.json'), 'utf8'));
+    writeFileSync(path.join(sb.sync, 'R1', 'run.json'), JSON.stringify({ ...meta, lead: evil }));
+    hook(sb, { session_id: 's-writer', hook_event_name: 'Stop', last_assistant_message: 'hello' });
+    assert.deepEqual(filesUnder(sb.dir).sort(), before, `a lead named ${evil} wrote a file`);
+  }
+});
+
 test('the script imports only node: modules, opens no socket, and starts no process unless --claude-version is given; it is under 500 lines', () => {
   const text = readFileSync(SCRIPT, 'utf8');
   const specifiers = [...text.matchAll(/^import[^'"\n]*['"]([^'"]+)['"]/gm), ...text.matchAll(/\bimport\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);

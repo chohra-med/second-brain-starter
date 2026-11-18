@@ -1292,13 +1292,13 @@
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".agents/skills/session-sync/session-sync.mjs",
-      "sha256": "ab6c1e88c23f4fedae7b7295316ecf01586839e8dbc1712042f5903f5a47813a",
+      "sha256": "7f862676019480f00b53f95d2be1e9e03283d51f27c25975df3a0007bd955724",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".claude/skills/session-sync/session-sync.mjs",
-      "sha256": "ab6c1e88c23f4fedae7b7295316ecf01586839e8dbc1712042f5903f5a47813a",
+      "sha256": "7f862676019480f00b53f95d2be1e9e03283d51f27c25975df3a0007bd955724",
       "mergeKind": "managed-file"
     },
     {
