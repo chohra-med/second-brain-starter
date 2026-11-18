@@ -9,7 +9,7 @@ import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSyn
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SKILL_DIR = path.join(sourceRoot, 'template', 'shared-skills', 'session-sync');
@@ -359,7 +359,7 @@ test('doctor, status and inbox --peek change no file; the lock is the only file 
   assert.equal(waiter.code, 0);
   const own = path.join(sb.sync, 'R1', 'seen', 'lead.json');
   const after = treeHash(sb.dir, (full) => full.endsWith(`${path.sep}wait`) || full === own);
-  assert.equal(after, before.replace(/^home\/\.session-sync\/R1\/seen\/lead\.json:.*\n?/m, '').replace(/\n$/, ''), 'only the wait lock and the caller\'s own cursor changed');
+  assert.equal(after, before.replace(/^home[\\/]\.session-sync[\\/]R1[\\/]seen[\\/]lead\.json:.*\n?/m, '').replace(/\n$/, ''), 'only the wait lock and the caller\'s own cursor changed');
   assert.ok(existsSync(path.join(sb.sync, 'R1', 'wait', 'lead.json')));
   assert.notEqual(JSON.parse(readFileSync(own, 'utf8')).cursor, null, 'the wake moved the cursor');
 });
@@ -416,10 +416,12 @@ test('doctor: D1 to D11 each have a passing and a failing fixture, and the exit 
   assert.equal(clean.code, 0, clean.out);
   assert.match(flagged(clean), /^D1:SKIP D2:OK D3:OK D4:OK D5:OK D6:OK D7:OK D8:OK D9:OK D10:OK D11:OK$/, clean.out);
   assert.equal(existsSync(path.join(sb.dir, 'claude-was-run')), false, 'no child process without --claude-version');
-  const withVersion = cli(sb, ['doctor', '--workspace', sb.workspace, '--claude-version'], { env: claudeStub(sb, '2.1.300') });
-  assert.equal(doctorLine(withVersion, 'D1'), 'OK');
-  assert.equal(existsSync(path.join(sb.dir, 'claude-was-run')), true, 'the child process runs behind the flag');
-  assert.equal(doctorLine(cli(sb, ['doctor', '--workspace', sb.workspace, '--claude-version'], { env: claudeStub(sb, '2.1.100') }), 'D1'), 'WARN');
+  if (process.platform !== 'win32') { // the stub is a sh script; execFileSync('claude') cannot run it on Windows
+    const withVersion = cli(sb, ['doctor', '--workspace', sb.workspace, '--claude-version'], { env: claudeStub(sb, '2.1.300') });
+    assert.equal(doctorLine(withVersion, 'D1'), 'OK');
+    assert.equal(existsSync(path.join(sb.dir, 'claude-was-run')), true, 'the child process runs behind the flag');
+    assert.equal(doctorLine(cli(sb, ['doctor', '--workspace', sb.workspace, '--claude-version'], { env: claudeStub(sb, '2.1.100') }), 'D1'), 'WARN');
+  }
   waiter.kill();
   await waiter.done;
 
@@ -509,7 +511,7 @@ test('doctor D8: an unwritable sync folder fails, a cloud-synced folder warns, a
   mkdirSync(cloud, { recursive: true });
   const warned = cli(sb, ['doctor', '--workspace', sb.workspace], { env: { SESSION_SYNC_HOME: cloud } });
   assert.equal(doctorLine(warned, 'D8'), 'WARN');
-  const { checkNode } = await import(SCRIPT);
+  const { checkNode } = await import(pathToFileURL(SCRIPT).href);
   assert.equal(checkNode('v22.0.0').status, 'OK');
   assert.equal(checkNode('v20.11.0').status, 'FAIL');
 });
