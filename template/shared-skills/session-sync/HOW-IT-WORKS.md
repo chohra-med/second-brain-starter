@@ -84,6 +84,8 @@ Measure it in your own dry run before relying on it. Cache pricing and conversat
 
 Run `session-sync.mjs snippet`: it prints this with the real script path. The person applies it to a settings file; an assistant never edits one. Read the folder with the `security-check` skill first.
 
+**Pin the script.** These hooks are user-level: they run `session-sync.mjs` at every session start, turn end and session end, in every project on the computer. The installed copy sits inside the workspace, a folder agents edit as part of normal work, so an edited copy would run in every later session with your rights and no permission prompt. Run `session-sync.mjs snippet --pin` instead: it copies the script to `~/.session-sync/bin/` (outside the workspace, under the sync home), writes its SHA-256 beside it, prints the hash, and prints hooks that point at that copy. Compare the printed hash with the skill copy before you apply the hooks. `doctor` D12 warns when a hook runs a script inside the workspace, when the pinned copy no longer matches its recorded hash, and when the pinned copy differs from the skill copy in the workspace. After you update the skill, read the change and run `snippet --pin` again. This protects against a change made from the workspace. It does not protect against anything that can write to your home folder, because that can change the copy and its hash together.
+
 ```json
 {
   "hooks": {

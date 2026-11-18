@@ -1268,37 +1268,37 @@
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".agents/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "71f907d2386284b581c0c675f541e988fa25c860957f58d03407254524b477d2",
+      "sha256": "40feb1cc9b680481532a4e7c7f7ba3052230f7f31020f23f6e85057eac09c052",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".claude/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "71f907d2386284b581c0c675f541e988fa25c860957f58d03407254524b477d2",
+      "sha256": "40feb1cc9b680481532a4e7c7f7ba3052230f7f31020f23f6e85057eac09c052",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".agents/skills/session-sync/SKILL.md",
-      "sha256": "92e35afe9c811d0096755bf5b47f643e51e879edf7cfa8aa0b30040bf569fe13",
+      "sha256": "69edbdf4354664e9b38ee20ee685c8f42ffd62115ad6cf370a57cd310187ac89",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".claude/skills/session-sync/SKILL.md",
-      "sha256": "92e35afe9c811d0096755bf5b47f643e51e879edf7cfa8aa0b30040bf569fe13",
+      "sha256": "69edbdf4354664e9b38ee20ee685c8f42ffd62115ad6cf370a57cd310187ac89",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".agents/skills/session-sync/session-sync.mjs",
-      "sha256": "7f862676019480f00b53f95d2be1e9e03283d51f27c25975df3a0007bd955724",
+      "sha256": "c0ed643e0c1dcf35d9d14e4eb5f41691b1fb9e5c9fff8d595a62e08fe02be978",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".claude/skills/session-sync/session-sync.mjs",
-      "sha256": "7f862676019480f00b53f95d2be1e9e03283d51f27c25975df3a0007bd955724",
+      "sha256": "c0ed643e0c1dcf35d9d14e4eb5f41691b1fb9e5c9fff8d595a62e08fe02be978",
       "mergeKind": "managed-file"
     },
     {

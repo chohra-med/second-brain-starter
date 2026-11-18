@@ -55,7 +55,7 @@ All start `node session-sync.mjs`. `--run <id>` is optional with one open run; `
 | `hook` | for a hook only: reads the hook input, writes one event, prints nothing except at session start |
 | `wait [--settle <s>] [--stale <min>] [--timeout <min>]`, `follow` | block, then print the digest and move the cursor; `follow` keeps going |
 | `status [--json]`, `doctor [--workspace <dir>] [--json] [--claude-version]` | read-only reports; doctor prints names, counts and ages, never event text |
-| `snippet` | print the hook settings for the person to apply |
+| `snippet [--pin]` | print the hook settings for the person to apply; `--pin` first copies the script to `~/.session-sync/bin/` and prints its hash |
 
 ## Hooks
 

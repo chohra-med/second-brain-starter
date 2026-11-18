@@ -523,7 +523,7 @@ test('doctor prints no event text and no full home path; --json carries the same
   assert.ok(!out.includes(sb.home), out);
   assert.match(out, /~\/\.session-sync/);
   const json = JSON.parse(cli(sb, ['doctor', '--workspace', sb.workspace, '--json']).out);
-  assert.deepEqual(json.checks.map((check) => check.id), ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11']);
+  assert.deepEqual(json.checks.map((check) => check.id), ['D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7', 'D8', 'D9', 'D10', 'D11', 'D12']);
   assert.ok(!JSON.stringify(json).includes(sb.home));
   assert.equal(cli(sb, ['nonsense']).code, 2);
   assert.equal(cli(sb, []).code, 2);
@@ -866,6 +866,47 @@ test('a planted member file or run.json with a path in its name makes the hook w
     hook(sb, { session_id: 's-writer', hook_event_name: 'Stop', last_assistant_message: 'hello' });
     assert.deepEqual(filesUnder(sb.dir).sort(), before, `a lead named ${evil} wrote a file`);
   }
+});
+
+// Pinned hook script: the user-level hooks must not run a script that agents can edit inside the workspace.
+const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex');
+const d12 = (sb) => cli(sb, ['doctor', '--workspace', sb.workspace]).out.split('\n').find((line) => /^(OK|WARN|FAIL|SKIP) D12 /.test(line)) ?? '';
+
+test('snippet --pin copies the script outside the workspace, records its hash, prints it, and points every hook at the copy', (t) => {
+  const sb = sandbox(t);
+  const before = filesUnder(sb.dir).sort();
+  const result = cli(sb, ['snippet', '--pin']);
+  assert.equal(result.code, 0, result.err);
+  const pinned = path.join(sb.sync, 'bin', 'session-sync.mjs');
+  assert.equal(sha256(pinned), sha256(SCRIPT), 'the pinned copy is the skill copy, byte for byte');
+  assert.equal(readFileSync(path.join(sb.sync, 'bin', 'session-sync.sha256'), 'utf8').trim(), sha256(SCRIPT));
+  assert.ok(result.err.includes(sha256(SCRIPT)), 'the hash is printed');
+  for (const groups of Object.values(JSON.parse(result.out).hooks)) assert.equal(groups[0].hooks[0].command, `node "${pinned}" hook`);
+  assert.deepEqual(filesUnder(sb.dir).sort().filter((f) => !before.includes(f)), [path.join('home', '.session-sync', 'bin', 'session-sync.mjs'), path.join('home', '.session-sync', 'bin', 'session-sync.sha256')].sort(), 'only the pinned copy and its hash are written');
+  assert.equal(cli(sb, ['snippet']).out.includes(path.join(sb.sync, 'bin')), false, 'plain snippet is unchanged and writes nothing');
+});
+
+test('doctor D12 warns when the hook script lives inside the workspace, when the pinned copy changed, and when it differs from the skill copy', (t) => {
+  const sb = sandbox(t);
+  const settingsFile = path.join(sb.home, '.claude', 'settings.json');
+  mkdirSync(path.dirname(settingsFile), { recursive: true });
+  const apply = (out) => writeFileSync(settingsFile, JSON.stringify(JSON.parse(out)));
+  assert.match(d12(sb), /^SKIP D12/, 'no session-sync hook, nothing to check');
+  // A hook that runs the installed copy inside the workspace.
+  const inside = path.join(sb.workspace, '.claude', 'skills', 'session-sync');
+  mkdirSync(inside, { recursive: true });
+  writeFileSync(path.join(inside, 'session-sync.mjs'), readFileSync(SCRIPT));
+  writeFileSync(settingsFile, JSON.stringify({ hooks: { Stop: [{ hooks: [{ type: 'command', command: `node "${path.join(inside, 'session-sync.mjs')}" hook` }] }] } }));
+  assert.match(d12(sb), /^WARN D12 .*inside the workspace.*snippet --pin/);
+  // Pinned and identical to the skill copy: clean.
+  apply(cli(sb, ['snippet', '--pin']).out);
+  assert.match(d12(sb), /^OK D12/);
+  // The skill copy in the workspace changes: the pinned hook still runs the old script, and the doctor says so.
+  writeFileSync(path.join(inside, 'session-sync.mjs'), `${readFileSync(SCRIPT, 'utf8')}\n// edited\n`);
+  assert.match(d12(sb), /^WARN D12 .*differs from the skill copy/);
+  // The pinned copy itself changes after it was pinned.
+  writeFileSync(path.join(sb.sync, 'bin', 'session-sync.mjs'), `${readFileSync(SCRIPT, 'utf8')}\n// edited\n`);
+  assert.match(d12(sb), /^WARN D12 .*changed since it was pinned/);
 });
 
 test('the script imports only node: modules, opens no socket, and starts no process unless --claude-version is given; it is under 500 lines', () => {

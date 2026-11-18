@@ -2,7 +2,7 @@
 // usage: node session-sync.mjs <init|join|post|inbox|hook|wait|follow|status|doctor|snippet|close> [options]   (see SKILL.md)
 // Node.js standard library only. No network. No child process unless doctor is given --claude-version.
 // Exit codes: 0 done, 2 usage or read error, 3 doctor found a FAIL, 4 wait or follow reached its timeout.
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -24,6 +24,7 @@ const stamp = (d) => d.toISOString().replace(/[-:]/g, '').replace('.', '');
 const tilde = (p) => (p.startsWith(os.homedir() + path.sep) ? `~${p.slice(os.homedir().length)}` : p);
 const syncHome = () => path.resolve(process.env.SESSION_SYNC_HOME || path.join(os.homedir(), '.session-sync'));
 const runDir = (run) => path.join(syncHome(), run);
+const fileHash = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; } };
 const age = (ms) => (ms === null ? '-' : ms < 60_000 ? `${Math.floor(ms / 1000)}s` : ms < 3_600_000 ? `${Math.floor(ms / 60_000)}m` : ms < 172_800_000 ? `${Math.floor(ms / 3_600_000)}h` : `${Math.floor(ms / 86_400_000)}d`);
 
@@ -33,7 +34,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (!arg.startsWith('--')) { out._.push(arg); continue; }
     const key = arg.slice(2);
-    if (['peek', 'json', 'claude-version'].includes(key)) { out[key] = true; continue; }
+    if (['peek', 'json', 'claude-version', 'pin'].includes(key)) { out[key] = true; continue; }
     if (argv[i + 1] === undefined) throw usage(`--${key} needs a value`);
     i += 1;
     if (['member', 'ref'].includes(key)) (out[key] ??= []).push(argv[i]); else out[key] = argv[i];
@@ -435,14 +436,42 @@ async function cmdDoctor(o) {
   const forgotten = (folders ?? []).filter((r) => !listed.has(r) && !isClosed(r));
   add('D11', folders === null ? 'SKIP' : orphan.length ? 'FAIL' : forgotten.length || idle.length ? 'WARN' : 'OK', folders === null ? 'active list: no sync folder yet' : orphan.length ? `active list: ${orphan.join(', ')} listed but its folder is missing` : forgotten.length ? `active list: ${forgotten.join(', ')} not closed and not listed` : idle.length ? `active list: ${idle.join(', ')} open with no event for over 24 hours; close it, and run status for stale members` : `active list: ${listed.size} open run(s) match their folders`, 'The board shows old state');
 
+  const hookScripts = new Set();
+  for (const { data } of settings) for (const command of hookCommands(data)) {
+    const m = command.match(/"([^"]*session-sync\.mjs)"\s+hook\b|(\S*session-sync\.mjs)\s+hook\b/);
+    if (m) { const named = (m[1] ?? m[2]).replace(/\$\{?CLAUDE_PROJECT_DIR\}?/g, workspace); hookScripts.add(path.resolve(workspace, named.startsWith('~/') ? path.join(os.homedir(), named.slice(2)) : named)); }
+  }
+  const trust = [];
+  for (const script of hookScripts) {
+    const inside = path.relative(workspace, script);
+    const skillCopy = ['.claude', '.agents'].map((c) => path.join(workspace, c, 'skills', 'session-sync', 'session-sync.mjs')).find((p) => fs.existsSync(p));
+    const recorded = (() => { try { return fs.readFileSync(path.join(path.dirname(script), 'session-sync.sha256'), 'utf8').trim(); } catch { return null; } })();
+    if (!fs.existsSync(script)) continue;
+    if (!inside.startsWith('..') && !path.isAbsolute(inside)) trust.push(`${tilde(script)} is inside the workspace, where agents can edit it; run \`snippet --pin\` and apply the new hooks`);
+    else if (recorded && recorded !== fileHash(script)) trust.push(`${tilde(script)} changed since it was pinned; read it, then run \`snippet --pin\` again`);
+    else if (skillCopy && skillCopy !== script && fileHash(skillCopy) !== fileHash(script)) trust.push(`${tilde(script)} differs from the skill copy in the workspace; read the change, then run \`snippet --pin\` again`);
+  }
+  add('D12', hookScripts.size === 0 ? 'SKIP' : trust.length ? 'WARN' : 'OK', hookScripts.size === 0 ? 'hook script: no session-sync hook in the settings files' : trust.length ? `hook script: ${trust.join('; ')}` : `hook script: ${hookScripts.size} script(s) outside the workspace, matching the skill copy`);
+
   const fail = checks.some((c) => c.status === 'FAIL');
   if (o.json) console.log(JSON.stringify({ verdict: fail ? 'FAIL' : checks.some((c) => rank[c.status] === 1) ? 'WARN' : 'OK', checks }, null, 2));
   else for (const c of checks) console.log(`${c.status} ${c.id} ${c.text}${c.row && c.status !== 'OK' && c.status !== 'SKIP' ? `  [HOW-IT-WORKS: "${c.row}"]` : ''}`);
   return fail ? 3 : 0;
 }
 
-function cmdSnippet() {
-  const entry = (extra) => [{ hooks: [{ type: 'command', ...extra, command: `node "${SCRIPT}" hook` }] }];
+// `--pin` copies this script to a folder agents do not write, records its hash and points every hook at the copy, so a
+// changed script inside the workspace does not run in every later session. Writes only under the sync home.
+function cmdSnippet(o) {
+  let script = SCRIPT;
+  if (o.pin) {
+    const dir = path.join(syncHome(), 'bin');
+    fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+    script = path.join(dir, 'session-sync.mjs');
+    if (script !== SCRIPT) fs.copyFileSync(SCRIPT, script);
+    fs.writeFileSync(path.join(dir, 'session-sync.sha256'), `${fileHash(script)}\n`);
+    console.error(`pinned ${tilde(script)}\nsha256 ${fileHash(script)}\nCompare it with the skill copy before you apply the hooks. After a skill update, read the change, then run snippet --pin again.`);
+  }
+  const entry = (extra) => [{ hooks: [{ type: 'command', ...extra, command: `node "${script}" hook` }] }];
   const start = entry({ timeout: 5 });
   start[0].matcher = 'startup|resume|clear';
   console.log(JSON.stringify({ hooks: { Stop: entry({ async: true }), StopFailure: entry({ async: true }), SessionEnd: entry({ timeout: 5 }), SessionStart: start } }, null, 2));
