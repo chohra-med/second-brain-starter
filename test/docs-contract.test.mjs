@@ -236,6 +236,31 @@ test('the PRIVACY check fires when the amendment is removed or the false stateme
   assert.ok(privacyProblems(`${amended}\nRecords ${PRIVACY_FALSE}.\n`).length > 0);
 });
 
+// PRIVACY.md says which shipped scripts can reach an outside address. The list is read from the files, so a new script
+// that does is not left out and the sentence cannot go back to naming one script only.
+const NETWORK_CODE = /urlopen\(|[^a-zA-Z.]fetch\(|astral\.sh|\bcurl\b|yt-dlp|yt_dlp|ls-remote|https?\.request/;
+async function networkScripts(root) {
+  const { readdir } = await import('node:fs/promises');
+  const found = [];
+  for (const entry of await readdir(root, { withFileTypes: true, recursive: true })) {
+    if (!entry.isFile() || !/\.(?:py|mjs|cjs|js|sh)$/.test(entry.name)) continue;
+    const file = path.join(entry.parentPath, entry.name);
+    if (NETWORK_CODE.test(await readFile(file, 'utf8'))) found.push(entry.name);
+  }
+  return found.sort();
+}
+
+test('PRIVACY.md names every shipped script that can reach an outside address, and no longer says skill-sync is the only one', async () => {
+  const privacy = await read('PRIVACY.md');
+  const scripts = await networkScripts(path.join(sourceRoot, 'template'));
+  assert.ok(scripts.includes('sync.mjs') && scripts.includes('gemini.py'), `the walker finds the known scripts: ${scripts.join(', ')}`);
+  const sentence = privacy.split('\n').find((line) => line.includes('can reach an outside address')) ?? '';
+  assert.notEqual(sentence, '', 'PRIVACY.md has the outside-address sentence');
+  assert.doesNotMatch(sentence, /The one shipped script/);
+  const unnamed = [...new Set(scripts)].filter((name) => !sentence.includes(name === 'sync.mjs' ? 'skill-sync' : `\`${name}\``));
+  assert.deepEqual(unnamed, [], 'every script that reaches an address is named in that sentence');
+});
+
 // T07-8 and N1: the remote rules, through the real loader. Git writes a URL with '#' in quotes, which the loader does not
 // read, so it is `unknown`. A hand-written unquoted URL is parsed, and credentials and query are stripped.
 test('the remote rules hold through the real loader: a git-written URL with a fragment is unknown, an unquoted one is stripped, a non-regular .git/config is refused (N1, T07-8)', async (t) => {
