@@ -10,6 +10,8 @@ This change adds one skill and updates two files and one skill. It deletes nothi
 
 To check an install against the source, follow the `second-brain-guide` skill from its step 2, or run `node ./bin/second-brain.mjs status --target "$PROJECT"` first and read the `Upgrade would plan:` line.
 
+Measured on a scratch workspace made by `init` from the v1.11.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.11.0 -> available 1.11.0` and `Summary: 70 CREATE, 25 MANAGED-UPDATE, 121 IDENTICAL`. The version line is unchanged because this section is not versioned yet. 26 of the 70 `CREATE` lines are the 13 files of the `watch` skill under both skill folders; the rest are the new skills and their assets, `00-Meta/Word-Map.md` and `03-Resources/Procedures/branch-security-review.md`. The 25 `MANAGED-UPDATE` lines are procedure, skill and `.gitignore` changes; a file you edited is kept or merged as the plan shows. Nothing is deleted.
+
 ## Upgrading to v1.11.0
 
 This version adds one seed file, updates procedures and two skills, and stops installing the optional `api-anything` skill. It deletes nothing.
