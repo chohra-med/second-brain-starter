@@ -515,6 +515,41 @@ test('check 5: a name that ends a line and a next line that starts a statement o
   assert.equal(find(report, 'key-credential'), undefined, JSON.stringify(report.findings));
 });
 
+// Planted shapes from the 2026-11-18 review: a real-looking value inside a call on the line after the key. Made-up values.
+const LONG_VALUE = j('Zq8vN3', 'kT7wX2', 'mB5pR9', 'cL4h');
+test('check 5: a hard-coded value inside a call on the next line still gives BLOCK (the exemption is for plain calls only)', (t) => {
+  const dir = sandbox(t);
+  const planted = [
+    ['python getenv default', `${NAME} =\n    os.getenv("API_KEY", "${LONG_VALUE}")\n`],
+    ['python environ or literal', `password =\n    os.environ.get("PW") or "${LONG_VALUE}"\n`],
+    ['buffer from', `const apiKey =\n  Buffer.from("${LONG_VALUE}", "base64");\n`],
+    ['decode call', `${NAME} =\n  decodeSecret("${LONG_VALUE}")\n`],
+    ['buffer from, crlf', `${NAME} =\r\n  Buffer.from("${LONG_VALUE}")\r\n`],
+    ['value then a paren', `access_token =\n  ${LONG_VALUE} (x)\n`],
+    ['value then a method', `secret=\n${LONG_VALUE}.trim()\n`],
+    ['value then equals', `password:\n  ${LONG_VALUE} = 1\n`],
+    ['value then a dot', `secret:\n  ${LONG_VALUE} .\n`],
+    ['quoted value then a method', `${NAME} =\n  "${LONG_VALUE}".trim()\n`],
+    ['js env or literal', `apiKey:\n  process.env.KEY ?? "${LONG_VALUE}"\n`],
+    ['same line default', `${NAME} = os.getenv("API_KEY", "${LONG_VALUE}")\n`],
+  ];
+  for (const [label, text] of planted) {
+    const bytes = Buffer.from(text);
+    assert.equal(hasKey(bytes), true, `check.mjs: ${label}`);
+    assert.equal(hasKeyInScan(bytes), true, `package scan: ${label}`);
+  }
+  const folder = check(makeSkill(dir, 'getenv-default', { 'scripts/load.py': planted[0][1] }), dir);
+  assert.equal(folder.code, 4);
+  assert.equal(folder.stdout.includes(LONG_VALUE), false, 'the value never reaches a report');
+});
+
+test('check 5: a plain call on the next line, with a short quoted argument, is still code', () => {
+  for (const text of [`${NAME} =\n  loadKeyFromEnv(process.env);\n`, `${NAME} =\n  os.getenv("API_KEY", "none")\n`, `${NAME} =\n  Path("config/default.json").read_text()\n`]) {
+    assert.equal(hasKey(Buffer.from(text)), false, text);
+    assert.equal(hasKeyInScan(Buffer.from(text)), false, text);
+  }
+});
+
 test('check 5: a key alone on the next line still gives BLOCK, in a YAML mapping and after an equals sign', (t) => {
   const dir = sandbox(t);
   const split = [

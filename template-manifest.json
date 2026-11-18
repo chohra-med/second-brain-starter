@@ -854,13 +854,13 @@
     {
       "source": "template/shared-skills/security-check/check.mjs",
       "destination": ".agents/skills/security-check/check.mjs",
-      "sha256": "bbf52012a7757291c4b3e385549bfe7c16e80b7dcbc2a174e8a1f8d7802e018e",
+      "sha256": "b7818b5c048ac1d482ad4ee5f8be9040f173890c399d6b42ba95f2f125f60e29",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/security-check/check.mjs",
       "destination": ".claude/skills/security-check/check.mjs",
-      "sha256": "bbf52012a7757291c4b3e385549bfe7c16e80b7dcbc2a174e8a1f8d7802e018e",
+      "sha256": "b7818b5c048ac1d482ad4ee5f8be9040f173890c399d6b42ba95f2f125f60e29",
       "mergeKind": "managed-file"
     },
     {
