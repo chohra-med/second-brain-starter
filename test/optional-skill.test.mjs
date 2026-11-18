@@ -63,3 +63,51 @@ test('the docs say api-anything is optional, how to add it, and what its command
     assert.doesNotMatch(text, new RegExp(`\\b${oneMore}\\b`), `${name} counts ${oneMore} skills, as if api-anything were installed`);
   }
 });
+
+// watch is offered, not installed: scripts/setup.py downloads an installer from astral.sh and runs it with sh (irm | iex on
+// Windows), and the Gemini engine its SKILL.md recommends sends the video to Google. The files ship unmodified from
+// upstream commit 03ceb42f7fa2c4439aca01752118044baabffb8f (SOURCE.md is the starter's own note and is not hashed).
+const watchOptional = 'template/optional-skills/watch';
+const watchUpstream = new Map([
+  ['LICENSE', 'add78957ea8124a8ae6eccd7a55c948543a9f32ea26917bf562b8cafacb01d3e'],
+  ['SKILL.md', '04bfa3b0d1240d5474b03869907202a3459879e9835e688149458a74320a55cb'],
+  ['scripts/config.py', '3f660c726d4fcfd1e3c6fbbea4097ae1768460e2b7ce78c5c603984dcf5d2385'],
+  ['scripts/download.py', 'aa4a01ff7fb61e05d5c97941cb9113205bc7600626ec68a732332128bd9e4fbb'],
+  ['scripts/frames.py', 'c41071f65baf39e043c8ad8bf6895adf351e4da9ef9ce2a6237fc9e456bb2309'],
+  ['scripts/gemini.py', 'e0f29cdfc1f64b6535b6c01a6f21e33493abc240ab18aeac2c85f2f24d3c850e'],
+  ['scripts/local_whisperx.py', '123155ca69e188c44e2dcd1297c52558c477ae96be6238338f4f654c04b5e9cd'],
+  ['scripts/runtime.py', '70f9741d7b863380840da602f9311eb118572c33e083cfdea99524bd282eadbd'],
+  ['scripts/setup.py', '76d6f9e94918c01b8d9bb5210bb0e253ac96d3816e2db9e8a421248bd63eac9f'],
+  ['scripts/transcribe.py', 'ceba832c36c0dd64cab8f3ef87d0a6dcc0472d8469c30dbc9e54f73028de4c3f'],
+  ['scripts/watch.py', 'd6996d1afab2079ddd497fbbbde772f61fd86b5e71d93e6e8c55b9311cb4af94'],
+  ['scripts/whisper.py', '0ea4910e093dda680267a1e99e98ccdc8d541c9e2a314260f5db90b330145ed3'],
+]);
+
+test('watch ships unmodified under template/optional-skills/ and no manifest entry installs it', async () => {
+  const manifest = JSON.parse(await read('template-manifest.json'));
+  assert.deepEqual(manifest.entries.filter((entry) => `${entry.source} ${entry.destination}`.includes('watch')), []);
+  for (const [file, hash] of watchUpstream) {
+    const bytes = await readFile(path.join(sourceRoot, watchOptional, file));
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), hash, `${file} differs from upstream`);
+  }
+  await assert.rejects(lstat(path.join(sourceRoot, 'template', 'shared-skills', 'watch')), { code: 'ENOENT' });
+  const allow = (await read('FILE-ALLOWLIST.txt')).split('\n');
+  assert.deepEqual(allow.filter((line) => line.includes('/watch/')), [...watchUpstream.keys(), 'SOURCE.md'].map((file) => `${watchOptional}/${file}`).sort());
+});
+
+test('the docs say watch is optional, not installed by init, and what its engines send out', async () => {
+  const attribution = await read('ATTRIBUTION.md');
+  for (const required of [`${watchOptional}/`, '03ceb42f7fa2c4439aca01752118044baabffb8f', 'The initializer does not install this skill']) {
+    assert.ok(attribution.includes(required), `ATTRIBUTION.md is missing: ${required}`);
+  }
+  assert.ok(!attribution.includes('template/shared-skills/watch'), 'ATTRIBUTION.md still points at the old folder');
+  const privacy = await read('PRIVACY.md');
+  assert.ok(privacy.includes('optional outside skill `watch`'), 'PRIVACY.md does not call watch optional');
+  assert.ok(privacy.includes('which `init` does not install'), 'PRIVACY.md does not say init does not install watch');
+  assert.ok(!privacy.includes('shared-skills/watch'), 'PRIVACY.md still points at the old folder');
+  assert.ok(!/bundled outside skill `watch`/.test(privacy), 'PRIVACY.md still calls watch bundled');
+  const readme = await read('README.md');
+  assert.ok(readme.includes('**Optional: `watch`.**'), 'README.md has no optional watch paragraph');
+  assert.ok(readme.includes(`${watchOptional}/SKILL.md`), 'README.md does not say where the optional skill is');
+  assert.doesNotMatch(readme, /^\| `watch` \|/m, 'README.md still lists watch with the installed skills');
+});

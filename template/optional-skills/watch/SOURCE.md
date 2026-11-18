@@ -5,7 +5,7 @@
 - Licence: MIT, copy in `LICENSE` beside this file
 - Copied unchanged: `SKILL.md` and the ten scripts in `scripts/` (`config.py`, `download.py`, `frames.py`, `gemini.py`, `local_whisperx.py`, `runtime.py`, `setup.py`, `transcribe.py`, `watch.py`, `whisper.py`)
 - Left out: `scripts/build-skill.sh` (upstream packaging only), the plugin's session-start hook, and the upstream repository's other folders (docs, tests, hooks)
-- Local changes: none. The starter's skill lint pins one known best-practice FLAG for this skill (its description has no "Use when" phrase) instead of editing the upstream text
+- Local changes: none. The starter does not install this skill, so its skill lint does not check it; the one known best-practice FLAG (its description has no "Use when" phrase) stays as upstream wrote it
 - Updating: the copy stays on the pinned commit. Run the security check on a newer commit in a scratch folder before you replace any file
 
 ## What leaves your machine

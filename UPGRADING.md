@@ -2,7 +2,7 @@
 
 ## Next release (not yet versioned)
 
-This change adds one skill and updates two files and one skill. It deletes nothing.
+This release adds skills and updates files and skills that you already have: the measured plan below counts them. It deletes nothing.
 
 - New: `second-brain-guide` under `.agents/skills/` and `.claude/skills/` (two `CREATE` lines), the guide an agent reads to check the installed version, update and confirm fixes. `status` run from this source prints its path in an `Agent guide:` line even before you upgrade.
 - Updated: the managed `00-Meta/AGENTS.md` (`MANAGED-UPDATE`) gains a short "Version, update, check" section. If you edited that file, the plan shows `CUSTOMIZED-KEEP` or a merge as for any managed file. The root `AGENTS.md` and `CLAUDE.md` loader blocks are unchanged.
@@ -10,7 +10,7 @@ This change adds one skill and updates two files and one skill. It deletes nothi
 
 To check an install against the source, follow the `second-brain-guide` skill from its step 2, or run `node ./bin/second-brain.mjs status --target "$PROJECT"` first and read the `Upgrade would plan:` line.
 
-Measured on a scratch workspace made by `init` from the v1.11.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.11.0 -> available 1.11.0` and `Summary: 70 CREATE, 25 MANAGED-UPDATE, 121 IDENTICAL`. The version line is unchanged because this section is not versioned yet. 26 of the 70 `CREATE` lines are the 13 files of the `watch` skill under both skill folders; the rest are the new skills and their assets, `00-Meta/Word-Map.md` and `03-Resources/Procedures/branch-security-review.md`. The 25 `MANAGED-UPDATE` lines are procedure, skill and `.gitignore` changes; a file you edited is kept or merged as the plan shows. Nothing is deleted.
+Measured on a scratch workspace made by `init` from the v1.11.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.11.0 -> available 1.11.0` and `Summary: 44 CREATE, 25 MANAGED-UPDATE, 121 IDENTICAL`. The version line is unchanged because this section is not versioned yet. The 44 `CREATE` lines are the new skills and their assets, `00-Meta/Word-Map.md` and `03-Resources/Procedures/branch-security-review.md`. `watch` is not among them: it is optional and `init` and `upgrade` do not install it (see the README). The 25 `MANAGED-UPDATE` lines are procedure, skill and `.gitignore` changes; a file you edited is kept or merged as the plan shows. Nothing is deleted.
 
 ## Upgrading to v1.11.0
 

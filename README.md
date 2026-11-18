@@ -93,12 +93,12 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `Home.md` | The dashboard. It points to the next useful action. |
 | Numbered folders, `00-Meta` to `05-Daily` | Rules, projects, areas, resources, archives and daily notes. Each record has one home. |
 | [Keeping it clean](template/00-Meta/README.md) | Eight plain rules for where files go, how tasks look and when to review. |
-| Skills | The starter ships thirty-one shared skills. The initializer installs them as thirty-one local skills in `.claude/skills/` and `.agents/skills/`. One more, `api-anything`, is optional: `init` does not install it, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
+| Skills | The starter ships thirty shared skills. The initializer installs them as thirty local skills in `.claude/skills/` and `.agents/skills/`. Two more, `api-anything` and `watch`, are optional: `init` does not install them, and an upgrade from v1.8.0, v1.9.0 or v1.10.0 leaves it in place, still active, until you delete it (see below). |
 | Connect | Registers one repository you name with the workspace, one at a time. |
 | Safety | Plan first. Typed approval for a folder that already has files. A new or empty folder takes a plain yes. Rollback for each receipt. Verify for the managed files. Private files ignored by git. |
 
 <details>
-<summary><strong>The thirty-one skills, and the optional one</strong></summary>
+<summary><strong>The thirty skills, and the optional ones</strong></summary>
 
 <br>
 
@@ -134,9 +134,10 @@ A workspace is a folder of plain Markdown files. It keeps your facts, decisions,
 | `session-sync` | Lets several sessions of one piece of work tell each other when they finish, fail or ask, in small files. A hook script writes the event with no model call, the lead session sleeps until there is news, and a doctor shows why a report never arrived. It makes no network call, and you apply the hook settings yourself. |
 | `second-brain-guide` | Explains what the starter is, how to read the installed version, how to update an older install and how to confirm that a fix landed. It only reads until you approve an update. |
 | `lead-session` | The `/lead-session` command: makes the current session the lead of several worker sessions. It proposes the workers, opens them after your one yes, wakes only on news and updates your list or board from a short digest. It builds on `session-sync`. |
-| `watch` | Watches a video from a link or a file: it downloads it with yt-dlp, takes frames with ffmpeg, reads the captions or a transcript, and answers your question about what is in it. The bundled outside skill (MIT). Its local engine keeps everything on your machine; its Gemini engine and its Groq and OpenAI transcription backends send the video or the audio to those services, so choose local for a private video. |
 
 **Optional: `api-anything`.** It turns a website that has no API into calls your client can make directly, by driving an outside command that the starter does not bundle. `init` does not install it: the skill tells your client to fetch that command with `npx` from its project's default branch, and the command's `login` step can import cookies from your everyday browser. v1.8.0, v1.9.0 and v1.10.0 did install it, and an upgrade from one of those versions leaves it in place: the plan lists its four files as `DEPRECATED`, the upgrade deletes nothing, and your client still loads the skill. To remove it, delete `.claude/skills/api-anything/` and `.agents/skills/api-anything/` in your workspace. To add it, read `template/optional-skills/api-anything/SKILL.md` in the starter copy, then copy that folder into `.claude/skills/` and `.agents/skills/` in your workspace. `verify` and `upgrade` do not manage a skill you add by hand, or one an upgrade left in place. See [ATTRIBUTION.md](ATTRIBUTION.md).
+
+**Optional: `watch`.** It watches a video from a link or a file: it downloads it with yt-dlp, takes frames with ffmpeg, reads the captions or a transcript, and answers your question about what is in it. `init` does not install it, because its setup script downloads and runs an installer from the internet and its Gemini engine, which the skill recommends, sends the video to Google; its Groq and OpenAI transcription backends send the audio to those services. Only its local engine keeps everything on your machine. It was never installed by an earlier release, so an upgrade has nothing to remove. To add it, read `template/optional-skills/watch/SKILL.md` and `template/optional-skills/watch/SOURCE.md` in the starter copy, then copy that folder into `.claude/skills/` and `.agents/skills/` in your workspace. `verify` and `upgrade` do not manage a skill you add by hand. See [ATTRIBUTION.md](ATTRIBUTION.md).
 
 </details>
 
