@@ -163,10 +163,12 @@ const statKey = s => [s.dev, s.ino, s.mode, s.size, s.mtimeMs, s.ctimeMs];
 const stableStat = (a,b) => JSON.stringify(statKey(a)) === JSON.stringify(statKey(b));
 const control = value => /[\x00-\x1f\x7f]/.test(value);
 function observedFile(file) {
-  if (constants.O_NOFOLLOW === undefined) throw new Error('no-follow file reads unsupported');
+  // Windows has no O_NOFOLLOW (the constant is undefined there). The file was just read with lstat and must be a regular
+  // file, and fstat of the opened file must match that lstat (same device, inode, mode, size and times), so a link put in
+  // its place between the two calls is still refused.
   const before = lstatSync(file);
   if (!before.isFile()) throw new Error('expected regular file');
-  const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+  const fd = openSync(file, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const start = fstatSync(fd); if (!stableStat(before,start)) throw new Error('file changed before read');
     const bytes = readFileSync(fd), end = fstatSync(fd), after = lstatSync(file);

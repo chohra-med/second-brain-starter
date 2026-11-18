@@ -145,7 +145,8 @@ test('check 1: install scripts, front matter hooks, scheduled jobs and executabl
 
   const folder = makeSkill(dir, 'exec-file', { 'SKILL.md': cleanSkill('exec-file', 'Read `tool.sh`; do not run it.\n'), 'tool.sh': 'echo hi\n' });
   chmodSync(path.join(folder, 'tool.sh'), 0o755);
-  assert.equal(find(check(folder, dir).report, 'executable-file').file, 'tool.sh');
+  // Windows has no executable bit, so the check cannot see one there.
+  if (process.platform !== 'win32') assert.equal(find(check(folder, dir).report, 'executable-file').file, 'tool.sh');
 });
 
 test('check 2: a network call gives FLAG with file and line, and the host is listed', (t) => {

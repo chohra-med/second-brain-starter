@@ -21,7 +21,7 @@ const cap = (text, size = 200) => String(text ?? '').replace(/[\u0000-\u001f\u00
 const pad = (n) => String(n).padStart(2, '0');
 const hhmm = (at) => { const d = new Date(at); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const stamp = (d) => d.toISOString().replace(/[-:]/g, '').replace('.', '');
-const tilde = (p) => (p.startsWith(os.homedir() + path.sep) ? `~${p.slice(os.homedir().length)}` : p);
+const tilde = (p) => (p.startsWith(os.homedir() + path.sep) ? `~${p.slice(os.homedir().length).split(path.sep).join('/')}` : p);
 const syncHome = () => path.resolve(process.env.SESSION_SYNC_HOME || path.join(os.homedir(), '.session-sync'));
 const runDir = (run) => path.join(syncHome(), run);
 const fileHash = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');

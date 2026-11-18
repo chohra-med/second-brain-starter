@@ -95,7 +95,7 @@ test('every command of the guide runs as written on a fresh install', async (t) 
   assert.match(status.out, /^Installed: template \S+, receipt tx-/m);
   assert.match(status.out, /^This CLI: template \S+/m);
   assert.match(status.out, /^Upgrade would plan: \d+ IDENTICAL$/m);
-  assert.match(status.out, /^Agent guide: .*second-brain-guide\/SKILL\.md$/m);
+  assert.match(status.out.replaceAll('\\', '/'), /^Agent guide: .*second-brain-guide\/SKILL\.md$/m);
   assert.match(headings.out, /^\d+:## v\d+\.\d+\.\d+/m);
   assert.match(headings.out, /^\d+:## Upgrading to v/m);
   assert.match(plan.out, /^Plan: upgrade$/m);
@@ -115,7 +115,7 @@ test('on an install made by the v1.2.0 CLI the same commands run, and say the in
   assert.equal(status.code, 0, status.err);
   assert.match(status.out, /^Installed: template 1\.2\.0, receipt tx-/m);
   assert.match(status.out, /^Upgrade would plan: .*\bCREATE\b/m);
-  assert.match(status.out, /^Agent guide: .*template\/shared-skills\/second-brain-guide\/SKILL\.md \(not installed in this workspace yet/m);
+  assert.match(status.out.replaceAll('\\', '/'), /^Agent guide: .*template\/shared-skills\/second-brain-guide\/SKILL\.md \(not installed in this workspace yet/m);
   assert.equal(plan.code, 0, plan.err);
   assert.match(plan.out, /^Versions: installed 1\.2\.0 -> available \S+$/m);
   const digest = plan.out.match(/^Plan digest: ([a-f0-9]{64})$/m)?.[1];
@@ -136,7 +136,7 @@ test('after the older install is upgraded with the approved digest, the guide is
   const applied = node(['upgrade', '--target', older, '--apply', digest]);
   assert.equal(applied.code, 0, applied.err + applied.out);
   const status = runBlock(shBlocks[2], older);
-  assert.match(status.out, /^Agent guide: .*\.agents\/skills\/second-brain-guide\/SKILL\.md$/m);
+  assert.match(status.out.replaceAll('\\', '/'), /^Agent guide: .*\.agents\/skills\/second-brain-guide\/SKILL\.md$/m);
   assert.match(runBlock(shBlocks[5], older).out, /^Verification: OK$/m);
   assert.match(runBlock(shBlocks[6], older).out, /^IDENTICAL\t\.agents\/skills\/second-brain-guide\/SKILL\.md\t/m);
   assert.equal(runBlock(shBlocks[0], older).out.trim(), (await readFile(path.join(sourceRoot, 'VERSION'), 'utf8')).trim().replace(/^v/, ''));

@@ -25,7 +25,7 @@ function sandbox(t) {
   const workspace = path.join(dir, 'workspace');
   for (const folder of [home, workspace]) mkdirSync(folder, { recursive: true });
   t.after(() => { try { chmodSync(sync, 0o755); } catch { /* may not exist */ } rmSync(dir, { recursive: true, force: true }); });
-  const env = { ...process.env, TZ: 'UTC', HOME: home, SESSION_SYNC_HOME: sync, PATH: process.env.PATH };
+  const env = { ...process.env, TZ: 'UTC', HOME: home, USERPROFILE: home, SESSION_SYNC_HOME: sync, PATH: process.env.PATH };
   delete env.CLAUDE_CODE_SESSION_ID; // this machine sets it; a test passes it on purpose or not at all
   return { dir, home, sync, workspace, env };
 }
@@ -498,10 +498,10 @@ test('doctor D8: an unwritable sync folder fails, a cloud-synced folder warns, a
   const sb = sandbox(t);
   setup(sb);
   assert.equal(doctorLine(cli(sb, ['doctor', '--workspace', sb.workspace]), 'D8'), 'OK');
-  chmodSync(sb.sync, 0o500);
+  chmodSync(sb.sync, 0o500); // Windows ignores the mode bits, so the folder stays writable there
   const blocked = cli(sb, ['doctor', '--workspace', sb.workspace]);
   chmodSync(sb.sync, 0o755);
-  if (process.getuid?.() !== 0) {
+  if (process.getuid?.() !== 0 && process.platform !== 'win32') {
     assert.equal(doctorLine(blocked, 'D8'), 'FAIL');
     assert.equal(blocked.code, 3);
   }
