@@ -551,6 +551,25 @@ test('check 5: a plain call on the next line, with a short quoted argument, is s
   }
 });
 
+// Merger finding S1 residual (2026-11-19): a quoted default of 8 to 15 characters in a call on the next line blocks like the same value on the key's own line.
+test('check 5: a short quoted default (8 to 15 characters) inside a call on the next line still gives BLOCK', () => {
+  for (const value of [j('Abcdef', '1234'), j('Qw3rTy', '9u'), j('Zq8vN3', 'kT7wX2', 'mB5'), j('aB3', 'dE5fG7')]) {
+    for (const text of [`${NAME} =\n    os.getenv("API_KEY", "${value}")\n`, `password =\n    os.environ.get("PW") or "${value}"\n`, `${NAME} = os.getenv("API_KEY", "${value}")\n`]) {
+      assert.equal(hasKey(Buffer.from(text)), true, `check.mjs: ${text}`);
+      assert.equal(hasKeyInScan(Buffer.from(text)), true, `package scan: ${text}`);
+    }
+  }
+});
+
+test('check 5: false-alarm controls for the 8 character rule stay PASS (env var name, path, file name, plain word)', () => {
+  for (const arg of ['"MAX_RETRIES_3"', '"src/v2/app.json"', '"setup-v2.py"', '"defaultvalue"', '"http_port"']) {
+    for (const text of [`${NAME} =\n    os.getenv("API_KEY", ${arg})\n`, `${NAME} =\n    load(${arg})\n`]) {
+      assert.equal(hasKey(Buffer.from(text)), false, `check.mjs: ${text}`);
+      assert.equal(hasKeyInScan(Buffer.from(text)), false, `package scan: ${text}`);
+    }
+  }
+});
+
 test('check 5: a key alone on the next line still gives BLOCK, in a YAML mapping and after an equals sign', (t) => {
   const dir = sandbox(t);
   const split = [

@@ -42,11 +42,13 @@ const REPLACEMENT_CHARACTER = String.fromCharCode(0xfffd);
 // the next line is not code. A value followed, after optional spaces, by an equals sign, an opening bracket or a
 // dot is a statement or a call that starts the next line, not a secret. Same-line matches are unchanged.
 // That exemption does not hold when the next line carries a key-like value: a first token, or a quoted string
-// (a hard-coded default inside a call), of 16 or more characters that mixes letters and digits.
+// (a hard-coded default inside a call), of 16 or more characters that mixes letters and digits, or of 8 to 15
+// characters that mixes letters and digits and is not a path, a file name or an env var NAME in capitals.
 const KEY_LIKE_TOKEN = /^(?=[A-Za-z0-9_./+\-=]*\d)(?=[A-Za-z0-9_./+\-=]*[A-Za-z])[A-Za-z0-9_./+\-=]{16,}$/;
 const KEY_LIKE_QUOTED = /(["'`])(?=[A-Za-z0-9_./+\-=]*\d)(?=[A-Za-z0-9_./+\-=]*[A-Za-z])[A-Za-z0-9_./+\-=]{16,}\1/;
+const KEY_LIKE_SHORT = /(["'`])(?=[A-Za-z0-9_+\-=]*\d)(?=[A-Za-z0-9_+\-=]*[A-Za-z])(?![A-Z0-9_]+\1)[A-Za-z0-9_+\-=]{8,15}\1/;
 function keyLikeLine(token, line) {
-  return KEY_LIKE_TOKEN.test(token) || KEY_LIKE_QUOTED.test(line);
+  return KEY_LIKE_TOKEN.test(token) || KEY_LIKE_QUOTED.test(line) || KEY_LIKE_SHORT.test(line);
 }
 function credentialInText(text) {
   for (let from = 0; from < text.length;) {
