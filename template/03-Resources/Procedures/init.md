@@ -7,6 +7,7 @@ An answer you skip or cannot give is saved as the word `Unknown`. That tells a l
 ## Rules for the assistant
 
 - Ask one question. Wait for the answer. Show the exact text you will save. Write only after the user says yes. Each answer needs its own yes.
+- Setup page route: when these answers came from the setup page of the starter copy (the `second-brain-setup-page` skill), show every exact text in one numbered list and take one typed yes for the whole list; the user can name the numbers to change or leave out. Asked here in the chat, one at a time, each answer keeps its own yes.
 - If the user replies `skip`, save `Unknown` for that answer. A skip needs no yes. List the skipped question by its number and text under `## Unknown` in `00-Meta/Profile.md`, then move to the next question.
 - If the user replies `stop`, end the questions at once. Say what is saved and which questions remain. Then give the closing prompt.
 - A later run asks only the questions whose saved answer is still `Unknown`.

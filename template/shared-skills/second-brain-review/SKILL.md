@@ -1,6 +1,6 @@
 ---
 name: second-brain-review
-description: Review one or more selected Second Brain projects before a handoff or weekly, reconcile evidence, and leave one next action per project.
+description: Review one or more selected Second Brain projects before a handoff or weekly, reconcile evidence, and leave one next action per project. Use when a handoff is near, at the weekly review, or when project records look out of date.
 ---
 
 # Second Brain review

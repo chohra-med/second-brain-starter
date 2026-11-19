@@ -1,11 +1,11 @@
 ---
 name: usage-dashboard
-description: Summarise how much Claude Code was used on this machine, from its transcript files. It prints tokens per session, an estimated cost at list prices, peak context, and how often each skill and slash command was used. Use when a user asks what Claude Code sessions used, what they would cost at list prices, which skills or commands get used, or how full the context got. It only reads and prints numbers, session ids, project folder names, disk paths and names of a fixed shape.
+description: Summarise how much Claude Code was used on this machine, from its transcript files. It prints tokens per session, an estimated cost at list prices, peak context, and how often each skill and slash command was used. Use when a user asks what Claude Code sessions used, what they would cost at list prices, which skills or commands get used, or how full the context got. A second script, `token-check.mjs`, checks one named transcript (tokens by kind, model calls, tool calls, files read and the steps that grew the context most) and compares two runs. Use it too when asked why one run used so many tokens. Both only read and print numbers, session ids, project folder names, disk paths, tool names and names of a fixed shape.
 ---
 
 # Usage dashboard
 
-This skill runs one local script, `usage-dashboard.mjs`, that reads the Claude Code transcript files on this machine and prints a text report. The starter's installer never runs it. You, or your AI client, run it. It needs Node.js 22 or newer and nothing else.
+This skill runs one local script, `usage-dashboard.mjs`, that reads the Claude Code transcript files on this machine and prints a text report. A second script, `token-check.mjs`, looks at one run in detail: see the section Token check below. The starter's installer never runs it. You, or your AI client, run it. It needs Node.js 22 or newer and nothing else.
 
 ## Do not use this when
 
@@ -89,6 +89,70 @@ It never follows a symbolic link below the projects folder. A linked project fol
 - It writes no file. Nothing is saved, cached or logged.
 - It prints no prompt, answer, thinking, tool input, tool result or session title.
 - It prints a skill, command or model name only when the name has a fixed shape, such as a skill name or a model id. Any other name shows as `(unreadable name)`. It also prints session ids, project folder names and disk paths, as they are on disk.
+
+## Token check
+
+`token-check.mjs` reads one transcript file that you name and shows how that one run used its tokens. It is for the question "why did this run cost what it cost", and for a before and after comparison of two runs. It has three modes.
+
+### When to use it
+
+- You have one transcript and want the tokens by kind, the model calls, the tool calls, the files read and the steps that grew the context most.
+- You ran the same task twice (for example with and without a change) and want the two compared.
+- You want the fresh tokens and the cache read of each of your turns in one session.
+
+Do not use it to scan every session. It reads only the files you name. Use `usage-dashboard.mjs` for that.
+
+### Steps
+
+1. Find the transcript file. It is one `*.jsonl` file in a project folder of the Claude Code transcripts. Sub-agent transcripts are in a `subagents` folder next to it. Check: the file exists and ends in `.jsonl`.
+2. One run, text report. Replace `<transcript>` with the file:
+
+   ```sh
+   node .agents/skills/usage-dashboard/token-check.mjs run <transcript>
+   ```
+
+   Add `--subagents <folder>` to read the `agent-*.jsonl` files of that folder as well. They are shown apart from the main session. Add `--top N` for more or fewer large steps (default 5). Add `--cwd <folder>` to print paths relative to that folder when the transcript recorded no working folder, or a different one (a sub-agent that worked in a copy of the project, for example). Without it, two runs in two folders show all their files as different in `compare`. Check: the report starts with `Token check, run:` and the `Model calls` line is not zero.
+3. Compare two runs. Save each run as JSON with your shell, then compare:
+
+   ```sh
+   node .agents/skills/usage-dashboard/token-check.mjs run <transcript-a> --json > a.json
+   node .agents/skills/usage-dashboard/token-check.mjs run <transcript-b> --json > b.json
+   node .agents/skills/usage-dashboard/token-check.mjs compare a.json b.json
+   ```
+
+   Check: the table has a `B minus A` column and the last section is `Why`.
+4. Tokens per turn:
+
+   ```sh
+   node .agents/skills/usage-dashboard/token-check.mjs turns <transcript>
+   ```
+
+   Fresh tokens are input plus cache write plus output. Cache read is shown apart. Check: `Turns you typed` is not zero for a session where you typed.
+5. Add `--json` to any mode to print one JSON object. `--help` prints the options. The same files are in `.claude/skills/usage-dashboard/`.
+
+### What it counts
+
+- It uses the counting rules of `usage-dashboard.mjs`. Several lines with one `message.id` are one model call. A synthetic line is not a call. The cache write splits into 5 minute and 1 hour.
+- The context of a call is its input plus cache read plus cache write. The growth between two calls is charged to the tool calls of the earlier call. It holds the tool results and also that call's own output, so a long answer shows as growth too. The text report names the column "Context growth (tool results plus that call's output)".
+- "Files read" counts the `Read` tool only. A file read through a shell command is not counted, because the command text is never printed or parsed. The report says how many Bash calls the run made, so you can see how much it could not inspect. A file read more than once is listed with its count.
+- In `compare`, the `Why` section has one line each for model calls, tokens, tool calls, files read, repeated reads, start context and the largest steps, always with both runs' numbers. The `Why` lines are computed from these numbers. No model writes them. They say where the tokens went, not whether the run was good.
+
+### What it prints and never prints
+
+- It prints numbers, tool names and file paths. Paths that the run recorded under its working folder are printed relative to it. Other paths are printed as recorded. A path can show a client or project name.
+- It never prints a prompt, an answer, thinking, a tool command, a search pattern or a tool result. A tool name or path of an unexpected shape shows as `(unreadable name)` or `(unreadable path)`.
+- It reads only the files and folders named on the command line. It follows no symbolic link: a linked transcript is refused, a linked file inside `--subagents` is skipped and counted. It opens no network connection, starts no program and writes no file.
+- Exit codes: 0 clean, 1 bad input in a transcript (each line is listed), 2 wrong use.
+
+### What is not checked yet
+
+- Only Claude Code transcripts are read. Codex session files are not.
+- The result fields of `claude -p --output-format json` are not read.
+- With a hand-made fixture the counts match the dashboard. A real run with and without a change has not been measured by this skill.
+
+### Warning for AI clients
+
+The report holds file paths from the run. When an AI client runs the script, those paths become part of its tool output and go to the client's model provider under the client's own settings. Run it yourself, or confirm the settings, when the paths are confidential.
 
 ## Warning for AI clients
 

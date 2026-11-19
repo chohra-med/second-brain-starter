@@ -1,6 +1,6 @@
 ---
 name: second-brain-context
-description: Load the bounded context for one, several or all selected Second Brain projects before work, then return each project's goal, constraints, evidence and next action.
+description: Load the bounded context for one, several or all selected Second Brain projects before work, then return each project's goal, constraints, evidence and next action. Use when starting work in a project, or when the person names the projects to work on.
 ---
 
 # Second Brain context

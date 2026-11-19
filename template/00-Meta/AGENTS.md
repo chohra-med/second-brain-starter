@@ -2,6 +2,10 @@
 
 Use this only for the selected project folders. Do not scan the broader vault, parent folders, secrets, unselected projects, or private notes.
 
+## Version, update, check
+
+To read this workspace's template version, update it from an older version, or confirm that a fix landed, use the `second-brain-guide` skill (`.agents/skills/second-brain-guide/SKILL.md`). The version is `templateVersion` in `.second-brain/installed-state.json`. The update command is in the starter source copy, not in this workspace: ask the person for that folder, and fetch nothing without their yes.
+
 ## Selecting projects
 
 Selection is explicit and may name one project, several, or `all`. `all` means every row of the [project index](../01-Projects/Index.md) and nothing outside it. Never infer the selection from a previous task.
@@ -14,7 +18,7 @@ Shared instructions belong in `AGENTS.md`; `CLAUDE.md` imports that owner. For n
 
 Read in this order when the files exist (steps 3 to 6 repeat for each selected project):
 
-0. `00-Meta/Profile.md`: it sets how answers are given and what is never touched
+0. `00-Meta/Profile.md`: it sets how answers are given and what is never touched; then `00-Meta/Word-Map.md` when it exists: it lists the person's shorthand words, so use each listed meaning without asking
 1. `00-Meta/Decisions.md`, then `00-Meta/Working-Agreement.md` when it exists: it owns shared practices, and the selected project's `Decisions.md` owns that project's exceptions and current work
 2. The selected project's own `AGENTS.md`, `RULES.md`, `CONTRIBUTING.md`, relevant `ai_rules/`, memory bank, and `README.md` before diagnosing or changing its files
 3. `01-Projects/Selected-Project/FACTS.md`

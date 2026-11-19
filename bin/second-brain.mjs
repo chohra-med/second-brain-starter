@@ -239,6 +239,19 @@ async function confirmInteractive(plan, suppliedDigest) {
 
 // status: read-only. It names the installed template and receipt, this CLI's template, and the counts an upgrade
 // would give each state. It never applies anything; `upgrade` prints the full plan and its digest.
+// The agent guide is a shared skill. status names the installed copy when the workspace has it, else the copy in this
+// source, so an install made before the skill existed still finds it. It reads one path and writes nothing.
+const GUIDE_SKILL = ['second-brain-guide', 'SKILL.md'];
+async function guideLine(target) {
+  const installed = path.join(target, '.agents', 'skills', ...GUIDE_SKILL);
+  try {
+    if ((await lstat(installed)).isFile()) return `Agent guide: ${installed}`;
+  } catch {
+    // Not installed here: fall through to the source copy.
+  }
+  return `Agent guide: ${path.join(sourceRoot, 'template', 'shared-skills', ...GUIDE_SKILL)} (not installed in this workspace yet; an upgrade installs it)`;
+}
+
 async function runStatus(targetPath) {
   const payload = await source();
   const status = await statusInstall({ ...payload, targetPath });
@@ -248,6 +261,7 @@ async function runStatus(targetPath) {
       ? `Installed: template ${status.installed.templateVersion}, receipt ${status.installed.receiptId}`
       : 'Installed: none. Run init to install the harness.',
     `This CLI: template ${status.available.templateVersion ?? 'unknown'} (manifest ${status.available.manifestSha256})`,
+    await guideLine(status.target),
   ];
   if (status.installed && status.counts.length > 0) {
     lines.push(`Upgrade would plan: ${status.counts.map(([state, count]) => `${count} ${state}`).join(', ')}`);

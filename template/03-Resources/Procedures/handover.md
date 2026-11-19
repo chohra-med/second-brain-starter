@@ -22,8 +22,9 @@ A fresh chat that reads one clean note beats a long chat that remembers everythi
 2. Collect from this chat only what the next chat needs, in the five parts below. Keep each part short.
 3. Check every line of State against the file or output it rests on. A line you cannot check is written as `unverified`. Never write `done` because it was discussed.
 4. Leave out dead ends, tool output, old drafts, long logs and anything a workspace record already holds. Point to that record by its full path instead of copying it. Never write a secret, a key or a password.
-5. Show the whole draft. Write it only after the person says yes, to `00-Meta/Handovers/<session-name>-YYYY-MM-DD-part<N>.md`: the session's name (the name the person gave the chat, else a short slug), the date, and the next free part number for that session name, starting at `part1`. Never overwrite a note.
-6. End your reply with the hand-off block below, filled in: the folder to start the new session in, and the restart prompt as one paste-ready line. The person keeps several sessions, so this block is what they copy; never make them build the line from a path.
+5. Write the note at once. Asking for a handover is the yes, so do not stop at a draft. Save it to `00-Meta/Handovers/<session-name>-YYYY-MM-DD-part<N>.md`: the session's name (the name the person gave the chat, else a short slug), the date, and the next free part number for that session name, starting at `part1`. Never overwrite a note.
+6. Check the file: run `test -s "<full absolute path of the note>"`. If it fails, write the note again and check again. Never give the hand-off block for a note that is not on disk: the person clears the chat after copying it, and the work is lost.
+7. Show the note, then end your reply with the hand-off block below, filled in: the folder to start the new session in, and the restart prompt as one paste-ready line. The person keeps several sessions, so this block is what they copy; never make them build the line from a path. If they want changes, edit the same file.
 
 ## The note
 

@@ -114,3 +114,49 @@ test('status takes only --target and refuses other flags, changing nothing', asy
   }
   assert.deepEqual([...(await snapshot(root)).keys()], []);
 });
+
+// An install made by the v1.2.0 CLI, from the exact tree test/fixtures/v1.2.0-install.json holds. It has no agent guide skill.
+async function olderInstall(t) {
+  const { stableStringify } = await import('../lib/installer.mjs');
+  const fixture = JSON.parse(await readFile(path.join(sourceRoot, 'test', 'fixtures', 'v1.2.0-install.json'), 'utf8'));
+  const root = await mkdtemp(path.join(tmpdir(), 'second-brain-status-older-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const put = async (posix, content) => {
+    const file = path.join(root, ...posix.split('/'));
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, content);
+  };
+  for (const [destination, content] of Object.entries(fixture.files)) await put(destination, content);
+  await put('.second-brain/installed-state.json', `${stableStringify(fixture.state)}\n`);
+  await put(fixture.receiptPath, `${stableStringify(fixture.receipt)}\n`);
+  return root;
+}
+
+test('status prints one Agent guide line: the installed skill when the workspace has it', async (t) => {
+  const target = await installedTarget(t);
+  const before = await snapshot(target);
+  const result = await cli(['status', '--target', target]);
+  assert.equal(result.code, 0, result.stderr);
+  const lines = result.stdout.split('\n').filter((line) => line.startsWith('Agent guide:'));
+  assert.deepEqual(lines, [`Agent guide: ${path.join(target, '.agents', 'skills', 'second-brain-guide', 'SKILL.md')}`]);
+  assert.ok((await readFile(lines[0].slice('Agent guide: '.length))).length > 0, 'the named file exists');
+  assert.ok(sameSnapshot(before, await snapshot(target)), 'status changed the installed workspace');
+});
+
+test('status names the source copy of the guide for an install that does not have the skill, and finds it without any file of the old install', async (t) => {
+  const older = await olderInstall(t);
+  const before = await snapshot(older);
+  const result = await cli(['status', '--target', older]);
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /^Installed: template 1\.2\.0, receipt tx-/m);
+  const lines = result.stdout.split('\n').filter((line) => line.startsWith('Agent guide:'));
+  const source = path.join(sourceRoot, 'template', 'shared-skills', 'second-brain-guide', 'SKILL.md');
+  assert.deepEqual(lines, [`Agent guide: ${source} (not installed in this workspace yet; an upgrade installs it)`]);
+  assert.ok((await readFile(source, 'utf8')).startsWith('---\nname: second-brain-guide\n'), 'the named source file is the guide');
+  assert.ok(sameSnapshot(before, await snapshot(older)), 'status changed the older install');
+
+  const empty = await mkdtemp(path.join(tmpdir(), 'second-brain-status-empty-guide-'));
+  t.after(() => rm(empty, { recursive: true, force: true }));
+  const none = await cli(['status', '--target', empty]);
+  assert.equal(none.stdout.split('\n').filter((line) => line.startsWith('Agent guide:')).length, 1);
+});

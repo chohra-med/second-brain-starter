@@ -2,6 +2,14 @@
 
 The runtime is one file, [assets/scroll-story.tsx](../assets/scroll-story.tsx), with two headless React 19 components: `ScrollStory` turns scroll position into a film clock with chapters and reading pauses, and `ScrollVideo` seeks a paused video to that clock and plays an optional idle loop at the opening. It adds no wrapper elements and no CSS, and React is its only dependency. The imports below assume you copied it to `src/components/scroll-story.tsx` with an `@/` path alias; adjust the path to wherever you put it.
 
+## Contents
+
+- [Quickstart](#quickstart)
+- [API](#api): [`ScrollStory`](#scrollstory) and [`ScrollVideo`](#scrollvideo)
+- [Reading pauses](#reading-pauses)
+- [Preparing the film](#preparing-the-film)
+- [Rules that keep it working](#rules-that-keep-it-working)
+
 ## Quickstart
 
 ```tsx
