@@ -1,16 +1,17 @@
 # Upgrading the free starter
 
-## Next release (not yet versioned)
+## Upgrading to v1.12.0
 
-This release adds skills and updates files and skills that you already have: the measured plan below counts them. It deletes nothing.
+This version adds eight shared skills and updates files and skills that you already have: the measured plan below counts them. It deletes nothing.
 
-- New: `second-brain-guide` under `.agents/skills/` and `.claude/skills/` (two `CREATE` lines), the guide an agent reads to check the installed version, update and confirm fixes. `status` run from this source prints its path in an `Agent guide:` line even before you upgrade.
-- Updated: the managed `00-Meta/AGENTS.md` (`MANAGED-UPDATE`) gains a short "Version, update, check" section. If you edited that file, the plan shows `CUSTOMIZED-KEEP` or a merge as for any managed file. The root `AGENTS.md` and `CLAUDE.md` loader blocks are unchanged.
-- Updated: `usage-dashboard` gains `token-check.mjs` (`CREATE`) and a longer `SKILL.md`; `session-sync` `doctor` check D4 now warns when no hook runs `session-sync.mjs hook`.
+- New skills under `.agents/skills/` and `.claude/skills/`: `second-brain-guide`, `security-check`, `skill-sync`, `factory`, `writing-check`, `design-check`, `session-sync` and `lead-session`. The installed skill set goes from twenty-two to thirty. `usage-dashboard` also gains `token-check.mjs`.
+- New files outside the skills: `00-Meta/Word-Map.md` (a seed, yours from the start and never overwritten) and `03-Resources/Procedures/branch-security-review.md`.
+- Updated: the managed `00-Meta/AGENTS.md` gains a short "Version, update, check" section; `00-Meta/README.md`, the procedures `first-use`, `handover`, `init` and `learning-and-scaling`, the skills `context-modes`, `end-session`, `usage-dashboard`, the five `second-brain-*` skills and `scroll-story-component` change as the changelog says; the `.gitignore` privacy block ignores more paths. If you edited a managed file, the plan shows `CUSTOMIZED-KEEP` or a merge as for any managed file. The root `AGENTS.md` and `CLAUDE.md` loader blocks are unchanged.
+- Not installed: the outside skill `watch` is optional, under `template/optional-skills/watch/`; `init` and `upgrade` do not install it (see the README).
 
 To check an install against the source, follow the `second-brain-guide` skill from its step 2, or run `node ./bin/second-brain.mjs status --target "$PROJECT"` first and read the `Upgrade would plan:` line.
 
-Measured on a scratch workspace made by `init` from the v1.11.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.11.0 -> available 1.11.0` and `Summary: 44 CREATE, 25 MANAGED-UPDATE, 121 IDENTICAL`. The version line is unchanged because this section is not versioned yet. The 44 `CREATE` lines are the new skills and their assets, `00-Meta/Word-Map.md` and `03-Resources/Procedures/branch-security-review.md`. `watch` is not among them: it is optional and `init` and `upgrade` do not install it (see the README). The 25 `MANAGED-UPDATE` lines are procedure, skill and `.gitignore` changes; a file you edited is kept or merged as the plan shows. Nothing is deleted.
+Measured on a scratch workspace made by `init` from the v1.11.0 source (no edits), with this branch's `upgrade`: the plan reads `Versions: installed 1.11.0 -> available 1.12.0` and `Summary: 44 CREATE, 25 MANAGED-UPDATE, 121 IDENTICAL`. The 44 `CREATE` lines are the eight new skills and `token-check.mjs` (21 files, each in both skill folders) and the two files outside the skills. The 25 `MANAGED-UPDATE` lines are the procedure, skill and `.gitignore` changes above. Nothing is deleted, and a repository you connect keeps the Spec Harness 0.7.0 it got in v1.11.0.
 
 ## Upgrading to v1.11.0
 
