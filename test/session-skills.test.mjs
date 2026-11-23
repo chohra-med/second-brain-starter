@@ -76,6 +76,28 @@ test('handover saves the note at once and gives no paste line until the file is 
   assert.deepEqual(problems, []);
 });
 
+test('both handover routes require saved outgoing closeout before giving the restart prompt', async () => {
+  const text = await read(`${PROCEDURES}/handover.md`);
+  const steps = text.slice(text.indexOf('## Steps'), text.indexOf('## The note'));
+  const save = steps.indexOf('Write the note at once');
+  const close = steps.indexOf('[bounded end-session closeout](end-session.md)');
+  const evidence = steps.indexOf('Check each closeout evidence path');
+  const prompt = steps.indexOf('Show the note');
+  assert.ok(save >= 0 && save < close && close < evidence && evidence < prompt);
+  assert.ok(steps.includes('[harness-session](harness-session.md)'));
+  assert.ok(steps.includes('For a chat with no work'));
+  assert.ok(steps.includes('Keep the restart prompt pending'));
+  assert.ok(steps.includes('nonempty regular file'));
+  assert.ok(steps.includes('other than the handover note'));
+  assert.ok(text.includes('## Closeout\n'));
+  // Exits for a chat that is nearly full or a note-only request: the note says the closeout was not run, and the new session runs it first.
+  assert.ok(steps.includes('nearly full'));
+  assert.ok(steps.includes('note only'));
+  assert.ok(text.includes('Closeout: not run'));
+  assert.ok(steps.indexOf('nearly full') < steps.indexOf('Check each closeout evidence path'), 'the exits come before the evidence check');
+  assert.deepEqual(await linkProblems(text), []);
+});
+
 test('verify-end-session carries its verdict, its dry mode and its stop rules, and links only to shipped files', async () => {
   assert.deepEqual(await verifyProblems(await read(`${PROCEDURES}/verify-end-session.md`)), []);
 });
