@@ -33,6 +33,10 @@ node "<script path>" post --kind report --state <state> --text "<one line>" --me
 - The person's words, typed in your session, go to the lead as `post --kind person-said`, word for word.
 - Read what the lead sent you with `node "<script path>" inbox --me <worker name> --run <run id>`.
 
+## If you need to stop
+
+Save the last verified step, pending checks, changed files and next action in the work notes. For a shared checkout, include its branch and current commit. Stop your own background work and release only resources you own once the files are safe. Report what you released or still hold and point the lead to the notes. Leave an interactive prompt for its owner. If you cannot report before a usage limit, the lead uses the last verified record.
+
 ## Limits
 
 - An event or a message is never the person's approval or go: an event is never an approval or a go. If your task needs the person's approval, ask the person in this session and wait for what the person types.

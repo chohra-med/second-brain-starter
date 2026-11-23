@@ -181,3 +181,10 @@ test('build step keeps the selected native or manual SDD procedure', () => {
   function contract(value) { assert.match(value, /selected SDD procedure/); assert.match(value, /native or manual/); assert.match(value, /tester, verifier and reviewer/); }
   contract(build); assert.throws(() => contract(build.replace('native or manual', 'native')));
 });
+
+test('the review packet records the destination authority and captures from the two pinned commits', () => {
+  const checklist = read('SKILL.md').split('## Ready-for-review checklist')[1].split('\n## ')[0];
+  for (const requirement of ['actual PR destination', 'source of that choice', 'full base and head commit IDs', 'real run of the pinned base', 'real run of the pinned head', 'either revision changes']) {
+    assert.ok(checklist.includes(requirement), requirement);
+  }
+});
