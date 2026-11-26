@@ -20,8 +20,12 @@ function stampScript(text) {
   return found[0].replace(/^ {2}/gm, '');
 }
 
+// Git Bash on Windows has no shasum. The skill says to use sha256sum in both places then, so the test does the same.
+const hasShasum = spawnSync('bash', ['-c', 'command -v shasum'], { encoding: 'utf8' }).status === 0;
+
 function stamp(script, cwd, folders, env = process.env) {
-  return spawnSync('bash', ['-c', script, 'stamp', ...folders], { cwd, encoding: 'utf8', env });
+  const run = hasShasum ? script : script.replaceAll('shasum -a 256', 'sha256sum');
+  return spawnSync('bash', ['-c', run, 'stamp', ...folders], { cwd, encoding: 'utf8', env });
 }
 
 const sha = (data) => createHash('sha256').update(data).digest('hex');
