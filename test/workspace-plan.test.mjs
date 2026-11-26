@@ -59,10 +59,12 @@ test('workspace-plan lists each direct child repository with a ready connect com
 
   // Each connect line is absolute, quoted where needed, and points at the proposed workspace.
   const hub = path.join(parent, 'Second Brain');
+  // bin/second-brain.mjs quotes with double quotes on win32 (cmd.exe) and single quotes elsewhere.
+  const quote = (text) => (process.platform === 'win32' ? `"${text}"` : `'${text}'`);
   const connectLines = planned.stdout.split('\n').filter((line) => line.includes(' connect --target '));
   assert.equal(connectLines.length, 2, planned.stdout);
-  assert.ok(connectLines.some((line) => line.includes(`--target '${hub}' --repo '${path.join(parent, 'Alpha Repo')}'`)), connectLines.join('\n'));
-  assert.ok(connectLines.some((line) => line.includes(`--target '${hub}' --repo ${path.join(parent, 'beta')}`)), connectLines.join('\n'));
+  assert.ok(connectLines.some((line) => line.includes(`--target ${quote(hub)} --repo ${quote(path.join(parent, 'Alpha Repo'))}`)), connectLines.join('\n'));
+  assert.ok(connectLines.some((line) => line.includes(`--target ${quote(hub)} --repo ${path.join(parent, 'beta')}`)), connectLines.join('\n'));
   assert.ok(connectLines.every((line) => path.isAbsolute(line.match(/node (\S+)/)?.[1] ?? '')), connectLines.join('\n'));
 
   assert.deepEqual(await tree(parent), before, 'the plan changed the parent folder');

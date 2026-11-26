@@ -83,7 +83,10 @@ export async function buildPin({ source, commit, tree, repository = DEFAULT_REPO
   for (const file of paths) {
     const full = path.join(source, ...file.split('/'));
     const bytes = await readFile(full);
-    const executable = process.platform === 'win32' ? false : ((await lstat(full)).mode & 0o111) !== 0;
+    // Windows has no executable bit on disk, so it can only read the bit from the pin it is checking.
+    const executable = process.platform === 'win32'
+      ? previousPin?.sourceInventory?.some((entry) => entry.path === file && entry.executable === true) ?? false
+      : ((await lstat(full)).mode & 0o111) !== 0;
     files.push({ path: file, bytes, executable });
   }
   const recomputed = gitTreeHash(files);
