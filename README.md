@@ -9,7 +9,7 @@ A free, plain-Markdown foundation for keeping facts, decisions, progress and nex
 [![license](https://img.shields.io/github/license/chohra-med/second-brain-starter.svg)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/chohra-med/second-brain-starter.svg?style=social)](https://github.com/chohra-med/second-brain-starter/stargazers)
 
-Created by [**Malik Chohra**](https://getwireai.com?utm_source=github&utm_medium=readme&utm_campaign=creator) · [Code Meet AI newsletter](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=newsletter)
+Created by [**Malik Chohra**](https://malikchohra.com/start?utm_source=github&utm_medium=readme&utm_campaign=hub) · [Code Meet AI newsletter](https://codemeetai.substack.com?utm_source=github&utm_medium=readme&utm_campaign=newsletter)
 
 Sponsored by [Builder AI OS](https://choumed.gumroad.com/l/builder-ai-os?utm_source=github&utm_medium=readme&utm_campaign=sponsor) and [CasaInnov](https://casainnov.com?utm_source=github&utm_medium=readme&utm_campaign=sponsor)
 
@@ -204,5 +204,6 @@ To remove the starter, first keep any Markdown files you want to retain. Then de
 - [Connect a repository](docs/connect-a-repository.md): one repository at a time.
 - [First loop and projects](docs/first-loop-and-projects.md): your first project, the working loop and a second project.
 - [Free foundation and Builder AI OS](docs/free-and-builder-ai-os.md): the free starter next to the optional paid layer.
+- [More from Malik](https://malikchohra.com?utm_source=github&utm_medium=readme&utm_campaign=hub): articles, skills and free resources.
 - [Other agent tools](docs/other-agent-tools.md): what Codex, Gemini CLI, Antigravity, Cursor, OpenCode, Hermes Agent and Copilot CLI find as installed, and the one setting some of them need.
 - [ONBOARDING.md](ONBOARDING.md), [UPGRADING.md](UPGRADING.md), [CHANGELOG.md](CHANGELOG.md), [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md), [CONTRIBUTING.md](CONTRIBUTING.md) and [ATTRIBUTION.md](ATTRIBUTION.md).
