@@ -50,7 +50,7 @@
     {
       "source": "template/03-Resources/Procedures/handover.md",
       "destination": "03-Resources/Procedures/handover.md",
-      "sha256": "207848b58c794036563e64e4b2bedeff91964892dd634481a9fae62e11954598",
+      "sha256": "c423315cbfa794b8f91e8c337e3433772048ddb5c5feb4ea2fc4ede364c89451",
       "mergeKind": "managed-file"
     },
     {
@@ -902,13 +902,13 @@
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".agents/skills/factory/SKILL.md",
-      "sha256": "f843f99a6201a3f628f393c9d08c8127ea759044938734d457c755cbc462ffda",
+      "sha256": "28dfd7aae7b3f619c09bba4313e09dfbab2ebbde40cacfdb62b3f941541e3975",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".claude/skills/factory/SKILL.md",
-      "sha256": "f843f99a6201a3f628f393c9d08c8127ea759044938734d457c755cbc462ffda",
+      "sha256": "28dfd7aae7b3f619c09bba4313e09dfbab2ebbde40cacfdb62b3f941541e3975",
       "mergeKind": "managed-file"
     },
     {
@@ -1112,61 +1112,61 @@
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".agents/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "40feb1cc9b680481532a4e7c7f7ba3052230f7f31020f23f6e85057eac09c052",
+      "sha256": "cb4257281fc0f00cc24ab323474511e11ff02157f235972abdf6f079ecf8eef5",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".claude/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "40feb1cc9b680481532a4e7c7f7ba3052230f7f31020f23f6e85057eac09c052",
+      "sha256": "cb4257281fc0f00cc24ab323474511e11ff02157f235972abdf6f079ecf8eef5",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".agents/skills/session-sync/SKILL.md",
-      "sha256": "69edbdf4354664e9b38ee20ee685c8f42ffd62115ad6cf370a57cd310187ac89",
+      "sha256": "3d541d1d626837a82bb670727d70af4c26ba8e0c14f5919f2384448716c3bdde",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".claude/skills/session-sync/SKILL.md",
-      "sha256": "69edbdf4354664e9b38ee20ee685c8f42ffd62115ad6cf370a57cd310187ac89",
+      "sha256": "3d541d1d626837a82bb670727d70af4c26ba8e0c14f5919f2384448716c3bdde",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".agents/skills/session-sync/session-sync.mjs",
-      "sha256": "5de18ab95d34014b5ba62f309695fad2a18428f0e939ecfa1a9f9fb565f78e0c",
+      "sha256": "52ceb1638a819fa0ceba1669a6681a047eca22257e6a39b43e343d459ddb171c",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".claude/skills/session-sync/session-sync.mjs",
-      "sha256": "5de18ab95d34014b5ba62f309695fad2a18428f0e939ecfa1a9f9fb565f78e0c",
+      "sha256": "52ceb1638a819fa0ceba1669a6681a047eca22257e6a39b43e343d459ddb171c",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/SKILL.md",
       "destination": ".agents/skills/lead-session/SKILL.md",
-      "sha256": "c9ba8205f14cc929c60c2eecea5504a3c7bf90f11145a0a9339711b7f5249c48",
+      "sha256": "a2989cf27f2ce684b724edcfdb9bb47ab21112ba006c09e6a4450e69ad6a27cd",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/SKILL.md",
       "destination": ".claude/skills/lead-session/SKILL.md",
-      "sha256": "c9ba8205f14cc929c60c2eecea5504a3c7bf90f11145a0a9339711b7f5249c48",
+      "sha256": "a2989cf27f2ce684b724edcfdb9bb47ab21112ba006c09e6a4450e69ad6a27cd",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/assets/brief.md",
       "destination": ".agents/skills/lead-session/assets/brief.md",
-      "sha256": "9618e55b1b2c52f69cd19ba758fd9ec7688085496fcf99a31f0dbd8593033a29",
+      "sha256": "5f2692050248b86aaf235d8b86f93f1573ec10bee6847f55edbb01ed9182c405",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/assets/brief.md",
       "destination": ".claude/skills/lead-session/assets/brief.md",
-      "sha256": "9618e55b1b2c52f69cd19ba758fd9ec7688085496fcf99a31f0dbd8593033a29",
+      "sha256": "5f2692050248b86aaf235d8b86f93f1573ec10bee6847f55edbb01ed9182c405",
       "mergeKind": "managed-file"
     }
   ]

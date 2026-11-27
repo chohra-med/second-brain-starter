@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -271,6 +271,51 @@ function start(sb, args) {
   return state;
 }
 const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+test('wait survives asynchronous watcher failure and polls for an event', async (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  const fixture = path.join(sb.dir, 'watch-error.mjs');
+  const closed = path.join(sb.dir, 'watch-closed');
+  writeFileSync(fixture, `import fs from 'node:fs';
+import { EventEmitter } from 'node:events';
+fs.watch = () => { const w = new EventEmitter(); w.close = () => fs.writeFileSync(${JSON.stringify(closed)}, 'closed'); setTimeout(() => w.emit('error', Object.assign(new Error('watch failed'), { code: 'EMFILE' })), 25); return w; };
+`);
+  const child = spawn(process.execPath, ['--import', pathToFileURL(fixture).href, SCRIPT, 'wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.1'],
+    { cwd: sb.workspace, env: sb.env });
+  let out = '', err = '';
+  child.stdout.on('data', (chunk) => { out += chunk; });
+  child.stderr.on('data', (chunk) => { err += chunk; });
+  const done = new Promise((resolve) => child.on('exit', resolve));
+  const deadline = Date.now() + 5000;
+  while (!existsSync(closed) && child.exitCode === null && Date.now() < deadline) await pause(25);
+  if (!existsSync(closed)) { child.kill('SIGTERM'); const code = await done; assert.fail(`watcher was not closed (exit ${code}): ${err}`); }
+  plant(sb, { kind: 'question', state: 'needs-lead', text: 'poll recovered' });
+  const code = await done;
+  assert.equal(code, 0, err);
+  assert.match(out, /poll recovered/);
+  assert.equal(readFileSync(closed, 'utf8'), 'closed');
+});
+
+test('wait cancels the settle timer when polling delivers first', async (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  plant(sb, { kind: 'question', state: 'needs-lead', text: 'settled by poll' });
+  const fixture = path.join(sb.dir, 'settle-race.mjs');
+  writeFileSync(fixture, `import fs from 'node:fs';
+import { EventEmitter } from 'node:events';
+fs.watch = () => { const w = new EventEmitter(); w.close = () => {}; return w; };
+const original = globalThis.setTimeout;
+globalThis.setTimeout = (fn, delay, ...args) => original(fn, delay >= 400 && delay <= 600 ? delay + 500 : delay, ...args);
+`);
+  const child = spawn(process.execPath, ['--import', pathToFileURL(fixture).href, SCRIPT, 'wait', '--me', 'lead', '--settle', '0.5', '--interval', '0.2', '--timeout', '0.1'], { cwd: sb.workspace, env: sb.env });
+  let out = '', err = '';
+  child.stdout.on('data', (chunk) => { out += chunk; });
+  child.stderr.on('data', (chunk) => { err += chunk; });
+  const code = await new Promise((resolve) => child.on('exit', resolve));
+  assert.equal(code, 0, err);
+  assert.match(out, /settled by poll/);
+});
 
 test('wait exits 0 with the digest on a wake-worthy event, and not on a working event, a session-start or a note', async (t) => {
   const sb = sandbox(t);
@@ -888,6 +933,18 @@ test('snippet --pin copies the script outside the workspace, records its hash, p
   assert.equal(cli(sb, ['snippet']).out.includes(path.join(sb.sync, 'bin')), false, 'plain snippet is unchanged and writes nothing');
 });
 
+test('a copy run through a symlinked path does its work and does not exit 0 in silence', (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  const link = path.join(sb.dir, 'linked-script');
+  symlinkSync(path.dirname(SCRIPT), link, 'dir');
+  const viaLink = spawnSync(process.execPath, [path.join(link, 'session-sync.mjs'), 'status', '--run', 'R1'], { encoding: 'utf8', cwd: sb.workspace, env: sb.env });
+  assert.equal(viaLink.status, 0, viaLink.stderr);
+  assert.match(viaLink.stdout, /R1/, 'status printed through the symlinked path');
+  const hooked = spawnSync(process.execPath, [path.join(link, 'session-sync.mjs'), 'hook'], { encoding: 'utf8', input: JSON.stringify(stopInput('through a link')), cwd: sb.workspace, env: sb.env });
+  assert.equal(hooked.status, 0, hooked.stderr);
+});
+
 test('doctor D12 warns when the hook script lives inside the workspace, when the pinned copy changed, and when it differs from the skill copy', (t) => {
   const sb = sandbox(t);
   const settingsFile = path.join(sb.home, '.claude', 'settings.json');
@@ -966,4 +1023,34 @@ test('shipped session-sync files hold none of the send-changes patterns, and the
   assert.ok([0, 3].includes(result.status), `exit ${result.status}: ${result.stdout.slice(0, 500)}`);
   const report = JSON.parse(result.stdout);
   assert.equal(report.bestPractices.verdict, 'PASS', JSON.stringify(report.bestPractices.findings));
+});
+
+test('SKILL.md says a Codex session is Tier B, what it does instead, and that hooks, Monitor and the session id variable are Claude Code specific', () => {
+  const text = readFileSync(path.join(path.dirname(SCRIPT), 'SKILL.md'), 'utf8');
+  const rows = Object.fromEntries(text.split('\n').filter((l) => /^\| Tier [ABC] /.test(l)).map((l) => [l.slice(2, 8), l]));
+  assert.match(rows['Tier A'], /Claude Code specific/);
+  assert.match(rows['Tier A'], /hooks, Monitor and `CLAUDE_CODE_SESSION_ID`/);
+  assert.match(rows['Tier B'], /Codex session, or any tool without turn-end hooks, is Tier B/);
+  assert.match(rows['Tier B'], /last action of every turn is `post/);
+  assert.match(rows['Tier B'], /in the foreground/);
+  assert.match(text, /only Claude Code sets it; Codex and other tools pass `--session`/);
+});
+
+// --- the wait deadline --------------------------------------------------------------------------------------------
+
+test('wait clears its deadline timer once it has delivered', (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  plant(sb, { text: 'ready' });
+  const probe = path.join(sb.dir, 'timers.mjs');
+  writeFileSync(probe, [
+    'const left = new Set(); const set = globalThis.setTimeout; const clear = globalThis.clearTimeout;',
+    'globalThis.setTimeout = (fn, ms, ...rest) => { const handle = set(fn, ms, ...rest); if (ms > 60_000) left.add(handle); return handle; };',
+    'globalThis.clearTimeout = (handle) => { left.delete(handle); return clear(handle); };',
+    "process.on('exit', () => process.stderr.write(`long timers left: ${left.size}\\n`));",
+  ].join('\n'));
+  const result = spawnSync(process.execPath, ['--import', pathToFileURL(probe).href, SCRIPT, 'wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '5'], { encoding: 'utf8', cwd: sb.workspace, env: sb.env });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /ready/);
+  assert.match(result.stderr, /long timers left: 0/);
 });

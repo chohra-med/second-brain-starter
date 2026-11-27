@@ -65,7 +65,7 @@ The file format is the same in every tier, so tools can share one run. `doctor` 
 
 A worker that finishes work the lead must act on says so in its `SYNC` line, for example `SYNC: done - review of the page finished, 3 findings, see notes/page.md`. A person who changes something on a published page with no session involved leaves no local event; only a message sent to the session that watches the page does. A saved note stays invisible until a session reads the page.
 
-Optional: `init --auto-join <folder>` stores a folder in `run.json`. Sessions started in that folder report to the lead by themselves; their last 200 characters go to the sync folder. It is off unless you pass the flag, and a session outside the folder writes nothing.
+Optional: `init --auto-join <folder>` stores a folder in `run.json`. Sessions started in that folder report to the lead by themselves; their last 200 characters go to the sync folder. It is off unless you pass the flag, and a session outside the folder writes nothing. If the lead works inside that folder, it must run `join` again first thing after a restart or a clear.
 
 ## 5. Token note (an estimate, not a measurement)
 

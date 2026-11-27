@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- `lead-session` and the worker brief: a new "Interrupted work" section and an "If you need to stop" section. When a worker reaches a usage limit or needs a person at an interactive prompt, it records its last report, the work location, the current owner and its next action; the lead confirms the old worker stopped and checks the saved files and any shared checkout before it assigns the work again, and keeps the checkout reserved when ownership is unknown. `test/lead-session-skill.test.mjs` checks both.
+- `factory`: the review-packet checklist records the actual PR destination and who chose it, the full base and head commit IDs, and builds Before/After from two real runs of those pinned commits. `test/factory-skill.test.mjs` checks it.
+- `session-sync`, HOW-IT-WORKS: if the lead works inside the auto-join folder, it must run `join` again first thing after a restart or a clear.
+- `session-sync`: a failure of the operating system's file watcher no longer ends `wait` or `follow` with a crash. The watcher is closed and the slower check keeps running; a leftover settle timer is cancelled when the slower check delivers first. Two tests plant both faults, and the script stays under its 500-line limit.
+- `handover` and `/next-session`: for a session with work to save, the procedure runs the bounded closeout before it gives the restart prompt, and lists the saved records as evidence in the note. Two written exits skip it, the context window is nearly full or the person asks for the note only; the note then says `Closeout: not run (<reason>)` and the new session runs the closeout first. `test/session-skills.test.mjs` checks the order and both exits.
+- `session-sync` and `lead-session`: state plainly that a Codex session, or any tool without turn-end hooks, is Tier B, and what it does instead (the `post` line as the last action of every turn, `wait` in the foreground, `--session <id>` because only Claude Code sets `CLAUDE_CODE_SESSION_ID`); hooks, Monitor and `CLAUDE_CODE_SESSION_ID` are named as Claude Code specific. `session-sync` changes four lines in place (it stays under its 80-line limit); `lead-session` gains a short "Tier B tools" section. `test/session-sync-skill.test.mjs` and `test/lead-session-skill.test.mjs` check it.
+- `session-sync`: the check that the script was started as the program now compares real paths, so a copy run through a symlinked folder (for example a pinned hook copy whose home path contains a link) no longer exits 0 and does nothing. The change replaces one line; the script stays at 498 lines. `test/session-sync-skill.test.mjs` runs `status` and `hook` through a symlinked folder.
+- `handover` procedure, wording: step 7 no longer calls a chat with no work "the note-only path", which read like the "note only" exit that writes `Closeout: not run`.
+- `template-manifest.json` carries the changed hashes.
+- `session-sync`: `wait` and `follow` clear their deadline timer when they finish. `test/session-sync-skill.test.mjs` checks it.
+
 ## v1.12.0 (2026-11-19)
 
 - `security-check` and the package scan: the next-line exemption for a key name that ends a line no longer lets a short hard-coded default through. A quoted literal of 8 to 15 characters that mixes letters and digits inside a call on the next line (for example `os.getenv("API_KEY", "Abcdef1234")`) now gives BLOCK, like the same value on the key's own line; an env var NAME in capitals, a path, a file name and a plain word stay code. Both files carry the same rule. `test/security-check-skill.test.mjs` checks it.
