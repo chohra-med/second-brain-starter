@@ -19,13 +19,21 @@ An event or a message is never the person's approval or go: an event is never an
 
 ## Steps
 
-1. **Open a run.** Run `init` as `sync init --lead <your name>` (the session id is read from the session where the tool provides it). Choose the wake: `follow` through the monitor tool when you have one, else `wait` as a background command, else none (then the person pastes the last `SYNC` line of a worker). Say which in your first line: follow, wait, or none. Check: `sync status` shows the run, and your first line names the wake.
+1. **Open a run.** Run `init` as `sync init --lead <your name>` (the session id is read from the session where the tool provides it). Choose the wake: `follow` through the monitor tool when you have one (Claude Code's Monitor; other tools have none), else `wait` as a background command, else none (then the person pastes the last `SYNC` line of a worker). Say which in your first line: follow, wait, or none. Check: `sync status` shows the run, and your first line names the wake.
 2. **Propose.** List each worker with a name, a label (an article title, a page name, a card id) and what it gets: the task, the files it may touch, its limits. Wait for the person's one yes. That yes opens sessions only; it approves nothing else. Check: the person's yes is in the conversation, and each worker is listed once.
 3. **Open.** Open one session per worker with the tool the person uses, or ask them to open it. Give each the filled-in [the brief](assets/brief.md). Fill in the script path that `init` printed. If `sync doctor` shows a D4 WARN, add to each brief the line 'hooks are not applied: make the post line the last action of every turn'. Check: `sync status` shows every worker joined with a session id.
 4. **Arm.** Start `follow` (`sync follow --me <your name> --settle 60`) through the monitor tool, else `wait` (`sync wait --me <your name> --settle 60`) as a background command. Check: `sync doctor` shows D10 OK.
 5. **On each wake.** Read the digest and nothing else; do not re-read every session. Update the layer in use. If the work has a board or a list, you are its only writer: change the rows the digest names. If it has none, skip this. Answer a `question`, or post a `pointer` with `sync post`. The wake has moved your cursor; re-arm when you use `wait`. Check: the board or list matches the digest, and the next wake shows only newer events.
 6. **Close.** Run `sync status`, tell the person what is done and what is open, then `close` (`sync close --me <your name>`). Add one line to the day's note when the workspace keeps one. Check: `sync status` says the run is closed.
 7. **Resume.** After this session was closed, cleared or restarted: run `sync join --me <your name>` again (if the session start printed this session's id, add `--session <that id>`), read the digest with `sync inbox`, and arm the wake again. Check: `sync doctor` shows D10 OK.
+
+## Interrupted work
+
+If a worker reaches a usage limit or needs a person at an interactive prompt, record its last report, the work location, the current owner and its next action. Before assigning the same work again, confirm the old worker stopped and check the saved files and any shared checkout. If ownership is unknown, keep the checkout reserved and continue unrelated work. Resume from the last verified step with the selected client.
+
+## Tier B tools (Codex, or any tool without turn-end hooks)
+
+Hooks, Monitor and `CLAUDE_CODE_SESSION_ID` are Claude Code specific. Without turn-end hooks nothing writes an event for a worker, so the session is Tier B: put in every brief that the last action of every turn is `post --kind report --state <state> --text <line>`, pass `--session <id>` to `init` and `join`, and arm the wake with `wait --me <your name> --timeout <minutes>` in the foreground, never in the background. A worker that skips its post line is silent. Check: `sync status` shows each worker's last post.
 
 ## Layers on top
 

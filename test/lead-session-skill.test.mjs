@@ -103,3 +103,25 @@ test('the folder passes the security check without a BLOCK and its best-practice
   const report = JSON.parse(result.stdout);
   assert.equal(report.bestPractices.verdict, 'PASS', JSON.stringify(report.bestPractices.findings));
 });
+
+test('an interrupted worker hands off its last verified state and accounts for shared resources', () => {
+  const brief = read('assets/brief.md');
+  for (const step of ['last verified step', 'pending checks', 'next action', 'release only resources you own', 'interactive prompt']) {
+    assert.ok(brief.includes(step), step);
+  }
+  const lead = read('SKILL.md');
+  for (const step of ['confirm the old worker stopped', 'ownership is unknown', 'unrelated work']) {
+    assert.ok(lead.includes(step), step);
+  }
+});
+
+test('SKILL.md has a Tier B section: no hooks, no Monitor and no session id variable outside Claude Code; the post line and a foreground wait instead', () => {
+  const text = read('SKILL.md');
+  const section = text.split('## Tier B tools')[1].split('\n## ')[0];
+  assert.match(section, /Codex, or any tool without turn-end hooks|Hooks, Monitor and `CLAUDE_CODE_SESSION_ID` are Claude Code specific/);
+  assert.match(section, /Tier B/);
+  assert.match(section, /last action of every turn is `post/);
+  assert.match(section, /in the foreground, never in the background/);
+  assert.match(section, /--session <id>/);
+  assert.match(text, /Claude Code's Monitor; other tools have none/);
+});

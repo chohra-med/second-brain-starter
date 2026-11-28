@@ -244,9 +244,9 @@ function listen(o, forever) {
   return new Promise((resolve) => {
     let first = null;
     let watcher = null;
-    let timer = null;
+    let timer = null; let deadlineTimer = null;
     const finish = (code) => {
-      clearInterval(timer);
+      clearInterval(timer); clearTimeout(deadlineTimer);
       clearTimeout(first?.timer);
       try { watcher?.close(); } catch { /* already closed */ }
       try { writeJson(lockFile, { ...lock, pid: null }); } catch { /* run folder gone */ }
@@ -272,6 +272,7 @@ function listen(o, forever) {
       const wait = first.at + settle - Date.now();
       if (wait > 0) { if (!first.timer) first.timer = setTimeout(() => { first.timer = null; scan(); }, wait); return; }
       const news = digest(run, events, me, floor);
+      clearTimeout(first.timer);
       first = null;
       if (!news) return;
       console.log(news.text);
@@ -281,9 +282,9 @@ function listen(o, forever) {
       if (mine) writeJson(seenFile(run, me), { ...mine, cursor: news.cursor });
       if (!forever) finish(0);
     };
-    try { watcher = fs.watch(path.join(runDir(run), 'events'), () => scan()); } catch { /* the slow check below still runs */ }
+    try { watcher = fs.watch(path.join(runDir(run), 'events'), () => scan()); watcher.on('error', () => { try { watcher?.close(); } catch { /* already closed */ } watcher = null; }); } catch { /* the slow check below still runs */ }
     timer = setInterval(scan, interval);
-    if (Number.isFinite(deadline)) setTimeout(scan, Math.max(0, deadline - Date.now() + 5)).unref();
+    if (Number.isFinite(deadline)) { deadlineTimer = setTimeout(scan, Math.max(0, deadline - Date.now() + 5)); deadlineTimer.unref(); }
     scan();
   });
 }
@@ -493,4 +494,4 @@ async function main(argv) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exitCode = await main(process.argv.slice(2));
+if (process.argv[1] && import.meta.url === pathToFileURL((() => { try { return fs.realpathSync(process.argv[1]); } catch { return process.argv[1]; } })()).href) process.exitCode = await main(process.argv.slice(2));

@@ -45,7 +45,7 @@ Run it on the exact commit that will be pushed.
 - With Spec Harness, the tester, verifier and reviewer gates passed on this commit.
 - The diff holds only this task's change: no stray files, no secrets, no personal paths.
 - The PR text is written, with a Summary and an Evidence part, and each claim in it matches the evidence.
-- The evidence is one Before/After image for a change people can see, or the test output for one they cannot.
+- Record the actual PR destination, the source of that choice (the existing PR, the repository's delivery rules or the person's explicit choice), and the full base and head commit IDs in the packet. Use the same pair for the diff. For a visible change, combine a real run of the pinned base and a real run of the pinned head into one Before/After image. For other changes, record test output on the head. If the destination is unresolved, keep the row in Build. If the destination or either revision changes, check the comparison again before marking it ready.
 - The branch name and the commit messages follow the repository's rules.
 - The branch review in `03-Resources/Procedures/branch-security-review.md` is complete on the exact base and head; use native `/security-review` when available. A new skill, hook or config file under `.claude/`, `.agents/` or `hooks/` also passed the `security-check` skill.
 
