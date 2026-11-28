@@ -562,7 +562,9 @@ test('git check order: an older check file run later never rolls an item back; a
 test('ledger-stale names the pages it skipped over the size cap; state.js cannot close its script element; the scan is fast on a crafted page', (t) => {
   const sb = sandbox(t);
   ok(add(sb, 'task:X-1', 'working', 'session', ['--text', '</script><b>x</b>\u2028']));
-  const odd = gitFile(sb, [{ key: 'X-2', git_state: 'MERGED' }], 'a\u2028<b.json'); // the evidence path is not cleaned, so state.js must escape it
+  // Windows allows no `<` in a file name, so there the odd path carries only U+2028; the `<` in the fact text above is checked on every platform.
+  const oddName = process.platform === 'win32' ? 'a\u2028b.json' : 'a\u2028<b.json';
+  const odd = gitFile(sb, [{ key: 'X-2', git_state: 'MERGED' }], oddName); // the evidence path is not cleaned, so state.js must escape it
   ok(cli(sb, ['ledger-git', '--ledger', sb.ledger, '--from', odd]));
   fold(sb);
   const js = readFileSync(path.join(sb.ledger, 'state.js'), 'utf8');

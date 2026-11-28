@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, writeFileSync, rmSync, openSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import fsDefault from 'node:fs';
 const skillDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'template', 'shared-skills', 'session-sync');
 const script = path.join(skillDir, 'session-sync.mjs');
@@ -39,7 +39,7 @@ test('durable addressed round trip survives separate processes and retries', t =
  bad('durable-enroll',...lead,'--worker','worker','--worker-client','claude','--worker-session','worker2');
  // Persist a pointer-derived item before its receipt; a second process repeats the upsert safely.
  const pointerBoard=path.join(home,'pointer-board.json');
- const persist=(file, rows)=>{const temp=file+'.tmp'; const fd=openSync(temp,'w',0o600); try { writeFileSync(fd,JSON.stringify(rows)); fsyncSync(fd); } finally { closeSync(fd); } renameSync(temp,file); const dir=openSync(home,'r'); try { fsyncSync(dir); } finally { closeSync(dir); }};
+ const persist=(file, rows)=>{const temp=file+'.tmp'; const fd=openSync(temp,'w',0o600); try { writeFileSync(fd,JSON.stringify(rows)); fsyncSync(fd); } finally { closeSync(fd); } renameSync(temp,file); if (process.platform === 'win32') return; /* Windows refuses to flush a directory handle (EPERM) */ const dir=openSync(home,'r'); try { fsyncSync(dir); } finally { closeSync(dir); }};
  const pointerSave=()=>{let rows={}; try { rows=JSON.parse(readFileSync(pointerBoard)); } catch(e) { if(e.code!=='ENOENT') throw e; } for(const m of JSON.parse(ok('durable-pending',...worker))) { rows[m.id]=m.text; rows['question-q1']='pending'; rows['question-q2']='pending'; } persist(pointerBoard,rows);};
  pointerSave(); pointerSave(); assert.deepEqual(JSON.parse(readFileSync(pointerBoard)),{p1:'file','question-q1':'pending','question-q2':'pending'});
  ok('durable-ack',...worker,'--id','p1','--handled','yes');
@@ -194,8 +194,8 @@ test('--question is refused unless the kind is answer', (t) => {
 });
 
 test('enroll and send still work where a directory cannot be opened for sync (Windows-style errors)', async (t) => {
-  const { durableCommands } = await import(path.join(skillDir, 'durable.mjs'));
-  const { stateApi } = await import(path.join(skillDir, 'state.mjs'));
+  const { durableCommands } = await import(pathToFileURL(path.join(skillDir, 'durable.mjs')).href);
+  const { stateApi } = await import(pathToFileURL(path.join(skillDir, 'state.mjs')).href);
   const home = mkdtempSync(path.join(tmpdir(), 'sync-stub-')); t.after(() => rmSync(home, { recursive: true, force: true }));
   mkdirSync(path.join(home, 'r', 'events'), { recursive: true });
   for (const code of ['EISDIR', 'EPERM', 'EACCES', 'EINVAL', 'ENOTSUP']) {
