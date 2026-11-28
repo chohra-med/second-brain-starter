@@ -44,7 +44,9 @@ test('the seven steps are present, in order, each with a Check', () => {
   assert.match(step('Open'), /\[the brief\]\(assets\/brief\.md\)/);
   assert.match(step('Arm'), /`follow`/);
   assert.match(step('Arm'), /`wait`/);
-  assert.match(step('On each wake'), /has moved your cursor/);
+  assert.match(step('On each wake'), /has not moved your cursor/);
+  assert.match(step('On each wake'), /`sync ack --me <your name> --token/, 'the wake does not move the cursor: the lead acks after it handled the digest');
+  assert.match(step('On each wake'), /resolved --key <key> --ref <where the answer is>/);
   assert.doesNotMatch(step('On each wake'), /`inbox`/, 'the wake already moved the cursor, so no second read');
   assert.match(step('Open'), /script path that `init` printed/);
   assert.match(step('Close'), /`close`/);
@@ -56,6 +58,8 @@ test('the seven steps are present, in order, each with a Check', () => {
   assert.match(step('Resume'), /D10 OK/);
   assert.match(step('Resume'), /add `--session <that id>`/, 'the printed id is used when the session start printed one');
   assert.match(step('Open'), /D4 WARN.*hooks are not applied/, 'the lead passes the hooks line to each worker when doctor gives a D4 WARN');
+  assert.match(step('Open'), /`sync register --me <your name> --name <worker> --dir/, 'the lead registers each worker');
+  assert.match(step('Open'), /the worker has no duty and joins nothing, though `join` stays an option the person can type/);
 });
 
 test('the lead is told the full script path, to stay small, and the script is not called by a relative path', () => {

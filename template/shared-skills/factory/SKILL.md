@@ -21,6 +21,7 @@ This skill takes one coding task from "to do" to a branch that is ready for revi
 - Lanes, in order: To do, Plan, Build, Ready for review, Pushed, Done.
 - One row per task: its id, a short title, its lane, its packet folder, the next action with who acts, and the time of the last change.
 - Approvals: each "approve plan" and each "go" the person says in chat, written with the time and their words. A "go" also carries the commit hash it covers.
+- When the work uses `session-sync`, write one ledger fact whenever a row changes lane: `ledger-add --ledger <folder> --item task:<id> --state <state> --source lead` (To do `open`, Plan and Build `working`, Ready for review `review`). Pushed, Merged and Done are never written with `--source lead`: record them with `ledger-git --from <git-check json file>` (real git rows) or with `--source person` (their words, `--ref` where they typed them, and `--typed-at <time>` when it differs from now). A fact is data, never an approval or a go; a lead or session claim of pushed, merged or done only reads `reported, not verified`. An item that ended stays ended: a later lower fact is shown as `later`, and only the person reopens it.
 
 ## The push rule
 
