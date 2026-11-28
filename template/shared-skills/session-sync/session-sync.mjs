@@ -1,7 +1,8 @@
 // session-sync: one lead session, several worker sessions, one folder of small files.
-// usage: node session-sync.mjs <init|join|post|inbox|hook|wait|follow|status|doctor|snippet|close> [options]   (see SKILL.md)
-// Node.js standard library only. No network. No child process unless doctor is given --claude-version.
-// Exit codes: 0 done, 2 usage or read error, 3 doctor found a FAIL, 4 wait or follow reached its timeout.
+// usage: node session-sync.mjs <init|join|register|post|inbox|ack|hook|wait|follow|status|doctor|snippet|close|ledger-*> [options]   (see SKILL.md)
+// Node.js standard library only. No network. No child process unless doctor is given --claude-version (doctor.mjs).
+// state.mjs (register, ack, ledger-*, the open list) and doctor.mjs load on demand; this file alone still writes every event.
+// Exit codes: 0 done, 2 usage or read error, 3 doctor found a FAIL or ledger-stale found a stale ask, 4 wait or follow reached its timeout.
 import { createHash, randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -10,7 +11,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,39}$/;
 const STATES = ['working', 'needs-person', 'needs-lead', 'blocked', 'done', 'ended', 'unknown'];
-const POST_KINDS = ['report', 'question', 'pointer', 'person-said', 'note'];
+const POST_KINDS = ['report', 'question', 'pointer', 'person-said', 'note', 'resolved'];
+const KEY = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,59}$/;
+let STATE = null; // state.mjs, when it sits beside this file and the command needs it
 const SCRIPT = fileURLToPath(import.meta.url);
 
 class Usage extends Error {}
@@ -24,6 +27,7 @@ const stamp = (d) => d.toISOString().replace(/[-:]/g, '').replace('.', '');
 const tilde = (p) => (p.startsWith(os.homedir() + path.sep) ? `~${p.slice(os.homedir().length).split(path.sep).join('/')}` : p);
 const syncHome = () => path.resolve(process.env.SESSION_SYNC_HOME || path.join(os.homedir(), '.session-sync'));
 const runDir = (run) => path.join(syncHome(), run);
+const tokenOf = (run, me, id) => createHash('sha256').update(`${run}\n${me}\n${id}`).digest('hex').slice(0, 10); // the ack token names the last event a digest showed
 const fileHash = (file) => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; } };
 const age = (ms) => (ms === null ? '-' : ms < 60_000 ? `${Math.floor(ms / 1000)}s` : ms < 3_600_000 ? `${Math.floor(ms / 60_000)}m` : ms < 172_800_000 ? `${Math.floor(ms / 3_600_000)}h` : `${Math.floor(ms / 86_400_000)}d`);
@@ -34,7 +38,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (!arg.startsWith('--')) { out._.push(arg); continue; }
     const key = arg.slice(2);
-    if (['peek', 'json', 'claude-version', 'pin'].includes(key)) { out[key] = true; continue; }
+    if (['peek', 'json', 'claude-version', 'pin', 'replace'].includes(key)) { out[key] = true; continue; }
     if (argv[i + 1] === undefined) throw usage(`--${key} needs a value`);
     i += 1;
     if (['member', 'ref'].includes(key)) (out[key] ??= []).push(argv[i]); else out[key] = argv[i];
@@ -56,7 +60,9 @@ const metaOf = (run) => { const meta = readJson(path.join(runDir(run), 'run.json
 const seenFile = (run, name) => path.join(runDir(run), 'seen', `${name}.json`);
 const seenAll = (run) => { try { return fs.readdirSync(path.join(runDir(run), 'seen')).filter((f) => f.endsWith('.json')).sort().map((f) => readJson(path.join(runDir(run), 'seen', f))).filter((s) => s && NAME.test(s.name ?? '')); } catch { return []; } };
 const isClosed = (run) => fs.existsSync(path.join(runDir(run), 'closed.json'));
-const knownNames = (run, meta) => new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name), ...seenAll(run).map((s) => s.name), 'all']);
+// Members the lead registered: members/<name>.json, written by the lead only. Read here so the hook needs no other file.
+const registered = (run) => { const dir = path.join(runDir(run), 'members'); try { return fs.readdirSync(dir).filter((f) => f.endsWith('.json')).sort().flatMap((f) => { const m = readJson(path.join(dir, f)); return m && m.v === 2 && m.reg === 'lead' && m.name === f.slice(0, -5) && NAME.test(m.name) ? [m] : []; }); } catch { return []; } };
+const knownNames = (run, meta) => new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name), ...seenAll(run).map((s) => s.name), ...registered(run).map((m) => m.name), 'all']);
 
 function loadEvents(run) {
   const dir = path.join(runDir(run), 'events');
@@ -76,28 +82,38 @@ function writeEvent(run, f) {
   for (let i = 0; i < 5; i += 1) {
     const now = new Date();
     const id = `${stamp(now)}-${f.from}-${randomBytes(2).toString('hex')}`;
-    const event = { v: 1, id, at: now.toISOString(), from: f.from, to: f.to, label: cap(f.label, 80), kind: f.kind, state: f.state ?? 'unknown', text: cap(f.text), refs: f.refs ?? [], by: f.by };
+    const key = f.key === true ? `${f.from}-${id.slice(9, 15)}${id.slice(-4)}` : f.key; // a question or a needs-person event is an open item under its key
+    const event = { v: 1, id, at: now.toISOString(), from: f.from, to: f.to, label: cap(f.label, 80), kind: f.kind, state: f.state ?? 'unknown', text: cap(f.text), refs: f.refs ?? [], by: f.by, ...(key ? { key } : {}) };
     try { fs.writeFileSync(path.join(runDir(run), 'events', `${id}.json`), `${JSON.stringify(event, null, 2)}\n`, { flag: 'wx' }); return event; } catch (error) { if (error.code !== 'EEXIST') throw error; }
   }
   throw new Error('could not create an event file');
 }
 
 // What counts as news for a reader, and how it is shown.
-export const wakeWorthy = (e) => ['turn-failed', 'session-end', 'question', 'pointer', 'person-said'].includes(e.kind) || (['turn-end', 'report'].includes(e.kind) && e.state !== 'working');
-const unread = (events, me, floor) => events.filter((e) => e.id > (floor ?? '') && e.from !== me && e.kind !== 'session-start' && (e.to === me || e.to === 'all'));
+export const wakeWorthy = (e) => ['turn-failed', 'session-end', 'question', 'pointer', 'answer', 'person-said'].includes(e.kind) || (['turn-end', 'report'].includes(e.kind) && e.state !== 'working');
+const unread = (events, me, floor, run) => events.filter((e) => e.id > (floor ?? '') && e.from !== me && e.kind !== 'session-start' && (e.to === me || e.to === 'all') && !(e.refs ?? []).some((r) => /^durable:[a-z0-9][a-z0-9._-]{0,39}$/.test(r) && fs.existsSync(path.join(runDir(run), 'durable', 'receipts', `${r.slice(8)}.json`)))); // a durable wake whose receipt exists is handled
 function collapse(list) {
   const newest = new Map();
   for (const e of list) if (e.kind === 'turn-end') newest.set(e.from, e.id);
   return list.filter((e) => e.kind !== 'turn-end' || newest.get(e.from) === e.id);
 }
 const line = (e) => `${hhmm(e.at)} ${e.from.padEnd(10)} ${(['turn-end', 'report'].includes(e.kind) ? e.state : e.kind).padEnd(12)} ${e.label ? `"${e.label}": ` : ''}${e.text}`.trimEnd();
-function digest(run, events, me, floor) {
-  const items = collapse(unread(events, me, floor));
+// The lead sees every open item; anyone else sees only the items they raised. The hook never loads state.mjs, so it shows no open list.
+const openFor = (run, events, me) => { const all = STATE?.openItems(events) ?? []; return me === readJson(path.join(runDir(run), 'run.json'))?.lead ? all : all.filter((i) => i.by === me); };
+const openLines = (open) => [`OPEN (${open.length})`, ...open.map((i) => `  ${i.item.slice(9)} ${age(Date.now() - Date.parse(i.at))} ${i.by}: ${i.text ?? ''}`.trimEnd())];
+// A digest never moves a cursor: it ends with `ack: <token>`, and only `ack` moves it. `delivered` is what this wait already printed.
+function digest(run, events, me, cursor, delivered = null) {
+  const floor = [cursor, delivered].filter(Boolean).sort().at(-1) ?? null;
+  const items = collapse(unread(events, me, floor, run));
   if (items.length === 0) return null;
   const shown = items.slice(0, 12);
   const before = events.find((e) => e.id === floor);
-  const lines = [`session-sync run ${run}: ${items.length} new since ${before ? hhmm(before.at) : 'start'}`, ...shown.map(line)];
+  const open = openFor(run, events, me);
+  const lines = [...(open.length ? openLines(open) : []), `session-sync run ${run}: ${items.length} new since ${before ? hhmm(before.at) : 'start'}`, ...shown.map(line)];
   if (items.length > 12) lines.push(`+${items.length - 12} more`);
+  const pending = delivered ? collapse(unread(events, me, cursor, run)).filter((e) => e.id <= delivered).length : 0;
+  if (pending > 0) lines.push(`not yet acked: ${pending}`);
+  lines.push(`ack: ${tokenOf(run, me, shown.at(-1).id)}`);
   return { text: lines.join('\n'), cursor: shown.at(-1).id };
 }
 
@@ -124,7 +140,7 @@ function cmdInit(o) {
   writeJson(seenFile(run, lead), { v: 1, name: lead, session_id: o.session === 'none' ? null : (o.session ?? process.env.CLAUDE_CODE_SESSION_ID ?? null), label: 'lead', kind: 'lead', joined: started, cursor: null });
   const file = path.join(syncHome(), 'active.json');
   writeJson(file, { v: 1, runs: [...openRuns().filter((r) => r.run !== run), { run, started }] });
-  console.log(`run ${run} opened in ${tilde(runDir(run))}\nscript: ${SCRIPT}\nworkers join with: node "${SCRIPT}" join --me <name> --run ${run}`);
+  console.log(`run ${run} opened in ${tilde(runDir(run))}\nscript: ${SCRIPT}\nthe lead registers each worker: node "${SCRIPT}" register --me ${lead} --name <name> --dir <folder> --run ${run} (a worker may join instead: node "${SCRIPT}" join --me <name> --run ${run})`);
 }
 
 function cmdJoin(o) {
@@ -151,10 +167,16 @@ function cmdPost(o) {
   if (!STATES.includes(state)) throw usage(`--state is one of ${STATES.join(', ')}`);
   const to = o.to ?? meta.lead;
   if (!knownNames(run, meta).has(to)) throw usage(`${to} is not a member of run ${run}`);
-  if (!o.text) throw usage('--text is needed');
-  if (o.text.length > 200) console.error('text cut to 200 characters; put long text in a file and give it with --ref');
-  const event = writeEvent(run, { from: me, to, label: o.label ?? mine.label, kind: o.kind, state, text: o.text, refs: o.ref ?? [], by: 'session' });
-  console.log(`posted ${event.id}`);
+  const keyed = o.kind === 'question' || o.kind === 'resolved' || state === 'needs-person'; // S5: these are open items, open until `resolved`
+  if (o.key !== undefined && !(keyed && KEY.test(o.key))) throw usage('--key (1 to 60 letters, digits, dots, hyphens, underscores or colons) is for question, needs-person and resolved');
+  const key = o.key !== undefined && o.kind !== 'resolved' && !o.key.includes(':') ? `${me}:${o.key}` : o.key; // A-4: a worker's own key is namespaced, so two workers' q1 stay two questions; resolved names a key as printed
+  if (key !== undefined && !KEY.test(key)) throw usage(`--key ${o.key} is too long once your name and a colon are put in front (60 characters at most)`);
+  if (o.kind === 'resolved' && (me !== meta.lead || !key || !(o.ref ?? []).length)) throw usage('only the lead posts resolved, with --key and --ref <where the answer is>; resolved records where the answer is, never the answer, an approval or a go');
+  if (o.kind === 'resolved' && STATE && !STATE.openItems(loadEvents(run).ok).some((i) => i.item === `question:${key}`)) throw usage(`no open question ${key}`);
+  if (!o.text && o.kind !== 'resolved') throw usage('--text is needed');
+  if ((o.text ?? '').length > 200) console.error('text cut to 200 characters; put long text in a file and give it with --ref');
+  const event = writeEvent(run, { from: me, to, label: o.label ?? mine.label, kind: o.kind, state, text: o.text ?? 'resolved', refs: o.ref ?? [], by: 'session', key: keyed ? (key ?? true) : undefined });
+  console.log(`posted ${event.id}${event.key ? ` key=${event.key}` : ''}`);
 }
 
 function cmdInbox(o) {
@@ -162,10 +184,10 @@ function cmdInbox(o) {
   const me = needMe(o);
   const mine = readJson(seenFile(run, me));
   if (!mine) throw usage(`${me} has not joined run ${run}; run join first`);
-  const result = digest(run, loadEvents(run).ok, me, mine.cursor);
-  if (!result) { console.log(`session-sync run ${run}: no new events`); return; }
-  console.log(result.text);
-  if (!o.peek) writeJson(seenFile(run, me), { ...mine, cursor: result.cursor });
+  const events = loadEvents(run).ok;
+  const result = digest(run, events, me, mine.cursor);
+  const open = result ? [] : openFor(run, events, me);
+  console.log(result ? result.text : `${open.length ? `${openLines(open).join('\n')}\n` : ''}session-sync run ${run}: no new events`); // printing moves nothing; ack does (--peek is accepted and means the same)
 }
 
 function cmdClose(o) {
@@ -174,6 +196,7 @@ function cmdClose(o) {
   fs.writeFileSync(path.join(runDir(run), 'closed.json'), `${JSON.stringify({ v: 1, at: new Date().toISOString(), by: o.me })}\n`);
   writeJson(path.join(syncHome(), 'active.json'), { v: 1, runs: openRuns().filter((r) => r.run !== run) });
   console.log(`run ${run} closed`);
+  if (STATE) console.log(openLines(STATE.openItems(loadEvents(run).ok)).join('\n')); // open questions do not die with the run
 }
 
 // ---- hook: runs for every session, so it is silent, fast and never fails ---------------------------------------------
@@ -182,6 +205,10 @@ function memberFor(run, meta, input) {
   const found = seenAll(run).find((s) => s.session_id === input.session_id);
   if (found) return found;
   const cwd = typeof input.cwd === 'string' && input.cwd ? path.resolve(input.cwd) : null;
+  const workers = registered(run).filter((m) => m.role === 'worker');
+  const inDir = cwd ? workers.filter((m) => typeof m.dir === 'string' && (cwd === m.dir || cwd.startsWith(m.dir + path.sep))) : [];
+  const reg = workers.find((m) => m.session === input.session_id) ?? (inDir.length === 1 ? inDir[0] : null); // by id, else by folder when exactly one member has it
+  if (reg) { const seen = readJson(seenFile(run, reg.name)); return seen?.name === reg.name ? seen : { name: reg.name, label: '', cursor: null, reg: true }; } // reg: registered, never joined
   if (!cwd || !(meta.auto ?? []).some((root) => typeof root === 'string' && (cwd === root || cwd.startsWith(root + path.sep)))) return null;
   const name = `${path.basename(cwd).replace(/[^A-Za-z0-9._-]/g, '-').replace(/^[^A-Za-z0-9]+/, '').slice(0, 30) || 'session'}-${input.session_id.replace(/[^A-Za-z0-9]/g, '').slice(0, 4)}`;
   if (!NAME.test(name) || fs.existsSync(seenFile(run, name))) return null;
@@ -190,7 +217,7 @@ function memberFor(run, meta, input) {
   return record;
 }
 
-function cmdHook() {
+async function cmdHook() {
   let input;
   try { input = JSON.parse(fs.readFileSync(0, 'utf8')); } catch { return; }
   if (!input || typeof input.session_id !== 'string' || typeof input.hook_event_name !== 'string') return;
@@ -211,16 +238,13 @@ function cmdHook() {
     } else if (input.hook_event_name === 'StopFailure') text = `${cap(input.error, 40) || 'unknown'} (session still open)`;
     else if (input.hook_event_name === 'SessionEnd') text = cap(input.reason, 60) || 'other';
     else text = cap(input.source, 20);
-    writeEvent(run, { from: me.name, to: meta.lead, label: me.label, kind: kinds[0], state, text, by: 'hook' });
+    writeEvent(run, { from: me.name, to: meta.lead, label: me.label, kind: kinds[0], state, text, by: 'hook', key: state === 'needs-person' ? `${me.name}:hook` : undefined }); // a later one from the same member replaces it
     if (input.hook_event_name === 'SessionStart' && ['startup', 'resume', 'clear'].includes(input.source)) {
-      const news = digest(run, loadEvents(run).ok, me.name, me.cursor);
+      const news = me.reg ? null : digest(run, loadEvents(run).ok, me.name, me.cursor); // a registered worker that never joined cannot ack: it gets no digest. The hook imports no sibling file.
       if (news) process.stdout.write(`${news.text}\n`);
       if (me.name === meta.lead) { const lock = readJson(path.join(runDir(run), 'wait', `${me.name}.json`)); if (!(lock?.pid && alive(lock.pid))) process.stdout.write(`session-sync: you lead run ${run} and no wait is armed. Arm: node "${SCRIPT}" follow --me ${me.name} --settle 60 --run ${run}\n`); }
     }
     return;
-  }
-  if (input.hook_event_name === 'SessionStart' && ['startup', 'resume', 'clear'].includes(input.source)) {
-    process.stdout.write(`session-sync: run ${runs[0].run} is open${runs.length > 1 ? ` (and ${runs.length - 1} more)` : ''}. This session's id: ${input.session_id}. Only if the lead asked you to join: node "${SCRIPT}" join --me <name> --run ${runs[0].run}\n`);
   }
 }
 
@@ -238,7 +262,7 @@ function listen(o, forever) {
   if (![settle, interval, deadline].every((n) => n >= 0)) throw usage('--settle, --interval and --timeout are numbers');
   const staleMs = Number(o.stale ?? 30) * 60_000;
   const leads = metaOf(run).lead === me;
-  const lock = { v: 1, pid: process.pid, started: new Date().toISOString(), delivered: old?.delivered ?? null, stale: old?.stale ?? [] };
+  const lock = { v: 1, pid: process.pid, started: new Date().toISOString(), delivered: null, stale: old?.stale ?? [] };
   fs.mkdirSync(path.dirname(lockFile), { recursive: true });
   writeJson(lockFile, lock);
   return new Promise((resolve) => {
@@ -257,7 +281,8 @@ function listen(o, forever) {
       if (isClosed(run)) { console.log(`session-sync run ${run}: closed`); finish(0); return; }
       if (Date.now() >= deadline) { finish(4); return; }
       const events = loadEvents(run).ok;
-      const floor = [readJson(seenFile(run, me))?.cursor, lock.delivered].filter(Boolean).sort().at(-1) ?? null;
+      const cursor = readJson(seenFile(run, me))?.cursor ?? null;
+      const floor = [cursor, lock.delivered].filter(Boolean).sort().at(-1) ?? null;
       if (leads) for (const s of seenAll(run)) {
         const last = events.filter((e) => e.from === s.name).at(-1);
         const quiet = last && last.state === 'working' && Date.now() - Date.parse(last.at) > staleMs;
@@ -267,19 +292,17 @@ function listen(o, forever) {
         lock.stale.push(s.name); writeJson(lockFile, lock);
         if (!forever) { finish(0); return; }
       }
-      if (!unread(events, me, floor).some(wakeWorthy)) return;
+      if (!unread(events, me, floor, run).some(wakeWorthy)) return;
       first ??= { at: Date.now(), timer: null };
       const wait = first.at + settle - Date.now();
       if (wait > 0) { if (!first.timer) first.timer = setTimeout(() => { first.timer = null; scan(); }, wait); return; }
-      const news = digest(run, events, me, floor);
+      const news = digest(run, events, me, cursor, lock.delivered);
       clearTimeout(first.timer);
       first = null;
       if (!news) return;
       console.log(news.text);
       lock.delivered = news.cursor;
-      writeJson(lockFile, lock);
-      const mine = readJson(seenFile(run, me));
-      if (mine) writeJson(seenFile(run, me), { ...mine, cursor: news.cursor });
+      writeJson(lockFile, lock); // the cursor stays where it is until `ack`; delivered keeps follow from waking twice for the same events
       if (!forever) finish(0);
     };
     try { watcher = fs.watch(path.join(runDir(run), 'events'), () => scan()); watcher.on('error', () => { try { watcher?.close(); } catch { /* already closed */ } watcher = null; }); } catch { /* the slow check below still runs */ }
@@ -296,169 +319,29 @@ function cmdStatus(o) {
   const meta = metaOf(run);
   const events = loadEvents(run).ok;
   const stale = Number(o.stale ?? 30) * 60_000;
-  const names = [...new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name), ...seenAll(run).map((s) => s.name)])];
+  const regs = registered(run);
+  const names = [...new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name), ...seenAll(run).map((s) => s.name), ...regs.map((m) => m.name)])];
   const rows = names.map((name) => {
     const own = events.filter((e) => e.from === name);
     const newest = own.at(-1);
     const news = own.filter((e) => ['turn-end', 'report', 'question'].includes(e.kind)).at(-1);
     const seen = readJson(seenFile(run, name));
+    const reg = regs.find((m) => m.name === name);
     const beat = newest ? Date.now() - Date.parse(newest.at) : null;
     const state = newest?.state ?? 'unknown';
-    return { name, label: seen?.label ?? '', state, last: news ? Date.now() - Date.parse(news.at) : null, beat, unread: unread(events, name, seen?.cursor).length, by: newest?.by ?? 'none', stale: beat !== null && !['done', 'ended'].includes(state) && beat > stale };
+    return { name, label: seen?.label ?? '', state, last: news ? Date.now() - Date.parse(news.at) : null, beat, unread: unread(events, name, seen?.cursor, run).length, by: newest?.by ?? 'none', stale: beat !== null && !['done', 'ended'].includes(state) && beat > stale, reg: reg ? 'lead' : null, dir: reg?.dir ?? null, pane: reg?.pane ?? null, item: reg?.item ?? null };
   });
-  if (o.json) { console.log(JSON.stringify({ run, lead: meta.lead, open: !isClosed(run), members: rows }, null, 2)); return; }
+  const who = o.me ?? process.env.SESSION_SYNC_ME; // no name given: the run overview, as the lead sees it
+  const open = who && who !== meta.lead ? openFor(run, events, who) : (STATE?.openItems(events) ?? []); // the same fields as a ledger item
+  if (o.json) { console.log(JSON.stringify({ run, lead: meta.lead, open: !isClosed(run), open_items: open, members: rows }, null, 2)); return; }
+  if (STATE) console.log(openLines(open).join('\n'));
   console.log(`run ${run} lead=${meta.lead} members=${rows.length} ${isClosed(run) ? 'closed' : 'open'}`);
-  for (const r of rows) console.log(`${r.name.padEnd(10)} state=${r.state} last=${age(r.last)} beat=${age(r.beat)} unread=${r.unread} by=${r.by}${r.stale ? ' STALE' : ''}`);
+  for (const r of rows) console.log(`${r.name.padEnd(10)} state=${r.state} last=${age(r.last)} beat=${age(r.beat)} unread=${r.unread} by=${r.by}${r.reg ? ` reg=lead${r.dir ? ` dir=${tilde(r.dir)}` : ''}${r.pane ? ` pane=${r.pane}` : ''}` : ''}${r.stale ? ' STALE' : ''}`);
 }
 
-// ---- doctor: reads only; prints names, counts and ages, never event text -------------------------------------------
+// ---- doctor: lives in doctor.mjs (loaded on demand); checkNode stays here for the tests ---------------------------------
 
 export const checkNode = (version) => (Number(String(version).replace(/^v/, '').split('.')[0]) >= 22 ? { status: 'OK', text: `Node.js ${version}` } : { status: 'FAIL', text: `Node.js ${version} is older than 22` });
-const rank = { OK: 0, SKIP: 0, WARN: 1, FAIL: 2 };
-
-async function checkVersion() {
-  const { execFileSync } = await import('node:child_process');
-  try {
-    const found = execFileSync('claude', ['--version'], { encoding: 'utf8', timeout: 5000 }).match(/(\d+)\.(\d+)\.(\d+)/);
-    if (!found) return { status: 'WARN', text: 'the claude version could not be read' };
-    const [a, b, c] = found.slice(1).map(Number);
-    const ok = a > 2 || (a === 2 && (b > 1 || (b === 1 && c >= 224)));
-    return { status: ok ? 'OK' : 'WARN', text: `claude ${found[0]}${ok ? '' : ': cross-session messages need 2.1.224 or later'}` };
-  } catch { return { status: 'WARN', text: 'the claude command was not found or did not answer' }; }
-}
-
-function settingsFiles(workspace) {
-  return [path.join(os.homedir(), '.claude', 'settings.json'), path.join(workspace, '.claude', 'settings.json'), path.join(workspace, '.claude', 'settings.local.json')].map((file) => ({ file, data: readJson(file) })).filter((s) => s.data && typeof s.data === 'object');
-}
-const hookCommands = (data) => Object.values(data.hooks ?? {}).flat().flatMap((group) => group?.hooks ?? []).map((h) => h?.command).filter((c) => typeof c === 'string');
-const listFiles = (dir, depth = 3) => { try { return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (depth > 0 && e.name !== 'skills' ? listFiles(path.join(dir, e.name), depth - 1) : []) : [path.join(dir, e.name)])); } catch { return []; } };
-
-async function cmdDoctor(o) {
-  if (o.dir) process.env.SESSION_SYNC_HOME = o.dir;
-  const workspace = path.resolve(o.workspace ?? process.cwd());
-  const settings = settingsFiles(workspace);
-  const checks = [];
-  const add = (id, status, text, row = '') => checks.push({ id, status, text, row });
-  const home = syncHome();
-  const runs = o.run ? [{ run: needName(o.run, 'the run id') }] : openRuns();
-
-  if (o['claude-version']) { const v = await checkVersion(); add('D1', v.status, `version: ${v.text}`, 'It works on one computer only'); } else add('D1', 'SKIP', 'version: not checked (add --claude-version)');
-
-  const notes = [];
-  for (const { data } of settings) {
-    if (['refuse', 'hold'].includes(data.crossSessionInbound)) notes.push(`crossSessionInbound=${data.crossSessionInbound}`);
-    if ((data.permissions?.deny ?? []).some((rule) => /^(SendMessage|ListAgents)\b/.test(rule))) notes.push('a deny rule on SendMessage or ListAgents');
-    if (data.permissions?.defaultMode === 'bypassPermissions') notes.push('a bypass default mode');
-    if ('dialogExpiry' in data) notes.push('dialogExpiry is set');
-  }
-  add('D2', notes.length ? 'WARN' : 'OK', notes.length ? `settings: ${[...new Set(notes)].join('; ')}` : `settings: ${settings.length} file(s) read, nothing blocks live messages`, 'A message was sent but nothing happened');
-
-  const node = checkNode(process.version);
-  add('D3', node.status, `environment: ${node.text}`, 'It works on one computer only');
-
-  const missing = [];
-  let commands = 0;
-  let runsHook = 0;
-  for (const { data } of settings) {
-    for (const command of hookCommands(data)) {
-      commands += 1;
-      if (/session-sync\.mjs["']?\s+hook\b/.test(command)) runsHook += 1;
-      for (const m of command.matchAll(/"([^"]+\.(?:mjs|cjs|js|sh|py))"|(\S+\.(?:mjs|cjs|js|sh|py))/g)) {
-        const named = (m[1] ?? m[2]).replace(/\$\{?CLAUDE_PROJECT_DIR\}?/g, workspace);
-        const raw = named.startsWith('~/') ? path.join(os.homedir(), named.slice(2)) : named;
-        if (!fs.existsSync(path.resolve(workspace, raw))) missing.push(path.basename(raw));
-      }
-    }
-  }
-  // No hook command at all, or hook commands of which none runs `session-sync.mjs hook`, is the state of a computer where the snippet was never applied.
-  const noSyncHook = commands > 0 && missing.length === 0 && runsHook === 0;
-  add('D4', commands === 0 ? 'WARN' : missing.length ? 'FAIL' : noSyncHook ? 'WARN' : 'OK', commands === 0 ? 'hooks: no hook command in the settings files. Apply the hook entries from `snippet`, or use tier B: `post` at the end of every turn' : missing.length ? `hooks: script path missing on this computer for ${[...new Set(missing)].join(', ')}` : noSyncHook ? `hooks: ${commands} hook command(s) exist, but none runs session-sync.mjs hook. Apply the hook entries from \`snippet\`, or use tier B: \`post\` at the end of every turn` : `hooks: ${commands} hook command(s), every script path exists, ${runsHook} run session-sync.mjs hook`, missing.length ? 'It works on one computer only' : 'Hooks write nothing');
-
-  const lacking = [];
-  for (const file of ['.claude/commands', '.claude/agents', '.claude/start-manager', '.agents'].flatMap((dir) => listFiles(path.join(workspace, dir)))) {
-    if (!file.endsWith('.md')) continue;
-    const text = fs.readFileSync(file, 'utf8');
-    if (/report(?:s|ed)? back|report to (?:the )?(?:lead|master|manager)/i.test(text) && !/session-sync|lead-session/.test(text)) lacking.push(path.basename(file));
-  }
-  add('D5', lacking.length ? 'WARN' : 'OK', lacking.length ? `instructions: ${lacking.join(', ')} tell a session to report but do not name session-sync` : 'instructions: every command, brief and role file that asks for a report names session-sync', 'Two sessions report different rules');
-
-  const boards = new Map();
-  for (const file of listFiles(path.join(workspace, '01-Projects'), 3)) {
-    if (path.basename(path.dirname(file)) === 'factory' && /^board(?: \d+| \(.*\))?\.(?:md|json)$/.test(path.basename(file))) boards.set(file.split(path.sep).at(-3), (boards.get(file.split(path.sep).at(-3)) ?? 0) + 1);
-  }
-  const doubled = [...boards].filter(([, n]) => n > 1).map(([project]) => project);
-  add('D6', boards.size === 0 ? 'SKIP' : doubled.length ? 'FAIL' : 'OK', boards.size === 0 ? 'boards: none found' : doubled.length ? `boards: more than one board file in ${doubled.join(', ')} (a twin or conflicted copy)` : `boards: ${boards.size} project(s), one board file each`, 'The board shows old state');
-
-  const problems = [];
-  const warnings = [];
-  const summary = [];
-  const now = Date.now();
-  for (const { run } of runs) {
-    const meta = readJson(path.join(runDir(run), 'run.json'));
-    if (!meta || !NAME.test(meta.lead ?? '')) { problems.push(`${run}: run.json missing or invalid`); continue; }
-    const { ok, bad } = loadEvents(run);
-    const names = knownNames(run, meta);
-    if (bad.length) problems.push(`${run}: ${bad.length} event file(s) do not parse or do not match their name`);
-    const unknown = ok.filter((e) => !names.has(e.to));
-    if (unknown.length) problems.push(`${run}: ${unknown.length} event(s) addressed to a name that is not in the run`);
-    const future = ok.filter((e) => Date.parse(e.at) > now + 120_000);
-    if (future.length) problems.push(`${run}: ${future.length} event(s) dated more than 2 minutes ahead`);
-    const unjoined = (meta.members ?? []).filter((m) => !fs.existsSync(seenFile(run, m.name))).map((m) => m.name);
-    if (unjoined.length) warnings.push(`${run}: ${unjoined.join(', ')} listed but never joined`);
-    summary.push(`${run}: ${ok.length} events`);
-  }
-  add('D7', runs.length === 0 ? 'SKIP' : problems.length ? 'FAIL' : warnings.length ? 'WARN' : 'OK', runs.length === 0 ? 'sync folder: no run is open' : `sync folder: ${[...problems, ...warnings, ...(problems.length + warnings.length ? [] : summary)].join('; ')}`, 'The lead never hears from a worker');
-
-  let writable = true;
-  let probe = home;
-  while (!fs.existsSync(probe) && path.dirname(probe) !== probe) probe = path.dirname(probe);
-  try { fs.accessSync(probe, fs.constants.R_OK | fs.constants.W_OK); } catch { writable = false; }
-  const cloud = /Dropbox|iCloud|Mobile Documents|OneDrive|Google ?Drive|CloudStorage/i.test(home);
-  const shown = (p) => (p === os.homedir() ? '~' : tilde(p));
-  add('D8', !writable ? 'FAIL' : cloud ? 'WARN' : 'OK', `access: ${probe === home ? shown(home) : `${shown(home)} does not exist yet; ${shown(probe)}`} is ${writable ? 'readable and writable' : 'not writable by this user'}${cloud ? ' but looks cloud-synced, which makes conflict copies' : ''}`, 'The board shows old state');
-
-  const quiet = [];
-  for (const { run } of runs) {
-    const meta = readJson(path.join(runDir(run), 'run.json'));
-    if (!meta) continue;
-    const hooked = new Set(loadEvents(run).ok.filter((e) => e.by === 'hook').map((e) => e.from));
-    for (const name of new Set([meta.lead, ...(meta.members ?? []).map((m) => m.name)])) if (!hooked.has(name)) quiet.push(`${run}/${name}`);
-  }
-  const installed = settings.some(({ data }) => hookCommands(data).some((c) => c.includes('session-sync')));
-  add('D9', runs.length === 0 ? 'SKIP' : quiet.length || !installed ? 'WARN' : 'OK', runs.length === 0 ? 'hooks per member: no run is open' : `hooks per member: ${installed ? 'a session-sync hook is in the settings files' : 'no session-sync hook in the settings files'}${quiet.length ? `; no hook event yet from ${quiet.join(', ')}` : ''}`, 'Hooks write nothing');
-
-  const unarmed = runs.filter(({ run }) => { const lock = readJson(path.join(runDir(run), 'wait', `${readJson(path.join(runDir(run), 'run.json'))?.lead}.json`)); return !(lock?.pid && alive(lock.pid)); }).map((r) => r.run);
-  add('D10', runs.length === 0 ? 'SKIP' : unarmed.length ? 'WARN' : 'OK', runs.length === 0 ? 'wake: no run is open' : unarmed.length ? `wake: no wait or follow is armed for the lead of ${unarmed.join(', ')}` : 'wake: a wait or follow is armed for every lead', 'The lead is never woken');
-
-  const listed = new Set(openRuns().map((r) => r.run));
-  const folders = (() => { try { return fs.readdirSync(home, { withFileTypes: true }).filter((e) => e.isDirectory() && fs.existsSync(path.join(home, e.name, 'run.json'))).map((e) => e.name); } catch { return null; } })();
-  const orphan = [...listed].filter((r) => !folders?.includes(r));
-  const idle = [...listed].filter((r) => folders?.includes(r)).filter((r) => { const newest = loadEvents(r).ok.at(-1)?.at ?? readJson(path.join(runDir(r), 'run.json'))?.started; return newest && now - Date.parse(newest) > 86_400_000; });
-  const forgotten = (folders ?? []).filter((r) => !listed.has(r) && !isClosed(r));
-  add('D11', folders === null ? 'SKIP' : orphan.length ? 'FAIL' : forgotten.length || idle.length ? 'WARN' : 'OK', folders === null ? 'active list: no sync folder yet' : orphan.length ? `active list: ${orphan.join(', ')} listed but its folder is missing` : forgotten.length ? `active list: ${forgotten.join(', ')} not closed and not listed` : idle.length ? `active list: ${idle.join(', ')} open with no event for over 24 hours; close it, and run status for stale members` : `active list: ${listed.size} open run(s) match their folders`, 'The board shows old state');
-
-  const hookScripts = new Set();
-  for (const { data } of settings) for (const command of hookCommands(data)) {
-    const m = command.match(/"([^"]*session-sync\.mjs)"\s+hook\b|(\S*session-sync\.mjs)\s+hook\b/);
-    if (m) { const named = (m[1] ?? m[2]).replace(/\$\{?CLAUDE_PROJECT_DIR\}?/g, workspace); hookScripts.add(path.resolve(workspace, named.startsWith('~/') ? path.join(os.homedir(), named.slice(2)) : named)); }
-  }
-  const trust = [];
-  for (const script of hookScripts) {
-    const inside = path.relative(workspace, script);
-    const skillCopy = ['.claude', '.agents'].map((c) => path.join(workspace, c, 'skills', 'session-sync', 'session-sync.mjs')).find((p) => fs.existsSync(p));
-    const recorded = (() => { try { return fs.readFileSync(path.join(path.dirname(script), 'session-sync.sha256'), 'utf8').trim(); } catch { return null; } })();
-    if (!fs.existsSync(script)) continue;
-    if (!inside.startsWith('..') && !path.isAbsolute(inside)) trust.push(`${tilde(script)} is inside the workspace, where agents can edit it; run \`snippet --pin\` and apply the new hooks`);
-    else if (recorded && recorded !== fileHash(script)) trust.push(`${tilde(script)} changed since it was pinned; read it, then run \`snippet --pin\` again`);
-    else if (skillCopy && skillCopy !== script && fileHash(skillCopy) !== fileHash(script)) trust.push(`${tilde(script)} differs from the skill copy in the workspace; read the change, then run \`snippet --pin\` again`);
-  }
-  add('D12', hookScripts.size === 0 ? 'SKIP' : trust.length ? 'WARN' : 'OK', hookScripts.size === 0 ? 'hook script: no session-sync hook in the settings files' : trust.length ? `hook script: ${trust.join('; ')}` : `hook script: ${hookScripts.size} script(s) outside the workspace, matching the skill copy`);
-
-  const fail = checks.some((c) => c.status === 'FAIL');
-  if (o.json) console.log(JSON.stringify({ verdict: fail ? 'FAIL' : checks.some((c) => rank[c.status] === 1) ? 'WARN' : 'OK', checks }, null, 2));
-  else for (const c of checks) console.log(`${c.status} ${c.id} ${c.text}${c.row && c.status !== 'OK' && c.status !== 'SKIP' ? `  [HOW-IT-WORKS: "${c.row}"]` : ''}`);
-  return fail ? 3 : 0;
-}
 
 // `--pin` copies this script to a folder agents do not write, records its hash and points every hook at the copy, so a
 // changed script inside the workspace does not run in every later session. Writes only under the sync home.
@@ -478,16 +361,25 @@ function cmdSnippet(o) {
   console.log(JSON.stringify({ hooks: { Stop: entry({ async: true }), StopFailure: entry({ async: true }), SessionEnd: entry({ timeout: 5 }), SessionStart: start } }, null, 2));
 }
 
+// A copy pinned by `snippet --pin` has a hash file beside it and only that one file is hashed: it loads no sibling module, so a file planted next to it is never run.
+const PINNED = fs.existsSync(path.join(path.dirname(SCRIPT), 'session-sync.sha256'));
+const MODULES = { 'durable.mjs': () => import('./durable.mjs'), 'state.mjs': () => import('./state.mjs'), 'doctor.mjs': () => import('./doctor.mjs') };
+const need = (file, what) => (PINNED ? Promise.reject(Object.assign(new Error(), { code: 'ERR_MODULE_NOT_FOUND' })) : MODULES[file]()).catch((e) => { throw e.code === 'ERR_MODULE_NOT_FOUND' ? usage(`${what} need ${file} next to session-sync.mjs; a pinned single-file copy cannot run them`) : e; });
+
 async function main(argv) {
   const [command, ...rest] = argv;
-  if (command === 'hook') { try { cmdHook(); } catch { /* a hook never fails */ } return 0; }
+  if (command === 'hook') { try { await cmdHook(); } catch { /* a hook never fails */ } return 0; }
   try {
     const o = parseArgs(rest);
     const sync = { init: cmdInit, join: cmdJoin, post: cmdPost, inbox: cmdInbox, close: cmdClose, status: cmdStatus, snippet: cmdSnippet };
-    if (sync[command]) { sync[command](o); return 0; }
-    if (command === 'doctor') return await cmdDoctor(o);
+    const deps = { fs, path, os, NAME, randomBytes, readJson, syncHome, openRuns, runDir, needName, usage, pickRun, metaOf, needMe, isClosed, cap, writeEvent, loadEvents, knownNames, seenFile, alive, tilde, fileHash, tokenOf, checkNode, registered };
+    if (command?.startsWith('durable-')) { const durable = await need('durable.mjs', 'durable commands'); Object.assign(sync, durable.durableCommands({ ...deps, state: (await need('state.mjs', 'durable commands')).stateApi(deps) })); }
+    else if (['register', 'ack'].includes(command) || command?.startsWith('ledger-')) Object.assign(sync, (await need('state.mjs', 'register, ack and ledger commands')).stateApi(deps).commands);
+    else if (command === 'doctor') Object.assign(sync, (await need('doctor.mjs', 'doctor')).doctorCommands(deps));
+    if (['post', 'inbox', 'status', 'close', 'wait', 'follow'].includes(command)) STATE = PINNED ? null : await MODULES['state.mjs']().catch(() => null); // no state.mjs: no open list, everything else works
+    if (Object.hasOwn(sync, command)) return (await sync[command](o)) ?? 0;
     if (command === 'wait' || command === 'follow') return await listen(o, command === 'follow');
-    throw usage(`usage: session-sync.mjs <init|join|post|inbox|hook|wait|follow|status|doctor|snippet|close> [options]; see SKILL.md${command ? `; unknown command ${command}` : ''}`);
+    throw usage(`usage: session-sync.mjs <init|join|register|post|inbox|ack|hook|wait|follow|status|doctor|snippet|close|ledger-*> [options]; see SKILL.md${command ? `; unknown command ${command}` : ''}`);
   } catch (error) {
     console.error(`session-sync: ${error.message}`);
     return 2;

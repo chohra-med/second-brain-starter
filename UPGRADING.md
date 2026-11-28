@@ -1,5 +1,9 @@
 # Upgrading the free starter
 
+## Unreleased
+
+`session-sync` changes how a lead reads events. Its `inbox`, `wait` and `follow` commands no longer move your read cursor. A digest ends with `ack: <token>`, and the cursor moves only when you run the `ack` command with your name and that token, after you handled the events (the exact line is in the commands table of the `session-sync` skill). A lead that never acknowledges sees the same events again (`not yet acked: N`), and a new `wait` wakes on them at once. If you wrote your own lead instructions or a monitor around `session-sync`, add that step before it re-arms. A hook copy you pinned earlier still writes every event; after the update, read the change, then pin the copy again.
+
 ## Upgrading to v1.12.0
 
 This version adds eight shared skills and updates files and skills that you already have: the measured plan below counts them. It deletes nothing.

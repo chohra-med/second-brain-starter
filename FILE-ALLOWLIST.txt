@@ -108,6 +108,7 @@ test/pin-tool.test.mjs
 test/plan.test.mjs
 test/records.test.mjs
 test/security.test.mjs
+test/durable.test.mjs
 test/session-skills.test.mjs
 test/release-bases.test.mjs
 test/status.test.mjs
@@ -126,6 +127,7 @@ test/skill-sync-skill.test.mjs
 test/factory-skill.test.mjs
 test/design-check-skill.test.mjs
 test/session-sync-skill.test.mjs
+test/state.test.mjs
 test/lead-session-skill.test.mjs
 test/writing-check-skill.test.mjs
 test/skill-lint.test.mjs
@@ -217,9 +219,12 @@ template/optional-skills/watch/scripts/setup.py
 template/optional-skills/watch/scripts/transcribe.py
 template/optional-skills/watch/scripts/watch.py
 template/optional-skills/watch/scripts/whisper.py
+template/shared-skills/session-sync/durable.mjs
 template/shared-skills/session-sync/HOW-IT-WORKS.md
 template/shared-skills/session-sync/SKILL.md
 template/shared-skills/session-sync/session-sync.mjs
+template/shared-skills/session-sync/state.mjs
+template/shared-skills/session-sync/doctor.mjs
 template/shared-skills/lead-session/SKILL.md
 template/shared-skills/lead-session/assets/brief.md
 template/shared-skills/usage-dashboard/token-check.mjs

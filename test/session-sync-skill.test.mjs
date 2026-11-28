@@ -72,6 +72,10 @@ function treeHash(root, skip = () => false) {
 
 const stopInput = (message, extra = {}) => ({ session_id: 's-writer', transcript_path: 'x.jsonl', cwd: '.', hook_event_name: 'Stop', stop_hook_active: false, last_assistant_message: message, background_tasks: [], session_crons: [], ...extra });
 
+// The ack token a digest prints, and the ack that moves the cursor (printing a digest never does).
+const tokenIn = (out) => out.match(/^ack: ([0-9a-f]{10})$/m)?.[1];
+const ackLead = (sb, me = 'lead') => { const token = tokenIn(cli(sb, ['inbox', '--me', me]).out); return token ? cli(sb, ['ack', '--me', me, '--token', token]) : null; };
+
 test('RED: the script is missing until it is written', () => {
   assert.ok(existsSync(SCRIPT), 'session-sync.mjs exists');
 });
@@ -171,7 +175,7 @@ test('hook: StopFailure writes turn-failed, SessionEnd writes session-end, and n
   assert.match(sessionEnd.text, /prompt_input_exit/);
 });
 
-test('hook: SessionStart writes session-start; a joined session sees only its unread digest, a stranger sees its own id once', (t) => {
+test('hook: SessionStart writes session-start; a joined session sees only its unread digest, a stranger hears nothing (no invitation to join)', (t) => {
   const sb = sandbox(t);
   setup(sb);
   writeFileSync(path.join(sb.sync, 'R1', 'wait', 'lead.json'), JSON.stringify({ v: 1, pid: process.pid, started: new Date().toISOString(), delivered: null }));
@@ -185,11 +189,8 @@ test('hook: SessionStart writes session-start; a joined session sees only its un
   assert.match(resumed.out, /session-sync run R1: 1 new/);
   assert.match(resumed.out, /writer\s+done\s+"Article": draft ready/);
   const stranger = hook(sb, { session_id: 's-other', cwd: '.', hook_event_name: 'SessionStart', source: 'startup' });
-  assert.equal(stranger.code, 0);
-  assert.match(stranger.out, /session-sync: run R1 is open/);
-  assert.ok(stranger.out.includes('s-other'), 'it prints the session id');
+  assert.deepEqual([stranger.code, stranger.out, stranger.err], [0, '', ''], 'the lead registers workers; a session it did not register is never invited to join');
   assert.equal(eventsOf(sb).filter((event) => event.from === 's-other').length, 0);
-  assert.ok(stranger.out.split('\n').filter(Boolean).length <= 2, 'one or two short lines');
 });
 
 test('hook is silent and exits 0 on every input, garbage included, and writes nothing when no run is open or the session joined none', (t) => {
@@ -225,22 +226,25 @@ test('hook returns in under 300 ms when no run is open', (t) => {
   assert.ok(Math.min(...times) < 300, `fastest of three: ${times.join(', ')} ms`);
 });
 
-test('inbox: a digest of events after the cursor only, one line each, at most 12 lines then +N more; the cursor moves, peek leaves it', (t) => {
+test('inbox: a digest of events after the cursor only, one line each, at most 12 lines then +N more and an ack line; printing moves no cursor, ack does', (t) => {
   const sb = sandbox(t);
   setup(sb);
   assert.match(cli(sb, ['inbox', '--me', 'lead']).out, /no new events/);
   for (let i = 0; i < 15; i += 1) plant(sb, { from: i % 2 ? 'writer' : 'reviewer', kind: 'report', state: 'done', text: `finished item ${i}`, label: i % 2 ? 'Article' : 'Page', at: new Date(Date.now() - (20 - i) * 1000).toISOString() });
-  const peek = cli(sb, ['inbox', '--me', 'lead', '--peek']);
-  const lines = peek.out.trim().split('\n');
-  assert.match(lines[0], /^session-sync run R1: 15 new since /);
-  assert.equal(lines.length, 1 + 12 + 1);
-  assert.match(lines.at(-1), /^\+3 more$/);
-  assert.equal(JSON.parse(readFileSync(path.join(sb.sync, 'R1', 'seen', 'lead.json'), 'utf8')).cursor, null, 'peek moves nothing');
   const first = cli(sb, ['inbox', '--me', 'lead']);
-  assert.match(first.out, /\+3 more/);
+  const lines = first.out.trim().split('\n');
+  assert.match(lines[0], /^session-sync run R1: 15 new since /);
+  assert.equal(lines.length, 1 + 12 + 1 + 1);
+  assert.match(lines.at(-2), /^\+3 more$/);
+  assert.match(lines.at(-1), /^ack: [0-9a-f]{10}$/);
+  assert.equal(seenOf(sb, 'lead').cursor, null, 'printing moves nothing');
+  assert.equal(cli(sb, ['inbox', '--me', 'lead']).out, first.out, 'unacked events show again, the same');
+  assert.equal(cli(sb, ['inbox', '--me', 'lead', '--peek']).out, first.out, '--peek is accepted and means the same');
+  assert.equal(cli(sb, ['ack', '--me', 'lead', '--token', tokenIn(first.out)]).code, 0);
   const second = cli(sb, ['inbox', '--me', 'lead']);
   assert.match(second.out, /^session-sync run R1: 3 new since /m, 'only events after the cursor');
-  assert.equal(second.out.trim().split('\n').length, 4);
+  assert.equal(second.out.trim().split('\n').length, 5);
+  assert.equal(ackLead(sb).code, 0);
   assert.match(cli(sb, ['inbox', '--me', 'lead']).out, /no new events/);
   plant(sb, { from: 'lead', to: 'all', kind: 'note', state: 'working', text: 'mine' });
   assert.match(cli(sb, ['inbox', '--me', 'lead']).out, /no new events/, 'my own events are not news to me');
@@ -320,7 +324,7 @@ globalThis.setTimeout = (fn, delay, ...args) => original(fn, delay >= 400 && del
 test('wait exits 0 with the digest on a wake-worthy event, and not on a working event, a session-start or a note', async (t) => {
   const sb = sandbox(t);
   setup(sb);
-  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1']);
+  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.5']);
   await pause(600);
   plant(sb, { kind: 'turn-end', state: 'working', text: 'busy' });
   plant(sb, { kind: 'session-start', state: 'working', text: 'startup' });
@@ -333,7 +337,7 @@ test('wait exits 0 with the digest on a wake-worthy event, and not on a working 
   assert.match(waiter.out, /all finished/);
 });
 
-test('wait exits 4 on a timeout when only quiet events arrived; an event already there wakes it at once; a delivered event does not wake the next wait', async (t) => {
+test('wait exits 4 on a timeout when only quiet events arrived; an event already there wakes it at once; an unacked event wakes the next wait again, an acked one does not', async (t) => {
   const sb = sandbox(t);
   setup(sb);
   plant(sb, { kind: 'turn-end', state: 'working', text: 'busy' });
@@ -345,25 +349,30 @@ test('wait exits 4 on a timeout when only quiet events arrived; an event already
   await first.done;
   assert.equal(first.code, 0);
   assert.match(first.out, /which file\?/);
-  const again = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.03']);
+  const again = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.2']);
   await again.done;
-  assert.equal(again.code, 4, 'the same news does not wake a second wait');
+  assert.equal(again.code, 0, 'nothing was acked, so the same news shows again');
+  assert.match(again.out, /which file\?/);
+  assert.equal(cli(sb, ['ack', '--me', 'lead', '--token', tokenIn(first.out)]).code, 0);
+  const third = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.03']);
+  await third.done;
+  assert.equal(third.code, 4, 'acked news does not wake a wait');
 });
 
 test('wait with a settle time merges a burst into one wake and collapses a worker\'s turn-end events to the newest', async (t) => {
   const sb = sandbox(t);
   setup(sb);
-  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '2', '--interval', '1']);
+  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '2', '--interval', '1', '--timeout', '0.5']);
   await pause(500);
   plant(sb, { text: 'draft one', state: 'done' });
   await pause(400);
   plant(sb, { text: 'draft two', state: 'done' });
   plant(sb, { from: 'reviewer', label: 'Page', kind: 'question', state: 'needs-lead', text: 'which page?', by: 'session' });
   await waiter.done;
-  assert.equal(waiter.code, 0);
+  assert.equal(waiter.code, 0, waiter.err);
   assert.ok(!waiter.out.includes('draft one'));
   assert.ok(waiter.out.includes('draft two') && waiter.out.includes('which page?'), waiter.out);
-  assert.equal(waiter.out.trim().split('\n').length, 3, 'one wake: a header and two lines');
+  assert.equal(waiter.out.trim().split('\n').length, 4, 'one wake: a header, two lines and the ack line');
 });
 
 test('follow prints a digest per wake and keeps running; it stops with the timeout (4) and writes only its lock file', async (t) => {
@@ -399,14 +408,13 @@ test('doctor, status and inbox --peek change no file; the lock is the only file 
     assert.ok([0, 3].includes(result.code), `${args.join(' ')}: ${result.err}`);
     assert.equal(everything(), before, `${args.join(' ')} wrote a file`);
   }
-  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1']);
+  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.5']);
   await waiter.done;
   assert.equal(waiter.code, 0);
   const own = path.join(sb.sync, 'R1', 'seen', 'lead.json');
-  const after = treeHash(sb.dir, (full) => full.endsWith(`${path.sep}wait`) || full === own);
-  assert.equal(after, before.replace(/^home[\\/]\.session-sync[\\/]R1[\\/]seen[\\/]lead\.json:.*\n?/m, '').replace(/\n$/, ''), 'only the wait lock and the caller\'s own cursor changed');
+  assert.equal(treeHash(sb.dir, (full) => full.endsWith(`${path.sep}wait`)), before, 'only the wait lock changed: the wake moved no cursor');
   assert.ok(existsSync(path.join(sb.sync, 'R1', 'wait', 'lead.json')));
-  assert.notEqual(JSON.parse(readFileSync(own, 'utf8')).cursor, null, 'the wake moved the cursor');
+  assert.equal(JSON.parse(readFileSync(own, 'utf8')).cursor, null, 'the wake did not move the cursor; ack does');
 });
 
 test('status: one line per member with state, ages and unread count; a member whose beat is old is marked STALE; by says hook or session', (t) => {
@@ -452,7 +460,7 @@ test('doctor: D1 to D11 each have a passing and a failing fixture, and the exit 
   writeFileSync(path.join(sb.workspace, '.claude', 'commands', 'lead.md'), 'The lead opens workers and reads each report back with session-sync.\n');
   mkdirSync(path.join(sb.workspace, '01-Projects', 'p', 'factory'), { recursive: true });
   writeFileSync(path.join(sb.workspace, '01-Projects', 'p', 'factory', 'board.md'), '# board\n');
-  assert.equal(cli(sb, ['inbox', '--me', 'lead']).code, 0);
+  assert.equal(ackLead(sb).code, 0);
   const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '1']);
   await pause(800);
 
@@ -630,18 +638,56 @@ test('control characters are replaced before they reach an event, for post and f
   assert.doesNotMatch(cli(sb, ['inbox', '--me', 'lead', '--peek']).out.replace(/\n/g, ''), /[\u0000-\u001f\u007f-\u009f]/, 'nor the digest');
 });
 
-test('a wake moves the lead\'s cursor, so the next inbox shows only newer events', async (t) => {
+test('a wake does not move the lead\'s cursor: unacked events show again, ack with the printed token moves it, a wrong or old token exits 2', async (t) => {
   const sb = sandbox(t);
   setup(sb);
   plant(sb, { text: 'first report', state: 'done' });
-  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1']);
+  const waiter = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.5']);
   await waiter.done;
   assert.match(waiter.out, /first report/);
-  assert.match(cli(sb, ['inbox', '--me', 'lead', '--peek']).out, /no new events/, 'no second payment for the same lines');
+  const token = tokenIn(waiter.out);
+  assert.match(token, /^[0-9a-f]{10}$/, 'the digest ends with an ack token');
+  assert.equal(seenOf(sb, 'lead').cursor, null, 'display moved no cursor');
+  assert.match(cli(sb, ['inbox', '--me', 'lead']).out, /first report/, 'not acked: it shows again');
+  const wrong = cli(sb, ['ack', '--me', 'lead', '--token', '0000000000']);
+  assert.equal(wrong.code, 2);
+  assert.match(wrong.err, /unknown ack token/);
+  assert.equal(cli(sb, ['ack', '--me', 'lead', '--token', token]).code, 0);
+  const old = cli(sb, ['ack', '--me', 'lead', '--token', token]);
+  assert.equal(old.code, 2, 'the same token a second time is old');
+  assert.match(old.err, /old ack token/);
+  assert.match(cli(sb, ['inbox', '--me', 'lead']).out, /no new events/, 'no second payment for the same lines');
   plant(sb, { text: 'later report', state: 'done', from: 'reviewer', label: 'Page' });
-  const next = cli(sb, ['inbox', '--me', 'lead', '--peek']).out;
+  const next = cli(sb, ['inbox', '--me', 'lead']).out;
   assert.match(next, /later report/);
   assert.doesNotMatch(next, /first report/);
+});
+
+test('S3 proof: two events, a wake prints them with a token, a killed and restarted wait prints them once more, ack, then nothing prints; a follow wakes once for the same events', async (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  plant(sb, { text: 'one done', state: 'done' });
+  plant(sb, { from: 'reviewer', label: 'Page', text: 'two done', state: 'done' });
+  const first = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.2']);
+  await first.done;
+  assert.ok(first.out.includes('one done') && first.out.includes('two done'));
+  const again = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.2']); // the first process is gone; nothing was acked
+  await again.done;
+  assert.ok(again.out.includes('one done') && again.out.includes('two done'), 'the same two events print once more');
+  assert.equal(tokenIn(again.out), tokenIn(first.out));
+  assert.equal(cli(sb, ['ack', '--me', 'lead', '--token', tokenIn(again.out)]).code, 0);
+  const quiet = start(sb, ['wait', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.03']);
+  await quiet.done;
+  assert.deepEqual([quiet.code, quiet.out], [4, ''], 'after the ack nothing prints');
+  // One follow process: a wake keeps `delivered`, so the same events never wake it twice, and a later wake says what is not yet acked.
+  plant(sb, { text: 'three done', state: 'done' });
+  const follower = start(sb, ['follow', '--me', 'lead', '--settle', '0', '--interval', '1', '--timeout', '0.12']);
+  await pause(1700);
+  plant(sb, { from: 'reviewer', label: 'Page', text: 'four done', state: 'done' });
+  await follower.done;
+  assert.equal((follower.out.match(/^session-sync run R1:/gm) ?? []).length, 2, follower.out);
+  assert.equal((follower.out.match(/three done/g) ?? []).length, 1, 'the same event does not wake follow twice');
+  assert.match(follower.out, /^not yet acked: 1$/m);
 });
 
 test('join keeps the label and kind planned at init, and an explicit label wins', (t) => {
@@ -933,6 +979,25 @@ test('snippet --pin copies the script outside the workspace, records its hash, p
   assert.equal(cli(sb, ['snippet']).out.includes(path.join(sb.sync, 'bin')), false, 'plain snippet is unchanged and writes nothing');
 });
 
+test('a pinned hook copy works without durable.mjs: the hook writes its event, and durable commands fail with exit 2', (t) => {
+  const sb = sandbox(t);
+  setup(sb);
+  assert.equal(cli(sb, ['snippet', '--pin']).code, 0);
+  const pinnedDir = path.join(sb.sync, 'bin');
+  assert.deepEqual(readdirSync(pinnedDir).sort(), ['session-sync.mjs', 'session-sync.sha256'], 'only the script is pinned, not durable.mjs');
+  const pinned = (args, input) => spawnSync(process.execPath, [path.join(pinnedDir, 'session-sync.mjs'), ...args], { encoding: 'utf8', input, cwd: sb.workspace, env: sb.env });
+  const before = eventsOf(sb).length;
+  const hooked = pinned(['hook'], JSON.stringify(stopInput('pinned report')));
+  assert.equal(hooked.status, 0, hooked.stderr);
+  assert.equal(eventsOf(sb).length, before + 1, 'the hook wrote one event');
+  const durable = pinned(['durable-pending', '--me', 'writer', '--client', 'c', '--session', 's']);
+  assert.equal(durable.status, 2, durable.stdout + durable.stderr);
+  assert.match(durable.stderr, /^session-sync: /);
+  assert.match(durable.stderr, /durable\.mjs next to session-sync\.mjs/, 'a one-line, readable reason instead of a bare module error');
+  assert.doesNotMatch(durable.stderr, /Cannot find module/);
+  assert.equal(durable.stderr.trim().split('\n').length, 1);
+});
+
 test('a copy run through a symlinked path does its work and does not exit 0 in silence', (t) => {
   const sb = sandbox(t);
   setup(sb);
@@ -970,15 +1035,34 @@ test('doctor D12 warns when the hook script lives inside the workspace, when the
 
 test('the script imports only node: modules, opens no socket, and starts no process unless --claude-version is given; it is under 500 lines', () => {
   const text = readFileSync(SCRIPT, 'utf8');
-  const specifiers = [...text.matchAll(/^import[^'"\n]*['"]([^'"]+)['"]/gm), ...text.matchAll(/\bimport\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);
-  assert.ok(specifiers.length > 0);
-  for (const specifier of specifiers) assert.match(specifier, /^node:/, specifier);
+  const durable = readFileSync(path.join(SKILL_DIR, 'durable.mjs'), 'utf8');
+  const staticSpecifiers = [...text.matchAll(/^import[^'"\n]*['"]([^'"]+)['"]/gm)].map((match) => match[1]);
+  const dynamicSpecifiers = [...text.matchAll(/\bimport\(\s*['"]([^'"]+)['"]/g)].map((match) => match[1]);
+  assert.ok(staticSpecifiers.length > 0);
+  for (const specifier of staticSpecifiers) assert.match(specifier, /^node:/, specifier);
+  for (const specifier of dynamicSpecifiers) assert.ok(specifier.startsWith('node:') || ['./durable.mjs', './state.mjs', './doctor.mjs'].includes(specifier), specifier);
+  const doctorText = readFileSync(path.join(SKILL_DIR, 'doctor.mjs'), 'utf8');
+  const stateText = readFileSync(path.join(SKILL_DIR, 'state.mjs'), 'utf8');
+  assert.doesNotMatch(doctorText, /^import\b/m, 'doctor.mjs has no static import; the entrypoint passes what it needs');
+  assert.deepEqual([...doctorText.matchAll(/\bimport\(\s*['"]([^'"]+)['"]/g)].map((m) => m[1]), ['node:child_process'], 'doctor.mjs loads one module, for the version check');
+  assert.deepEqual([...stateText.matchAll(/^import[^'"\n]*['"]([^'"]+)['"]/gm)].map((m) => m[1]).filter((x) => !x.startsWith('node:')), [], 'state.mjs imports only node: modules');
+  for (const [name, source] of [['doctor.mjs', doctorText], ['state.mjs', stateText]]) {
+    for (const banned of ['node:net', 'node:http', 'node:https', 'node:http2', 'node:dgram', 'node:tls', 'node:dns', 'node:worker_threads', 'node:cluster', 'node:vm']) assert.ok(!source.includes(banned), `${name} ${banned}`);
+    assert.doesNotMatch(source, /\b(?:fetch|XMLHttpRequest|WebSocket)\b\s*\(/, name);
+    assert.equal(source.includes('—'), false, `${name}: no em dashes`);
+  }
+  assert.equal(stateText.includes('child_process'), false, 'state.mjs starts no process');
+  assert.ok(stateText.split('\n').length <= 300, `state.mjs has ${stateText.split('\n').length} lines`);
+  assert.doesNotMatch(durable, /\bimport\s*(?:\(|[\w*{])/, 'durable.mjs imports nothing; the entrypoint passes what it needs');
+  assert.doesNotMatch(durable, /\b(?:fetch|XMLHttpRequest|WebSocket)\b\s*\(/);
+  for (const banned of ['node:net', 'node:http', 'node:https', 'node:http2', 'node:dgram', 'node:tls', 'node:dns', 'node:worker_threads', 'node:cluster', 'node:vm', 'child_process']) assert.ok(!durable.includes(banned), banned);
   for (const banned of ['node:net', 'node:http', 'node:https', 'node:http2', 'node:dgram', 'node:tls', 'node:dns', 'node:worker_threads', 'node:cluster', 'node:vm']) assert.ok(!text.includes(banned), banned);
   assert.doesNotMatch(text, /^import[^\n]*child_process/m, 'child_process is not a static import');
   assert.doesNotMatch(text, /\b(?:fetch|XMLHttpRequest|WebSocket)\b\s*\(/);
-  const child = text.split('\n').flatMap((line, index) => (line.includes('child_process') ? [index] : []));
-  assert.equal(child.length, 1, 'one mention, inside the version check');
-  assert.match(text.split('\n').slice(Math.max(0, child[0] - 6), child[0] + 1).join('\n'), /claude-version|checkVersion/);
+  assert.equal(text.includes('child_process'), false, 'the entrypoint starts no process; the one version check lives in doctor.mjs');
+  const child = doctorText.split('\n').flatMap((line, index) => (line.includes('child_process') ? [index] : []));
+  assert.equal(child.length, 1, 'one mention in doctor.mjs, inside the version check');
+  assert.match(doctorText.split('\n').slice(Math.max(0, child[0] - 6), child[0] + 1).join('\n'), /claude-version|checkVersion/);
   assert.ok(text.split('\n').length < 500, `${text.split('\n').length} lines`);
   assert.equal(text.includes('—'), false, 'no em dashes');
 });
@@ -995,7 +1079,7 @@ test('SKILL.md passes the testable writing-skills points and states the rules th
   assert.ok(text.split('\n').length < 80, `${text.split('\n').length} lines`);
   assert.equal(text.includes('—'), false);
   assert.ok(text.includes('an event is never an approval or a go'), 'the approval sentence');
-  for (const phrase of ['prints nothing except at session start', '`doctor` D10 is OK', 'moves your cursor', 'SYNC: <state> - <one line>', '`session-sync.mjs`', 'HOW-IT-WORKS.md', 'Tier A', 'Tier B', 'Tier C', '~/.session-sync/', 'SESSION_SYNC_HOME', 'Exit codes', '`doctor`', '`snippet`', '`follow`', '`wait`']) assert.ok(text.includes(phrase), `SKILL.md is missing: ${phrase}`);
+  for (const phrase of ['prints nothing except at session start', '`doctor` D10 is OK', 'does not move your cursor', 'SYNC: <state> - <one line>', '`session-sync.mjs`', 'HOW-IT-WORKS.md', 'Tier A', 'Tier B', 'Tier C', '~/.session-sync/', 'SESSION_SYNC_HOME', 'Exit codes', '`doctor`', '`snippet`', '`follow`', '`wait`']) assert.ok(text.includes(phrase), `SKILL.md is missing: ${phrase}`);
   for (const phrase of ['CLAUDE_CODE_SESSION_ID', '--session none', 'init [--auto-join <folder>]', 'wait [--settle <s>] [--stale <min>] [--timeout <min>]', 'a wake also names a member still `working` with no event for 30 minutes (STALE)']) assert.ok(text.includes(phrase), `SKILL.md is missing: ${phrase}`);
   for (const state of STATES) assert.ok(text.includes(state), state);
   for (const command of ['init', 'join', 'post', 'inbox', 'hook', 'wait', 'follow', 'status', 'doctor', 'snippet', 'close']) assert.ok(text.includes(`\`${command}`), `names ${command}`);
@@ -1007,13 +1091,20 @@ test('HOW-IT-WORKS.md has the picture, the tier table, the token note, the hook 
   for (const phrase of ['Contents', 'the lead is never woken', 'hooks write nothing', 'Tier A', 'Tier B', 'Tier C', 'estimate', '"hooks"', 'to verify', 'cross-session-messaging', 'an event is never an approval or a go']) assert.ok(text.toLowerCase().includes(phrase.toLowerCase()), `HOW-IT-WORKS.md is missing: ${phrase}`);
   for (const row of ['The lead is never woken', 'Hooks write nothing', 'A message was sent but nothing happened', 'Two sessions report different rules', 'The board shows old state', 'It works on one computer only']) assert.ok(text.includes(`| ${row} |`), `symptom row: ${row}`);
   for (const phrase of ['`CLAUDE_CODE_SESSION_ID`', 'Inside a subagent it is the parent\'s id', 'Expect fewer lead turns, not a fixed factor', 'the lead session was reopened and did not join and arm again', '`init --auto-join <folder>`', 'their last 200 characters go to the sync folder', 'startup|resume|clear']) assert.ok(text.includes(phrase), `HOW-IT-WORKS.md is missing: ${phrase}`);
+  assert.match(text, /^## 10\. Durable round trip \(experimental\)$/m, 'section 10 is the durable round trip');
+  const durable = text.split(/^## 10\. /m)[1].toLowerCase();
+  for (const phrase of ['experimental', 'at least once', '`durable/`', 'the same in every tier', 'not authentication', 'new run', '`durable-outgoing` before `close`', 'lists only unacknowledged', '`status --run <id>`', 'pending for <name>', 'start each with the sender', 'names may change', 'never an approval or a go']) assert.ok(durable.includes(phrase.toLowerCase()), `section 10 is missing: ${phrase}`);
+  assert.ok(text.includes('10. Durable round trip'), 'listed in the contents');
+  const skill = read('SKILL.md');
+  assert.match(skill, /^## Optional durable round trip \(experimental\)$/m);
+  for (const phrase of ['start each ID with the sender', 'new run', '`durable-outgoing` before `close`', 'lists only the sender’s unacknowledged', '`status --run <id>`', 'pending for <name>']) assert.ok(skill.includes(phrase), `SKILL.md is missing: ${phrase}`);
   assert.ok(text.split('\n').length <= 200, 'a reference, not a book');
   assert.equal(text.includes('—'), false);
   assert.doesNotMatch(text, /\/Users\/|\/home\/|\b20\d\d-\d\d-\d\d\b/);
 });
 
 test('shipped session-sync files hold none of the send-changes patterns, and the folder passes the security check without a BLOCK', (t) => {
-  for (const file of ['SKILL.md', 'HOW-IT-WORKS.md', 'session-sync.mjs']) {
+  for (const file of ['SKILL.md', 'HOW-IT-WORKS.md', 'session-sync.mjs', 'durable.mjs', 'state.mjs', 'doctor.mjs']) {
     const text = read(file);
     for (const pattern of SHIPPED_BLOCK) assert.doesNotMatch(text, pattern, `${file} ${pattern}`);
   }
@@ -1036,7 +1127,21 @@ test('SKILL.md says a Codex session is Tier B, what it does instead, and that ho
   assert.match(text, /only Claude Code sets it; Codex and other tools pass `--session`/);
 });
 
-// --- the wait deadline --------------------------------------------------------------------------------------------
+// --- question keys and the wait deadline ------------------------------------------------------------------------
+
+test('two workers who both type --key q1 stay two questions, printed as w1:q1 and w2:q1', (t) => {
+  const sb = sandbox(t);
+  assert.equal(cli(sb, ['init', '--lead', 'lead', '--run', 'R1', '--session', 's-lead', '--member', 'w1:One:writer', '--member', 'w2:Two:writer']).code, 0);
+  for (const name of ['w1', 'w2']) {
+    assert.equal(cli(sb, ['join', '--me', name, '--session', `s-${name}`, '--label', name]).code, 0);
+    const posted = cli(sb, ['post', '--me', name, '--kind', 'question', '--state', 'needs-person', '--key', 'q1', '--text', `ask from ${name}`]);
+    assert.equal(posted.code, 0, posted.err);
+  }
+  const status = cli(sb, ['status', '--me', 'lead']);
+  assert.match(status.out, /OPEN \(2\)/, status.out);
+  assert.match(status.out, /\bw1:q1\b/, status.out);
+  assert.match(status.out, /\bw2:q1\b/, status.out);
+});
 
 test('wait clears its deadline timer once it has delivered', (t) => {
   const sb = sandbox(t);

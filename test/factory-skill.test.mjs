@@ -188,3 +188,11 @@ test('the review packet records the destination authority and captures from the 
     assert.ok(checklist.includes(requirement), requirement);
   }
 });
+
+test('when the work uses session-sync, a row that changes lane writes one ledger fact, and a fact is never a go', () => {
+  const board = read('SKILL.md').split('## The board')[1].split('\n## ')[0];
+  const rule = board.split('\n').find((line) => line.includes('write one ledger fact whenever a row changes lane'));
+  assert.ok(rule, 'the board section carries the rule');
+  for (const phrase of ['`ledger-add --ledger <folder> --item task:<id> --state <state> --source lead`', 'never an approval or a go', '`ledger-git --from <git-check json file>`', 'never written with `--source lead`', '`--source person`']) assert.ok(rule.includes(phrase), phrase);
+  for (const lane of LANES) assert.ok(rule.includes(lane), `the rule maps ${lane} to a state`);
+});

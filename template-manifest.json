@@ -902,13 +902,13 @@
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".agents/skills/factory/SKILL.md",
-      "sha256": "28dfd7aae7b3f619c09bba4313e09dfbab2ebbde40cacfdb62b3f941541e3975",
+      "sha256": "bd7ab62fd43f70dc803807d1e53ef389aeb8161fc80342a8dd7db67af3f49756",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/factory/SKILL.md",
       "destination": ".claude/skills/factory/SKILL.md",
-      "sha256": "28dfd7aae7b3f619c09bba4313e09dfbab2ebbde40cacfdb62b3f941541e3975",
+      "sha256": "bd7ab62fd43f70dc803807d1e53ef389aeb8161fc80342a8dd7db67af3f49756",
       "mergeKind": "managed-file"
     },
     {
@@ -1112,61 +1112,97 @@
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".agents/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "cb4257281fc0f00cc24ab323474511e11ff02157f235972abdf6f079ecf8eef5",
+      "sha256": "182737b6f43fc866beff20a0430a9217beba2a51137313053b3891ca4c6e0148",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/HOW-IT-WORKS.md",
       "destination": ".claude/skills/session-sync/HOW-IT-WORKS.md",
-      "sha256": "cb4257281fc0f00cc24ab323474511e11ff02157f235972abdf6f079ecf8eef5",
+      "sha256": "182737b6f43fc866beff20a0430a9217beba2a51137313053b3891ca4c6e0148",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".agents/skills/session-sync/SKILL.md",
-      "sha256": "3d541d1d626837a82bb670727d70af4c26ba8e0c14f5919f2384448716c3bdde",
+      "sha256": "c162114e4299ba5bb0769ff4b358e044d54e5a47f4f47d72f70806383cc5dda5",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/SKILL.md",
       "destination": ".claude/skills/session-sync/SKILL.md",
-      "sha256": "3d541d1d626837a82bb670727d70af4c26ba8e0c14f5919f2384448716c3bdde",
+      "sha256": "c162114e4299ba5bb0769ff4b358e044d54e5a47f4f47d72f70806383cc5dda5",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".agents/skills/session-sync/session-sync.mjs",
-      "sha256": "52ceb1638a819fa0ceba1669a6681a047eca22257e6a39b43e343d459ddb171c",
+      "sha256": "60528507e8318d053818643afd623087d0c913a7de5de49ffd18685d98b6206b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/session-sync/session-sync.mjs",
       "destination": ".claude/skills/session-sync/session-sync.mjs",
-      "sha256": "52ceb1638a819fa0ceba1669a6681a047eca22257e6a39b43e343d459ddb171c",
+      "sha256": "60528507e8318d053818643afd623087d0c913a7de5de49ffd18685d98b6206b",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/SKILL.md",
       "destination": ".agents/skills/lead-session/SKILL.md",
-      "sha256": "a2989cf27f2ce684b724edcfdb9bb47ab21112ba006c09e6a4450e69ad6a27cd",
+      "sha256": "b6dc6428d6d08a0b7a37a7b8fc9dac93b957fcd85929049197c2fec6177cd501",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/SKILL.md",
       "destination": ".claude/skills/lead-session/SKILL.md",
-      "sha256": "a2989cf27f2ce684b724edcfdb9bb47ab21112ba006c09e6a4450e69ad6a27cd",
+      "sha256": "b6dc6428d6d08a0b7a37a7b8fc9dac93b957fcd85929049197c2fec6177cd501",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/assets/brief.md",
       "destination": ".agents/skills/lead-session/assets/brief.md",
-      "sha256": "5f2692050248b86aaf235d8b86f93f1573ec10bee6847f55edbb01ed9182c405",
+      "sha256": "eeccbe0d2d127b45a4dac37ec9d33a9bbdb86962b71fd480bdb1d42ff3c6ba9f",
       "mergeKind": "managed-file"
     },
     {
       "source": "template/shared-skills/lead-session/assets/brief.md",
       "destination": ".claude/skills/lead-session/assets/brief.md",
-      "sha256": "5f2692050248b86aaf235d8b86f93f1573ec10bee6847f55edbb01ed9182c405",
+      "sha256": "eeccbe0d2d127b45a4dac37ec9d33a9bbdb86962b71fd480bdb1d42ff3c6ba9f",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/durable.mjs",
+      "destination": ".agents/skills/session-sync/durable.mjs",
+      "sha256": "3b60a4e3130443e199dacac554381dd2bb78368b99a1d69ad51347e5e2258f56",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/durable.mjs",
+      "destination": ".claude/skills/session-sync/durable.mjs",
+      "sha256": "3b60a4e3130443e199dacac554381dd2bb78368b99a1d69ad51347e5e2258f56",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/doctor.mjs",
+      "destination": ".agents/skills/session-sync/doctor.mjs",
+      "sha256": "b7ece446b7708178cd9550669e1067c1842753d90cd9401d8d8dd13666e66aab",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/doctor.mjs",
+      "destination": ".claude/skills/session-sync/doctor.mjs",
+      "sha256": "b7ece446b7708178cd9550669e1067c1842753d90cd9401d8d8dd13666e66aab",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/state.mjs",
+      "destination": ".agents/skills/session-sync/state.mjs",
+      "sha256": "b9147cf3c12837c8c27284d3ceeced53c67659ae06cca7455908fe0f1a62946d",
+      "mergeKind": "managed-file"
+    },
+    {
+      "source": "template/shared-skills/session-sync/state.mjs",
+      "destination": ".claude/skills/session-sync/state.mjs",
+      "sha256": "b9147cf3c12837c8c27284d3ceeced53c67659ae06cca7455908fe0f1a62946d",
       "mergeKind": "managed-file"
     }
   ]
